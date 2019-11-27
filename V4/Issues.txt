@@ -1,0 +1,68 @@
+Issue List
+
+P - Partially completed
+C - coded & compiled
+X - complete
+F - Future
+G - move to Git Hub
+
+General
+X - test the reading of the config.ini file - bug: GetSettings() hangs (Replace persist with minini library)
+X - test the writing of the config.ini file
+- design and code the file locking (write protect the local vs USB file writes)
+P - set the lwip addresses from the variables (requires a reboot for now)
+- change the dhcp setting using the variable
+X - change the date format using a variable
+P - change the time format using a variable
+- Make the primary USB a composite device: CDC (aka VCP) and MSD.
+	The SD card will appear on the PC as a removable drive.
+	The secondary (debug port) already enumerates as an ST-Link, CDC, and MSD (as an mBed drive).
+	Firmware updates are just dragged to this drive.
+C - add a resource lock for the track - send vs command station
+- finish compiling and testing the ZIP command
+C - finish compiling and testing the YMODEM command
+F - use the battery backed-up RAM for selected variables
+
+Shell
+X - dir doesn't seem to work in a subdirectory
+X - dir path doesn't work
+X - type path doesn't work (same bug as dir)
+X - add getcwd instead of a string variable for any path releated functions (dir, type, shell prompt)
+X - add a path variable
+X - search for scripts in the current directory and then the path
+- search the path for scripts for help
+X - add a way for scripts to pass arguments
+- add a way for scripts to create temporary variables
+X - add a copy command
+X - if no attributes are entered for attrib, display the current attributes
+
+Send
+- get scope trace in the correct location
+- get the number of preambles from the DEC_TST variable
+- test the number of preambles
+- test the shell packet commands
+- include and compile/debug the logging functionality
+- include and compile/debug the self tests
+X - make an arbitrary packet builder script command (file based ?)
+X - track, when the track output is disabled the output floats, it should be set to zero
+- the IDLE packet generator doesn't work
+- Dcc_reg.gen_print crashes
+
+Command Station
+- debug why the cab doesn't work when it is connected at reset
+- test all of the menus
+G - add the track output
+- add the programming support
+- display status on cab (track in use, Send running, ...)
+F - add the XpressNet interface
+X - shorten the direction and loco to one character and add 2 more function status's
+
+TCP/IP
+- add the file system to the web server
+- finish Telnet
+F - add FTP
+- add TFTP
+
+Other
+F - Add a CAN tranceiver and LCC
+
