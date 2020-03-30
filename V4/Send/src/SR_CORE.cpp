@@ -24,6 +24,14 @@
 #include <stdio.h>
 #include <SR_CORE.h>
 
+#if SEND_VERSION >= 4
+extern "C"
+{
+	//extern int get_key_cmd( void );
+	extern void putch(char c);
+};
+#endif
+
 static const char sccsid[]      = "@(#) $Workfile: SR_CORE.CPP $$ $Revision: 2 $$";
 static const char sccsid_h[]    = SR_CORE_H_DECLARED;
 
@@ -49,6 +57,16 @@ static const char sccsid_h[]    = SR_CORE_H_DECLARED;
 void
 Sr_core::print_header( void ) const
 {
+#if SEND_VERSION >= 4
+	printf("     D          S  C\n");
+	printf("     C S        C  P         O              O              O\n");
+	printf("     CSH8D CU OAO IUCB       U              U              U\n");
+	printf("     OCO2CDLN BCPCNCPD       TN             TN             TN\n");
+	printf("     UOLGCCKD FKELTLUR       PU     B       PU     B       PU     B\n");
+	printf("     TPD0QC1E AANRRKES       ULRRMMMC       ULRRMMMC       ULRRMMMC\n");
+	printf("  PA DELHH0LR LLLLALNT    0T TL10210D    0H TL10210D    1T TL10210D GEN\n");
+	printf("-----------------------------------------------------------------------\n");
+#else
 	printf(
 	"     D          S  C\n"
 	"     C S        C  P         O              O              O\n"
@@ -58,6 +76,7 @@ Sr_core::print_header( void ) const
 	"     TPD0QC1E AANRRKES       ULRRMMMC       ULRRMMMC       ULRRMMMC\n"
 	"  PA DELHH0LR LLLLALNT    0T TL10210D    0H TL10210D    1T TL10210D GEN\n"
 	"-----------------------------------------------------------------------\n" );
+#endif
 }
 
 
@@ -89,21 +108,45 @@ Sr_core::print(
 
 	printf( "0x%02x ", v.pa );
 	print_byte( v.pb );
-	putchar( ' ' );
+	#if SEND_VERSION >= 4
+		putch(' ');
+	#else
+		putchar(' ');
+	#endif
 	print_byte( v.pc );
-	putchar( ' ' );
+	#if SEND_VERSION >= 4
+		putch(' ');
+	#else
+		putchar(' ');
+	#endif
 
 	printf( "%5u ", v.cnt0t );
 	print_byte( v.s0t );
-	putchar( ' ' );
+	#if SEND_VERSION >= 4
+		putch(' ');
+	#else
+		putchar(' ');
+	#endif
 	printf( "%5u ", v.cnt0h );
 	print_byte( v.s0h );
-	putchar( ' ' );
+	#if SEND_VERSION >= 4
+		putch(' ');
+	#else
+		putchar(' ');
+	#endif
 	printf( "%5u ", v.cnt1t );
 	print_byte( v.s1t );
-	putchar( '  ' );
+	#if SEND_VERSION >= 4
+		putch(' ');
+	#else
+		putchar(' ');
+	#endif
 	print_nibble( v.gen );
-	putchar( '\n' );
+	#if SEND_VERSION >= 4
+		putch('\n');
+	#else
+		putchar('\n');
+	#endif
 }
 
 
@@ -134,14 +177,27 @@ Sr_core::print_byte(
 
 	for ( mask = 0x80; mask != 0; mask >>=  1 )
 	{
-		if ( mask & skip )
-		{
-			putchar( '?' );
-		}
-		else
-		{
-			putchar( mask & val ? '1' : '0' );
-		}
+
+		#if SEND_VERSION >= 4
+			if ( mask & skip )
+			{
+				putch( '?' );
+			}
+			else
+			{
+				putch( mask & val ? '1' : '0' );
+			}
+		#else
+			if ( mask & skip )
+			{
+				putchar( '?' );
+			}
+			else
+			{
+				putchar( mask & val ? '1' : '0' );
+			}
+		#endif
+
 	}
 }
 
@@ -174,14 +230,25 @@ Sr_core::print_nibble(
 
 	for ( mask = 0x08; mask != 0; mask >>=  1 )
 	{
-		if ( mask & skip )
-		{
-			putchar( '?' );
-		}
-		else
-		{
-			putchar( mask & val ? '1' : '0' );
-		}
+		#if SEND_VERSION >= 4
+			if ( mask & skip )
+			{
+				putch( '?' );
+			}
+			else
+			{
+				putch( mask & val ? '1' : '0' );
+			}
+		#else
+			if ( mask & skip )
+			{
+				putchar( '?' );
+			}
+			else
+			{
+				putchar( mask & val ? '1' : '0' );
+			}
+		#endif
 	}
 }
 
