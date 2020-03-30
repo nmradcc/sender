@@ -98,5 +98,38 @@ int getLine(FIL *stream, char *buffer, int iBufLen)
     return i;
 }
 
+int getLine2(FIL *stream, char *buffer, int iBufLen)
+{
+    int i = 0;
+    uint8_t j = 0;
+
+    buffer[0] = '\0';
+
+    j = f_getc(stream);
+
+    while(j != (uint8_t)EOF)
+    {
+        if(j == '\n')
+        {
+			return i;
+        }
+        else if(j == '\r')
+        {
+        	;
+        }
+        else
+		{
+			buffer[i++] = j;
+			buffer[i] = '\0';
+			if(i >= iBufLen)                // truncate this at a screen-line's worth + hyperlinks
+			{
+				return i;
+			}
+		}
+        j = f_getc(stream);
+    }
+    return i;
+}
+
 
 

@@ -10,5 +10,6 @@
 
 extern int getLine(FIL *stream, char *buffer, int iBufLen);
 
+extern int getLine2(FIL *stream, char *buffer, int iBufLen);	// without counting the cr & lf
 
 #endif /* GETLINE_H_ */
