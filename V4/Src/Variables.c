@@ -81,6 +81,23 @@ static char tempbuf[64];
 *
 **********************************************************************/
 
+const char* szMonth[] =
+{
+	"NON",
+	"JAN",
+	"FEB",
+	"MAR",
+	"APR",
+	"MAY",
+	"JUN",
+	"JUL",
+	"AUG",
+	"SEP",
+	"OCT",
+	"NOV",
+	"DEC",
+};
+
 const VAR_TABLE VarCmdTable[] =
 {
 	// name				variable			type									default				help string
@@ -90,7 +107,7 @@ const VAR_TABLE VarCmdTable[] =
 	{szTime,			NULL,				(VAR_TYPE_TIME),						"",					"Real Time hh:mm" },
 	{szDate,			NULL,				(VAR_TYPE_DATE),						"",					"Real Time dd/mm/yyyy" },
 	{szTimeFmt,			&bTimeFmt,			(VAR_TYPE_TIME_FMT | VAR_TYPE_PERSIST),	"12",				"Clock 12 | 24 hour mode" },
-	{szDateFmt,			&bDateFmt,			(VAR_TYPE_DATE_FMT | VAR_TYPE_PERSIST),	"M/D/Y",			"Date M/D/Y | D/M/Y | Y/M/D" },
+	{szDateFmt,			&bDateFmt,			(VAR_TYPE_DATE_FMT | VAR_TYPE_PERSIST),	"M/D/Y",			"Date M/D/Y|D/M/Y|Y/M/D MM=3 Char Month" },
 
 	{szIpAdr,			&IpAddress,			(VAR_TYPE_IP | VAR_TYPE_PERSIST),		"169.254.172,10",	"IP Address" },
 	{szIpMsk,			&IpMask,			(VAR_TYPE_IP | VAR_TYPE_PERSIST),		"255.255.255.0",	"IP Mask" },
@@ -163,6 +180,15 @@ char* VarToString(uint32_t idx)
     				case 2:
     	    			sprintf(tempbuf, "%04d/%2d/%02d", date.Year+2000, date.Month, date.Date);
        				break;
+    				case 3:
+    	    			sprintf(tempbuf, "%s/%02d/%04d", szMonth[date.Month], date.Date, date.Year+2000);
+    				break;
+    				case 4:
+    	    			sprintf(tempbuf, "%2d/%s/%04d", date.Date, szMonth[date.Month], date.Year+2000);
+       				break;
+    				case 5:
+    	    			sprintf(tempbuf, "%04d/%s/%02d", date.Year+2000, szMonth[date.Month], date.Date);
+       				break;
     			}
     		}
     	break;
@@ -184,6 +210,18 @@ char* VarToString(uint32_t idx)
 
     			case 2:
     				strcpy(tempbuf, "Y/M/D");
+    			break;
+
+    			case 3:
+    				strcpy(tempbuf, "MM/D/Y");
+    			break;
+
+    			case 4:
+    				strcpy(tempbuf, "D/MM/Y");
+    			break;
+
+    			case 5:
+    				strcpy(tempbuf, "Y/MM/D");
     			break;
     		}
     	break;
@@ -420,6 +458,43 @@ void GetVariable(const char* szObject, char* pStrValue, int max_len)
 }
 
 
+/**********************************************************************
+*
+* FUNCTION:		GetVariable
+*
+* ARGUMENTS:
+*
+* RETURNS:
+*
+* DESCRIPTION:
+*
+* RESTRICTIONS:
+*
+**********************************************************************/
+uint32_t GetVariableValue(int idx)
+{
+
+    switch(VarCmdTable[idx].type & VAR_TYPE_MASK)
+    {
+    	case VAR_TYPE_INT:
+    	case VAR_TYPE_VER:
+    	case VAR_TYPE_ON_OFF:
+    	case VAR_TYPE_PORT:
+    	case VAR_TYPE_TRACK:
+    		return *(unsigned int*)(VarCmdTable[idx].var);
+       	break;
+
+    	case VAR_TYPE_TIME:
+    	case VAR_TYPE_DATE:
+    	case VAR_TYPE_TIME_FMT:
+    	case VAR_TYPE_DATE_FMT:
+    	case VAR_TYPE_IP:
+    	case VAR_TYPE_STRING:
+    	default:
+    		return 0;
+    	break;
+    }
+}
 
 /**********************************************************************
 *
@@ -464,10 +539,22 @@ int SetVariable(const char* szObject, char* pStrValue)
 				if((type & VAR_TYPE_READ_ONLY) == 0)
 				{
 					// ToDo - fail if the number is improperly formatted
-					temp = atoi(pStrValue);
+					i = FindVariable(pStrValue);
+					if(i != -1)
+					{
+						temp = GetVariableValue(i);
+					}
+					else
+					{
+						temp = atoi(pStrValue);
+					}
+
 					*(uint32_t*)(VarCmdTable[idx].var) = temp;
 
-					(void)ini_putl("", szObject, (long)temp, SETTINGS_FILE);
+					if((type & VAR_TYPE_PERSIST) != 0)
+					{
+						(void)ini_putl("", szObject, (long)temp, SETTINGS_FILE);
+					}
 				}
 				else
 				{
@@ -526,10 +613,18 @@ int SetVariable(const char* szObject, char* pStrValue)
 				{
 					bTimeFmt = 1;
 				}
-				(void)ini_putl("", szObject, (long)bTimeFmt, SETTINGS_FILE);
+
+				if((type & VAR_TYPE_PERSIST) != 0)
+				{
+					(void)ini_putl("", szObject, (long)bTimeFmt, SETTINGS_FILE);
+				}
 			break;
 
 			case VAR_TYPE_DATE_FMT:
+				if(stricmp(pStrValue, "M/D/Y") == 0)
+				{
+					bDateFmt = 0;
+				}
 				if(stricmp(pStrValue, "D/M/Y") == 0)
 				{
 					bDateFmt = 1;
@@ -538,11 +633,23 @@ int SetVariable(const char* szObject, char* pStrValue)
 				{
 					bDateFmt = 2;
 				}
-				else
+				if(stricmp(pStrValue, "MM/D/Y") == 0)
 				{
-					bDateFmt = 0;
+					bDateFmt = 3;
 				}
-				(void)ini_putl("", szObject, (long)bDateFmt, SETTINGS_FILE);
+				else if(stricmp(pStrValue, "D/MM/Y") == 0)
+				{
+					bDateFmt = 4;
+				}
+				else if(stricmp(pStrValue, "Y/MM/D") == 0)
+				{
+					bDateFmt = 5;
+				}
+
+				if((type & VAR_TYPE_PERSIST) != 0)
+				{
+					(void)ini_putl("", szObject, (long)bDateFmt, SETTINGS_FILE);
+				}
 			break;
 
 	    	case VAR_TYPE_VER:
@@ -552,11 +659,29 @@ int SetVariable(const char* szObject, char* pStrValue)
 			case VAR_TYPE_ON_OFF:
 				if((type & VAR_TYPE_READ_ONLY) == 0)
 				{
-					// ToDo - fail if the number is improperly formatted
-					//temp = atoi(pStrValue);
-					//*(uint32_t*)(VarCmdTable[idx].var) = temp;
+					temp = 0;
+					if(stricmp(pStrValue, "on") == 0)
+					{
+						temp = 1;
+					}
+					if(stricmp(pStrValue, "true") == 0)
+					{
+						temp = 1;
+					}
+					if(stricmp(pStrValue, "yes") == 0)
+					{
+						temp = 1;
+					}
+					if(stricmp(pStrValue, "1") == 0)
+					{
+						temp = 1;
+					}
 
-					(void)ini_putl("", szObject, (long)temp, SETTINGS_FILE);
+					*(uint32_t*)(VarCmdTable[idx].var) = temp;
+					if((type & VAR_TYPE_PERSIST) != 0)
+					{
+						(void)ini_putl("", szObject, (long)temp, SETTINGS_FILE);
+					}
 				}
 				else
 				{
@@ -578,7 +703,10 @@ int SetVariable(const char* szObject, char* pStrValue)
 					temp = 0;
 				}
 				*(uint32_t*)(VarCmdTable[idx].var) = temp;
-				(void)ini_putl("", szObject, (long)temp, SETTINGS_FILE);
+				if((type & VAR_TYPE_PERSIST) != 0)
+				{
+					(void)ini_putl("", szObject, (long)temp, SETTINGS_FILE);
+				}
 			break;
 
 	    	case VAR_TYPE_TRACK:
@@ -591,10 +719,17 @@ int SetVariable(const char* szObject, char* pStrValue)
 	    		{
 	    			DisableTrack();
 	    		}
+				*(uint32_t*)(VarCmdTable[idx].var) = temp;
+				if((type & VAR_TYPE_PERSIST) != 0)
+				{
+				}
 	       	break;
 
 	    	case VAR_TYPE_IP:
-				(void)ini_puts("", szObject, pStrValue, SETTINGS_FILE);
+				if((type & VAR_TYPE_PERSIST) != 0)
+				{
+					(void)ini_puts("", szObject, pStrValue, SETTINGS_FILE);
+				}
 	    		temp = 0;
 	    	    for(i = 0; i < 4; i++)
 	    	    {
@@ -622,9 +757,11 @@ int SetVariable(const char* szObject, char* pStrValue)
 				if((type & VAR_TYPE_READ_ONLY) == 0)
 				{
 					// ToDo - put the string length in the table
-					//strncpy((char*)VarCmdTable[idx].var, pStrValue, max_len);
-
-					(void)ini_puts("", szObject, pStrValue, SETTINGS_FILE);
+					strncpy((char*)VarCmdTable[idx].var, pStrValue, 64);
+					if((type & VAR_TYPE_PERSIST) != 0)
+					{
+						(void)ini_puts("", szObject, pStrValue, SETTINGS_FILE);
+					}
 				}
 				else
 				{
@@ -638,7 +775,135 @@ int SetVariable(const char* szObject, char* pStrValue)
 
 
 
+/**********************************************************************
+*
+* FUNCTION:		MathVariable
+*
+* ARGUMENTS:
+*
+* RETURNS:
+*
+* DESCRIPTION:
+*
+* RESTRICTIONS:
+*
+**********************************************************************/
+int MathVariable(const char* szObject, char* pStrValue, const int op)
+{
+	int idx;
+	int i;
+	int type;
+	int temp;
 
+	idx = FindVariable((char*)szObject);
+
+	if(idx != -1)
+	{
+		type = VarCmdTable[idx].type;
+		switch(type & VAR_TYPE_MASK)
+		{
+			case VAR_TYPE_INT:
+			case VAR_TYPE_ON_OFF:
+	    	case VAR_TYPE_TRACK:
+	    	case VAR_TYPE_SPEED:
+			case VAR_TYPE_DIR:
+			case VAR_TYPE_FUNCTION:
+				if((type & VAR_TYPE_READ_ONLY) == 0)
+				{
+					// ToDo - fail if the number is improperly formatted
+					i = FindVariable(pStrValue);
+					if(i != -1)
+					{
+						temp = GetVariableValue(i);
+					}
+					else
+					{
+						temp = atoi(pStrValue);
+					}
+
+					switch(op)
+					{
+						case MV_ADD:
+							*(uint32_t*)(VarCmdTable[idx].var) += temp;
+						break;
+
+						case MV_SUBTRACT:
+							*(uint32_t*)(VarCmdTable[idx].var) -= temp;
+						break;
+
+						case MV_MULTIPLY:
+							*(uint32_t*)(VarCmdTable[idx].var) *= temp;
+						break;
+
+						case MV_DIVIDE:
+							if(temp)
+							{
+								*(uint32_t*)(VarCmdTable[idx].var) /= temp;
+							}
+						break;
+
+						default:
+							return CMD_BAD_PARAMS;
+						break;
+					}
+
+					(void)ini_putl("", szObject, (long)temp, SETTINGS_FILE);
+					return CMD_OK;
+				}
+				else
+				{
+					return CMD_READ_ONLY;
+				}
+			break;
+
+			case VAR_TYPE_TIME:
+			case VAR_TYPE_DATE:
+			case VAR_TYPE_TIME_FMT:
+			case VAR_TYPE_DATE_FMT:
+	    	case VAR_TYPE_VER:
+			case VAR_TYPE_PORT:
+	    	case VAR_TYPE_IP:
+			case VAR_TYPE_STRING:
+				return CMD_READ_ONLY;
+			break;
+		}
+	}
+	return CMD_BAD_PARAMS;
+}
+
+
+
+/*********************************************************************
+*
+* GetNextPath
+*
+* @brief	Get the next piece of the path string
+*
+* @param	pStr - a pointer to the current path
+* 			path - pointer to the string pointer of the next piece
+*
+* @return	length of he piece returned, 0 if no more pieces
+*
+* @detail	move the pStr pointer by the length for each repeated call
+*
+*********************************************************************/
+int GetNextPath(char* pStr, char* path)
+{
+	char* pBeginning = pStr;
+
+	int len = 0;
+	while(*pStr != ';' && *pStr != 0)
+	{
+		len++;
+		pStr++;
+	}
+	if(len)
+	{
+		memcpy(path, pBeginning, len);
+		path[len] = 0;
+	}
+	return len;
+}
 
 
 
