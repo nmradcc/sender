@@ -75,13 +75,24 @@ typedef enum
 	CMD_IF_FALSE = 0x800,
 } CMD_RETURN;
 
+enum
+{
+	CL_NONE,
+	CL_ANSI,
+	CL_FILE,
+	CL_SCRIPT,
+	CL_CS,
+	CL_SYS,
+	CL_TEST,
+} SHELL_CLASS;
+
 /** @struct SHELL_TABLE
 	@brief a shell command table entry
  */
 typedef struct SHELL_TABLE_t
 {
 	char szCommand[11];
-	unsigned char bCommand;
+	unsigned char bClass;
 	unsigned char bFlags;
 	CMD_RETURN (*Command)(uint8_t bPort, int argc, char *argv[]);
 	char* pszHelp;
@@ -114,8 +125,9 @@ extern void DoScriptRun(void);
 extern void DoShell(void);
 
 extern void ShellInit(void);
-//void ShellMain(CMD_CONTEXT Context);
-extern void ShellMain(uint8_t bPort, char* buuf);
+extern int ShellMain(uint8_t bPort, char* buuf);
+
+extern void Prompt(uint8_t bPort);
 
 extern int FindCommand(char* szCmdBuffer, size_t* nargs, char** args);
 extern int ExecuteCommand(int iCmdIndex, uint8_t bPort, size_t nargs, char** args);

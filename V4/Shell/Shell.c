@@ -20,7 +20,7 @@
 #include "ShellCS.h"
 #include "ShellScript.h"
 #include "Track.h"
-//#include "Led.h"
+#include "Led.h"
 #include "Ansi.h"
 #include "Variables.h"
 //#include "Clock.h"
@@ -106,7 +106,7 @@ CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShRem(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShDelay(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShEcho(uint8_t bPort, int argc, char *argv[]);
-//CMD_RETURN ShLed(uint8_t bPort, int argc, char *argv[]);
+CMD_RETURN ShLed(uint8_t bPort, int argc, char *argv[]);
 
 CMD_RETURN ShVariables(uint8_t bPort, int argc, char *argv[]);
 
@@ -141,6 +141,17 @@ CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShYmodem(uint8_t bPort, int argc, char *argv[]);
 
 
+uint8_t ShellColor[] =
+{
+	FG_White,	// CL_NONE,
+	FG_Yellow,	// CL_ANSI,
+	FG_Blue, 	// CL_FILE,
+	FG_Green,	// CL_SCRIPT,
+	FG_Purple,	// CL_CS,
+	FG_Cyan,	// CL_SYS,
+	FG_Red,		// CL_TEST,
+};
+
 /*********************************************************************
 *
 * ShellTable
@@ -150,72 +161,74 @@ CMD_RETURN ShYmodem(uint8_t bPort, int argc, char *argv[]);
 *********************************************************************/
 const SHELL_TABLE ShellTable[] =
 {
-//	Cmd			Binary	Flags							Function
-	{"?",		0x00,	SUPPRESS_HELP,					ShHelp,				"command help - help script, help all"},
-	{"help",	0x00,	NO_FLAGS,						ShHelp,				"command help - help script, help all"},
+//	Cmd			Binary		Flags							Function
+	{"?",		CL_SYS,		SUPPRESS_HELP,					ShHelp,				"command help -a=all -s=script -c=color"},
+	{"help",	CL_SYS,		NO_FLAGS,						ShHelp,				"command help -a=all -s=script -c=color"},
     
-	{"clrscr",	0x00,	NO_FLAGS,						ShClrScreen,		"clear the screen"},
-	{"clreol",	0x00,	NO_FLAGS,						ShClrEOL,			"clear from the cursor to the end of the line"},
-	{"gotoxy",	0x00,	NO_FLAGS,						ShGotoXY,			"x, y"},
-	{"cursor",	0x00,	NO_FLAGS,						ShCursor,			"save | restore"},
-	{"color",	0x00,	NO_FLAGS,						ShTextColor,		"[[[fg], bg], att]"},
+	{"clrscr",	CL_ANSI,	NO_FLAGS,						ShClrScreen,		"clear the screen"},
+	{"clreol",	CL_ANSI,	NO_FLAGS,						ShClrEOL,			"clear from the cursor to the end of the line"},
+	{"gotoxy",	CL_ANSI,	NO_FLAGS,						ShGotoXY,			"x, y"},
+	{"cursor",	CL_ANSI,	NO_FLAGS,						ShCursor,			"save | restore"},
+	{"color",	CL_ANSI,	NO_FLAGS,						ShTextColor,		"[[[fg], bg], att]"},
 
 // scripting
-	{"if",		0x00,	SUPPRESS_HELP | SCRIPT_HELP, 	ShIf,				"if condition"},
-	{"else",	0x00,	SUPPRESS_HELP | SCRIPT_HELP, 	ShElse,				"not condition"},
-	{"endif",	0x00,	SUPPRESS_HELP | SCRIPT_HELP, 	ShEndif,			"end if"},
-	{"loop",	0x00,	SUPPRESS_HELP | SCRIPT_HELP, 	ShLoop,				"count"},
-	{"endloop",	0x00,	SUPPRESS_HELP | SCRIPT_HELP, 	ShEndLoop,			"end loop"},
-	{"break",	0x00,	SUPPRESS_HELP | SCRIPT_HELP, 	ShBreak,			"break out of loop"},
-	{"variables",0x00,	NO_FLAGS | SCRIPT_HELP,			ShVariables,		"list all variables"},
-	{"pause",	0x00,	SUPPRESS_HELP | SCRIPT_HELP, 	ShDelay,			"ms"},
-	{"echo",	0x00,	NO_FLAGS | SCRIPT_HELP,			ShEcho,				"test"},
-	{"rem",		0x00,	SUPPRESS_HELP | SCRIPT_HELP,	ShRem,				"ignore line"},
-	{"prompt",	0x00,	SUPPRESS_HELP | SCRIPT_HELP,	ShPrompt,			"issue a prompt"},
+	{"if",		CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP, 	ShIf,				"if condition"},
+	{"else",	CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP, 	ShElse,				"not condition"},
+	{"endif",	CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP, 	ShEndif,			"end if"},
+	{"loop",	CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP, 	ShLoop,				"count"},
+	{"endloop",	CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP, 	ShEndLoop,			"end loop"},
+	{"break",	CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP, 	ShBreak,			"break out of loop"},
+	{"variables",CL_SCRIPT,	NO_FLAGS | SCRIPT_HELP,			ShVariables,		"list all variables"},
+	{"pause",	CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP, 	ShDelay,			"ms"},
+	{"echo",	CL_SCRIPT,	NO_FLAGS | SCRIPT_HELP,			ShEcho,				"test"},
+	{"rem",		CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP,	ShRem,				"ignore line"},
+	{"prompt",	CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP,	ShPrompt,			"issue a prompt"},
+	{"led",		CL_SCRIPT,	NO_FLAGS | SCRIPT_HELP,			ShLed,				"Control the Green LED"},
+	{"scripts",	CL_SCRIPT,	NO_FLAGS | SCRIPT_HELP,			ShScripts,			"List the running scripts"},
 
 // file system
-	{"dir",		0x00,	NO_FLAGS,						ShDir,				"list the files on the drive"},
-	{"type",	0x00,	NO_FLAGS,						ShType,				"display the contents of a file"},
-	{"del",		0x00,	NO_FLAGS,						ShDelete,			"delete a file"},
-//	{"format",	0x00,	SUPPRESS_HELP, 					ShFormat,			"format the storage"},
-	{"md",	    0x00,	NO_FLAGS, 						ShMkdir,			"make directory"},
-	{"rd",	    0x00,	SUPPRESS_HELP, 					ShRmdir,			"remove directory"},
-	{"cd",	    0x00,	NO_FLAGS, 						ShChdir,			"change directory"},
-	{"cwd",	    0x00,	SUPPRESS_HELP, 					ShCWD,				"change working directory"},
-	{"atrib",   0x00,	NO_FLAGS, 						ShAtrib,			"Set/Reset attributes +/- R,H,S,A"},
-	{"copy",    0x00,	NO_FLAGS,	 					ShCopy,				"copy source destination"},
+	{"dir",		CL_FILE,	NO_FLAGS,						ShDir,				"list the files on the drive -h=show hidden -c=color"},
+	{"type",	CL_FILE,	NO_FLAGS,						ShType,				"display the contents of a file"},
+	{"del",		CL_FILE,	NO_FLAGS,						ShDelete,			"delete a file"},
+//	{"format",	CL_FILE,	SUPPRESS_HELP, 					ShFormat,			"format the storage"},
+	{"md",	    CL_FILE,	NO_FLAGS, 						ShMkdir,			"make directory"},
+	{"rd",	    CL_FILE,	SUPPRESS_HELP, 					ShRmdir,			"remove directory"},
+	{"cd",	    CL_FILE,	NO_FLAGS, 						ShChdir,			"change directory"},
+	{"cwd",	    CL_FILE,	SUPPRESS_HELP, 					ShCWD,				"change working directory"},
+	{"atrib",   CL_FILE,	NO_FLAGS, 						ShAtrib,			"Set/Reset attributes +/- R,H,S,A"},
+	{"copy",    CL_FILE,	NO_FLAGS,	 					ShCopy,				"copy source destination"},
 
-	{"args",     0x00,	SUPPRESS_HELP, 					ShArgs,				"List arguments"},
-	{"tasks",   0x00,	NO_FLAGS, 						ShTasks,			"Task List"},
-//	{"tcp",   	0x00,	NO_FLAGS, 						ShTcp,				"TCP/IP Info"},
+	{"args",    CL_SYS,		SUPPRESS_HELP, 					ShArgs,				"List arguments"},
+	{"tasks",   CL_SYS,		NO_FLAGS, 						ShTasks,			"Task List"},
+//	{"tcp",   	CL_SYS,		NO_FLAGS, 						ShTcp,				"TCP/IP Info"},
 
 	// command station
-	{"cab",	    0x00,	NO_FLAGS,						ShCabStat,			""},
-	{"loco",    0x00,	NO_FLAGS,						ShLocoStat,			""},
-	{"assign",  0x00,	SUPPRESS_HELP, 					ShAssign,			""},
-	{"status",  0x00,	SUPPRESS_HELP, 					ShSystemStatus,		""},
-	{"train", 	0x00,	NO_FLAGS, 						ShSetLoco,			"<address> [[[[<speed>] <direction 0/1>] <function1>] <function2>]"},
-	{"disp",	0x00,	NO_FLAGS,						ShCabDisplay,		"<cab> ""Massage"""},
-	{"write",	0x00,	NO_FLAGS,						ShProgTrackWriteCV,	"CV, Value"},
-	{"read",	0x00,	NO_FLAGS,						ShProgTrackReadCV,	"CV"},
+	{"cab",	    CL_CS,		NO_FLAGS,						ShCabStat,			""},
+	{"loco",    CL_CS,		NO_FLAGS,						ShLocoStat,			""},
+	{"assign",  CL_CS,		SUPPRESS_HELP, 					ShAssign,			""},
+	{"status",  CL_CS,		SUPPRESS_HELP, 					ShSystemStatus,		""},
+	{"train", 	CL_CS,		NO_FLAGS, 						ShSetLoco,			"<address> [[[[<speed>] <direction 0/1>] <function1>] <function2>]"},
+	{"disp",	CL_CS,		NO_FLAGS,						ShCabDisplay,		"<cab> ""Massage"""},
+	{"write",	CL_CS,		NO_FLAGS,						ShProgTrackWriteCV,	"CV, Value"},
+	{"read",	CL_CS,		NO_FLAGS,						ShProgTrackReadCV,	"CV"},
 
 
-//	{"test",   	0x00,	NO_FLAGS, 						ShTestBits,			"DCC Bit Test"},
-	{"send",   	0x00,	NO_FLAGS, 						ShSend,				"DCC Decoder Tests - type send -? for more info"},
-	{"bittest",	0x00,	NO_FLAGS, 						ShBitTest,			"DCC Bit Test"},
+//	{"test",   	0x00,		NO_FLAGS, 						ShTestBits,			"DCC Bit Test"},
+	{"send",   	CL_TEST,	NO_FLAGS, 						ShSend,				"DCC Decoder Tests - type send -? for more info"},
+	{"bittest",	CL_TEST,	NO_FLAGS, 						ShBitTest,			"DCC Bit Test"},
 
-	{"sendzero",0x00,	NO_FLAGS, 						ShSendZero,			"DCC Zero Packet(s) [count]"},
-	{"sendone",	0x00,	NO_FLAGS, 						ShSendOne,			"DCC one Packet(s) [count]"},
-	{"scopea",	0x00,	NO_FLAGS, 						ShSendScopeA,		"DCC Scope A Packet(s) [count]"},
-	{"scopeb",	0x00,	NO_FLAGS, 						ShSendScopeB,		"DCC Scope B Packet(s) [count]"},
-	{"warble",	0x00,	NO_FLAGS, 						ShSendWarble,		"DCC Warble Packet(s) [count]"},
-	{"stretched",0x00,	NO_FLAGS, 						ShSendStretched,	"DCC Stretched Packet(s) [count]"},
-	{"reset",	0x00,	NO_FLAGS, 						ShSendReset,		"DCC Reset Packet(s) [count]"},
-	{"hard",	0x00,	NO_FLAGS, 						ShSendHard,			"DCC Hard Reset Packet(s) [count]"},
-	{"idle",	0x00,	NO_FLAGS, 						ShSendIdle,			"DCC Idle Packet(s) [count]"},
-	{"packet",	0x00,	NO_FLAGS, 						ShSendPacket,		"DCC Packet(s) [file &| count]"},
+	{"sendzero",CL_TEST,	NO_FLAGS, 						ShSendZero,			"DCC Zero Packet(s) [count]"},
+	{"sendone",	CL_TEST,	NO_FLAGS, 						ShSendOne,			"DCC one Packet(s) [count]"},
+	{"scopea",	CL_TEST,	NO_FLAGS, 						ShSendScopeA,		"DCC Scope A Packet(s) [count]"},
+	{"scopeb",	CL_TEST,	NO_FLAGS, 						ShSendScopeB,		"DCC Scope B Packet(s) [count]"},
+	{"warble",	CL_TEST,	NO_FLAGS, 						ShSendWarble,		"DCC Warble Packet(s) [count]"},
+	{"stretched",CL_TEST,	NO_FLAGS, 						ShSendStretched,	"DCC Stretched Packet(s) [count]"},
+	{"reset",	CL_TEST,	NO_FLAGS, 						ShSendReset,		"DCC Reset Packet(s) [count]"},
+	{"hard",	CL_TEST,	NO_FLAGS, 						ShSendHard,			"DCC Hard Reset Packet(s) [count]"},
+	{"idle",	CL_TEST,	NO_FLAGS, 						ShSendIdle,			"DCC Idle Packet(s) [count]"},
+	{"packet",	CL_TEST,	NO_FLAGS, 						ShSendPacket,		"DCC Packet(s) [file &| count]"},
 
-	{"ymodem",	0x00,	NO_FLAGS, 						ShYmodem,			"YModem receive"},
+	{"ymodem",	CL_SYS,		NO_FLAGS, 						ShYmodem,			"YModem receive"},
 };
 #define SHELL_TABLE_COUNT (sizeof(ShellTable) / sizeof(SHELL_TABLE))
 
@@ -539,6 +552,86 @@ int isfloat(char* szNumStr)
 
 /*********************************************************************
 *
+* OpenScript
+*
+* @brief	Open a script, searching the local directory and all the
+* 			'path' directories and without and with the default script
+* 			extension appended
+*
+* @param	fp - pointer to a file object
+* 			path - the current path variable
+* 			name - the script name
+*
+* @return	0 = no decimal point in string, 1 if decimal point in string
+*
+*********************************************************************/
+FRESULT OpenScript(FIL* fp, char* path, char* name)
+{
+	FRESULT ret;
+
+	char szFullName[13];
+	char szFullPath[64];
+	char pPath[32];
+	char* pEnvPath;
+	int len;
+
+	strcpy(szFullName, name);
+
+	// try the passed in filename
+	ret = f_open(fp, szFullName, FA_READ);
+	if(ret == FR_OK)
+	{
+		return ret;
+	}
+	else
+	{
+		// try the default extension
+		strcat(szFullName, SCRIPT_DEFAULT_EXTENSION);
+		ret = f_open(fp, szFullName, FA_READ);
+		if(ret == FR_OK)
+		{
+			return ret;
+		}
+		else
+		{
+			pEnvPath = szPathVar;
+			while((len = GetNextPath(pEnvPath, pPath)) != 0)
+			{
+				// use pPath
+				strcpy(szFullPath, pPath);
+				if(pPath[strlen(pPath)-1] != '/')
+				{
+					strcat(szFullPath, "/");
+				}
+				strcat(szFullPath, name);
+
+				// open file
+				ret = f_open(fp, szFullPath, FA_READ);
+				if(ret == FR_OK)
+				{
+					return ret;
+				}
+
+				// add the default extension
+				strcat(szFullPath, SCRIPT_DEFAULT_EXTENSION);
+
+				// open file
+				ret = f_open(fp, szFullPath, FA_READ);
+				if(ret == FR_OK)
+				{
+					return ret;
+				}
+
+				pEnvPath += len+1;
+			}
+		}
+	}
+
+	return FR_NO_FILE;
+}
+
+/*********************************************************************
+*
 * ShHelp
 *
 * @catagory	Shell Command
@@ -561,6 +654,9 @@ CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[])
     FIL fp;
     char szTypeBuf[80];
     unsigned int bc;
+	char pPath[32];
+	char* pEnvPath;
+	int len;
 
 	if(argc == 2)
 	{
@@ -584,9 +680,10 @@ CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[])
 			return CMD_OK;
 		}
 
-		// open file
-		res = f_open(&fp, argv[1], FA_READ);
 
+		// open file
+		//res = f_open(&fp, argv[1], FA_READ);
+		res = OpenScript(&fp, szPathVar, argv[1]);
 		if(res == FR_OK)
 		{
 			bc = getLine(&fp, szTypeBuf, sizeof(szTypeBuf));
@@ -597,12 +694,20 @@ CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[])
 					ShFieldOut(bPort, " - ", 0);
 					ShFieldOut(bPort, &szTypeBuf[4], 0);
 				}
+				else
+				{
+					ShFieldOut(bPort, " - No Help String", 0);
+				}
+			}
+			else
+			{
+				ShFieldOut(bPort, " - No Help String", 0);
 			}
 			f_close(&fp);
 			return CMD_OK;
 		}
 
-		if(strcasecmp("script", argv[1]) == 0)
+		if(strcasecmp("-s", argv[1]) == 0)
 		{
 			ShNL(bPort);
 
@@ -622,7 +727,7 @@ CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[])
 				}
 			}
 		}
-		else if(strcasecmp("all", argv[1]) == 0)
+		else if(strcasecmp("-a", argv[1]) == 0)
 		{
 			ShNL(bPort);
 
@@ -638,6 +743,47 @@ CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[])
 					cnt = 0;
 				}
 			}
+		}
+		else if(strcasecmp("-c", argv[1]) == 0)
+		{
+			ShNL(bPort);
+
+			ShFieldOut(bPort, "All Commands:", 0);
+			ShNL(bPort);
+			for(i = 0; i < SHELL_TABLE_COUNT; i++)
+			{
+				TextColor(bPort, ShellColor[ShellTable[i].bClass], BG_Black, ATT_Bold);
+				ShFieldOut(bPort, (char*)ShellTable[i].szCommand, HELP_FIELD_WIDTH);
+				cnt++;
+				if(cnt >= 6)
+				{
+					ShNL(bPort);
+					cnt = 0;
+				}
+			}
+
+			//TextColor(bPort, ShellColor[0], BG_Black, ATT_Bold);
+			//ShFieldOut(bPort, "Default ", 0);
+			ShNL(bPort);
+			TextColor(bPort, ShellColor[1], BG_Black, ATT_Bold);
+			ShFieldOut(bPort, "ANSI ", 0);
+			TextColor(bPort, ShellColor[2], BG_Black, ATT_Bold);
+			ShFieldOut(bPort, "File ", 0);
+			TextColor(bPort, ShellColor[3], BG_Black, ATT_Bold);
+			ShFieldOut(bPort, "Script ", 0);
+			TextColor(bPort, ShellColor[4], BG_Black, ATT_Bold);
+			ShFieldOut(bPort, "CS ", 0);
+			TextColor(bPort, ShellColor[5], BG_Black, ATT_Bold);
+			ShFieldOut(bPort, "Sys ", 0);
+			TextColor(bPort, ShellColor[6], BG_Black, ATT_Bold);
+			ShFieldOut(bPort, "Test ", 0);
+			ShNL(bPort);
+
+			TextColor(bPort, FG_White, BG_Black, ATT_Normal);
+		}
+		else
+		{
+			return CMD_NOT_FOUND;
 		}
 	}
 	else
@@ -683,32 +829,40 @@ CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[])
 		ShFieldOut(bPort, "Scripts:", 0);
 		ShNL(bPort);
 
-		res = f_opendir(&dir, "/");                       /* Open the directory */
-		if (res == FR_OK)
+
+		pEnvPath = szPathVar;
+		while((len = GetNextPath(pEnvPath, pPath)) != 0)
 		{
-			for (;;)
+			// use pPath
+			res = f_opendir(&dir, pPath);                       /* Open the directory */
+			if (res == FR_OK)
 			{
-				res = f_readdir(&dir, &fno);                   /* Read a directory item */
-				if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
-				if (!(fno.fattrib & AM_DIR))
+				for (;;)
 				{
-					/* It is a file. */
-					int len = strlen(fno.fname) - 4;
-					strcpy(szTypeBuf, &fno.fname[len]);
-					if(strcmp(szTypeBuf, ".SCP") == 0)
-					//if(strcmp(fno.fname, "CONFIG.INI") != 0)
+					res = f_readdir(&dir, &fno);                   /* Read a directory item */
+					if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
+					if (!(fno.fattrib & AM_DIR))
 					{
-						ShFieldOut(bPort, fno.fname, HELP_FIELD_WIDTH);
-						cnt++;
-						if(cnt >= 6)
+						/* It is a file. */
+						int len = strlen(fno.fname) - 4;
+						strcpy(szTypeBuf, &fno.fname[len]);
+						if(strcmp(szTypeBuf, ".SCP") == 0)
+						//if(strcmp(fno.fname, "CONFIG.INI") != 0)
 						{
-							ShNL(bPort);
-							cnt = 0;
+							ShFieldOut(bPort, fno.fname, HELP_FIELD_WIDTH);
+							cnt++;
+							if(cnt >= 6)
+							{
+								ShNL(bPort);
+								cnt = 0;
+							}
 						}
 					}
 				}
+				f_closedir(&dir);
 			}
-			f_closedir(&dir);
+
+			pEnvPath += len+1;
 		}
 	}
 
@@ -732,6 +886,96 @@ CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[])
 *********************************************************************/
 CMD_RETURN ShRem(uint8_t bPort, int argc, char *argv[])
 {
+	return CMD_OK;
+}
+
+
+
+uint32_t hexadecimalToDecimal(char hexVal[])
+{
+    int len = strlen(hexVal);
+
+    // Initializing base value to 1, i.e 16^0
+    uint32_t base = 1;
+
+    uint32_t dec_val = 0;
+
+    // Extracting characters as digits from last character
+    for (int i=len-1; i>=0; i--)
+    {
+        // if character lies in '0'-'9', converting
+        // it to integral 0-9 by subtracting 48 from
+        // ASCII value.
+        if (hexVal[i]>='0' && hexVal[i]<='9')
+        {
+            dec_val += (hexVal[i] - 48)*base;
+
+            // incrementing base by power
+            base = base * 16;
+        }
+
+        // if character lies in 'A'-'F' , converting
+        // it to integral 10 - 15 by subtracting 55
+        // from ASCII value
+        else if (hexVal[i]>='A' && hexVal[i]<='F')
+        {
+            dec_val += (hexVal[i] - 55)*base;
+
+            // incrementing base by power
+            base = base*16;
+        }
+        // if character lies in 'a'-'f' , converting
+        // it to integral 10 - 15 by subtracting 87
+        // from ASCII value
+        else if (hexVal[i]>='a' && hexVal[i]<='f')
+        {
+            dec_val += (hexVal[i] - 87)*base;
+
+            // incrementing base by power
+            base = base*16;
+        }
+    }
+
+    return dec_val;
+}
+
+/*********************************************************************
+*
+* ShLed
+*
+* @catagory	Shell Command
+* @brief	Shell command that does nothing
+*
+* @param	bPort - port that issued this command
+*			argc - argument count
+*			argv - argc array of arguments
+*
+* @return	CMD_RETURN - shell result
+*
+*********************************************************************/
+CMD_RETURN ShLed(uint8_t bPort, int argc, char *argv[])
+{
+
+	if(argc == 2)
+	{
+		if(strcasecmp(argv[1], "on") == 0)
+		{
+			StatusLed(LED_ON);
+		}
+		else if(strcasecmp(argv[1], "off") == 0)
+		{
+			StatusLed(LED_OFF);
+		}
+		else if(strcasecmp(argv[1], "blink") == 0)
+		{
+			StatusLed(LED_BLINK);
+		}
+		else
+		{
+			StatusLed(hexadecimalToDecimal(argv[1]));
+		}
+	}
+
 	return CMD_OK;
 }
 
@@ -2028,6 +2272,7 @@ void PrintReturnString(uint8_t bPort, int ret_value)
 * @return	1 = run the script
 *
 *********************************************************************/
+#ifdef USE_NEW
 int RunScript(uint8_t bPort, char* filename, size_t nargs, char** args)
 {
 	char pathname[80];
@@ -2093,7 +2338,32 @@ int RunScript(uint8_t bPort, char* filename, size_t nargs, char** args)
 	}
 	return run;
 }
+#else
+int RunScript(uint8_t bPort, char* filename, size_t nargs, char** args)
+{
+	//char pathname[80];
+	//char localPath[40];
+	//char* plocalPath = localPath;
+	//char* pPath;
+	//uint8_t run = 0;
+	FRESULT ret;
+	static FIL fp;
 
+	ret = OpenScript(&fp, szPathVar, filename);
+
+	if(ret == FR_OK)
+	{
+		ret = DoRun(bPort, &fp, nargs, args);	// this will close the file
+		ShNL(bPort);
+		PrintReturnString(bPort, ret);
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+#endif
 
 
 /*********************************************************************
@@ -2108,6 +2378,7 @@ int RunScript(uint8_t bPort, char* filename, size_t nargs, char** args)
 * @return	None
 *
 *********************************************************************/
+#ifdef USE_NEW
 void ShellMain(uint8_t bPort, char* buf)
 {
 	int iCmdIndex;
@@ -2127,34 +2398,107 @@ void ShellMain(uint8_t bPort, char* buf)
 	{
 		if(args[1][0] == '=')
 		{
-			// set the variable
-			ret = SetVariable(args[0], args[2]);
-			if(ret != CMD_OK)
+			if(nargs == 4)
 			{
-				// print out the error
-				switch(ret)
+				// check for a math operation
+				switch(args[2][0])
 				{
-					case CMD_BAD_NUMBER:
-						ShNL(bPort);
-						ShFieldOut(bPort, "Bad Number", 0);
-						ShNL(bPort);
+					case '+':
+						ret = MathVariable(args[0], args[3], MV_ADD);
 					break;
 
-					case CMD_READ_ONLY:
-						ShNL(bPort);
-						ShFieldOut(bPort, "Variable Read Only", 0);
-						ShNL(bPort);
+					case '-':
+						ret = MathVariable(args[0], args[3], MV_SUBTRACT);
 					break;
+
+					case '*':
+						ret = MathVariable(args[0], args[3], MV_MULTIPLY);
+					break;
+
+					case '/':
+						ret = MathVariable(args[0], args[3], MV_DIVIDE);
+					break;
+				}
+			}
+			else if(nargs == 3)
+			{
+				// set the variable
+				ret = SetVariable(args[0], args[2]);
+				if(ret != CMD_OK)
+				{
+					// print out the error
+					switch(ret)
+					{
+						case CMD_BAD_NUMBER:
+							ShNL(bPort);
+							ShFieldOut(bPort, "Bad Number", 0);
+							ShNL(bPort);
+						break;
+
+						case CMD_READ_ONLY:
+							ShNL(bPort);
+							ShFieldOut(bPort, "Variable Read Only", 0);
+							ShNL(bPort);
+						break;
+					}
 				}
 			}
 		}
 		else
 		{
-			// get the variable
-			GetVariable(args[0], StrTemp, strlen(StrTemp));
-			ShFieldOut(bPort, " = ", 0);
-			ShFieldOut(bPort, StrTemp, 0);
-			ShNL(bPort);
+			if(nargs == 3)
+			{
+				// check for a math operation
+				switch(args[1][0])
+				{
+					case '+':
+						ret = MathVariable(args[0], args[1], MV_ADD);
+					break;
+
+					case '-':
+						ret = MathVariable(args[0], args[1], MV_SUBTRACT);
+					break;
+
+					case '*':
+						ret = MathVariable(args[0], args[1], MV_MULTIPLY);
+					break;
+
+					case '/':
+						ret = MathVariable(args[0], args[1], MV_DIVIDE);
+					break;
+				}
+			}
+			else if(nargs == 2)
+			{
+				// set the variable
+				ret = SetVariable(args[0], args[1]);
+				if(ret != CMD_OK)
+				{
+					// print out the error
+					switch(ret)
+					{
+						case CMD_BAD_NUMBER:
+							ShNL(bPort);
+							ShFieldOut(bPort, "Bad Number", 0);
+							ShNL(bPort);
+						break;
+
+						case CMD_READ_ONLY:
+							ShNL(bPort);
+							ShFieldOut(bPort, "Variable Read Only", 0);
+							ShNL(bPort);
+						break;
+					}
+				}
+			}
+			else
+			{
+				// get the variable
+				GetVariable(args[0], StrTemp, strlen(StrTemp));
+				ShFieldOut(bPort, " = ", 0);
+				ShFieldOut(bPort, StrTemp, 0);
+				ShNL(bPort);
+			}
 		}
 	}
 	else if(RunScript(bPort, args[0], nargs, args) == 0)
@@ -2166,6 +2510,144 @@ void ShellMain(uint8_t bPort, char* buf)
 		}
 	}
 	Prompt(bPort);
+}
+#endif
+
+int ShellMain(uint8_t bPort, char* buf)
+{
+	int iCmdIndex;
+	static char *args[ARG_SIZE];
+	static size_t nargs;
+	char StrTemp[64];
+	int ret;
+
+	iCmdIndex = FindCommand(buf, &nargs, args);
+	if(iCmdIndex != -1)
+	{
+		ret = ExecuteCommand(iCmdIndex, bPort, nargs, args);
+	}
+	else if(IsVariable(args[0]))
+	{
+		if(args[1][0] == '=')
+		{
+			if(nargs == 4)
+			{
+				// check for a math operation
+				switch(args[2][0])
+				{
+					case '+':
+						ret = MathVariable(args[0], args[3], MV_ADD);
+					break;
+
+					case '-':
+						ret = MathVariable(args[0], args[3], MV_SUBTRACT);
+					break;
+
+					case '*':
+						ret = MathVariable(args[0], args[3], MV_MULTIPLY);
+					break;
+
+					case '/':
+						ret = MathVariable(args[0], args[3], MV_DIVIDE);
+					break;
+				}
+			}
+			else if(nargs == 3)
+			{
+				// set the variable
+				ret = SetVariable(args[0], args[2]);
+#ifdef NOT_NEEDED
+				if(ret != CMD_OK)
+				{
+					// print out the error
+					switch(ret)
+					{
+						case CMD_BAD_NUMBER:
+							ShNL(bPort);
+							ShFieldOut(bPort, "Bad Number", 0);
+							ShNL(bPort);
+						break;
+
+						case CMD_READ_ONLY:
+							ShNL(bPort);
+							ShFieldOut(bPort, "Variable Read Only", 0);
+							ShNL(bPort);
+						break;
+					}
+				}
+#endif
+			}
+		}
+		else
+		{
+			if(nargs == 3)
+			{
+				// check for a math operation
+				switch(args[1][0])
+				{
+					case '+':
+						ret = MathVariable(args[0], args[1], MV_ADD);
+					break;
+
+					case '-':
+						ret = MathVariable(args[0], args[1], MV_SUBTRACT);
+					break;
+
+					case '*':
+						ret = MathVariable(args[0], args[1], MV_MULTIPLY);
+					break;
+
+					case '/':
+						ret = MathVariable(args[0], args[1], MV_DIVIDE);
+					break;
+				}
+			}
+			else if(nargs == 2)
+			{
+				// set the variable
+				ret = SetVariable(args[0], args[1]);
+#ifdef NOT_NEEDED
+				if(ret != CMD_OK)
+				{
+					// print out the error
+					switch(ret)
+					{
+						case CMD_BAD_NUMBER:
+							ShNL(bPort);
+							ShFieldOut(bPort, "Bad Number", 0);
+							ShNL(bPort);
+						break;
+
+						case CMD_READ_ONLY:
+							ShNL(bPort);
+							ShFieldOut(bPort, "Variable Read Only", 0);
+							ShNL(bPort);
+						break;
+					}
+				}
+#endif
+			}
+			else
+			{
+				// get the variable
+				GetVariable(args[0], StrTemp, strlen(StrTemp));
+				ShFieldOut(bPort, " = ", 0);
+				ShFieldOut(bPort, StrTemp, 0);
+				//ShNL(bPort);
+				ret = CMD_OK;
+			}
+		}
+	}
+	else if(RunScript(bPort, args[0], nargs, args) == 0)
+	{
+		if(strlen(buf) != 0)
+		{
+			ShNL(bPort);
+			ShFieldOut(bPort, "Not Found", 0);
+		}
+		ret = CMD_OK;
+	}
+	return ret;
 }
 
 
@@ -2219,6 +2701,7 @@ void DoShell(void)
 	char c;
 	uint8_t port;
 	uint8_t portidx;
+	int ret;
 
 	// get the next character to process
 	port = PORT1;
@@ -2239,7 +2722,10 @@ void DoShell(void)
 		portidx = PortIndex(port);
 		if(c == '\r')
 		{
-			ShellMain(port, (char*)shell_buf[portidx]);
+			ret = ShellMain(port, (char*)shell_buf[portidx]);
+			Prompt(port);
+			//ShNL(port);
+			PrintReturnString(port, ret);
 			shell_index = 0;
 			shell_buf[portidx][0] = 0;
 
