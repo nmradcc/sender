@@ -30,6 +30,7 @@
 
 #if SEND_VERSION >= 4
   #include "main.h"
+  #include "ff.h"
 
 	extern "C"
 	{
@@ -98,6 +99,7 @@ Zlog	Deflog;
 Zlog::Zlog( void )
 {
 	cmd_name[0]		=	'\0';
+
 	fp_log			=	(FILE *)0;
 	fp_stat			=	(FILE *)0;
 	log_mask		=	LOG_MASK_INIT;
@@ -227,7 +229,6 @@ Zlog::open_log(
 			"Open of log file name <%s> FAILED\n", fname );
 		return ( FAIL );
 	}
-
 	stderr_too	=	false;
 	return ( OK );
 }
