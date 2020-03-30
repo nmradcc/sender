@@ -116,6 +116,7 @@ uint8_t getch(void)
 	}
 }
 
+
 int get_key_cmd( void )
 {
 	return((int)getch());
@@ -140,6 +141,27 @@ int puts(const char* str)
 	}
 	return 0;
 }
+
+char* getstr(char* buf, int n)
+{
+	uint8_t c;
+	int i = 0;
+
+	do
+	{
+		c = getch();
+		if(i < n)
+		{
+			buf[i] = c;
+			putch(c);
+			i++;
+		}
+	} while(c != '\r');
+	buf[i] = 0;
+	putch(0x0a);
+	return buf;
+}
+
 
 
 int __io_putchar(int ch)
