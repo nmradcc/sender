@@ -49,7 +49,7 @@ extern void http_server_socket_init(void);
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define VERSION		3
+#define VERSION		4
 
 /* USER CODE END PD */
 
@@ -229,7 +229,7 @@ int main(void)
 		.name = "script",
 		.priority = (osPriority_t) osPriorityAboveNormal,
 		//.stack_size = 1024
-		.stack_size = 2000
+		.stack_size = 2500
 	};
 	osThreadNew(ScriptTask, NULL, &scriptTask_attributes);
 
@@ -240,19 +240,14 @@ int main(void)
 	};
 	osThreadNew(LedTask, NULL, &ledTask_attributes);
 
-//	const osThreadAttr_t settingsTask_attributes = {
-//		.name = "settingsTask",
-//		.priority = (osPriority_t) osPriorityNormal1,
-//		.stack_size = 3000
-//	};
-//	osThreadNew(SettingsTask, NULL, &settingsTask_attributes);
-
 	const osThreadAttr_t commandstationTask_attributes = {
 		.name = "commandstation",
 		.priority = (osPriority_t) osPriorityNormal1,
 		.stack_size = 3000
 	};
 	osThreadNew(CommandStationTask, NULL, &commandstationTask_attributes);
+
+	HeartbeatLed(LED_NORMAL);
 
 //	http_server_init();
 	telnet_server_init();
@@ -291,11 +286,12 @@ void SystemClock_Config(void)
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
   /** Initializes the CPU, AHB and APB busses clocks 
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
-  //RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSE|RCC_OSCILLATORTYPE_HSE;
+  //RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSE|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   //RCC_OscInitStruct.LSEState = RCC_LSE_BYPASS;
+  RCC_OscInitStruct.LSEState = RCC_LSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 4;
@@ -320,7 +316,8 @@ void SystemClock_Config(void)
     Error_Handler();
   }
   PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC;
-  PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
+  //PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
+  PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -459,6 +456,7 @@ static void MX_RTC_Init(void)
   /* USER CODE BEGIN RTC_Init 1 */
 
   /* USER CODE END RTC_Init 1 */
+
   /** Initialize RTC Only 
   */
   hrtc.Instance = RTC;
