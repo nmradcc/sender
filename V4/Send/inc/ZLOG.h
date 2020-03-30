@@ -29,6 +29,10 @@
 #include <ztypes.h>							// Define Rslt_t, etc.
 #include <stdio.h>
 
+#if SEND_VERSION >= 4
+  #include "ff.h"
+#endif
+
 /*--------------------------------------------------------------------------*/
 /*
  * Defines
