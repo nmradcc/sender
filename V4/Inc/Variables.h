@@ -13,6 +13,15 @@
 //						add the string, variable, and action to the Variables table
 //						if special, add the conversion to ASCII in VarToString,
 //						and the conversion to a saved value in SetVariable
+//						add the variable to the case in GetVariableValue and add a case if special
+
+enum
+{
+	MV_ADD,
+	MV_SUBTRACT,
+	MV_MULTIPLY,
+	MV_DIVIDE,
+} VARIABLE_OPERATOR;
 
 
 #ifndef VARIABLE_H_
@@ -85,7 +94,12 @@ extern char* GetVariableHelp(uint8_t idx);
 
 extern void GetVariable(const char* szObject, char* pStrValue, int max_len);
 extern int SetVariable(const char* szObject, char* pStrValue);
+extern int MathVariable(const char* szObject, char* pStrValue, const int op);
+
+extern uint32_t GetVariableValue(int idx);
 
 extern char* VarToString(uint32_t idx);
+
+extern int GetNextPath(char* pStr, char* path);
 
 #endif /* VARIABLE_H_ */
