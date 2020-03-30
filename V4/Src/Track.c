@@ -98,7 +98,7 @@ void BuildIdlePacket(uint16_t no_preambles);
 **********************************************************************/
 
 PACKET_BITS apIdlePacket[6];
-PACKET_BITS apPacket1[80];
+PACKET_BITS apPacket1[80];		// 18 bit preamble + 6 bytes and interbyte bits + terminator = 72
 PACKET_BITS apPacket2[80];
 
 PACKET_BITS* CurrentPacket;
@@ -107,6 +107,7 @@ PACKET_BITS* CurrentPattern;
 static TIM_HandleTypeDef	htim1;
 
 TRACK_LOCK TrackLock;
+
 
 /**********************************************************************
 *
