@@ -42,6 +42,9 @@ extern "C"
 	extern int send_main(int argc, char **argv );
 	extern void OUT_PC(uint8_t mask, uint8_t value);
 //	extern int getch(void);
+//	extern char* gets(char* buf, int n);
+	extern char* getstr(char* buf, int n);
+
 	extern int get_key_cmd( void );
 	extern void putch(char c);
 
@@ -436,6 +439,8 @@ exit_send(
 
 	#if SEND_VERSION < 4
 		exit( status );
+	#else
+		return;
 	#endif
 }
 
@@ -538,7 +543,11 @@ get_log_file(
 		fputs( "Enter base of log and statistics file name > ", stdout );
 	#endif
 
-	if ( !fgets(  buf, MAXLINE, stdin ) )
+	#if SEND_VERSION >= 4
+		if ( !getstr(  buf, MAXLINE ) )
+	#else
+		if ( !fgets(  buf, MAXLINE, stdin ) )
+	#endif
 	{
 		ERRPRINT( my_name, LOG_CRIT, "fgets() failed" );
 		exit_send( 1 );
@@ -576,12 +585,19 @@ get_log_file(
 
 	for ( i = 0; i < (int)QUESTIONS_SIZE; i++ )
 	{
-		fputs( Questions[i].question, stdout );
+		#if SEND_VERSION >= 4
+			printf(Questions[i].question);
+		#else
+			fputs( Questions[i].question, stdout );
+		#endif
 
-		if ( !fgets( buf, MAXLINE, stdin ) )
+		#if SEND_VERSION >= 4
+			if ( !getstr(  buf, MAXLINE ) )
+		#else
+			if ( !fgets(  buf, MAXLINE, stdin ) )
+		#endif
 		{
-			ERRPRINT( my_name, LOG_CRIT,
-				"fgets() failed" );
+			ERRPRINT( my_name, LOG_CRIT, "fgets() failed" );
 			exit_send( 1 );
 		}
 		else
@@ -592,22 +608,37 @@ get_log_file(
 		TO_STAT( Questions[i].log_str, buf );
 	}
 
-	puts( "Enter comments.  Begin line with '.' to end input" );
-    puts(    "--------------------------------" );
+	#if SEND_VERSION >= 4
+		puts( "Enter comments.  Begin line with '.' to end input\n" );
+		puts(    "--------------------------------\n" );
+	#else
+		puts( "Enter comments.  Begin line with '.' to end input" );
+		puts(    "--------------------------------" );
+	#endif
 	TO_STAT( "--------------------------------\n" );
     while ( true )
 	{
-		if ( !fgets( buf, MAXLINE, stdin ) )
+		#if SEND_VERSION >= 4
+			if ( !getstr(  buf, MAXLINE ) )
+		#else
+			if ( !fgets(  buf, MAXLINE, stdin ) )
+		#endif
 		{
-			ERRPRINT( my_name, LOG_CRIT,
-				"fgets() failed" );
+			ERRPRINT( my_name, LOG_CRIT, "fgets() failed" );
 			exit_send( 1 );
 		}
 
-		if ( !strcmp( buf, ".\n" ) )
-		{
-			break;
-		}
+		#if SEND_VERSION >= 4
+			if ( !strcmp( buf, ".\r" ) )
+			{
+				break;
+			}
+		#else
+			if ( !strcmp( buf, ".\n" ) )
+			{
+				break;
+			}
+		#endif
 
 		TO_STAT( "%s", buf );
 	}
