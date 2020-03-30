@@ -113,9 +113,9 @@ FRESULT scan_files(uint8_t bPort, char* path, _Bool sh, _Bool col)
             if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
             if ((fno.fattrib & AM_SYS) == 0)
             {
-
-                if (sh == 0 && (fno.fattrib & AM_HID) == 0)
+                if (sh != 0 || (fno.fattrib & AM_HID) == 0)
                 {
+
 					if (fno.fattrib & AM_DIR)
 					{
 						/* It is a directory */
@@ -218,9 +218,11 @@ CMD_RETURN ShDir(uint8_t bPort, int argc, char *argv[])
 	_Bool color = 0;
 	int i;
 	int argidx = 1;
+	int argsused = 0;
 
 	// dir -c -h <dir>
 	// dir <dir> -c -h
+	// dir -c -h
 
 	for(i = 1; i < argc; i++)
 	{
@@ -231,7 +233,7 @@ CMD_RETURN ShDir(uint8_t bPort, int argc, char *argv[])
 			{
 				argidx++;
 			}
-			argc--;
+			argsused++;
 		}
 		if(stricmp(argv[i], "-c") == 0)
 		{
@@ -240,9 +242,11 @@ CMD_RETURN ShDir(uint8_t bPort, int argc, char *argv[])
 			{
 				argidx++;
 			}
-			argc--;
+			argsused++;
 		}
 	}
+
+	argc -= argsused;
 
     if(argc == 1)
     {
@@ -348,6 +352,7 @@ CMD_RETURN ShCWD(uint8_t bPort, int argc, char *argv[])
 * @return	CMD_RETURN - shell result
 *
 *********************************************************************/
+#ifdef NET_TYPE
 CMD_RETURN ShType(uint8_t bPort, int argc, char *argv[])
 {
     FRESULT ret;
@@ -407,7 +412,64 @@ CMD_RETURN ShType(uint8_t bPort, int argc, char *argv[])
 
 	return CMD_OK;
 }
+#else
+CMD_RETURN ShType(uint8_t bPort, int argc, char *argv[])
+{
+    FRESULT ret;
+    char szTypeBuf[80];
+    unsigned int bc;
+    FIL fp;
 
+    ShNL(bPort);
+
+
+
+    if(argc == 2)
+    {
+        f_getcwd (szTypeBuf, sizeof(szTypeBuf));
+    	if(szTypeBuf[strlen(szTypeBuf)-1] != '\\')
+    	{
+        	strcat(szTypeBuf, "\\");
+    	}
+    	strcat(szTypeBuf, argv[1]);
+
+    	// open file
+        ret = f_open(&fp, szTypeBuf, FA_READ);
+
+    	if(ret == FR_OK)
+    	{
+    		while(1)
+    		{
+    			bc = getLine2(&fp, szTypeBuf, sizeof(szTypeBuf));
+    			if(bc)
+    			{
+    				for(int i = 0; i < bc; i++)
+    				{
+    					ShCharOut(bPort, szTypeBuf[i]);
+    				}
+					ShNL(bPort);
+    			}
+    			else
+    			{
+    				break;
+    			}
+    		}
+            f_close(&fp);
+    	}
+    	else
+    	{
+    		ShFieldOut(bPort, "File not found.\r\n", 0);
+    		return CMD_NOT_FOUND;
+    	}
+    }
+    else
+    {
+    	return 	CMD_BAD_PARAMS;
+    }
+
+	return CMD_OK;
+}
+#endif
 
 /*********************************************************************
 *
@@ -651,13 +713,13 @@ CMD_RETURN ShAtrib(uint8_t bPort, int argc, char *argv[])
 			c++;
 		}
 
-		if(f_chmod(argv[1], att, mask) == FR_OK)
+		if(f_chmod(argv[1], att, mask) != FR_OK)
 		{
-			return CMD_OK;
+			return CMD_FAILED;
 		}
 
-		return CMD_FAILED;
 	}
+	return CMD_OK;
 }
 
 
