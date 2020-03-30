@@ -41,6 +41,7 @@
 //extern uint8_t kbhit(void);
 
 //extern uint8_t getch(void);
+//extern int gets(char* buf, int n);
 
 extern uint8_t inportb(uint8_t port);
 
