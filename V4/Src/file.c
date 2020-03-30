@@ -71,7 +71,8 @@ FILE* fopen(const char* filename, const char* mode)
 	uint8_t m;
 	FIL *fp;
 
-	fp = (FIL*)malloc(sizeof(FIL));
+	//fp = (FIL*)malloc(sizeof(FIL));
+	fp = (FIL*)pvPortMalloc(sizeof(FIL));
 
 	if(fp)
 	{
@@ -116,6 +117,7 @@ FILE* fopen(const char* filename, const char* mode)
 			return fp;
 		}
 	}
+	vPortFree(fp);
 	return NULL;
 }
 
@@ -142,7 +144,8 @@ void fclose(FILE* fp)
 
 		if(fp)
 		{
-			free(fp);
+			//free(fp);
+			vPortFree(fp);
 		}
 	}
 }
@@ -376,6 +379,7 @@ int	fprintf (FILE* fp, const char *fmt, ...)
 **********************************************************************/
 char* fgets (char* buf, int len, FILE * fp)
 {
+
 	return f_gets(buf, len, fp);
 }
 
