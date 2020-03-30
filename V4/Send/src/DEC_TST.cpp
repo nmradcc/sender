@@ -490,7 +490,7 @@ void
 Dec_tst::print_user_docs(
 	FILE		*ofp )						// Output file stream.
 {
-	int			i;							// Index variable.
+	u_int			i;							// Index variable. kk - was int
 	u_long		bit_msk = 1UL;				// Bit mask.
 
 	fputs(
@@ -605,8 +605,8 @@ Dec_tst::decoder_test(
 	Rslt_t			&tst_rslt )				// Decoder test result.
 {
 	const char		*my_name = "decoder_test";
-	int				clk_idx;				// Clock test index value.
-	int				i;						// Index value.
+	u_int				clk_idx;				// Clock test index value. kk was int
+	u_int				i;						// Index value. kk - was int
 	u_short			tclk0t;					// Temp tclk0t.
 	u_short			tclk0h;				 	// Temp tclk0h.
 	u_short			tclk1t;				 	// Temp tclk1t.
@@ -657,6 +657,8 @@ Dec_tst::decoder_test(
 		Dcc_reg.set_do_crit( true );
 	}
 
+#if SEND_VERSION >= 4
+#else
 	printf(		"Beginning booster warm up\n" );
 	if ( !Dcc_reg.get_running() )
 	{
@@ -669,6 +671,7 @@ Dec_tst::decoder_test(
 	Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence." );
 	send_filler();
 	Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence again." );
+#endif
 
     /*
      *	Set the motor to forward speed 0 for function decoders
@@ -2787,7 +2790,7 @@ Dec_tst::decoder_truncate(
 	Rslt_t			&tst_rslt )				// Decoder test result.
 {
 	const char		*my_name = "Trunc";
-	int				i;			  			// Index variable.
+	u_int				i;			  			// Index variable. kk -was int
 	int				j;						// Index variable.
 	int				bit_size;				// Present truncated bit size.
 	BYTE			t_addr;					// Truncated address.
@@ -3051,13 +3054,13 @@ Dec_tst::decoder_prior(
 	Rslt_t			&tst_rslt )				// Decoder test result.
 {
 	const char		*my_name = "Prior";
-	int				i;			  			// Index variable.
+	u_int				i;			  			// Index variable. kk - was int
 	int				j;						// Index variable.
 	u_int			chk_msk;				// Checksum mask.
 	BYTE			t_chk_byte;				// Check byte.
 	int				one_cnt;				// Count of 1s to add after pkt.
 	int				zero_cnt;				// Count of 0s to add after pkt.
-	int				pre_bits;				// Count of preambles.
+	u_int				pre_bits;				// Count of preambles. kk - was int
 	BYTE			t_addr;					// Prior address.
 	BYTE			t_cmd;					// Prior command.
 	Rslt_t			retval = OK;			// Return value.
@@ -3332,13 +3335,13 @@ Dec_tst::decoder_6_byte(
 	Rslt_t			&tst_rslt )				// Decoder test result.
 {
 	const char		*my_name = "6 Byte";
-	int				i;			  			// Index variable.
+	u_int				i;			  			// Index variable. kk - was int
 	int				j;						// Index variable.
 	BYTE			t_chk_byte;				// Check byte.
 	int				cmd_id;					// Command id.
 	int				one_cnt;				// Count of 1s to add after pkt.
 	int				zero_cnt;				// Count of 0s to add after pkt.
-	int				pre_bits;				// Count of preambles.
+	u_int				pre_bits;				// Count of preambles. kk -was int
 	BYTE			t_addr;					// Prior address.
 	BYTE			t_cmd1;					// Prior command byte 1.
 	BYTE			t_cmd2;					// Prior command byte 2.
@@ -3612,20 +3615,20 @@ Dec_tst::decoder_ambig1(
 	Rslt_t			&tst_rslt )				// Decoder test result.
 {
 	const char		*my_name = "Ambig 1";
-	int				i;			  			// Index variable.
+	u_int				i;			  			// Index variable. kk - was int
 	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
 	BYTE			tgen;					// Generic input BYTE.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
-    int				ambig1_bit;				// Ambiguous bit number.
+    u_int				ambig1_bit;				// Ambiguous bit number. kk - was int
     int				fill_bits;				// Number of fill bits.
     int				pre_bytes;				// Bytes prior to ambiguous byte.
 	BYTE			pbyte;					// Present byte to send.
 	u_int			test_repeats;			// Number of times to repeat test.
     u_short	 		ambig1_0t;				// Ambiguous bit 0T time.
     u_short			ambig1_0h;				// Ambiguous bit 0H time.
-    int				test_cycle;				// Ambiguous test cycle.
+    u_int				test_cycle;				// Ambiguous test cycle. kk - was int
 	u_int			pre_cnt;				// Preamble count for test.
 	u_short			t_addr;					// Prior address.
 
@@ -3933,11 +3936,11 @@ Dec_tst::decoder_ambig2(
 	Rslt_t			&tst_rslt )				// Decoder test result.
 {
 	const char		*my_name = "Ambig 2";
-	int				clk_idx;				// Clock test index value.
+	u_int				clk_idx;				// Clock test index value.  kk - was int
 	u_short			tclk0t;					// Temp tclk0t.
 	u_short			tclk0h;				 	// Temp tclk0h.
 	u_short			tclk1t;				 	// Temp tclk1t.
-	int				i;			  			// Index variable.
+	u_int				i;			  			// Index variable. kk - was int
 	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
 	BYTE			tgen;					// Generic input BYTE.
@@ -3946,7 +3949,7 @@ Dec_tst::decoder_ambig2(
 	BYTE			pbyte;					// Present byte to send.
 	u_int			pre_cnt;				// Preamble count for test.
 	u_short			t_addr;					// Prior address.
-    int				test_cycle;				// Ambiguous 2 test cycle.
+    u_int				test_cycle;				// Ambiguous 2 test cycle. kk - was int
 	u_int			test_repeats;			// Number of times to repeat test.
     u_short	 		ambig2_0t1;				// Ambiguous bit 0T1 time.
     u_short			ambig2_0h1;				// Ambiguous bit 0H1 time.
