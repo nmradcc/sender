@@ -15,7 +15,7 @@
 #include "Shell.h"
 #include "ff.h"
 #include "GetLine.h"
-//#include "Variables.h"
+#include "Variables.h"
 
 //*******************************************************************************
 // Global Variables
@@ -31,11 +31,11 @@ typedef enum
 	RUN_IF,
 	SKIP_IF,
 	SKIP_ELSE,
-    LOOP,
-	END_LOOP,
 	SKIP_LOOP,
     RUN_DELAY,
 } RUN_MODE;
+
+#define LOOP_FOREVER	0xffff
 
 //*******************************************************************************
 // Static Variables
@@ -87,11 +87,14 @@ typedef struct
 	char buffer[BUFFER_SIZE];
 	char *args[ARR_SIZE];
 	size_t nargs;
+	char name[16];
     uint8_t bPort;
-    uint8_t LoopCount;
+    uint32_t LoopCount;
     uint32_t LoopPosition;
     uint32_t DelayCount;
 	RUN_MODE RunMode;
+	uint32_t Variable[4];
+	uint32_t Return;
 } ScriptContext;
 
 // these are the arguments passed in to the script
@@ -107,6 +110,19 @@ ScriptArgs scpargs[MAX_PORTS];
 #define NUMBER_OF_SCRIPT_NESTS  3
 ScriptContext ScriptNest[NUMBER_OF_SCRIPT_NESTS];
 int CurrentScript = -1;
+
+
+static char* RunModeName[] =
+{
+	"Normal",
+	"If",
+	"If",
+	"Else",
+    "Loop",
+	"End Loop",
+	"Loop",
+    "Delay",
+};
 
 /*********************************************************************
 *
@@ -138,6 +154,8 @@ CMD_RETURN DoRun(uint8_t bPort, FIL* fp, size_t nargs, char** args)
 		ScriptNest[CurrentScript].LoopCount = 0;
 		ScriptNest[CurrentScript].DelayCount = 0;
 		ScriptNest[CurrentScript].bPort = bPort;
+
+		strcpy(ScriptNest[CurrentScript].name, args[0]);
 
 		int pidx = PortIndex(bPort);
 		scpargs[pidx].nargs = nargs;
@@ -231,6 +249,7 @@ void DoScriptRun(void)
 					}
 					cmdbuffer[cmdidx] = 0;
 					
+#ifdef USE_SHELL_MAIN
                     //iCmdIndex = FindCommand(cs->buffer, &cs->nargs, cs->args);
                     iCmdIndex = FindCommand(cmdbuffer, &cs->nargs, cs->args);
                     if(iCmdIndex != -1)
@@ -253,6 +272,17 @@ void DoScriptRun(void)
                             }
                         }
                     }
+#else
+        			ret = ShellMain(ScriptNest[CurrentScript].bPort, (char*)cmdbuffer);
+                    if(ret & CMD_IF_TRUE)
+                    {
+                    	cs->RunMode = RUN_IF;
+                    }
+                    else if(ret & CMD_IF_FALSE)
+                    {
+                    	cs->RunMode = SKIP_IF;
+                    }
+#endif
                 }
                 else
                 {
@@ -295,16 +325,6 @@ void DoScriptRun(void)
                 {
                     ScriptDone();
                 }
-            break;
-
-            case LOOP:
-            	cs->LoopPosition = cs->Scriptfp->fptr;
-            	cs->RunMode = RUN_NORMAL;
-            break;
-
-            case END_LOOP:
-                f_lseek (cs->Scriptfp, cs->LoopPosition);	// Move file pointer to the captured position
-                cs->RunMode = RUN_NORMAL;
             break;
 
             case SKIP_LOOP:
@@ -450,8 +470,25 @@ CMD_RETURN TestCondition(char* szArg1, char* szCondition, char* szArg2)
 	else
 #endif
 	{
-		iValue1 = atoi(szValue1);
-		iValue2 = atoi(szValue2);
+		i = FindVariable(szValue1);
+		if(i != -1)
+		{
+			iValue1 = GetVariableValue(i);
+		}
+		else
+		{
+			iValue1 = atoi(szValue1);
+		}
+
+		i = FindVariable(szValue2);
+		if(i != -1)
+		{
+			iValue2 = GetVariableValue(i);
+		}
+		else
+		{
+			iValue2 = atoi(szValue2);
+		}
 
 		switch(i)
 		{
@@ -502,7 +539,70 @@ CMD_RETURN TestCondition(char* szArg1, char* szCondition, char* szArg2)
 
 /*********************************************************************
 *
+* ShScripts
+* @catagory	Shell Command
+*
+* @brief	List active scripts
+*
+* @param	bPort - port that issued this command
+*			argc - argument count
+*			argv - argc array of arguments
+*
+* @return	CMD_RETURN - shell result
+*
+*********************************************************************/
+CMD_RETURN ShScripts(uint8_t bPort, int argc, char *argv[])
+{
+	char szMode[16];
+
+#ifdef REF
+	char *args[ARR_SIZE];
+	size_t nargs;
+
+	uint32_t Variable[4];
+	uint32_t Return;
+#endif
+
+	ShNL(bPort);
+	if(CurrentScript != -1)
+	{
+		ShFieldOut(bPort, "Name", 15);
+		ShFieldOut(bPort, "Mode", 10);
+		ShNL(bPort);
+
+		for(int i = CurrentScript; i >= 0; i--)
+		{
+			ShFieldOut(bPort, ScriptNest[i].name, 15);
+
+			strcpy(szMode, RunModeName[ScriptNest[i].RunMode]);
+//			if(ScriptNest[i].RunMode == LOOP)
+//			{
+//				strcat(szMode, "-");
+////				strcat(szMode, atoi(ScriptNest[i].LoopCount));
+//			}
+//			else
+			if(ScriptNest[i].RunMode == RUN_DELAY)
+			{
+				strcat(szMode, "-");
+//				strcat(szMode, atoi(ScriptNest[i].DelayCount));
+			}
+			ShFieldOut(bPort, szMode, 10);
+			ShNL(bPort);
+		}
+	}
+	else
+	{
+		ShFieldOut(bPort, "No Running scripts", 0);
+		ShNL(bPort);
+	}
+	return CMD_OK;
+}
+
+
+/*********************************************************************
+*
 * ShIf
+* @catagory	Script Command
 *
 * @brief	If <condition> - See conditions above 
 *
@@ -525,6 +625,7 @@ CMD_RETURN ShIf(uint8_t bPort, int argc, char *argv[])
 /*********************************************************************
 *
 * ShElse
+* @catagory	Script Command
 *
 * @brief	Alternate execution of an If 
 *
@@ -543,6 +644,7 @@ CMD_RETURN ShElse(uint8_t bPort, int argc, char *argv[])
 /*********************************************************************
 *
 * ShEndif
+* @catagory	Script Command
 *
 * @brief	End of an If 
 *
@@ -563,6 +665,7 @@ CMD_RETURN ShEndif(uint8_t bPort, int argc, char *argv[])
 /*********************************************************************
 *
 * ShLoop
+* @catagory	Script Command
 *
 * @brief	Loop a group of shell commands in a script N times 
 *
@@ -575,19 +678,32 @@ CMD_RETURN ShEndif(uint8_t bPort, int argc, char *argv[])
 *********************************************************************/
 CMD_RETURN ShLoop(uint8_t bPort, int argc, char *argv[])
 {
+	uint32_t cnt;
+
 	if(argc == 2)
 	{
 		if(CurrentScript != -1)
 		{
-			ScriptNest[CurrentScript].LoopCount = atoi(argv[1]);
+			cnt = atoi(argv[1]);
+			if(cnt == 0)
+			{
+				ScriptNest[CurrentScript].LoopCount = LOOP_FOREVER;
+			}
+			else
+			{
+				ScriptNest[CurrentScript].LoopCount = cnt;
+			}
+			ScriptNest[CurrentScript].LoopPosition = ScriptNest[CurrentScript].Scriptfp->fptr;
 		}
 	}
-	return LOOP;
+	return CMD_OK;
 }
+
 
 /*********************************************************************
 *
 * ShEndLoop
+* @catagory	Script Command
 *
 * @brief	The end of a Loop 
 *
@@ -605,14 +721,13 @@ CMD_RETURN ShEndLoop(uint8_t bPort, int argc, char *argv[])
 	{
 		if(ScriptNest[CurrentScript].LoopCount)
 		{
-			ScriptNest[CurrentScript].LoopCount--;
-			if(ScriptNest[CurrentScript].LoopCount == 0)
+			if(ScriptNest[CurrentScript].LoopCount != LOOP_FOREVER)
 			{
-				return CMD_OK;
+				ScriptNest[CurrentScript].LoopCount--;
 			}
-			else
+			if(ScriptNest[CurrentScript].LoopCount != 0)
 			{
-				return END_LOOP;
+                f_lseek (ScriptNest[CurrentScript].Scriptfp, ScriptNest[CurrentScript].LoopPosition);	// Move file pointer to the captured position
 			}
 		}
 	}
@@ -622,6 +737,7 @@ CMD_RETURN ShEndLoop(uint8_t bPort, int argc, char *argv[])
 /*********************************************************************
 *
 * ShBreak
+* @catagory	Script Command
 *
 * @brief	Break out of a Loop 
 *
@@ -645,6 +761,7 @@ CMD_RETURN ShBreak(uint8_t bPort, int argc, char *argv[])
 /*********************************************************************
 *
 * ShPrompt
+* @catagory	Script Command
 *
 * @brief	Issue a prompt at the end of a script 
 *
@@ -662,6 +779,65 @@ CMD_RETURN ShPrompt(uint8_t bPort, int argc, char *argv[])
 	return CMD_OK;
 }
 
+
+/*********************************************************************
+*
+* ShReturn
+* @catagory	Script Command
+*
+* @brief	Set the script return variable
+*
+* @param	bPort - port that issued this command
+*			argc - argument count
+*			argv - argc array of arguments
+*
+* @return	CMD_RETURN - shell result
+*
+*********************************************************************/
+CMD_RETURN ShReturn(uint8_t bPort, int argc, char *argv[])
+{
+
+	if(CurrentScript != -1)
+	{
+		ScriptNest[CurrentScript].Return = atoi(argv[1]);
+	}
+	return CMD_OK;
+}
+
+
+#ifdef NOT_USED
+/*********************************************************************
+*
+* ShVar
+* @catagory	Script Command
+*
+* @brief	Get or set a script variable
+*
+* @param	bPort - port that issued this command
+*			argc - argument count
+*			argv - argc array of arguments
+*
+* @return	CMD_RETURN - shell result
+*
+*********************************************************************/
+CMD_RETURN ShVar(uint8_t bPort, int argc, char *argv[])
+{
+	int idx;
+
+	if(argc == 2)
+	{
+		idx = atoi(argv[1]);
+
+		if(CurrentScript != -1)
+		{
+			ScriptNest[CurrentScript].Variable[idx];
+
+			return CMD_OK;
+		}
+	}
+	return CMD_BAD_PARAMS;
+}
+#endif
 
 
 
