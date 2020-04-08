@@ -46,8 +46,9 @@ X - Add the month in three characters (Jan, Feb,...) and the support in datefmt
 X - clean up help and add a colorized option (-c) Change switches to -a -s and -c
 X - clean up dir so arg count and order doesn't matter
 X - the script engine only executes shell commands. Add variables and scripts (re-factor ShellMain)
-- ANSI gotoxy doesn't seem to work
-- Variable output should not display the "=" or CR/LF if in a script
+X - ANSI gotoxy doesn't seem to work - it does, the script we wrong
+X - Variable output should not display the "=" or CR/LF if in a script - " =" removed for all
+- if Enter is hit while a script is running, the script stops
 
 Send
 - get scope trace in the correct location
