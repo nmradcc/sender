@@ -152,6 +152,10 @@ uint8_t ShellColor[] =
 	FG_Red,		// CL_TEST,
 };
 
+
+int RunScript(uint8_t bPort, char* filename, size_t nargs, char** args);
+
+
 /*********************************************************************
 *
 * ShellTable
@@ -184,7 +188,7 @@ const SHELL_TABLE ShellTable[] =
 	{"rem",		CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP,	ShRem,				"ignore line"},
 	{"prompt",	CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP,	ShPrompt,			"issue a prompt"},
 	{"led",		CL_SCRIPT,	NO_FLAGS | SCRIPT_HELP,			ShLed,				"Control the Green LED"},
-	{"scripts",	CL_SCRIPT,	NO_FLAGS | SCRIPT_HELP,			ShScripts,			"List the running scripts"},
+	{"script",	CL_SCRIPT,	NO_FLAGS | SCRIPT_HELP,			ShScripts,			"<name> pause|resume|kill / List the running scripts"},
 
 // file system
 	{"dir",		CL_FILE,	NO_FLAGS,						ShDir,				"list the files on the drive -h=show hidden -c=color"},
@@ -2182,6 +2186,13 @@ void ShellInit(void)
 ////		PrintReturnString(bPort, ret);
 //	}
 
+	static char *args[ARG_SIZE];
+	static size_t nargs;
+
+//    parse_args("Startup.scp", args, ARR_SIZE, &nargs);
+
+//	RunScript(PORT3, args[0], nargs, args);
+
 	// ToDo - fix this
     //ShNL(ALL_PORTS);
     ShNL(PORT3);
@@ -2272,73 +2283,6 @@ void PrintReturnString(uint8_t bPort, int ret_value)
 * @return	1 = run the script
 *
 *********************************************************************/
-#ifdef USE_NEW
-int RunScript(uint8_t bPort, char* filename, size_t nargs, char** args)
-{
-	char pathname[80];
-	char localPath[40];
-	char* plocalPath = localPath;
-	char* pPath;
-	uint8_t run = 0;
-	int ret;
-	static FIL fp;
-
-	// try the passed in filename
-	strcpy(pathname, filename);
-	ret = f_open(&fp, pathname, FA_READ);
-	if(ret == FR_OK)
-	{
-		run = 1;
-	}
-	else
-	{
-		// add the default extension
-		strcat(pathname, SCRIPT_DEFAULT_EXTENSION);
-		ret = f_open(&fp, pathname, FA_READ);
-		if(ret == FR_OK)
-		{
-			run = 1;
-		}
-		else
-		{
-			strcpy(localPath, szPathVar);
-			while((pPath = strsep(&plocalPath, ";")) != NULL)
-			{
-				// prepend the path
-				strcpy(pathname, pPath);
-				strcat(pathname, "/");
-				strcat(pathname, filename);
-				ret = f_open(&fp, pathname, FA_READ);
-				if(ret == FR_OK)
-				{
-					run = 1;
-					break;
-				}
-				else
-				{
-					// add the default extension
-					strcat(pathname, SCRIPT_DEFAULT_EXTENSION);
-					ret = f_open(&fp, pathname, FA_READ);
-					if(ret == FR_OK)
-					{
-						run = 1;
-						break;
-					}
-				}
-			}
-		}
-	}
-
-
-	if(run)
-	{
-		ret = DoRun(bPort, &fp, nargs, args);	// this will close the file
-		ShNL(bPort);
-		PrintReturnString(bPort, ret);
-	}
-	return run;
-}
-#else
 int RunScript(uint8_t bPort, char* filename, size_t nargs, char** args)
 {
 	//char pathname[80];
@@ -2363,7 +2307,7 @@ int RunScript(uint8_t bPort, char* filename, size_t nargs, char** args)
 		return 0;
 	}
 }
-#endif
+
 
 
 /*********************************************************************
@@ -2378,141 +2322,6 @@ int RunScript(uint8_t bPort, char* filename, size_t nargs, char** args)
 * @return	None
 *
 *********************************************************************/
-#ifdef USE_NEW
-void ShellMain(uint8_t bPort, char* buf)
-{
-	int iCmdIndex;
-	static char *args[ARG_SIZE];
-	static size_t nargs;
-	char StrTemp[64];
-	int ret;
-
-	iCmdIndex = FindCommand(buf, &nargs, args);
-	if(iCmdIndex != -1)
-	{
-		ret = ExecuteCommand(iCmdIndex, bPort, nargs, args);
-		ShNL(bPort);
-		PrintReturnString(bPort, ret);
-	}
-	else if(IsVariable(args[0]))
-	{
-		if(args[1][0] == '=')
-		{
-			if(nargs == 4)
-			{
-				// check for a math operation
-				switch(args[2][0])
-				{
-					case '+':
-						ret = MathVariable(args[0], args[3], MV_ADD);
-					break;
-
-					case '-':
-						ret = MathVariable(args[0], args[3], MV_SUBTRACT);
-					break;
-
-					case '*':
-						ret = MathVariable(args[0], args[3], MV_MULTIPLY);
-					break;
-
-					case '/':
-						ret = MathVariable(args[0], args[3], MV_DIVIDE);
-					break;
-				}
-			}
-			else if(nargs == 3)
-			{
-				// set the variable
-				ret = SetVariable(args[0], args[2]);
-				if(ret != CMD_OK)
-				{
-					// print out the error
-					switch(ret)
-					{
-						case CMD_BAD_NUMBER:
-							ShNL(bPort);
-							ShFieldOut(bPort, "Bad Number", 0);
-							ShNL(bPort);
-						break;
-
-						case CMD_READ_ONLY:
-							ShNL(bPort);
-							ShFieldOut(bPort, "Variable Read Only", 0);
-							ShNL(bPort);
-						break;
-					}
-				}
-			}
-		}
-		else
-		{
-			if(nargs == 3)
-			{
-				// check for a math operation
-				switch(args[1][0])
-				{
-					case '+':
-						ret = MathVariable(args[0], args[1], MV_ADD);
-					break;
-
-					case '-':
-						ret = MathVariable(args[0], args[1], MV_SUBTRACT);
-					break;
-
-					case '*':
-						ret = MathVariable(args[0], args[1], MV_MULTIPLY);
-					break;
-
-					case '/':
-						ret = MathVariable(args[0], args[1], MV_DIVIDE);
-					break;
-				}
-			}
-			else if(nargs == 2)
-			{
-				// set the variable
-				ret = SetVariable(args[0], args[1]);
-				if(ret != CMD_OK)
-				{
-					// print out the error
-					switch(ret)
-					{
-						case CMD_BAD_NUMBER:
-							ShNL(bPort);
-							ShFieldOut(bPort, "Bad Number", 0);
-							ShNL(bPort);
-						break;
-
-						case CMD_READ_ONLY:
-							ShNL(bPort);
-							ShFieldOut(bPort, "Variable Read Only", 0);
-							ShNL(bPort);
-						break;
-					}
-				}
-			}
-			else
-			{
-				// get the variable
-				GetVariable(args[0], StrTemp, strlen(StrTemp));
-				ShFieldOut(bPort, " = ", 0);
-				ShFieldOut(bPort, StrTemp, 0);
-				ShNL(bPort);
-			}
-		}
-	}
-	else if(RunScript(bPort, args[0], nargs, args) == 0)
-	{
-		if(strlen(buf) != 0)
-		{
-			ShNL(bPort);
-			ShFieldOut(bPort, "Not Found", 0);
-		}
-	}
-	Prompt(bPort);
-}
-#endif
-
 int ShellMain(uint8_t bPort, char* buf)
 {
 	int iCmdIndex;
@@ -2631,7 +2440,8 @@ int ShellMain(uint8_t bPort, char* buf)
 			{
 				// get the variable
 				GetVariable(args[0], StrTemp, strlen(StrTemp));
-				ShFieldOut(bPort, " = ", 0);
+				//ShFieldOut(bPort, " = ", 0);
+				ShFieldOut(bPort, " ", 0);
 				ShFieldOut(bPort, StrTemp, 0);
 				//ShNL(bPort);
 				ret = CMD_OK;
