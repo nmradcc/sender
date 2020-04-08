@@ -33,6 +33,9 @@ typedef enum
 	SKIP_ELSE,
 	SKIP_LOOP,
     RUN_DELAY,
+	SCRIPT_EXIT,
+	SCRIPT_PAUSE,
+	SCRIPT_RESUME,
 } RUN_MODE;
 
 #define LOOP_FOREVER	0xffff
@@ -83,7 +86,8 @@ typedef enum
 
 typedef struct
 {
-	FIL* Scriptfp;
+	FIL Scriptfp;
+	//FIL* Scriptfp;
 	char buffer[BUFFER_SIZE];
 	char *args[ARR_SIZE];
 	size_t nargs;
@@ -93,6 +97,7 @@ typedef struct
     uint32_t LoopPosition;
     uint32_t DelayCount;
 	RUN_MODE RunMode;
+	RUN_MODE RunMessage;
 	uint32_t Variable[4];
 	uint32_t Return;
 } ScriptContext;
@@ -149,8 +154,10 @@ CMD_RETURN DoRun(uint8_t bPort, FIL* fp, size_t nargs, char** args)
 	else
 	{
 		// setup the context
-		ScriptNest[CurrentScript].Scriptfp = fp;
+		//ScriptNest[CurrentScript].Scriptfp = fp;
+		memcpy(&ScriptNest[CurrentScript].Scriptfp, fp, sizeof(FIL));
 		ScriptNest[CurrentScript].RunMode = RUN_NORMAL;
+		ScriptNest[CurrentScript].RunMessage = RUN_NORMAL;
 		ScriptNest[CurrentScript].LoopCount = 0;
 		ScriptNest[CurrentScript].DelayCount = 0;
 		ScriptNest[CurrentScript].bPort = bPort;
@@ -181,8 +188,11 @@ CMD_RETURN DoRun(uint8_t bPort, FIL* fp, size_t nargs, char** args)
 void ScriptDone(void)
 {
     
-    f_close(ScriptNest[CurrentScript].Scriptfp);
-    CurrentScript--;
+	if(CurrentScript != -1)
+	{
+		f_close(&ScriptNest[CurrentScript].Scriptfp);
+		CurrentScript--;
+	}
 }
 
 /*********************************************************************
@@ -211,7 +221,21 @@ void DoScriptRun(void)
         {
             case RUN_NORMAL:
             case RUN_IF:
-                if(getLine(cs->Scriptfp, cs->buffer, BUFFER_SIZE) != 0)
+
+            	if(cs->RunMessage == SCRIPT_EXIT)
+            	{
+            		ScriptDone();
+            	}
+            	else if(cs->RunMessage == SCRIPT_PAUSE)
+            	{
+            		return;
+            	}
+            	else if(cs->RunMessage == SCRIPT_EXIT)
+            	{
+            		cs->RunMessage = RUN_NORMAL;
+            	}
+
+                if(getLine(&cs->Scriptfp, cs->buffer, BUFFER_SIZE) != 0)
                 {
 					// substitute any variable arguments, "%X" where X is 1-6
 					// and replace it with the corresponding argument string
@@ -249,30 +273,6 @@ void DoScriptRun(void)
 					}
 					cmdbuffer[cmdidx] = 0;
 					
-#ifdef USE_SHELL_MAIN
-                    //iCmdIndex = FindCommand(cs->buffer, &cs->nargs, cs->args);
-                    iCmdIndex = FindCommand(cmdbuffer, &cs->nargs, cs->args);
-                    if(iCmdIndex != -1)
-                    {
-                        if(strcasecmp(ShellTable[iCmdIndex].szCommand, "pause") == 0)
-                        {
-                        	cs->DelayCount = atoi(cs->args[1]);
-                        	cs->RunMode = RUN_DELAY;
-                        }
-                        else
-                        {
-                            ret = ExecuteCommand(iCmdIndex, ScriptNest[CurrentScript].bPort, ScriptNest[CurrentScript].nargs, ScriptNest[CurrentScript].args);
-                            if(ret & CMD_IF_TRUE)
-                            {
-                            	cs->RunMode = RUN_IF;
-                            }
-                            else if(ret & CMD_IF_FALSE)
-                            {
-                            	cs->RunMode = SKIP_IF;
-                            }
-                        }
-                    }
-#else
         			ret = ShellMain(ScriptNest[CurrentScript].bPort, (char*)cmdbuffer);
                     if(ret & CMD_IF_TRUE)
                     {
@@ -282,7 +282,6 @@ void DoScriptRun(void)
                     {
                     	cs->RunMode = SKIP_IF;
                     }
-#endif
                 }
                 else
                 {
@@ -291,7 +290,7 @@ void DoScriptRun(void)
             break;
 
             case SKIP_IF:
-                if(getLine(cs->Scriptfp, cs->buffer, sizeof(BUFFER_SIZE)) != (uint8_t)EOF)
+                if(getLine(&cs->Scriptfp, cs->buffer, sizeof(BUFFER_SIZE)) != (uint8_t)EOF)
                 {
                     iCmdIndex = FindCommand(cs->buffer, &cs->nargs, cs->args);
                     if(strcasecmp(ShellTable[iCmdIndex].szCommand, "else") == 0)
@@ -313,7 +312,7 @@ void DoScriptRun(void)
             break;
 
             case SKIP_ELSE:
-                if(getLine(cs->Scriptfp, cs->buffer, sizeof(BUFFER_SIZE)) != (uint8_t)EOF)
+                if(getLine(&cs->Scriptfp, cs->buffer, sizeof(BUFFER_SIZE)) != (uint8_t)EOF)
                 {
                     iCmdIndex = FindCommand(cs->buffer, &cs->nargs, cs->args);
                     if(strcasecmp(ShellTable[iCmdIndex].szCommand, "endif") == 0)
@@ -328,7 +327,7 @@ void DoScriptRun(void)
             break;
 
             case SKIP_LOOP:
-                if(getLine(cs->Scriptfp, cs->buffer, sizeof(BUFFER_SIZE)) != (uint8_t)EOF)
+                if(getLine(&cs->Scriptfp, cs->buffer, sizeof(BUFFER_SIZE)) != (uint8_t)EOF)
                 {
                     iCmdIndex = FindCommand(cs->buffer, &cs->nargs, cs->args);
                     if(strcasecmp(ShellTable[iCmdIndex].szCommand, "endloop") == 0)
@@ -563,39 +562,74 @@ CMD_RETURN ShScripts(uint8_t bPort, int argc, char *argv[])
 	uint32_t Return;
 #endif
 
-	ShNL(bPort);
-	if(CurrentScript != -1)
+	if(argc == 3)
 	{
-		ShFieldOut(bPort, "Name", 15);
-		ShFieldOut(bPort, "Mode", 10);
-		ShNL(bPort);
-
-		for(int i = CurrentScript; i >= 0; i--)
+		if(CurrentScript != -1)
 		{
-			ShFieldOut(bPort, ScriptNest[i].name, 15);
-
-			strcpy(szMode, RunModeName[ScriptNest[i].RunMode]);
-//			if(ScriptNest[i].RunMode == LOOP)
-//			{
-//				strcat(szMode, "-");
-////				strcat(szMode, atoi(ScriptNest[i].LoopCount));
-//			}
-//			else
-			if(ScriptNest[i].RunMode == RUN_DELAY)
+			// search for the names script add do something with it
+			for(int i = CurrentScript; i >= 0; i--)
 			{
-				strcat(szMode, "-");
-//				strcat(szMode, atoi(ScriptNest[i].DelayCount));
+				if(stricmp(ScriptNest[i].name, argv[1]) == 0)
+				{
+					if(stricmp("kill", argv[2]) == 0)
+					{
+						ScriptNest[CurrentScript].RunMessage = SCRIPT_EXIT;
+					}
+					else if(stricmp("pause", argv[2]) == 0)
+					{
+						ScriptNest[CurrentScript].RunMessage = SCRIPT_PAUSE;
+					}
+					else if(stricmp("resume", argv[2]) == 0)
+					{
+						ScriptNest[CurrentScript].RunMessage = SCRIPT_RESUME;
+					}
+					else
+					{
+						return CMD_BAD_PARAMS;
+					}
+					return CMD_OK;
+				}
 			}
-			ShFieldOut(bPort, szMode, 10);
-			ShNL(bPort);
+			return CMD_BAD_PARAMS;
 		}
 	}
 	else
 	{
-		ShFieldOut(bPort, "No Running scripts", 0);
 		ShNL(bPort);
+		if(CurrentScript != -1)
+		{
+			ShFieldOut(bPort, "Name", 15);
+			ShFieldOut(bPort, "Mode", 10);
+			ShNL(bPort);
+
+			for(int i = CurrentScript; i >= 0; i--)
+			{
+				ShFieldOut(bPort, ScriptNest[i].name, 15);
+
+				strcpy(szMode, RunModeName[ScriptNest[i].RunMode]);
+	//			if(ScriptNest[i].RunMode == LOOP)
+	//			{
+	//				strcat(szMode, "-");
+	////				strcat(szMode, atoi(ScriptNest[i].LoopCount));
+	//			}
+	//			else
+				if(ScriptNest[i].RunMode == RUN_DELAY)
+				{
+					strcat(szMode, "-");
+	//				strcat(szMode, atoi(ScriptNest[i].DelayCount));
+				}
+				ShFieldOut(bPort, szMode, 10);
+				ShNL(bPort);
+			}
+		}
+		else
+		{
+			ShFieldOut(bPort, "No Running scripts", 0);
+			ShNL(bPort);
+		}
+		return CMD_OK;
 	}
-	return CMD_OK;
+	return CMD_BAD_PARAMS;
 }
 
 
@@ -693,7 +727,7 @@ CMD_RETURN ShLoop(uint8_t bPort, int argc, char *argv[])
 			{
 				ScriptNest[CurrentScript].LoopCount = cnt;
 			}
-			ScriptNest[CurrentScript].LoopPosition = ScriptNest[CurrentScript].Scriptfp->fptr;
+			ScriptNest[CurrentScript].LoopPosition = ScriptNest[CurrentScript].Scriptfp.fptr;
 		}
 	}
 	return CMD_OK;
@@ -727,7 +761,7 @@ CMD_RETURN ShEndLoop(uint8_t bPort, int argc, char *argv[])
 			}
 			if(ScriptNest[CurrentScript].LoopCount != 0)
 			{
-                f_lseek (ScriptNest[CurrentScript].Scriptfp, ScriptNest[CurrentScript].LoopPosition);	// Move file pointer to the captured position
+                f_lseek(&ScriptNest[CurrentScript].Scriptfp, ScriptNest[CurrentScript].LoopPosition);	// Move file pointer to the captured position
 			}
 		}
 	}
