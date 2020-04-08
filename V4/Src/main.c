@@ -218,7 +218,7 @@ int main(void)
 
 	const osThreadAttr_t shellTask_attributes = {
 		.name = "shell",
-		.priority = (osPriority_t) osPriorityAboveNormal,
+		.priority = (osPriority_t) osPriorityAboveNormal4,
 		//.stack_size = 1024
 		//.stack_size = 2000
 		.stack_size = 3000
@@ -227,7 +227,7 @@ int main(void)
 
 	const osThreadAttr_t scriptTask_attributes = {
 		.name = "script",
-		.priority = (osPriority_t) osPriorityAboveNormal,
+		.priority = (osPriority_t) osPriorityAboveNormal1,
 		//.stack_size = 1024
 		.stack_size = 2500
 	};
