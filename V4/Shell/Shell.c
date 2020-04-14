@@ -1005,14 +1005,16 @@ CMD_RETURN ShDelay(uint8_t bPort, int argc, char *argv[])
 
 	iDelayCount = atoi(argv[1]);
 
-	while(iDelayCount)
-    {
-        if(bfShellTick)
-	    {
-		    bfShellTick = 0;
-		    iDelayCount--;
-		}
-	}
+    osDelay(iDelayCount);
+
+//	while(iDelayCount)
+//    {
+//        if(bfShellTick)
+//	    {
+//		    bfShellTick = 0;
+//		    iDelayCount--;
+//		}
+//	}
 	return CMD_OK;
 }
 
