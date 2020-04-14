@@ -1686,10 +1686,10 @@ void SendReset(void)
 	Dcc_reg.send_bytes( 1, 0x00, "SEND_RESET." );
 	Dcc_reg.set_scope( true );
 	Dcc_reg.send_rst();
-	for (int i = 0; i < 15; i++ )	// Send 15 normal idles.
-	{
-		Dcc_reg.send_idle();
-	}
+	//for (int i = 0; i < 15; i++ )	// Send 15 normal idles.
+	//{
+	//  Dcc_reg.send_idle();
+	//}
 }
 
 void SendHard(void)
@@ -1697,21 +1697,26 @@ void SendHard(void)
 	Dcc_reg.send_bytes( 1, 0x00, "SEND_HARD." );
 	Dcc_reg.set_scope( true );
 	Dcc_reg.send_hard_rst();	// Send the hard reset.
-	for (int i = 0; i < 15; i++ )	// Send 15 normal idles.
-	{
-		Dcc_reg.send_idle();
-	}
+	//for (int i = 0; i < 15; i++ )	// Send 15 normal idles.
+	//{
+	//	Dcc_reg.send_idle();
+	//}
 }
 
 void SendIdle(void)
 {
-	Dcc_bits.clr_in();
-	Dcc_bits.put_idle_pkt( 4 );
-	Dcc_bits.put_1s( 1 ).done();
+	//Dcc_bits.clr_in();
+	//Dcc_bits.put_idle_pkt( 4 );
+	//Dcc_bits.put_1s( 1 ).done();
+
+	//Dcc_reg.send_bytes( 1, 0x00, "SEND_IDLE." );
+	//Dcc_reg.set_scope( true );
+	//Dcc_reg.send_pkt( Dcc_bits, "SEND_IDLE." );
 
 	Dcc_reg.send_bytes( 1, 0x00, "SEND_IDLE." );
 	Dcc_reg.set_scope( true );
-	Dcc_reg.send_pkt( Dcc_bits, "SEND_IDLE." );
+	Dcc_reg.send_idle();
+
 }
 #endif
 
