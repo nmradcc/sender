@@ -363,6 +363,10 @@ CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
     uint32_t bc;
 	uint32_t preambles;
 	int i;
+	int period;
+	int pulse;
+	int count;
+	PACKET_BITS* pPacket = apShellPacket;
     FIL fp;
 	
 	
@@ -401,7 +405,13 @@ CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
 				
 				preambles = atoi(&szTypeBuf[12]);
 				
-				i = 0;
+				for(i = 0; i < preambles; i++)
+				{
+					pPacket->period = ONE_PERIOD;
+					pPacket->pulse = ONE_PULSE;
+					pPacket++;
+				}
+
 				while(1)
 				{
 					bc = getLine(&fp, szTypeBuf, sizeof(szTypeBuf));
@@ -412,19 +422,25 @@ CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
 					
 					pBuf = szTypeBuf;
 					pp = strsep(&pBuf, ",");
-					apShellPacket[i].period = atoi(pp);
+
+					period = atoi(pp) * TICKS_PER_MICROSECOND;
 					pp = strsep(&pBuf, ",");
-					apShellPacket[i].pulse = atoi(pp);
+					pulse = atoi(pp) * TICKS_PER_MICROSECOND;
 					pp = strsep(&pBuf, ",");
-					apShellPacket[i].count = atoi(pp);
-					i++;
+					count = atoi(pp) + 1;
+
+					for(i = 0; i < count; i++)
+					{
+						pPacket->period = period;
+						pPacket->pulse = pulse;
+						pPacket++;
+					}
 				}
 				f_close(&fp);
 
 				// add the terminator
-				apShellPacket[i].period = 0;
-				apShellPacket[i].pulse = 0;
-				apShellPacket[i].count = 0;
+				pPacket->period = 0;
+				pPacket->pulse = 0;
 				
 				if(argc == 3)
 				{
