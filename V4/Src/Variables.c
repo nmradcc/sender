@@ -11,13 +11,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-//#include "Schedule.h"
 #include "ObjectNames.h"
 #include "Shell.h"
 #include "Settings.h"
 #include "Variables.h"
 #include "Track.h"
-//#include "TrackProg.h"
 #include "minini.h"
 
 /**********************************************************************
@@ -27,20 +25,13 @@
 **********************************************************************/
 
 
-//#define true 1
-//#define false 0
-//const char TokenDelimitor[] = " \r\n\t";
-//const char ReadString[] = "read";
-//const char WriteString[] = "=";
-
-extern char* ItoA(int n);
-
-
  /**********************************************************************
 *
 *							FUNCTION PROTOTYPES
 *
 **********************************************************************/
+
+extern char* ItoA(int n);
 
 extern char* strsep(char **stringp, const char *delim);
 
@@ -126,19 +117,17 @@ const VAR_TABLE VarCmdTable[] =
 
 
 
-/**********************************************************************
+/*********************************************************************
 *
-* FUNCTION:		VarToString
+* VarToString
 *
-* ARGUMENTS:
+* @brief	Return a string representing a variable value
 *
-* RETURNS:
+* @param	idx - index of the variable table
 *
-* DESCRIPTION:
+* @return	char* string
 *
-* RESTRICTIONS:
-*
-**********************************************************************/
+*********************************************************************/
 char* VarToString(uint32_t idx)
 {
 	RTC_TimeTypeDef time;
@@ -274,19 +263,17 @@ char* VarToString(uint32_t idx)
     return tempbuf;
 }
 
-/**********************************************************************
+/*********************************************************************
 *
-* FUNCTION:		ShowVariables
+* ShowVariables
 *
-* ARGUMENTS:
+* @brief	Shell command to dump all variables
 *
-* RETURNS:
+* @param	bPort - I/O port
 *
-* DESCRIPTION:
+* @return	None
 *
-* RESTRICTIONS:
-*
-**********************************************************************/
+*********************************************************************/
 void ShowVariables(uint8_t bPort)
 {
 	int i;
@@ -308,57 +295,52 @@ void ShowVariables(uint8_t bPort)
 }
 
 
-/**********************************************************************
+/*********************************************************************
 *
-* FUNCTION:		GetNumVariables
+* GetNumVariables
 *
-* ARGUMENTS:
+* @brief	Get the number of variables in the variable table
 *
-* RETURNS:
+* @param	None
 *
-* DESCRIPTION:
+* @return	number
 *
-* RESTRICTIONS:
-*
-**********************************************************************/
+*********************************************************************/
 int GetNumVariables(void)
 {
 
 	return NUM_VARIABLES;
 }
 
-/**********************************************************************
+
+/*********************************************************************
 *
-* FUNCTION:		GetVariableName
+* GetVariableName
 *
-* ARGUMENTS:
+* @brief	Return a string representing the name of a variable
 *
-* RETURNS:
+* @param	idx - index of the variable table
 *
-* DESCRIPTION:
+* @return	char* name
 *
-* RESTRICTIONS:
-*
-**********************************************************************/
+*********************************************************************/
 char* GetVariableName(uint8_t idx)
 {
 
 	return (char*)VarCmdTable[idx].szCmdString;
 }
 
-/**********************************************************************
+/*********************************************************************
 *
-* FUNCTION:		GetVariableHelp
+* GetVariableName
 *
-* ARGUMENTS:
+* @brief	Return a string representing the help string of a variable
 *
-* RETURNS:
+* @param	idx - index of the variable table
 *
-* DESCRIPTION:
+* @return	char* help string
 *
-* RESTRICTIONS:
-*
-**********************************************************************/
+*********************************************************************/
 char* GetVariableHelp(uint8_t idx)
 {
 
@@ -366,19 +348,18 @@ char* GetVariableHelp(uint8_t idx)
 }
 
 
-/**********************************************************************
+
+/*********************************************************************
 *
-* FUNCTION:		IsVariable
+* IsVariable
 *
-* ARGUMENTS:
+* @brief	Check if a name is a variable
 *
-* RETURNS:
+* @param	char* name
 *
-* DESCRIPTION:
+* @return	idx - index of the variable table
 *
-* RESTRICTIONS:
-*
-**********************************************************************/
+*********************************************************************/
 int IsVariable(char* pBuffer)
 {
 	int i;
@@ -396,19 +377,17 @@ int IsVariable(char* pBuffer)
 
 
 
-/**********************************************************************
+/*********************************************************************
 *
-* FUNCTION:		FindVariable
+* FindVariable
 *
-* ARGUMENTS:
+* @brief	Return the index of a variable
 *
-* RETURNS:
+* @param	char* name
 *
-* DESCRIPTION:
+* @return	idx - index of the variable table, -1 if not found
 *
-* RESTRICTIONS:
-*
-**********************************************************************/
+*********************************************************************/
 int FindVariable(char* szObject)
 {
 	int i;
@@ -426,19 +405,19 @@ int FindVariable(char* szObject)
 
 
 
-/**********************************************************************
+/*********************************************************************
 *
-* FUNCTION:		GetVariable
+* GetVariable
 *
-* ARGUMENTS:
+* @brief	Return the string value of a variable
 *
-* RETURNS:
+* @param	const char* szObject
+* 			char* pStrValue
+* 			int max_len
 *
-* DESCRIPTION:
+* @return	None
 *
-* RESTRICTIONS:
-*
-**********************************************************************/
+*********************************************************************/
 void GetVariable(const char* szObject, char* pStrValue, int max_len)
 {
 	int idx;
@@ -458,19 +437,17 @@ void GetVariable(const char* szObject, char* pStrValue, int max_len)
 }
 
 
-/**********************************************************************
+/*********************************************************************
 *
-* FUNCTION:		GetVariable
+* GetVariableValue
 *
-* ARGUMENTS:
+* @brief	Return the value of a variable
 *
-* RETURNS:
+* @param	idx - index of the variable table
 *
-* DESCRIPTION:
+* @return	value
 *
-* RESTRICTIONS:
-*
-**********************************************************************/
+*********************************************************************/
 uint32_t GetVariableValue(int idx)
 {
 
@@ -496,21 +473,19 @@ uint32_t GetVariableValue(int idx)
     }
 }
 
-/**********************************************************************
-*
-* FUNCTION:		SetVariable
-*
-* ARGUMENTS:
-*
-* RETURNS:
-*
-* DESCRIPTION:
-*
-* RESTRICTIONS:
-*
-**********************************************************************/
-//CMD_BAD_NUMBER,
 
+/*********************************************************************
+*
+* SetVariable
+*
+* @brief	Set a variable from the string value
+*
+* @param	const char* szObject
+* 			char* pStrValue
+*
+* @return	Shell Error value
+*
+*********************************************************************/
 int SetVariable(const char* szObject, char* pStrValue)
 {
 	int idx;
@@ -775,19 +750,19 @@ int SetVariable(const char* szObject, char* pStrValue)
 
 
 
-/**********************************************************************
+/*********************************************************************
 *
-* FUNCTION:		MathVariable
+* MathVariable
 *
-* ARGUMENTS:
+* @brief	Set a variable from the string value
 *
-* RETURNS:
+* @param	const char* szObject
+* 			char* pStrValue
+* 			int op
 *
-* DESCRIPTION:
+* @return	Shell Error value
 *
-* RESTRICTIONS:
-*
-**********************************************************************/
+*********************************************************************/
 int MathVariable(const char* szObject, char* pStrValue, const int op)
 {
 	int idx;
@@ -905,372 +880,6 @@ int GetNextPath(char* pStr, char* path)
 	return len;
 }
 
-
-
-
-
-
-
-
-
-//char szResponseString[64];
-
-#ifdef NOT_USED
-//typedef union
-//{
-//	float	f;
-//	int		i;
-//} USER_VARIABLE;
-//
-//#define NUM_USER_VARIABLES 4
-//USER_VARIABLE UserVariables[NUM_USER_VARIABLES];
-
-// form 1	/object/read
-// form 2	/object/write argument
-
-
-char* ParseRpcCommand(char* pBuffer)
-{
-	char* pToken;
-	int i;
-
-	szResponseString[0] ='\0';
-
-	// the first character must be a '/'
-	//if(*pBuffer++ == '/')
-	{
-		pToken = strsep(&pBuffer, TokenDelimitor);
-
-		if(pToken != NULL)
-		{
-			for(i = 0; i < NUM_COMMANDS; i++)
-			{
-				if(strcmp(pToken, VarCmdTable[i].szCmdString) == 0)
-				{
-					// found command string
-					strcpy(szResponseString ,pToken);
-//					(*RpcCmdTable[i].pCmdFunction)(pBuffer);
-					break;
-				}
-			}
-		}
-	}
-	return szResponseString;
-}
-
-
-void BuildResponseString(const char* szSubObject, const char* szMethod, char* szValue)
-{
-
-	if(szSubObject)
-	{
-		//strcat(szResponseString, "/");
-		strcat(szResponseString, szSubObject);
-	}
-	if(szMethod)
-	{
-		//strcat(szResponseString, "/");
-		// swap "read" <--> "write"
-		//if(strcmp(szMethod, ReadString) == 0)
-		//{
-		//	strcat(szResponseString, WriteString);
-		//}
-		//else if(strcmp(szMethod, WriteString) == 0)
-		//{
-		//	strcat(szResponseString, VerifyString);
-		//}
-		//else
-		//{
-			// not "read" or "write", used the original method
-		//	strcat(szResponseString, szMethod);
-		//}
-	}
-
-	strcat(szResponseString, " = ");
-	strcat(szResponseString, szValue);
-	strcat(szResponseString, "\r");
-}
-
-void BuildResponseStringNum(const char* szSubObject, const char* szMethod, int n)
-{
-	char szTemp[12];
-	if(szSubObject)
-	{
-		//strcat(szResponseString, "/");
-		strcat(szResponseString, szSubObject);
-	}
-	if(szMethod)
-	{
-		//strcat(szResponseString, "/");
-		// swap "read" <--> "write"
-		//if(strcmp(szMethod, ReadString) == 0)
-		//{
-		//	strcat(szResponseString, WriteString);
-		//}
-		//else if(strcmp(szMethod, WriteString) == 0)
-		//{
-		//	strcat(szResponseString, VerifyString);
-		//}
-		//else
-		//{
-		//	// not "read" or "write", used the original method
-		//	strcat(szResponseString, szMethod);
-		//}
-	}
-
-	strcat(szResponseString, " = ");
-
-	sprintf(szTemp, "%d\r", n);
-	strcat(szResponseString, szTemp);
-
-//	strcat(szResponseString, szValue);
-//	strcat(szResponseString, "\r");
-}
-
-//	/object[/sub-object]/error code [value]<cr>
-void BuildErrorString(const char* szSubObject, const int iCode, char* szValue)
-{
-	char szTemp[10];
-
-	if(szSubObject)
-	{
-		//strcat(szResponseString, "/");
-		strcat(szResponseString, szSubObject);
-	}
-
-	strcat(szResponseString, "error ");
-
-	sprintf(szTemp, "%d", iCode);
-	strcat(szResponseString, szTemp);
-
-	if(szValue)
-	{
-		strcat(szResponseString, " ");
-		strcat(szResponseString, szValue);
-	}
-
-	strcat(szResponseString, "\r");
-}
-#endif
-
-#ifdef NOT_USED
-static int rpcFunctionMode(char* szBuffer)
-{
-	int iTemp;
-	char* pToken;
-
-	pToken = strsep(&szBuffer, TokenDelimitor);
-
-	if(strcmp(pToken, WriteString) == 0)
-	{
-		iTemp = atoi(szBuffer);
-		bfFMode = iTemp;
-		//BuildResponseString(NULL, pToken, itoa(iTemp));
-		BuildResponseStringNum(NULL, pToken, iTemp);
-		return true;
-	}
-	else
-	//else if(strcmp(pToken, ReadString) == 0)
-	{
-		iTemp = bfFMode;
-		//BuildResponseString(NULL, pToken, itoa(iTemp));
-		BuildResponseStringNum(NULL, pToken, iTemp);
-		return true;
-	}
-	BuildErrorString(NULL, RPC_ERROR_BAD_METHOD, NULL);
-	return false;
-}
-
-
-static int rpcUser(char* szBuffer)
-{
-	int iTemp;
-	int iUserIndex;
-	char* pIndex;
-	char* pToken;
-
-	pIndex = strsep(&szBuffer, TokenDelimitor);
-	iUserIndex = *(char*)pIndex - 0x30;
-	if(iUserIndex < 0 || iUserIndex >= NUM_USER_VARIABLES)
-	{
-		//BuildErrorString(NULL, RPC_ERROR_BAD_INDEX, itoa(iUserIndex, 10));
-		BuildResponseStringNum(NULL, NULL, iUserIndex);
-		return false;
-	}
-
-	pToken = strsep(&szBuffer, TokenDelimitor);
-
-	if(strcmp(pToken, WriteString) == 0)
-	{
-		iTemp = atoi(szBuffer);
-		UserVariables[iUserIndex].i = iTemp;
-		//BuildResponseString(pIndex, pToken, itoa(iTemp, 10));
-		BuildResponseStringNum(NULL, NULL, iTemp);
-		return true;
-	}
-	else
-	//else if(strcmp(pToken, ReadString) == 0)
-	{
-		iTemp = UserVariables[iUserIndex].i;
-		//BuildResponseString(pIndex, pToken, itoa(iTemp, 10));
-		BuildResponseStringNum(NULL, NULL, iTemp);
-		return true;
-	}
-	BuildErrorString(NULL, RPC_ERROR_BAD_METHOD, NULL);
-	return false;
-}
-
-
-static int rpcSchedule(char* szBuffer)
-{
-	char* pFilename;
-	unsigned long lTime;
-	SCH_DAY_MASK bDOW;
-	SCH_ACTION bAction;
-	SCH_FLAGS bFlags;
-	//float fValue1;
-	//float fValue2;
-	unsigned long lValue1;
-	unsigned long lValue2;
-	char* pToken;
-
-	pToken = strsep(&szBuffer, TokenDelimitor);
-	if(strcmp(pToken, "add") == 0)
-	{
-		// get the file name from the buffer
-		pFilename = strsep(&szBuffer, TokenDelimitor);
-		if(*pFilename == '*')
-		{
-//			pFilename = Settings.ScheduleFilename;
-		}
-
-		// get time from buffer
-		pToken = strsep(&szBuffer, TokenDelimitor);
-		lTime = atoi(pToken);
-
-		// get DOW from buffer
-		pToken = strsep(&szBuffer, TokenDelimitor);
-		bDOW = (SCH_DAY_MASK)atoi(pToken);
-
-		// get ACTION from buffer
-		pToken = strsep(&szBuffer, TokenDelimitor);
-		bAction = (SCH_ACTION)atoi(pToken);
-
-		// get FLAGS from buffer
-		pToken = strsep(&szBuffer, TokenDelimitor);
-		bFlags = (SCH_FLAGS)atoi(pToken);
-
-		// get the first value from buffer
-		pToken = strsep(&szBuffer, TokenDelimitor);
-		if(bAction == SCH_SCRIPT || bAction == SCH_SCHEDULE)
-		{
-//			SetScheduleString(pFilename, lTime, bDOW, bAction, bFlags, pToken);
-		}
-		else
-		{
-			// get Values from buffer
-			if(bFlags & SCH_VALUE_TYPE)
-			{
-				lValue1 = atoi(pToken);
-				pToken = strsep(&szBuffer, TokenDelimitor);
-				lValue2 = atoi(pToken);
-//				SetScheduleLong(pFilename, lTime, bDOW, bAction, bFlags, lValue1, lValue2);
-			}
-			else
-			{
-//				fValue1 = atof(pToken);
-				pToken = strsep(&szBuffer, TokenDelimitor);
-//				fValue2 = atof(pToken);
-//				SetScheduleFloat(pFilename, lTime, bDOW, bAction, bFlags, fValue1, fValue2);
-			}
-		}
-		//BuildResponseString(NULL, NULL, itoa(1));
-		BuildResponseStringNum(NULL, NULL, 1);
-		return true;
-	}
-	else if(strcmp(pToken, "delete") == 0)
-	{
-		// get filename from buffer
-		pToken = strsep(&szBuffer, TokenDelimitor);
-
-//k		RemoveSchedule(pToken);
-		//BuildResponseString(NULL, NULL, itoa(1));
-		BuildResponseStringNum(NULL, NULL, 1);
-		return true;
-	}
-	else if(strcmp(pToken, "remove") == 0)
-	{
-		// get key from buffer
-		pToken = strsep(&szBuffer, TokenDelimitor);
-
-		//RemoveFromSchedule(Schedule* pSchedule)
-		//BuildResponseString(NULL, NULL, itoa(1));
-		BuildResponseStringNum(NULL, NULL, 1);
-		return true;
-	}
-
-	BuildErrorString(NULL, RPC_ERROR_BAD_METHOD, NULL);
-	return false;
-}
-
-static int rpcSetRtc(char* szBuffer)
-{
-	//int iTemp;
-	char* pToken;
-//	RTC_t ts;
-// 	time_t time;
-// 	struct tm timeinfo;
-
-	pToken = strsep(&szBuffer, TokenDelimitor);
-
-	//if(strcmp(pToken, WriteString) == 0)
-	{
-
-//		time = (time_t)atoi(szBuffer);
-//		gmtime_r(&time, &timeinfo);
-
-//		ts.year = timeinfo.tm_year + 1900;
-//		ts.month = timeinfo.tm_mon + 1;
-//		ts.mday = timeinfo.tm_mday;
-//		ts.wday = timeinfo.tm_wday;
-//		ts.dst = 0;
-//		if(timeinfo.tm_hour)
-//		{
-//			ts.hour = timeinfo.tm_hour - 1;
-//		}
-//		else
-//		{
-//			ts.hour = timeinfo.tm_hour;
-//		}
-//		ts.min = timeinfo.tm_min;
-//		ts.sec = timeinfo.tm_sec;
-
-//		rtc_settime(&ts);
-
-//		LiveData.sShortTimeStamp = 0;
-//		LiveData.lDataStartTime = 0;		// force the log code to re-initialize this
-//		LiveData.StatusBits.bfPowerup = 0;	// time has been set
-//	    LiveData.lSysTime = time;
-//		WriteTimestamp();
-
-//		WriteEventShort(EV_CLOCK_CHANGE, (unsigned short)time, 0);
-
-		//BuildResponseString(NULL, pToken, itoa(LiveData.lSysTime));
-//		BuildResponseStringNum(NULL, pToken, LiveData.lSysTime);
-		return true;
-	}
-	//else if(strcmp(pToken, ReadString) == 0)
-	{
-//		rtc_gettime(&ts);
-
-		//BuildResponseString(NULL, pToken, itoa(LiveData.lSysTime));
-//		BuildResponseStringNum(NULL, pToken, LiveData.lSysTime);
-		return true;
-	}
-	BuildErrorString(NULL, RPC_ERROR_BAD_METHOD, NULL);
-	return false;
-}
-#endif
 
 
 
