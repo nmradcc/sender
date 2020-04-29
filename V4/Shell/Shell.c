@@ -1650,6 +1650,7 @@ extern void SendReset(void);
 extern void SendHard(void);
 extern void SendIdle(void);
 
+extern void SetDccTiming(void);
 
 /*********************************************************************
 *
@@ -1669,6 +1670,8 @@ CMD_RETURN ShSendZero(uint8_t bPort, int argc, char *argv[])
 {
 	int i;
 	int iCount;
+
+	SetDccTiming();
 
 	ShNL(bPort);
 
@@ -1707,6 +1710,8 @@ CMD_RETURN ShSendOne(uint8_t bPort, int argc, char *argv[])
 	int i;
 	int iCount;
 
+	SetDccTiming();
+
 	ShNL(bPort);
 	if(argc == 2)
     {
@@ -1742,6 +1747,9 @@ CMD_RETURN ShSendScopeA(uint8_t bPort, int argc, char *argv[])
 {
 	int i;
 	int iCount;
+
+	SetDccTiming();
+
 
 	ShNL(bPort);
 	if(argc == 2)
@@ -1779,6 +1787,8 @@ CMD_RETURN ShSendScopeB(uint8_t bPort, int argc, char *argv[])
 	int i;
 	int iCount;
 
+	SetDccTiming();
+
 	ShNL(bPort);
 	if(argc == 2)
     {
@@ -1814,6 +1824,8 @@ CMD_RETURN ShSendWarble(uint8_t bPort, int argc, char *argv[])
 {
 	int i;
 	int iCount;
+
+	SetDccTiming();
 
 	ShNL(bPort);
 	if(argc == 2)
@@ -1851,6 +1863,8 @@ CMD_RETURN ShSendStretched(uint8_t bPort, int argc, char *argv[])
 	int i;
 	int iCount;
 
+	SetDccTiming();
+
 	ShNL(bPort);
 	if(argc == 2)
     {
@@ -1886,6 +1900,8 @@ CMD_RETURN ShSendReset(uint8_t bPort, int argc, char *argv[])
 {
 	int i;
 	int iCount;
+
+	SetDccTiming();
 
 	ShNL(bPort);
 	if(argc == 2)
@@ -1923,6 +1939,8 @@ CMD_RETURN ShSendHard(uint8_t bPort, int argc, char *argv[])
 	int i;
 	int iCount;
 
+	SetDccTiming();
+
 	ShNL(bPort);
 	if(argc == 2)
     {
@@ -1958,6 +1976,8 @@ CMD_RETURN ShSendIdle(uint8_t bPort, int argc, char *argv[])
 {
 	int i;
 	int iCount;
+
+	SetDccTiming();
 
 	ShNL(bPort);
 	if(argc == 2)
