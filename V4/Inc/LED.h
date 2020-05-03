@@ -62,6 +62,7 @@
 
 extern void HeartbeatLed(uint32_t nPattern);
 extern void StatusLed(uint32_t nPattern);
+extern uint32_t GetStatusLed(void);
 
 extern void LedTask(void* argument);
 
