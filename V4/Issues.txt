@@ -22,6 +22,7 @@ C - add a resource lock for the track - send vs command station
 - finish compiling and testing the ZIP command
 C - finish compiling and testing the YMODEM command
 F - use the battery backed-up RAM for selected variables
+C - Convert DCC timer to 32 bit to get more resolution
 
 Shell
 X - dir doesn't seem to work in a subdirectory
@@ -49,11 +50,12 @@ X - the script engine only executes shell commands. Add variables and scripts (r
 X - ANSI gotoxy doesn't seem to work - it does, the script we wrong
 X - Variable output should not display the "=" or CR/LF if in a script - " =" removed for all
 X - if Enter is hit while a script is running, the script stops
+X - make the led command a variable
 
 Send
 - get scope trace in the correct location
-- get the number of preambles from the DEC_TST variable
-- test the number of preambles
+X - get the number of preambles from the DEC_TST variable
+X - test the number of preambles
 C - test the shell packet commands
 - include and compile/debug the logging functionality
 - include and compile/debug the self tests
@@ -62,6 +64,7 @@ X - track, when the track output is disabled the output floats, it should be set
 - the IDLE packet generator doesn't work - split this into 4 calls to BuildPacket to avoid buffer overflow
 - Dcc_reg.gen_print crashes
 - add log commands for scripts
+- add a scope position output to the packet command
 
 Command Station
 - debug why the cab doesn't work when it is connected at reset
