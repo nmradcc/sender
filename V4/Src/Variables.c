@@ -17,6 +17,7 @@
 #include "Variables.h"
 #include "Track.h"
 #include "minini.h"
+#include "led.h"
 
 /**********************************************************************
 *
@@ -110,6 +111,8 @@ const VAR_TABLE VarCmdTable[] =
 
 	{szPath,			&szPathVar,			(VAR_TYPE_STRING | VAR_TYPE_PERSIST),	"\\",				"Script search path" },
 
+	{szLed,				NULL,				(VAR_TYPE_LED),							"",					"Green LED on | off | blink | 32 bit pattern" },
+
 //	{szSpeed,			NULL,				(VAR_TYPE_SPEED),						"",					"Current Train Speed" },
 //	{szDir,				NULL,				(VAR_TYPE_DIR),							"",					"Current Train Direction fwd / rev" },
 //	{szFunction,		NULL,				(VAR_TYPE_FUNCTION),					"",					"Current Train Functions" },
@@ -161,6 +164,7 @@ char* VarToString(uint32_t idx)
     			switch(bDateFmt)
     			{
     				case 0:
+    				default:
     	    			sprintf(tempbuf, "%2d/%02d/%04d", date.Month, date.Date, date.Year+2000);
     				break;
     				case 1:
@@ -190,6 +194,7 @@ char* VarToString(uint32_t idx)
     		switch((*(unsigned int*)VarCmdTable[idx].var))
     		{
     			case 0:
+				default:
     				strcpy(tempbuf, "M/D/Y");
     			break;
 
@@ -259,6 +264,10 @@ char* VarToString(uint32_t idx)
     	case VAR_TYPE_STRING:
     		strcpy(tempbuf, (char*)VarCmdTable[idx].var);
 		break;
+
+    	case VAR_TYPE_LED:
+    		sprintf(tempbuf, "%08x", (int)GetStatusLed());
+   		break;
     }
     return tempbuf;
 }
@@ -458,6 +467,7 @@ uint32_t GetVariableValue(int idx)
     	case VAR_TYPE_ON_OFF:
     	case VAR_TYPE_PORT:
     	case VAR_TYPE_TRACK:
+    	case VAR_TYPE_LED:
     		return *(unsigned int*)(VarCmdTable[idx].var);
        	break;
 
@@ -473,6 +483,54 @@ uint32_t GetVariableValue(int idx)
     }
 }
 
+
+uint32_t hexadecimalToDecimal(char hexVal[])
+{
+    int len = strlen(hexVal);
+
+    // Initializing base value to 1, i.e 16^0
+    uint32_t base = 1;
+
+    uint32_t dec_val = 0;
+
+    // Extracting characters as digits from last character
+    for (int i=len-1; i>=0; i--)
+    {
+        // if character lies in '0'-'9', converting
+        // it to integral 0-9 by subtracting 48 from
+        // ASCII value.
+        if (hexVal[i]>='0' && hexVal[i]<='9')
+        {
+            dec_val += (hexVal[i] - 48)*base;
+
+            // incrementing base by power
+            base = base * 16;
+        }
+
+        // if character lies in 'A'-'F' , converting
+        // it to integral 10 - 15 by subtracting 55
+        // from ASCII value
+        else if (hexVal[i]>='A' && hexVal[i]<='F')
+        {
+            dec_val += (hexVal[i] - 55)*base;
+
+            // incrementing base by power
+            base = base*16;
+        }
+        // if character lies in 'a'-'f' , converting
+        // it to integral 10 - 15 by subtracting 87
+        // from ASCII value
+        else if (hexVal[i]>='a' && hexVal[i]<='f')
+        {
+            dec_val += (hexVal[i] - 87)*base;
+
+            // incrementing base by power
+            base = base*16;
+        }
+    }
+
+    return dec_val;
+}
 
 /*********************************************************************
 *
@@ -665,11 +723,11 @@ int SetVariable(const char* szObject, char* pStrValue)
 			break;
 
 			case VAR_TYPE_PORT:
-				if(strcmp(pStrValue, "nce") == 0)
+				if(stricmp(pStrValue, "nce") == 0)
 				{
 					temp = 1;
 				}
-				else if(strcmp(pStrValue, "expressnet") == 0)
+				else if(stricmp(pStrValue, "expressnet") == 0)
 				{
 					temp = 2;
 				}
@@ -742,6 +800,25 @@ int SetVariable(const char* szObject, char* pStrValue)
 				{
 					return CMD_READ_ONLY;
 				}
+			break;
+
+	    	case VAR_TYPE_LED:
+	    		if(stricmp(pStrValue, "on") == 0)
+	    		{
+	    			StatusLed(LED_ON);
+	    		}
+	    		else if(stricmp(pStrValue, "off") == 0)
+	    		{
+	    			StatusLed(LED_OFF);
+	    		}
+	    		else if(stricmp(pStrValue, "blink") == 0)
+	    		{
+	    			StatusLed(LED_BLINK);
+	    		}
+	    		else
+	    		{
+	    			StatusLed(hexadecimalToDecimal(pStrValue));
+	    		}
 			break;
 		}
 	}
