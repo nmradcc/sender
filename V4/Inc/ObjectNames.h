@@ -28,4 +28,6 @@ extern const char szPort[];
 
 extern const char szPath[];
 
+extern const char szLed[];
+
 #endif /* OBJECTNAMES_H_ */
