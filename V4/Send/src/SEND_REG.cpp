@@ -45,13 +45,13 @@ static const char sccsid_h[]    = SEND_REG_H_DECLARED;
  * Baseline packet arrays.
  */
 const BYTE	Send_reg::rst_bytes[PKT_SIZE] =
-	{ 0xff, 0xf0, 0x00, 0x00, 0x01 };			// Reset packet.
+	{ 0xff, 0xf0, 0x00, 0x00, 0x01 };			// Reset packet.		00 00 00
 const BYTE	Send_reg::rst_hard_bytes[PKT_SIZE] =
-	{ 0xff, 0xf0, 0x00, 0x04, 0x03 };			// Hard reset packet.
+	{ 0xff, 0xf0, 0x00, 0x04, 0x03 };			// Hard reset packet.	00 01 01
 const BYTE	Send_reg::idle_bytes[PKT_SIZE] =
-	{ 0xff, 0xf7, 0xf8, 0x01, 0xff };			// Idle packet.
+	{ 0xff, 0xf7, 0xf8, 0x01, 0xff };			// Idle packet.			00 ff 00
 const BYTE	Send_reg::base_bytes[PKT_SIZE] =
-	{ 0xff, 0xf0, 0x19, 0xd0, 0xef };			// Baseline packet.
+	{ 0xff, 0xf0, 0x19, 0xd0, 0xef };			// Baseline packet.		03 74 77
 
 const u_long	SAN_CNT			= 0xFFFFFFUL; 	// Sanity timeout value.
 const u_int		SHORT_SAN_CNT 	= 0xFFFF; 		// Short sanity timeout value.
@@ -368,6 +368,36 @@ Send_reg::init_send( void )
 /*
  *	NAME
  *
+ *		init_8254()							-	 Init 8254 timer.
+ *
+ *	RETURN VALUE
+ *
+ *		OK		-	Sucess.
+ *		FAIL	-	Problem with initialization.
+ *
+ *	DESCRIPTION
+ *
+ *		init_8254() initializes the 8254 timer.  It sets it to the
+ *		correct mode, load the default timer values.  and cycles
+ *      CNT0H to force the DCC0 output to an initial low state.
+ */
+/*--------------------------------------------------------------------------*/
+
+Rslt_t
+Send_reg::init_8254( void )
+{
+	clk0t	=	CNT_0T_INIT;
+	clk0h	=	CNT_0H_INIT + 2;
+	clk1t	=	CNT_1T_INIT;
+
+	return ( OK );
+}
+
+
+/*--------------------------------------------------------------------------*/
+/*
+ *	NAME
+ *
  *		start_clk()							-	 Start hardware clock.
  *
  *	RETURN VALUE
@@ -610,7 +640,7 @@ Send_reg::set_clk(
 	// kk added
 	// rebuild the idle packet with the new times
 	//BuildIdlePacket(18);
-	send_idle();
+	//send_idle();
 #else
 	start_clk();
 	if ( send_bytes( 2, 0x55, "Flush clock change through hardware." ) != OK )
