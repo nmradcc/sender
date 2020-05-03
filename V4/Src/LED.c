@@ -13,64 +13,23 @@
 
 struct netif gnetif;
 
-//static int LedBlink = 0;
 static uint32_t LedMask = 1;
 
 static uint32_t RedPattern;
 static uint32_t GreenPattern;
 
-#ifdef OLD
-void StatusLed(int s)
-{
 
-	if(s == LED_BLINK)
-	{
-		LedBlink = 1;
-	}
-	else if(s == LED_ON)
-	{
-		LedBlink = 0;
-		HAL_GPIO_WritePin(GREEN_LED_PORT, GREEN_LED, GPIO_PIN_SET);
-	}
-	else
-	{
-		LedBlink = 0;
-		HAL_GPIO_WritePin(GREEN_LED_PORT, GREEN_LED, GPIO_PIN_RESET);
-	}
-}
-
-
-void LedTaskOld(void* argument)
-{
-
-	while(1)
-	{
-		HAL_GPIO_WritePin(RED_LED_PORT, RED_LED, GPIO_PIN_SET);
-		if(LedBlink)
-		{
-			HAL_GPIO_WritePin(GREEN_LED_PORT, GREEN_LED, GPIO_PIN_RESET);
-		}
-		osDelay(pdMS_TO_TICKS(500));
-		HAL_GPIO_WritePin(RED_LED_PORT, RED_LED, GPIO_PIN_RESET);
-		if(LedBlink)
-		{
-			HAL_GPIO_WritePin(GREEN_LED_PORT, GREEN_LED, GPIO_PIN_SET);
-		}
-		osDelay(pdMS_TO_TICKS(500));
-
-
-		if(netif_is_link_up(&gnetif))
-		{
-			HAL_GPIO_WritePin(BLUE_LED_PORT, BLUE_LED, GPIO_PIN_SET);
-		}
-		else
-		{
-			HAL_GPIO_WritePin(BLUE_LED_PORT, BLUE_LED, GPIO_PIN_RESET);
-		}
-	}
-}
-#endif
-
+/*********************************************************************
+*
+* HeartbeatLed
+*
+* @brief	Run the heartbeat (red) LED
+*
+* @param	uint32_t nPattern
+*
+* @return	None
+*
+*********************************************************************/
 void HeartbeatLed(uint32_t nPattern)
 {
 	RedPattern = nPattern;
@@ -80,6 +39,17 @@ void HeartbeatLed(uint32_t nPattern)
 	}
 }
 
+/*********************************************************************
+*
+* StatusLed
+*
+* @brief	Run the status (green) LED
+*
+* @param	uint32_t nPattern
+*
+* @return	None
+*
+*********************************************************************/
 void StatusLed(uint32_t nPattern)
 {
 	GreenPattern = nPattern;
@@ -89,6 +59,22 @@ void StatusLed(uint32_t nPattern)
 	}
 }
 
+
+/*********************************************************************
+*
+* GetStatusLed
+*
+* @brief	Get the status (green) LED
+*
+* @param	None
+*
+* @return	uint32_t nPattern
+*
+*********************************************************************/
+uint32_t GetStatusLed(void)
+{
+	return GreenPattern;
+}
 
 
 void DoRedLed(void)
