@@ -37,6 +37,7 @@ enum
 #define VAR_TYPE_ON_OFF		8
 #define VAR_TYPE_PORT		9
 #define VAR_TYPE_IP			10
+#define VAR_TYPE_LED		11
 
 #define VAR_TYPE_TRACK		20
 
@@ -80,7 +81,7 @@ typedef struct var_table_t
 extern const VAR_TABLE VarCmdTable[];
 
 //#define NUM_VARIABLES	(sizeof(VarCmdTable) / sizeof(VAR_TABLE))
-#define NUM_VARIABLES 13
+#define NUM_VARIABLES 14
 
 extern int IsVariable(char* pBuffer);
 
