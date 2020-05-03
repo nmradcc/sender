@@ -20,7 +20,7 @@
 #include "ShellCS.h"
 #include "ShellScript.h"
 #include "Track.h"
-#include "Led.h"
+//#include "Led.h"
 #include "Ansi.h"
 #include "Variables.h"
 //#include "Clock.h"
@@ -106,7 +106,7 @@ CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShRem(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShDelay(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShEcho(uint8_t bPort, int argc, char *argv[]);
-CMD_RETURN ShLed(uint8_t bPort, int argc, char *argv[]);
+//CMD_RETURN ShLed(uint8_t bPort, int argc, char *argv[]);
 
 CMD_RETURN ShVariables(uint8_t bPort, int argc, char *argv[]);
 
@@ -187,7 +187,7 @@ const SHELL_TABLE ShellTable[] =
 	{"echo",	CL_SCRIPT,	NO_FLAGS | SCRIPT_HELP,			ShEcho,				"test"},
 	{"rem",		CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP,	ShRem,				"ignore line"},
 	{"prompt",	CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP,	ShPrompt,			"issue a prompt"},
-	{"led",		CL_SCRIPT,	NO_FLAGS | SCRIPT_HELP,			ShLed,				"Control the Green LED"},
+//	{"led",		CL_SCRIPT,	NO_FLAGS | SCRIPT_HELP,			ShLed,				"Green LED on|off|blink|hex32"},
 	{"script",	CL_SCRIPT,	NO_FLAGS | SCRIPT_HELP,			ShScripts,			"<name> pause|resume|kill / List the running scripts"},
 
 // file system
@@ -895,54 +895,8 @@ CMD_RETURN ShRem(uint8_t bPort, int argc, char *argv[])
 
 
 
-uint32_t hexadecimalToDecimal(char hexVal[])
-{
-    int len = strlen(hexVal);
 
-    // Initializing base value to 1, i.e 16^0
-    uint32_t base = 1;
-
-    uint32_t dec_val = 0;
-
-    // Extracting characters as digits from last character
-    for (int i=len-1; i>=0; i--)
-    {
-        // if character lies in '0'-'9', converting
-        // it to integral 0-9 by subtracting 48 from
-        // ASCII value.
-        if (hexVal[i]>='0' && hexVal[i]<='9')
-        {
-            dec_val += (hexVal[i] - 48)*base;
-
-            // incrementing base by power
-            base = base * 16;
-        }
-
-        // if character lies in 'A'-'F' , converting
-        // it to integral 10 - 15 by subtracting 55
-        // from ASCII value
-        else if (hexVal[i]>='A' && hexVal[i]<='F')
-        {
-            dec_val += (hexVal[i] - 55)*base;
-
-            // incrementing base by power
-            base = base*16;
-        }
-        // if character lies in 'a'-'f' , converting
-        // it to integral 10 - 15 by subtracting 87
-        // from ASCII value
-        else if (hexVal[i]>='a' && hexVal[i]<='f')
-        {
-            dec_val += (hexVal[i] - 87)*base;
-
-            // incrementing base by power
-            base = base*16;
-        }
-    }
-
-    return dec_val;
-}
-
+#ifdef MOVE_TO_VARIABLE
 /*********************************************************************
 *
 * ShLed
@@ -959,6 +913,7 @@ uint32_t hexadecimalToDecimal(char hexVal[])
 *********************************************************************/
 CMD_RETURN ShLed(uint8_t bPort, int argc, char *argv[])
 {
+	char buf[10];
 
 	if(argc == 2)
 	{
@@ -979,10 +934,17 @@ CMD_RETURN ShLed(uint8_t bPort, int argc, char *argv[])
 			StatusLed(hexadecimalToDecimal(argv[1]));
 		}
 	}
+	else
+	{
+		sprintf(buf, "%08x", (int)GetStatusLed());
+		ShNL(bPort);
+		ShFieldOut(bPort, "Green LED: ", 0);
+		ShFieldOut(bPort, buf, 0);
+	}
 
 	return CMD_OK;
 }
-
+#endif
 
 /*********************************************************************
 *
