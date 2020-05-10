@@ -357,7 +357,7 @@ CMD_RETURN ShSystemStatus(uint8_t bPort, int argc, char *argv[])
 CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
 {
     FRESULT ret;
-    char szTypeBuf[20];
+    char szTypeBuf[80];
 	char* pBuf = szTypeBuf;
 	char* pp;
     uint32_t bc;
