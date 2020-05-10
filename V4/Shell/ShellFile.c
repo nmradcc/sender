@@ -58,6 +58,7 @@ CMD_RETURN ShMkdir(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShRmdir(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShChdir(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShCWD(uint8_t bPort, int argc, char *argv[]);
+CMD_RETURN ShRename(uint8_t bPort, int argc, char *argv[]);
 
 #ifdef REF
 typedef struct _DIR_ {
@@ -509,6 +510,36 @@ CMD_RETURN ShDelete(uint8_t bPort, int argc, char *argv[])
 	}
 
 	return CMD_OK;
+}
+
+
+/*********************************************************************
+*
+* ShRename
+* @catagory	Shell Command
+*
+* @brief	FileSystem Rename File shell command
+*
+* @param	bPort - port that issued this command
+*			argc - argument country
+*			argv - argc array of arguments
+*
+* @return	CMD_RETURN - shell result
+*
+*********************************************************************/
+CMD_RETURN ShRename(uint8_t bPort, int argc, char *argv[])
+{
+    int ret;
+
+    if(argc == 3)
+    {
+    	ret = f_rename (argv[1], argv[2]);	/* Rename/Move a file or directory */
+		if(ret == FR_OK)
+		{
+			return CMD_OK;
+		}
+    }
+	return CMD_BAD_PARAMS;
 }
 
 /*********************************************************************
