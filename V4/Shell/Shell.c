@@ -170,6 +170,7 @@ const SHELL_TABLE ShellTable[] =
 	{"help",	CL_SYS,		NO_FLAGS,						ShHelp,				"command help -a=all -s=script -c=color"},
     
 	{"clrscr",	CL_ANSI,	NO_FLAGS,						ShClrScreen,		"clear the screen"},
+	{"cls",		CL_ANSI,	NO_FLAGS,						ShClrScreen,		"clear the screen"},
 	{"clreol",	CL_ANSI,	NO_FLAGS,						ShClrEOL,			"clear from the cursor to the end of the line"},
 	{"gotoxy",	CL_ANSI,	NO_FLAGS,						ShGotoXY,			"x, y"},
 	{"cursor",	CL_ANSI,	NO_FLAGS,						ShCursor,			"save | restore"},
@@ -201,6 +202,7 @@ const SHELL_TABLE ShellTable[] =
 	{"cwd",	    CL_FILE,	SUPPRESS_HELP, 					ShCWD,				"change working directory"},
 	{"atrib",   CL_FILE,	NO_FLAGS, 						ShAtrib,			"Set/Reset attributes +/- R,H,S,A"},
 	{"copy",    CL_FILE,	NO_FLAGS,	 					ShCopy,				"copy source destination"},
+	{"rename",  CL_FILE,	NO_FLAGS,	 					ShRename,			"rename source destination"},
 
 	{"args",    CL_SYS,		SUPPRESS_HELP, 					ShArgs,				"List arguments"},
 	{"tasks",   CL_SYS,		NO_FLAGS, 						ShTasks,			"Task List"},
@@ -2180,6 +2182,10 @@ void ShellInit(void)
 	// ToDo - fix this
     //ShNL(ALL_PORTS);
     ShNL(PORT3);
+
+	ShFieldOut(PORT3, "Sender 4, Version ", 0);
+	ShFieldOut(PORT3, VarToString(FindVariable("version")), 0);
+
 	//Prompt(ALL_PORTS);
 	Prompt(PORT3);
 }
@@ -2663,19 +2669,6 @@ void ShellTask(void *argument)
 * @return	None
 *
 *********************************************************************/
-/**********************************************************************
-*
-* FUNCTION:
-*
-* ARGUMENTS:
-*
-* RETURNS:
-*
-* DESCRIPTION:
-*
-* RESTRICTIONS:
-*
-**********************************************************************/
 void ScriptTask(void *argument)
 {
 //	ScriptInit();
