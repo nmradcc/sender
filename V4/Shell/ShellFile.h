@@ -39,5 +39,6 @@ CMD_RETURN ShCWD(uint8_t bPort, int argc, char *argv[]);
 
 CMD_RETURN ShAtrib(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShCopy(uint8_t bPort, int argc, char *argv[]);
+CMD_RETURN ShRename(uint8_t bPort, int argc, char *argv[]);
 
 #endif /* SHELLfile_H_ */
