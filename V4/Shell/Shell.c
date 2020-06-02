@@ -125,8 +125,6 @@ CMD_RETURN ShArgs(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShTestBits(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShSend(uint8_t bPort, int argc, char *argv[]);
 
-CMD_RETURN ShBitTest(uint8_t bPort, int argc, char *argv[]);
-
 CMD_RETURN ShSendZero(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShSendOne(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShSendScopeA(uint8_t bPort, int argc, char *argv[]);
@@ -165,76 +163,74 @@ int RunScript(uint8_t bPort, char* filename, size_t nargs, char** args);
 *********************************************************************/
 const SHELL_TABLE ShellTable[] =
 {
-//	Cmd			Binary		Flags							Function
-	{"?",		CL_SYS,		SUPPRESS_HELP,					ShHelp,				"command help -a=all -s=script -c=color"},
-	{"help",	CL_SYS,		NO_FLAGS,						ShHelp,				"command help -a=all -s=script -c=color"},
+//	Cmd			Class		Flags				Function
+	{"?",		CL_SYS,		SUPPRESS_HELP,		ShHelp,				"command help -a=all -c=color -n=ANSI -f-file -s=script -w=CS -y=sys -t=test"},
+	{"help",	CL_SYS,		NO_FLAGS,			ShHelp,				"command help -a=all -c=color -n=ANSI -f-file -s=script -w=CS -y=sys -t=test"},
     
-	{"clrscr",	CL_ANSI,	NO_FLAGS,						ShClrScreen,		"clear the screen"},
-	{"cls",		CL_ANSI,	NO_FLAGS,						ShClrScreen,		"clear the screen"},
-	{"clreol",	CL_ANSI,	NO_FLAGS,						ShClrEOL,			"clear from the cursor to the end of the line"},
-	{"gotoxy",	CL_ANSI,	NO_FLAGS,						ShGotoXY,			"x, y"},
-	{"cursor",	CL_ANSI,	NO_FLAGS,						ShCursor,			"save | restore"},
-	{"color",	CL_ANSI,	NO_FLAGS,						ShTextColor,		"[[[fg], bg], att]"},
+	{"clrscr",	CL_ANSI,	NO_FLAGS,			ShClrScreen,		"clear the screen"},
+	{"cls",		CL_ANSI,	NO_FLAGS,			ShClrScreen,		"clear the screen"},
+	{"clreol",	CL_ANSI,	NO_FLAGS,			ShClrEOL,			"clear from the cursor to the end of the line"},
+	{"gotoxy",	CL_ANSI,	NO_FLAGS,			ShGotoXY,			"x, y"},
+	{"cursor",	CL_ANSI,	NO_FLAGS,			ShCursor,			"save | restore"},
+	{"color",	CL_ANSI,	NO_FLAGS,			ShTextColor,		"[[[fg], bg], att]"},
 
 // scripting
-	{"if",		CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP, 	ShIf,				"if condition"},
-	{"else",	CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP, 	ShElse,				"not condition"},
-	{"endif",	CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP, 	ShEndif,			"end if"},
-	{"loop",	CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP, 	ShLoop,				"count"},
-	{"endloop",	CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP, 	ShEndLoop,			"end loop"},
-	{"break",	CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP, 	ShBreak,			"break out of loop"},
-	{"variables",CL_SCRIPT,	NO_FLAGS | SCRIPT_HELP,			ShVariables,		"list all variables"},
-	{"pause",	CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP, 	ShDelay,			"ms"},
-	{"echo",	CL_SCRIPT,	NO_FLAGS | SCRIPT_HELP,			ShEcho,				"test"},
-	{"rem",		CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP,	ShRem,				"ignore line"},
-	{"prompt",	CL_SCRIPT,	SUPPRESS_HELP | SCRIPT_HELP,	ShPrompt,			"issue a prompt"},
-//	{"led",		CL_SCRIPT,	NO_FLAGS | SCRIPT_HELP,			ShLed,				"Green LED on|off|blink|hex32"},
-	{"script",	CL_SCRIPT,	NO_FLAGS | SCRIPT_HELP,			ShScripts,			"<name> pause|resume|kill / List the running scripts"},
+	{"if",		CL_SCRIPT,	SUPPRESS_HELP, 		ShIf,				"if condition"},
+	{"else",	CL_SCRIPT,	SUPPRESS_HELP, 		ShElse,				"not condition"},
+	{"endif",	CL_SCRIPT,	SUPPRESS_HELP, 		ShEndif,			"end if"},
+	{"loop",	CL_SCRIPT,	SUPPRESS_HELP, 		ShLoop,				"count"},
+	{"endloop",	CL_SCRIPT,	SUPPRESS_HELP, 		ShEndLoop,			"end loop"},
+	{"break",	CL_SCRIPT,	SUPPRESS_HELP, 		ShBreak,			"break out of loop"},
+	{"variables",CL_SCRIPT,	NO_FLAGS,			ShVariables,		"list all variables"},
+	{"pause",	CL_SCRIPT,	SUPPRESS_HELP, 		ShDelay,			"ms"},
+	{"echo",	CL_SCRIPT,	NO_FLAGS,			ShEcho,				"test"},
+	{"rem",		CL_SCRIPT,	SUPPRESS_HELP,		ShRem,				"ignore line"},
+	{"prompt",	CL_SCRIPT,	SUPPRESS_HELP,		ShPrompt,			"issue a prompt"},
+	{"script",	CL_SCRIPT,	NO_FLAGS,			ShScripts,			"<name> pause|resume|kill / List the running scripts"},
 
 // file system
-	{"dir",		CL_FILE,	NO_FLAGS,						ShDir,				"list the files on the drive -h=show hidden -c=color"},
-	{"type",	CL_FILE,	NO_FLAGS,						ShType,				"display the contents of a file"},
-	{"del",		CL_FILE,	NO_FLAGS,						ShDelete,			"delete a file"},
-//	{"format",	CL_FILE,	SUPPRESS_HELP, 					ShFormat,			"format the storage"},
-	{"md",	    CL_FILE,	NO_FLAGS, 						ShMkdir,			"make directory"},
-	{"rd",	    CL_FILE,	SUPPRESS_HELP, 					ShRmdir,			"remove directory"},
-	{"cd",	    CL_FILE,	NO_FLAGS, 						ShChdir,			"change directory"},
-	{"cwd",	    CL_FILE,	SUPPRESS_HELP, 					ShCWD,				"change working directory"},
-	{"atrib",   CL_FILE,	NO_FLAGS, 						ShAtrib,			"Set/Reset attributes +/- R,H,S,A"},
-	{"copy",    CL_FILE,	NO_FLAGS,	 					ShCopy,				"copy source destination"},
-	{"rename",  CL_FILE,	NO_FLAGS,	 					ShRename,			"rename source destination"},
+	{"dir",		CL_FILE,	NO_FLAGS,			ShDir,				"list the files on the drive -h=show hidden -c=color"},
+	{"type",	CL_FILE,	NO_FLAGS,			ShType,				"display the contents of a file"},
+	{"del",		CL_FILE,	NO_FLAGS,			ShDelete,			"delete a file"},
+//	{"format",	CL_FILE,	SUPPRESS_HELP, 		ShFormat,			"format the storage"},
+	{"md",	    CL_FILE,	NO_FLAGS, 			ShMkdir,			"make directory"},
+	{"rd",	    CL_FILE,	SUPPRESS_HELP, 		ShRmdir,			"remove directory"},
+	{"cd",	    CL_FILE,	NO_FLAGS, 			ShChdir,			"change directory"},
+	{"cwd",	    CL_FILE,	SUPPRESS_HELP, 		ShCWD,				"change working directory"},
+	{"atrib",   CL_FILE,	NO_FLAGS, 			ShAtrib,			"Set/Reset attributes +/- R,H,S,A"},
+	{"copy",    CL_FILE,	NO_FLAGS,	 		ShCopy,				"copy source destination"},
+	{"rename",  CL_FILE,	NO_FLAGS,	 		ShRename,			"rename source destination"},
 
-	{"args",    CL_SYS,		SUPPRESS_HELP, 					ShArgs,				"List arguments"},
-	{"tasks",   CL_SYS,		NO_FLAGS, 						ShTasks,			"Task List"},
-//	{"tcp",   	CL_SYS,		NO_FLAGS, 						ShTcp,				"TCP/IP Info"},
+	{"args",    CL_SYS,		SUPPRESS_HELP, 		ShArgs,				"List arguments"},
+	{"tasks",   CL_SYS,		NO_FLAGS, 			ShTasks,			"Task List"},
+//	{"tcp",   	CL_SYS,		NO_FLAGS, 			ShTcp,				"TCP/IP Info"},
 
 	// command station
-	{"cab",	    CL_CS,		NO_FLAGS,						ShCabStat,			""},
-	{"loco",    CL_CS,		NO_FLAGS,						ShLocoStat,			""},
-	{"assign",  CL_CS,		SUPPRESS_HELP, 					ShAssign,			""},
-	{"status",  CL_CS,		SUPPRESS_HELP, 					ShSystemStatus,		""},
-	{"train", 	CL_CS,		NO_FLAGS, 						ShSetLoco,			"<address> [[[[<speed>] <direction 0/1>] <function1>] <function2>]"},
-	{"disp",	CL_CS,		NO_FLAGS,						ShCabDisplay,		"<cab> ""Massage"""},
-	{"write",	CL_CS,		NO_FLAGS,						ShProgTrackWriteCV,	"CV, Value"},
-	{"read",	CL_CS,		NO_FLAGS,						ShProgTrackReadCV,	"CV"},
+	{"cab",	    CL_CS,		NO_FLAGS,			ShCabStat,			""},
+	{"loco",    CL_CS,		NO_FLAGS,			ShLocoStat,			"[<loco #>]"},
+	{"assign",  CL_CS,		SUPPRESS_HELP, 		ShAssign,			"<cab> <address>"},
+	{"status",  CL_CS,		SUPPRESS_HELP, 		ShSystemStatus,		""},
+	{"train", 	CL_CS,		NO_FLAGS, 			ShSetLoco,			"<address> [[[[<speed>] <direction 0/1>] <function1>] <function2>]"},
+	{"disp",	CL_CS,		NO_FLAGS,			ShCabDisplay,		"<cab> ""Massage"""},
+	{"write",	CL_CS,		NO_FLAGS,			ShProgTrackWriteCV,	"CV, Value"},
+	{"read",	CL_CS,		NO_FLAGS,			ShProgTrackReadCV,	"CV"},
 
 
-//	{"test",   	0x00,		NO_FLAGS, 						ShTestBits,			"DCC Bit Test"},
-	{"send",   	CL_TEST,	NO_FLAGS, 						ShSend,				"DCC Decoder Tests - type send -? for more info"},
-	{"bittest",	CL_TEST,	NO_FLAGS, 						ShBitTest,			"DCC Bit Test"},
+//	{"test",   	0x00,		NO_FLAGS, 			ShTestBits,			"DCC Bit Test"},
+	{"send",   	CL_TEST,	NO_FLAGS, 			ShSend,				"DCC Decoder Tests - type send -? for more info"},
 
-	{"sendzero",CL_TEST,	NO_FLAGS, 						ShSendZero,			"DCC Zero Packet(s) [count]"},
-	{"sendone",	CL_TEST,	NO_FLAGS, 						ShSendOne,			"DCC one Packet(s) [count]"},
-	{"scopea",	CL_TEST,	NO_FLAGS, 						ShSendScopeA,		"DCC Scope A Packet(s) [count]"},
-	{"scopeb",	CL_TEST,	NO_FLAGS, 						ShSendScopeB,		"DCC Scope B Packet(s) [count]"},
-	{"warble",	CL_TEST,	NO_FLAGS, 						ShSendWarble,		"DCC Warble Packet(s) [count]"},
-	{"stretched",CL_TEST,	NO_FLAGS, 						ShSendStretched,	"DCC Stretched Packet(s) [count]"},
-	{"reset",	CL_TEST,	NO_FLAGS, 						ShSendReset,		"DCC Reset Packet(s) [count]"},
-	{"hard",	CL_TEST,	NO_FLAGS, 						ShSendHard,			"DCC Hard Reset Packet(s) [count]"},
-	{"idle",	CL_TEST,	NO_FLAGS, 						ShSendIdle,			"DCC Idle Packet(s) [count]"},
-	{"packet",	CL_TEST,	NO_FLAGS, 						ShSendPacket,		"DCC Packet(s) [file &| count]"},
+	{"sendzero",CL_TEST,	NO_FLAGS, 			ShSendZero,			"DCC Zero Packets"},
+	{"sendone",	CL_TEST,	NO_FLAGS, 			ShSendOne,			"DCC one Packets"},
+	{"scopea",	CL_TEST,	NO_FLAGS, 			ShSendScopeA,		"DCC Scope A Packet(s) [count]"},
+	{"scopeb",	CL_TEST,	NO_FLAGS, 			ShSendScopeB,		"DCC Scope B Packet(s) [count]"},
+	{"warble",	CL_TEST,	NO_FLAGS, 			ShSendWarble,		"DCC Warble Packet(s) [count]"},
+	{"stretched",CL_TEST,	NO_FLAGS, 			ShSendStretched,	"DCC Stretched Packet(s) [count]"},
+	{"reset",	CL_TEST,	NO_FLAGS, 			ShSendReset,		"DCC Reset Packet(s) [count]"},
+	{"hard",	CL_TEST,	NO_FLAGS, 			ShSendHard,			"DCC Hard Reset Packet(s) [count]"},
+	{"idle",	CL_TEST,	NO_FLAGS, 			ShSendIdle,			"DCC Idle Packet(s) [count]"},
+	{"packet",	CL_TEST,	NO_FLAGS, 			ShSendPacket,		"DCC Packet(s) [file [count]]"},
 
-	{"ymodem",	CL_SYS,		NO_FLAGS, 						ShYmodem,			"YModem receive"},
+	{"ymodem",	CL_SYS,		NO_FLAGS, 			ShYmodem,			"YModem receive"},
 };
 #define SHELL_TABLE_COUNT (sizeof(ShellTable) / sizeof(SHELL_TABLE))
 
@@ -713,7 +709,47 @@ CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[])
 			return CMD_OK;
 		}
 
-		if(strcasecmp("-s", argv[1]) == 0)
+		if(strcasecmp("-n", argv[1]) == 0)
+		{
+			ShNL(bPort);
+
+			ShFieldOut(bPort, "ANSI Commands:", 0);
+			ShNL(bPort);
+			for(i = 0; i < SHELL_TABLE_COUNT; i++)
+			{
+				if(ShellTable[i].bClass == CL_ANSI)
+				{
+					ShFieldOut(bPort, (char*)ShellTable[i].szCommand, HELP_FIELD_WIDTH);
+					cnt++;
+					if(cnt >= 6)
+					{
+						ShNL(bPort);
+						cnt = 0;
+					}
+				}
+			}
+		}
+		else if(strcasecmp("-f", argv[1]) == 0)
+		{
+			ShNL(bPort);
+
+			ShFieldOut(bPort, "File Commands:", 0);
+			ShNL(bPort);
+			for(i = 0; i < SHELL_TABLE_COUNT; i++)
+			{
+				if(ShellTable[i].bClass == CL_FILE)
+				{
+					ShFieldOut(bPort, (char*)ShellTable[i].szCommand, HELP_FIELD_WIDTH);
+					cnt++;
+					if(cnt >= 6)
+					{
+						ShNL(bPort);
+						cnt = 0;
+					}
+				}
+			}
+		}
+		else if(strcasecmp("-s", argv[1]) == 0)
 		{
 			ShNL(bPort);
 
@@ -721,7 +757,67 @@ CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[])
 			ShNL(bPort);
 			for(i = 0; i < SHELL_TABLE_COUNT; i++)
 			{
-				if((ShellTable[i].bFlags & SCRIPT_HELP) != 0)
+				if(ShellTable[i].bClass == CL_SCRIPT)
+				{
+					ShFieldOut(bPort, (char*)ShellTable[i].szCommand, HELP_FIELD_WIDTH);
+					cnt++;
+					if(cnt >= 6)
+					{
+						ShNL(bPort);
+						cnt = 0;
+					}
+				}
+			}
+		}
+		else if(strcasecmp("-w", argv[1]) == 0)
+		{
+			ShNL(bPort);
+
+			ShFieldOut(bPort, "Command Station Commands:", 0);
+			ShNL(bPort);
+			for(i = 0; i < SHELL_TABLE_COUNT; i++)
+			{
+				if(ShellTable[i].bClass == CL_CS)
+				{
+					ShFieldOut(bPort, (char*)ShellTable[i].szCommand, HELP_FIELD_WIDTH);
+					cnt++;
+					if(cnt >= 6)
+					{
+						ShNL(bPort);
+						cnt = 0;
+					}
+				}
+			}
+		}
+		else if(strcasecmp("-y", argv[1]) == 0)
+		{
+			ShNL(bPort);
+
+			ShFieldOut(bPort, "System Commands:", 0);
+			ShNL(bPort);
+			for(i = 0; i < SHELL_TABLE_COUNT; i++)
+			{
+				if(ShellTable[i].bClass == CL_SYS)
+				{
+					ShFieldOut(bPort, (char*)ShellTable[i].szCommand, HELP_FIELD_WIDTH);
+					cnt++;
+					if(cnt >= 6)
+					{
+						ShNL(bPort);
+						cnt = 0;
+					}
+				}
+			}
+		}
+		else if(strcasecmp("-t", argv[1]) == 0)
+		{
+			ShNL(bPort);
+
+			ShFieldOut(bPort, "Test Commands:", 0);
+			ShNL(bPort);
+			for(i = 0; i < SHELL_TABLE_COUNT; i++)
+			{
+				if(ShellTable[i].bClass == CL_TEST)
 				{
 					ShFieldOut(bPort, (char*)ShellTable[i].szCommand, HELP_FIELD_WIDTH);
 					cnt++;
@@ -785,7 +881,7 @@ CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[])
 			ShFieldOut(bPort, "Test ", 0);
 			ShNL(bPort);
 
-			TextColor(bPort, FG_White, BG_Black, ATT_Normal);
+			ResetColor(bPort);
 		}
 		else
 		{
@@ -896,57 +992,6 @@ CMD_RETURN ShRem(uint8_t bPort, int argc, char *argv[])
 }
 
 
-
-
-#ifdef MOVE_TO_VARIABLE
-/*********************************************************************
-*
-* ShLed
-*
-* @catagory	Shell Command
-* @brief	Shell command that does nothing
-*
-* @param	bPort - port that issued this command
-*			argc - argument count
-*			argv - argc array of arguments
-*
-* @return	CMD_RETURN - shell result
-*
-*********************************************************************/
-CMD_RETURN ShLed(uint8_t bPort, int argc, char *argv[])
-{
-	char buf[10];
-
-	if(argc == 2)
-	{
-		if(strcasecmp(argv[1], "on") == 0)
-		{
-			StatusLed(LED_ON);
-		}
-		else if(strcasecmp(argv[1], "off") == 0)
-		{
-			StatusLed(LED_OFF);
-		}
-		else if(strcasecmp(argv[1], "blink") == 0)
-		{
-			StatusLed(LED_BLINK);
-		}
-		else
-		{
-			StatusLed(hexadecimalToDecimal(argv[1]));
-		}
-	}
-	else
-	{
-		sprintf(buf, "%08x", (int)GetStatusLed());
-		ShNL(bPort);
-		ShFieldOut(bPort, "Green LED: ", 0);
-		ShFieldOut(bPort, buf, 0);
-	}
-
-	return CMD_OK;
-}
-#endif
 
 /*********************************************************************
 *
@@ -1249,7 +1294,8 @@ CMD_RETURN ShTextColor(uint8_t bPort, int argc, char *argv[])
 
     if(argc == 1)
     {
-        TextColor(bPort, FG_White, FG_Black, ATT_Normal);
+        //TextColor(bPort, FG_White, FG_Black, ATT_Normal);
+        ResetColor(bPort);
         return CMD_OK;
     }
     else if(argc == 2)
@@ -2172,9 +2218,10 @@ void ShellInit(void)
 ////		PrintReturnString(bPort, ret);
 //	}
 
-	static char *args[ARG_SIZE];
-	static size_t nargs;
 
+
+//	static char *args[ARG_SIZE];
+//	static size_t nargs;
 //    parse_args("Startup.scp", args, ARR_SIZE, &nargs);
 
 //	RunScript(PORT3, args[0], nargs, args);
