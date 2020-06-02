@@ -7,8 +7,8 @@
 
 #include "LED.h"
 
-#define LED_ON	GPIO_PIN_SET
-#define LED_OFF GPIO_PIN_RESET
+#define LED_PIN_ON	GPIO_PIN_SET
+#define LED_PIN_OFF GPIO_PIN_RESET
 
 
 struct netif gnetif;
@@ -35,7 +35,7 @@ void HeartbeatLed(uint32_t nPattern)
 	RedPattern = nPattern;
 	if(RedPattern == 0)
 	{
-		HAL_GPIO_WritePin(RED_LED_PORT, RED_LED, LED_OFF);
+		HAL_GPIO_WritePin(RED_LED_PORT, RED_LED, LED_PIN_OFF);
 	}
 }
 
@@ -55,7 +55,7 @@ void StatusLed(uint32_t nPattern)
 	GreenPattern = nPattern;
 	if(GreenPattern == 0)
 	{
-		HAL_GPIO_WritePin(GREEN_LED_PORT, GREEN_LED, LED_OFF);
+		HAL_GPIO_WritePin(GREEN_LED_PORT, GREEN_LED, LED_PIN_OFF);
 	}
 }
 
@@ -84,11 +84,11 @@ void DoRedLed(void)
 	{
 		if((RedPattern & LedMask) != 0)
 		{
-			HAL_GPIO_WritePin(RED_LED_PORT, RED_LED, LED_ON);
+			HAL_GPIO_WritePin(RED_LED_PORT, RED_LED, LED_PIN_ON);
 		}
 		else
 		{
-			HAL_GPIO_WritePin(RED_LED_PORT, RED_LED, LED_OFF);
+			HAL_GPIO_WritePin(RED_LED_PORT, RED_LED, LED_PIN_OFF);
 		}
 	}
 }
@@ -100,11 +100,11 @@ void DoGreenLed(void)
 	{
 		if((GreenPattern & LedMask) != 0)
 		{
-			HAL_GPIO_WritePin(GREEN_LED_PORT, GREEN_LED, LED_ON);
+			HAL_GPIO_WritePin(GREEN_LED_PORT, GREEN_LED, LED_PIN_ON);
 		}
 		else
 		{
-			HAL_GPIO_WritePin(GREEN_LED_PORT, GREEN_LED, LED_OFF);
+			HAL_GPIO_WritePin(GREEN_LED_PORT, GREEN_LED, LED_PIN_OFF);
 		}
 	}
 }
@@ -128,11 +128,11 @@ void LedTask(void* argument)
 
 		if(netif_is_link_up(&gnetif))
 		{
-			HAL_GPIO_WritePin(BLUE_LED_PORT, BLUE_LED, LED_ON);
+			HAL_GPIO_WritePin(BLUE_LED_PORT, BLUE_LED, LED_PIN_ON);
 		}
 		else
 		{
-			HAL_GPIO_WritePin(BLUE_LED_PORT, BLUE_LED, LED_OFF);
+			HAL_GPIO_WritePin(BLUE_LED_PORT, BLUE_LED, LED_PIN_OFF);
 		}
 	}
 }
