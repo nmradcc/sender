@@ -76,7 +76,7 @@ void ClearScreen(uint8_t bPort)
 *
 * ClearEOL
 *
-* @brief	Output the ANSI clear to enf of line escape sequence 
+* @brief	Output the ANSI clear to eol of line escape sequence
 *
 * @param	bPort - port that issued this command
 *
@@ -94,7 +94,7 @@ void ClearEOL(uint8_t bPort)
 *
 * GoToXY
 *
-* @brief	Output the ANSI clear screen escape sequence 
+* @brief	Output the ANSI cursor escape sequence
 *
 * @param	bPort - port that issued this command
 *			col - the X position relative to the upper left corner
@@ -132,6 +132,12 @@ void TextColor(uint8_t bPort, FG_COLOR fg, BG_COLOR bg, ATTRIBUTE att)
 
     sprintf(buf, CSI "%d;%d;%dm", att, bg, fg);
     ShStringOut(bPort, buf);
+}
+
+void ResetColor(uint8_t bPort)
+{
+
+    ShStringOut(bPort, M_RESET_COLOR);
 }
 
 
