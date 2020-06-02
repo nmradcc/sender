@@ -21,6 +21,7 @@ typedef  enum
     FG_Purple = 35,
     FG_Cyan = 36,
     FG_White = 37,
+	FG_Default = 39,
 } FG_COLOR;
 
 
@@ -37,6 +38,7 @@ typedef enum
     BG_Purple = 45,
     BG_Cyan = 46,
     BG_White = 47,
+	BG_Default = 49,
 } BG_COLOR;
 
 
@@ -71,6 +73,7 @@ extern void ClearScreen(uint8_t bPort);
 extern void ClearEOL(uint8_t bPort);
 extern void GoToXY(uint8_t bPort, int col, int line);
 extern void TextColor(uint8_t bPort, FG_COLOR fg, BG_COLOR bg, ATTRIBUTE att);
+extern void ResetColor(uint8_t bPort);
 
 extern void Cursor(uint8_t bPort, uint8_t s_r);
 
