@@ -84,3 +84,11 @@ F - add FTP
 Other
 F - Add a CAN tranceiver and LCC
 
+
+Major Tasks
+- completely replace the porting layer - Stewart suggested using the code from OpenMRN
+- telent
+- tftp (or ftp)
+- composite USB (vcp and mass storage)
+- zip command
+- web server
