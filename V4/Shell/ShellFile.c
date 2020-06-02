@@ -122,9 +122,10 @@ FRESULT scan_files(uint8_t bPort, char* path, _Bool sh, _Bool col)
 						/* It is a directory */
 						if(col)
 						{
-							TextColor(bPort, FG_Yellow, BG_Black, ATT_Bold);
+		                	//TextColor(bPort, FG_Yellow, BG_Default, ATT_Bold);
+		                	TextColor(bPort, FG_Red, BG_Default, ATT_Bold);
 							ShFieldOut(bPort, fno.fname, 15);
-							TextColor(bPort, FG_White, FG_Black, ATT_Normal);
+							ResetColor(bPort);
 						}
 						else
 						{
@@ -149,21 +150,22 @@ FRESULT scan_files(uint8_t bPort, char* path, _Bool sh, _Bool col)
 						}
 						ShFieldOut(bPort, szTemp, 0);
 						ShNL(bPort);
-
-						//i = strlen(path);
-						//sprintf(&path[i], "/%s", fno.fname);
-						//res = scan_files(bPort, path);                    /* Enter the directory */
-						////if (res != FR_OK) break;
-						//path[i] = 0;
 					}
 					else
 					{
 						/* It is a file. */
 						if(col)
 						{
-				           	TextColor(bPort, FG_Cyan, BG_Black, ATT_Bold);
+			                if ((fno.fattrib & AM_HID) != 0)
+			                {
+			                	TextColor(bPort, FG_Cyan, BG_Default, ATT_Bold);
+			                }
+			                else
+			                {
+			                	TextColor(bPort, FG_Blue, BG_Default, ATT_Bold);
+			                }
 							ShFieldOut(bPort, fno.fname, 15);
-					        TextColor(bPort, FG_White, FG_Black, ATT_Normal);
+							ResetColor(bPort);
 						}
 						else
 						{
@@ -287,7 +289,7 @@ CMD_RETURN ShDir(uint8_t bPort, int argc, char *argv[])
     ShFieldOut(bPort, "Attributes", 0);
 	if(color)
 	{
-		TextColor(bPort, FG_White, FG_Black, ATT_Normal);
+		ResetColor(bPort);
 	}
 
 	(void)scan_files(bPort, buff, ShowHidden, color);
