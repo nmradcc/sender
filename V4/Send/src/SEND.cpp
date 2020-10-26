@@ -44,6 +44,7 @@ extern "C"
 //	extern int getch(void);
 //	extern char* gets(char* buf, int n);
 	extern char* getstr(char* buf, int n);
+	extern uint8_t kbhit(void);
 
 	extern int get_key_cmd( void );
 	extern void putch(char c);
@@ -57,6 +58,8 @@ extern "C"
 	extern void SendReset(void);
 	extern void SendHard(void);
 	extern void SendIdle(void);
+
+	extern void SetDccTiming(void);
 };
 #endif
 
@@ -70,7 +73,11 @@ inline void dummy(const char *, const char *) {}
 #define DOCS_FILE	"s_user.txt"
 
 
+#if SEND_VERSION >= 4
+const int		MAXLINE			= 80;			// Maximum input line.
+#else
 const int		MAXLINE			= 256;			// Maximum input line.
+#endif
 
 
 
@@ -331,6 +338,7 @@ main(
 	/*
 	 *	Pass user arguements to decoder test object Ldec_tst.
 	 */
+#ifdef OUT_FOR_NOW
 //k	Ldec_tst.set_run_mask( Args.get_run_mask() );
 //k	Ldec_tst.set_clk_mask( Args.get_clk_mask() );
 	Ldec_tst.set_trig_rev( Args.get_trig_rev() );
@@ -373,16 +381,19 @@ main(
 		STATPRINT(	"Skipping self tests, Data sent to log" );
 		printf(		"Skipping self tests, Data sent to log\n" );
 	}
+#endif
+
 
 	/*
 	 *	Set time for PC driven 1 usec delay for later use.
 	 */
-//k	if ( Dcc_reg.set_pc_delay_1usec() != OK )
-//k	{
-//k		STATPRINT(	"set_pc_delay_1usec() FAILED" );
-//k		printf(		"set_pc_delay_1usec() FAILED\n" );
-//k		init_key	=	KEY_NULL;			// Don't start tests automatically.
-//k	}
+	if ( Dcc_reg.set_pc_delay_1usec() != OK )
+	{
+		STATPRINT(	"set_pc_delay_1usec() FAILED" );
+		printf(		"set_pc_delay_1usec() FAILED\n" );
+		init_key	=	KEY_NULL;			// Don't start tests automatically.
+	}
+
 
 	#if SEND_VERSION >= 4
 		parse_key_cmd( init_key );
@@ -580,8 +591,7 @@ get_log_file(
 		Ver_rel, Ver_maj, Ver_min, Ver_bld );
     STATPRINT(	"File <%s>",
     	cmd_name );
-    STATPRINT(	"CRC %lu, Length %lu",
-    	nCRC, nLength );
+//k    STATPRINT(	"CRC %lu, Length %lu", nCRC, nLength );
 
 	for ( i = 0; i < (int)QUESTIONS_SIZE; i++ )
 	{
@@ -1105,8 +1115,12 @@ Key_val			init_key )					// Initial key value.
                			(key_val == KEY_DCC) ? "" : " Stretched" );
 			}
 //k			Dcc_reg.gen_print();
-			putchar( '\n' );
-			OUT_PC( PC_POS_UNDERCLRL, 0 );
+			#if SEND_VERSION >= 4
+				putch('\n');
+			#else
+				putchar( '\n' );
+			#endif
+//k			OUT_PC( PC_POS_UNDERCLRL, 0 );
 			break;
 
 		case KEY_SPEED:						// Change loco speed, acc. output.
@@ -1152,7 +1166,11 @@ Key_val			init_key )					// Initial key value.
                     	printf( "Setting accessory output to %d, GEN ", speed );
                     }
 //k					Dcc_reg.gen_print();
-					putchar( '\n' );
+					#if SEND_VERSION >= 4
+						putch('\n');
+					#else
+						putchar( '\n' );
+					#endif
                 }
 			}
 			else
@@ -1170,7 +1188,11 @@ Key_val			init_key )					// Initial key value.
 					speed	=	SP_E_STOP;
 					printf( "Setting Emergency Stop, GEN " );
 //k					Dcc_reg.gen_print();
-					putchar( '\n' );
+					#if SEND_VERSION >= 4
+						putch('\n');
+					#else
+						putchar( '\n' );
+					#endif
 				}
 				else
 				{
@@ -1192,7 +1214,11 @@ Key_val			init_key )					// Initial key value.
 					speed	=	SP_E_STOP_I;
 					printf( "Setting Emergency Stop I, GEN " );
 //k					Dcc_reg.gen_print();
-					putchar( '\n' );
+					#if SEND_VERSION >= 4
+						putch('\n');
+					#else
+						putchar( '\n' );
+					#endif
 				}
 				else
 				{
@@ -1215,14 +1241,22 @@ Key_val			init_key )					// Initial key value.
 					printf( "Setting direction <%s>, GEN ",
 						fw ?  "FORWARD" : "BACK" );
 //k					Dcc_reg.gen_print();
-					putchar( '\n' );
+					#if SEND_VERSION >= 4
+						putch('\n');
+					#else
+						putchar( '\n' );
+					#endif
 				}
 				else if ( Args.get_decoder_type() == DEC_FUNC )
 				{
 					printf( "Setting function output <%s>, GEN ",
 						fw ?  "ON" : "OFF" );
 //k					Dcc_reg.gen_print();
-					putchar( '\n' );
+					#if SEND_VERSION >= 4
+						putch('\n');
+					#else
+						putchar( '\n' );
+					#endif
 				}
             	else if ( Args.get_decoder_type() == DEC_SIG )
                 {
@@ -1234,7 +1268,11 @@ Key_val			init_key )					// Initial key value.
 					printf( "Setting accessory output <%s>, GEN ",
 						fw ?  "ON" : "OFF" );
 //k					Dcc_reg.gen_print();
-					putchar( '\n' );
+					#if SEND_VERSION >= 4
+						putch('\n');
+					#else
+						putchar( '\n' );
+					#endif
 				}
 			}
 			else
@@ -1391,7 +1429,8 @@ Key_val			init_key )					// Initial key value.
 
 				case SEND_IDLE:				// Repeat the idle packet.
                 	Dcc_bits.clr_in();
-                    Dcc_bits.put_idle_pkt( 4 );
+//                    Dcc_bits.put_idle_pkt( 4 );
+                    Dcc_bits.put_idle_pkt( 1 );
                     Dcc_bits.put_1s( 1 ).done();
 
 					Dcc_reg.send_bytes( 1, 0x00, "SEND_IDLE." );
@@ -1568,14 +1607,18 @@ Key_val			init_key )					// Initial key value.
 				 */
 				if ( rep_type != SEND_DEC_TST )
 				{
-//k					if ( Dcc_reg.get_obj_errs() || kbhit())
-					{
-						c_flag	=	false;
-					}
-//k					else
-					{
-//k						c_flag	=	true;
-					}
+					//#ifdef WAIT_FOR_KBHIT
+						if ( Dcc_reg.get_obj_errs() || kbhit())
+						{
+							c_flag	=	false;
+						}
+						else
+						{
+							c_flag	=	true;
+						}
+					//#else
+					//	c_flag	=	false;
+					//#endif
 				}
 			} while ( c_flag );
 
@@ -1618,6 +1661,13 @@ Key_val			init_key )					// Initial key value.
 
 
 #if SEND_VERSION >= 4		//Add accessor methods
+
+void SetDccTiming(void)
+{
+	//Dcc_reg.set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
+	Dcc_reg.init_8254();
+}
+
 void SendZero(void)
 {
 	Dcc_reg.set_scope( true );
@@ -1638,8 +1688,8 @@ void SendScopeA(void)
 	{
 		Dcc_reg.start_clk();
 	}
-	printf( "Sending scope test A (0 then 1)\n" );
-	OUT_PC( PC_POS_UNDERCLRL, 0 );
+	//printf( "Sending scope test A (0 then 1)\n" );
+	//OUT_PC( PC_POS_UNDERCLRL, 0 );
 	Dcc_bits.clr_in();
 	Dcc_bits.put_byte( 0x00 ).put_byte( 0xff ).done();
 	Dcc_reg.set_scope( true );
@@ -1652,8 +1702,8 @@ void SendScopeB(void)
 	{
 		Dcc_reg.start_clk();
 	}
-	printf( "Sending scope test B (1 then 0)\n" );
-	OUT_PC( PC_POS_UNDERCLRL, 0 );
+	//printf( "Sending scope test B (1 then 0)\n" );
+	//OUT_PC( PC_POS_UNDERCLRL, 0 );
 	Dcc_bits.clr_in();
 	Dcc_bits.put_byte( 0xff ).put_byte( 0x00 ).done();
 	Dcc_reg.set_scope( true );
