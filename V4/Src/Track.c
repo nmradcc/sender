@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "Track.h"
+#include "TrkQueue.h"
 
 /**********************************************************************
 *
@@ -21,7 +22,7 @@
 **********************************************************************/
 
 //#define IDLE_IDLE_PACKETS
-//#define ENABLE_AT_STARTUP
+#define ENABLE_AT_STARTUP
 
 /** 
 	@brief Track output pin definitions
@@ -33,14 +34,6 @@
 #define TRACK_A_SPEED		GPIO_SPEED_FREQ_VERY_HIGH
 #define TRACK_A_AF			GPIO_AF1_TIM2
 #define TRACK_A_PORT		GPIOA
-
-//#define TRACK_B_PIN			GPIO_PIN_8
-//#define TRACK_B_MODE_E		GPIO_MODE_AF_PP
-//#define TRACK_B_MODE_D		GPIO_MODE_OUTPUT_PP
-//#define TRACK_B_PU_PD		GPIO_NOPULL
-//#define TRACK_B_SPEED		GPIO_SPEED_FREQ_VERY_HIGH
-//#define TRACK_B_AF			GPIO_AF1_TIM2
-//#define TRACK_B_PORT		GPIOE
 
 #define TRACK_ENABLE_PIN	GPIO_PIN_6
 #define TRACK_ENABLE_MODE	GPIO_MODE_OUTPUT_PP
@@ -54,16 +47,6 @@
 #define SCOPE_TRIGGER_SPEED	GPIO_SPEED_FREQ_VERY_HIGH
 #define SCOPE_TRIGGER_Port	GPIOE
 
-/** @enum MAIN_TRACK_STATES
-	@brief Track state machine states
- */
-
-#define PACKET_COMPLETE			1
-#define PACKET_NOT_COMPLETE		0
-
-#define BUFFER_AVAILABLE		1
-#define BUFFER_NOT_AVAILABLE	0
-
 
 /**********************************************************************
 *
@@ -71,9 +54,8 @@
 *
 **********************************************************************/
 
-void MarkPacketUnused(PACKET_BITS* p);
-
 void BuildIdlePacket(uint16_t no_preambles);
+void BuildOnesPacket(void);
 
 
 /**********************************************************************
@@ -82,12 +64,10 @@ void BuildIdlePacket(uint16_t no_preambles);
 *
 **********************************************************************/
 
-PACKET_BITS apIdlePacket[6];
-PACKET_BITS apPacket1[80];		// 18 bit preamble + 6 bytes and interbyte bits + terminator = 72
-PACKET_BITS apPacket2[80];
+PACKET_BITS apIdlePacket[60];
 
-PACKET_BITS* CurrentPacket;
-PACKET_BITS* CurrentPattern;
+// 18 bit preamble + 6 bytes and interbyte bits + terminator = 72
+PACKET_BITS apPacket[TRACK_QUEUE_DEPTH][80];
 
 static TIM_HandleTypeDef	htim2;
 
@@ -100,13 +80,12 @@ TRACK_LOCK TrackLock;
 *
 **********************************************************************/
 
-uint8_t bTrackState;
+static uint8_t bTrackState;
+static PACKET_BITS* CurrentPacket;
+static int CurrentPacketIdx;
 
 static uint32_t ScopeTriggerBitOffset = 12;
-static uint32_t ScopeTriggerBitCount;
-
-static uint32_t BufferAvailable;
-static uint32_t PacketComplete;
+//static uint32_t ScopeTriggerBitCount;
 
 /**********************************************************************
 *
@@ -190,15 +169,22 @@ void MainTrackConfig(void)
 		Error_Handler();
 	}
 
-	MarkPacketUnused(apPacket1);
-	MarkPacketUnused(apPacket2);
+	InitTrackQueue();
 
-	BuildIdlePacket(NO_OF_PREAMBLE_BITS);
+	#ifdef IDLE_IDLE_PACKETS
+		BuildIdlePacket(NO_OF_PREAMBLE_BITS);
+	#endif
+	#ifndef IDLE_IDLE_PACKETS
+		BuildOnesPacket();
+	#endif
+
 	CurrentPacket = apIdlePacket;
-	CurrentPattern = apIdlePacket+1;
+	CurrentPacketIdx = -1;
 
-	__HAL_TIM_SET_AUTORELOAD(&htim2, apIdlePacket[0].period);
-	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, apIdlePacket[0].pulse);
+	//CurrentPattern = apIdlePacket+1;
+
+	//__HAL_TIM_SET_AUTORELOAD(&htim2, apIdlePacket[0].period);
+	//__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, apIdlePacket[0].pulse);
 
 	//__HAL_RCC_GPIOA_CLK_ENABLE();
 	//__HAL_RCC_GPIOB_CLK_ENABLE();
@@ -211,14 +197,6 @@ void MainTrackConfig(void)
 	GPIO_InitStruct.Speed     = TRACK_A_SPEED;
 	GPIO_InitStruct.Alternate = TRACK_A_AF;
 	HAL_GPIO_Init(TRACK_A_PORT, &GPIO_InitStruct);
-
-	/* Tim2 Chan1n GPIO pin configuration  */
-	//GPIO_InitStruct.Pin 	  = TRACK_B_PIN;
-	//GPIO_InitStruct.Mode      = TRACK_B_MODE_D;
-	//GPIO_InitStruct.Pull      = TRACK_B_PU_PD;
-	//GPIO_InitStruct.Speed     = TRACK_B_SPEED;
-	//GPIO_InitStruct.Alternate = TRACK_B_AF;
-	//HAL_GPIO_Init(TRACK_B_PORT, &GPIO_InitStruct);
 
 	/* Tim2 Enable GPIO pin configuration  */
 	GPIO_InitStruct.Pin 	  = TRACK_ENABLE_PIN;
@@ -238,9 +216,6 @@ void MainTrackConfig(void)
 	HAL_NVIC_SetPriority(TIM2_IRQn, 0, 3);
 //	HAL_NVIC_EnableIRQ(TIM2_IRQn);
 //	__HAL_TIM_ENABLE_IT(&htim2, TIM_IT_UPDATE);
-
-	PacketComplete = PACKET_COMPLETE;
-	BufferAvailable = BUFFER_AVAILABLE;
 
 	#ifdef ENABLE_AT_STARTUP
 		EnableTrack();
@@ -273,14 +248,8 @@ void MainTrackConfig(void)
 *********************************************************************/
 void TIM2_IRQHandler(void)
 {
-#ifdef OLD_WAY
-	__HAL_TIM_SET_AUTORELOAD(&htim2, CurrentPattern->period);
-	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, CurrentPattern->pulse);
-	__HAL_TIM_SET_REPETITION(&htim2, CurrentPattern->count);
 
-
-	ScopeTriggerBitCount--;
-	if(ScopeTriggerBitCount == 0)
+	if(CurrentPacket->scope == 1)
 	{
 		HAL_GPIO_WritePin(SCOPE_TRIGGER_Port, SCOPE_TRIGGER_Pin, GPIO_PIN_SET);
 	}
@@ -289,152 +258,40 @@ void TIM2_IRQHandler(void)
 		HAL_GPIO_WritePin(SCOPE_TRIGGER_Port, SCOPE_TRIGGER_Pin, GPIO_PIN_RESET);
 	}
 
+	CurrentPacket++;
 
-	CurrentPattern++;
-
-	if(CurrentPattern->period == 0)
+	if(CurrentPacket->period == 0)
 	{
-		if(CurrentPacket != apIdlePacket)
+		// if not a fill packet, pop the old packet off the queue
+		ReleasePacket(CurrentPacketIdx);
+
+		// try and get a new packet
+		CurrentPacket = GetPacket(&CurrentPacketIdx);
+		if(CurrentPacket == NULL)
 		{
-			MarkPacketUnused(CurrentPacket);
+			CurrentPacket = apIdlePacket;
+			CurrentPacketIdx = -1;
 		}
 
-		if(apPacket1[0].period != 0)
-		{
-			CurrentPacket = apPacket1;
-			CurrentPattern = apPacket1;
-			ScopeTriggerBitCount = ScopeTriggerBitOffset;
-		}
-		else if(apPacket2[0].period != 0)
-		{
-			CurrentPacket = apPacket2;
-			CurrentPattern = apPacket2;
-			ScopeTriggerBitCount = ScopeTriggerBitOffset;
-		}
-		else
-		{
-			#ifdef IDLE_IDLE_PACKETS
-				CurrentPacket = apIdlePacket;
-				CurrentPattern = apIdlePacket;
-				ScopeTriggerBitCount = ScopeTriggerBitOffset;
-			#else
-				DisableTrack();
-			#endif
-
-			PacketComplete = PACKET_COMPLETE;
-		}
-	}
-
-    HAL_TIM_IRQHandler(&htim2);
-#else
-
-	ScopeTriggerBitCount--;
-	if(ScopeTriggerBitCount == 0)
-	{
-		HAL_GPIO_WritePin(SCOPE_TRIGGER_Port, SCOPE_TRIGGER_Pin, GPIO_PIN_SET);
+		__HAL_TIM_SET_AUTORELOAD(&htim2, CurrentPacket->period);
+		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, CurrentPacket->pulse);
 	}
 	else
 	{
-		HAL_GPIO_WritePin(SCOPE_TRIGGER_Port, SCOPE_TRIGGER_Pin, GPIO_PIN_RESET);
-	}
-
-
-	CurrentPattern++;
-
-	if(CurrentPattern->period == 0)
-	{
-		if(CurrentPacket != apIdlePacket)
-		{
-			MarkPacketUnused(CurrentPacket);
-		}
-
-		if(apPacket1[0].period != 0)
-		{
-			CurrentPacket = apPacket1;
-			CurrentPattern = apPacket1;
-			ScopeTriggerBitCount = ScopeTriggerBitOffset;
-		}
-		else if(apPacket2[0].period != 0)
-		{
-			CurrentPacket = apPacket2;
-			CurrentPattern = apPacket2;
-			ScopeTriggerBitCount = ScopeTriggerBitOffset;
-		}
-		else
-		{
-			#ifdef IDLE_IDLE_PACKETS
-				CurrentPacket = apIdlePacket;
-				CurrentPattern = apIdlePacket;
-				ScopeTriggerBitCount = ScopeTriggerBitOffset;
-			#else
-				DisableTrack();
-			#endif
-
-			PacketComplete = PACKET_COMPLETE;
-		}
-	}
-	else
-	{
-		__HAL_TIM_SET_AUTORELOAD(&htim2, CurrentPattern->period);
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, CurrentPattern->pulse);
+		__HAL_TIM_SET_AUTORELOAD(&htim2, CurrentPacket->period);
+		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, CurrentPacket->pulse);
 	}
 
     HAL_TIM_IRQHandler(&htim2);
-#endif
 }
 
-
-/*********************************************************************
-*
-* MarkPacketUnused
-*
-* @brief	Mark the packet buffer un-uesd (for double buffering)
-*
-* @param	pointer to packet buffer
-*
-* @return	none
-*
-*********************************************************************/
-void MarkPacketUnused(PACKET_BITS* p)
-{
-	p->period = 0;
-	p->pulse = 0;
-}
-
-
-
-/*********************************************************************
-*
-* BuildPreamble
-*
-* @brief	Build a bit pattern for a preamble into the packet passed in for cnt bits at clklt width
-*
-* @param	pointer to packet buffer
-*			number of preambles
-*			preamble pulse width
-*
-* @return	pointer to packet buffer past the preamble
-*
-*********************************************************************/
-PACKET_BITS* BuildPreamble(PACKET_BITS* p, uint32_t cnt, uint32_t clk1t)
-{
-
-	for(int i = 0; i < cnt; i++)
-	{
-		p->period = clk1t;
-		p->pulse = clk1t/2;
-		p++;
-	}
-	return p;
-}
 
 /*********************************************************************
 *
 * BuildIdlePacket
 *
 * @brief	Pre-build a bit pattern for an idle packet to be ready if 
-*			the track generator runs out of packets and is configured
-*			to send idle packets
+*			the track generator runs out of packets
 *
 * @param	number of preambles
 *
@@ -453,12 +310,14 @@ void BuildIdlePacket(uint16_t no_preambles)
 	{
 		pPacket->period = ONE_PERIOD;
 		pPacket->pulse = ONE_PULSE;
+		pPacket->scope = 0;
 		pPacket++;
 	}
 
 	// first interbyte
 	pPacket->period = ZERO_PERIOD;
 	pPacket->pulse = ZERO_PULSE;
+	pPacket->scope = 0;
 	pPacket++;
 
 	// first byte
@@ -466,6 +325,7 @@ void BuildIdlePacket(uint16_t no_preambles)
 	{
 		pPacket->period = ONE_PERIOD;
 		pPacket->pulse = ONE_PULSE;
+		pPacket->scope = 0;
 		pPacket++;
 	}
 
@@ -474,6 +334,7 @@ void BuildIdlePacket(uint16_t no_preambles)
 	{
 		pPacket->period = ZERO_PERIOD;
 		pPacket->pulse = ZERO_PULSE;
+		pPacket->scope = 0;
 		pPacket++;
 	}
 
@@ -482,12 +343,47 @@ void BuildIdlePacket(uint16_t no_preambles)
 	{
 		pPacket->period = ONE_PERIOD;
 		pPacket->pulse = ONE_PULSE;
+		pPacket->scope = 0;
 		pPacket++;
 	}
 
 	// terminator
 	pPacket->period = 0;
 	pPacket->pulse = 0;
+	pPacket->scope = 0;
+}
+
+
+/*********************************************************************
+*
+* BuildOnesPacket
+*
+* @brief	Pre-build a bit pattern for a packet of ones to be ready if
+*			the track generator runs out of packets
+*
+* @param	number of preambles
+*
+* @return	none
+*
+*********************************************************************/
+void BuildOnesPacket(void)
+{
+	int i;
+	PACKET_BITS* pPacket = apIdlePacket;
+
+	// ones
+	for(i = 0; i < 20; i++)
+	{
+		pPacket->period = ONE_PERIOD;
+		pPacket->pulse = ONE_PULSE;
+		pPacket->scope = 0;
+		pPacket++;
+	}
+
+	// terminator
+	pPacket->period = 0;
+	pPacket->pulse = 0;
+	pPacket->scope = 0;
 }
 
 
@@ -507,10 +403,11 @@ void BuildIdlePacket(uint16_t no_preambles)
 * @return	0 = sucess
 *
 *********************************************************************/
-int BuildPacket(const uint8_t* buf, uint8_t len, uint16_t clk1t, uint16_t clk0t, uint16_t clk0h)
+int BuildPacket(const uint8_t* buf, uint8_t len, uint32_t clk1t, uint32_t clk0t, uint32_t clk0h)
 {
-	PACKET_BITS* pBuildPacket;
 	PACKET_BITS* pPacket;
+	int PacketIndex;
+	int BitCount = 0;
 	uint8_t mask;
 	uint8_t packet_byte;
 	uint32_t Tick1;
@@ -518,15 +415,8 @@ int BuildPacket(const uint8_t* buf, uint8_t len, uint16_t clk1t, uint16_t clk0t,
 	uint32_t Tick0h;
 
 
-	if(apPacket1[0].period == 0)
-	{
-		pBuildPacket = apPacket1;
-	}
-	else if(apPacket2[0].period == 0)
-	{
-		pBuildPacket = apPacket2;
-	}
-	else
+	pPacket = AcquirePacket(&PacketIndex);
+	if(pPacket == NULL)
 	{
 		return 1;
 	}
@@ -534,11 +424,6 @@ int BuildPacket(const uint8_t* buf, uint8_t len, uint16_t clk1t, uint16_t clk0t,
 	Tick1  = clk1t * TICKS_PER_MICROSECOND;
 	Tick0t = clk0t * TICKS_PER_MICROSECOND;
 	Tick0h = clk0h * TICKS_PER_MICROSECOND;
-
-	pPacket = pBuildPacket;
-
-	// preamble
-	//pBuildPacket = BuildPreamble(pBuildPacket, 18, Tick1);
 
 	for(int i = 0; i < len; i++)
 	{
@@ -549,39 +434,38 @@ int BuildPacket(const uint8_t* buf, uint8_t len, uint16_t clk1t, uint16_t clk0t,
 			if(packet_byte & mask)
 			{
 				// build a one bit
-				pBuildPacket->period = Tick1;
-				pBuildPacket->pulse = Tick1/2;
+				pPacket->period = Tick1;
+				pPacket->pulse = Tick1/2;
 			}
 			else
 			{
 				// build a zero bit
-				pBuildPacket->period = Tick0t;
-				pBuildPacket->pulse = Tick0h;
+				pPacket->period = Tick0t;
+				pPacket->pulse = Tick0h;
+
 			}
-			pBuildPacket++;
+			pPacket++;
+			BitCount++;
 			mask >>= 1;
+
+			if(BitCount == 11)
+			{
+				pPacket->scope = 1;
+			}
+			else
+			{
+				pPacket->scope = 0;
+			}
 		}
 	}
 
 	// terminator
-	pBuildPacket->period = 0;
-	pBuildPacket->pulse = 0;
+	pPacket->period = 0;
+	pPacket->pulse = 0;
+	pPacket->scope = 0;
 
-	if(PacketComplete == PACKET_COMPLETE)
-	{
-		__HAL_TIM_SET_AUTORELOAD(&htim2, pPacket->period);
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, pPacket->pulse);
+	ReadyPacket(PacketIndex);
 
-		pPacket++;
-
-		ScopeTriggerBitCount = ScopeTriggerBitOffset;
-		CurrentPacket = pPacket;
-		CurrentPattern = pPacket;
-
-		PacketComplete = PACKET_NOT_COMPLETE;
-
-		EnableTrack();
-	}
 	return 0;
 }
 
@@ -602,7 +486,7 @@ int BuildPacket(const uint8_t* buf, uint8_t len, uint16_t clk1t, uint16_t clk0t,
 * @return	0 = success
 *
 *********************************************************************/
-int BuildPacketBytes(const uint8_t packet_byte, uint8_t count, uint16_t clk1t, uint16_t clk0t, uint16_t clk0h)
+int BuildPacketBytes(const uint8_t packet_byte, uint8_t count, uint32_t clk1t, uint32_t clk0t, uint32_t clk0h)
 {
 	#ifdef USE_BuildPacket
 		PACKET_BITS* pBuildPacket;
@@ -696,6 +580,111 @@ int BuildPacketBytes(const uint8_t packet_byte, uint8_t count, uint16_t clk1t, u
 
 /*********************************************************************
 *
+* BuildPacketByte
+*
+* @brief	Build a bit pattern for a packet based on repeating the byte
+*			in packet_byte, and the bit widths in  clk1t, clk0t, and clk0h
+*
+* @param	packet byte
+*			count
+*			1 total width
+*			0 total width
+*			0 first half width
+*
+* @return	0 = success
+*
+*********************************************************************/
+int BuildPacketByte(const uint8_t packet_byte, uint32_t clk1t, uint32_t clk0t, uint32_t clk0h, uint32_t clk0ts)
+{
+	PACKET_BITS* pPacket;
+	int PacketIndex;
+	uint8_t mask;
+	uint32_t Tick1;
+	uint32_t Tick0t;
+	uint32_t Tick0h;
+	uint32_t Tick0ts;
+	uint32_t FirstZero = 1;
+
+	pPacket = AcquirePacket(&PacketIndex);
+	if(pPacket == NULL)
+	{
+		return 1;
+	}
+
+	Tick1  = clk1t * TICKS_PER_MICROSECOND;
+	Tick0t = clk0t * TICKS_PER_MICROSECOND;
+	Tick0h = clk0h * TICKS_PER_MICROSECOND;
+	Tick0ts = clk0ts * TICKS_PER_MICROSECOND;
+
+	// build a zero byte
+	for(int b = 0; b < 8; b++)
+	{
+		// build a zero bit
+		pPacket->period = Tick0t;
+		pPacket->pulse = Tick0h;
+		pPacket->scope = 0;
+		pPacket++;
+	}
+
+	// build the preamble
+	for(int i = 0; i < 11; i++)
+	{
+		// build a one bit
+		pPacket->period = Tick1;
+		pPacket->pulse = Tick1/2;
+		pPacket->scope = 0;
+		pPacket++;
+	}
+	// build the last one bit with the scope trigger set
+	pPacket->period = Tick1;
+	pPacket->pulse = Tick1/2;
+	pPacket->scope = 1;
+	pPacket++;
+
+	mask = 0x80;
+	for(int b = 0; b < 8; b++)
+	{
+		if(packet_byte & mask)
+		{
+			// build a one bit
+			pPacket->period = Tick1;
+			pPacket->pulse = Tick1/2;
+		}
+		else
+		{
+			if(FirstZero)
+			{
+				FirstZero = 0;
+				// build a zero bit
+				pPacket->period = Tick0ts;
+				pPacket->pulse = Tick0h;
+			}
+			else
+			{
+				// build a zero bit
+				pPacket->period = Tick0t;
+				pPacket->pulse = Tick0h;
+			}
+		}
+		pPacket->scope = 0;
+		pPacket++;
+		mask >>= 1;
+	}
+
+	// terminator
+	pPacket->period = 0;
+	pPacket->pulse = 0;
+	pPacket->scope = 0;
+
+	ReadyPacket(PacketIndex);
+
+	return 0;
+}
+
+
+
+/*********************************************************************
+*
 * BuildPacketAmbig1
 *
 * @brief	Build a bit pattern for a packet based on repeating the byte
@@ -713,10 +702,10 @@ int BuildPacketBytes(const uint8_t packet_byte, uint8_t count, uint16_t clk1t, u
 * @return	0 = success
 *
 *********************************************************************/
-int BuildPacketAmbig1(const uint8_t packet_byte, uint16_t clk1t, uint16_t clk0t1, uint16_t clk0h1, uint16_t clk0t, uint16_t clk0h)
+int BuildPacketAmbig1(const uint8_t packet_byte, uint32_t clk1t, uint32_t clk0t1, uint32_t clk0h1, uint32_t clk0t, uint32_t clk0h)
 {
-	PACKET_BITS* pBuildPacket;
 	PACKET_BITS* pPacket;
+	int PacketIndex;
 	uint8_t mask;
 	uint32_t Tick1;
 	uint32_t Tick0t;
@@ -725,24 +714,11 @@ int BuildPacketAmbig1(const uint8_t packet_byte, uint16_t clk1t, uint16_t clk0t1
 	uint32_t Tick0h1;
 
 
-	if(apPacket1[0].period == 0)
-	{
-		pBuildPacket = apPacket1;
-	}
-	else if(apPacket2[0].period == 0)
-	{
-		pBuildPacket = apPacket2;
-	}
-	else
+	pPacket = AcquirePacket(&PacketIndex);
+	if(pPacket == NULL)
 	{
 		return 1;
 	}
-
-	//clk1t *= TICKS_PER_MICROSECOND;
-	//clk0t1 *= TICKS_PER_MICROSECOND;
-	//clk0h1 *= TICKS_PER_MICROSECOND;
-	//clk0t *= TICKS_PER_MICROSECOND;
-	//clk0h *= TICKS_PER_MICROSECOND;
 
 	Tick1  = clk1t * TICKS_PER_MICROSECOND;
 	Tick0t = clk0t * TICKS_PER_MICROSECOND;
@@ -750,13 +726,10 @@ int BuildPacketAmbig1(const uint8_t packet_byte, uint16_t clk1t, uint16_t clk0t1
 	Tick0t1 = clk0t1 * TICKS_PER_MICROSECOND;
 	Tick0h1 = clk0h1 * TICKS_PER_MICROSECOND;
 
-
-	pPacket = pBuildPacket;
-
 	// set the zero stretch for the first bit
-	pBuildPacket->period = Tick0t1;
-	pBuildPacket->pulse = Tick0h1;
-	pBuildPacket++;
+	pPacket->period = Tick0t1;
+	pPacket->pulse = Tick0h1;
+	pPacket++;
 
 	// do the rest
 	mask = 0x02;
@@ -765,45 +738,26 @@ int BuildPacketAmbig1(const uint8_t packet_byte, uint16_t clk1t, uint16_t clk0t1
 		if(packet_byte & mask)
 		{
 			// build a one bit
-			pBuildPacket->period = Tick1;
-			pBuildPacket->pulse = Tick1/2;
+			pPacket->period = Tick1;
+			pPacket->pulse = Tick1/2;
 		}
 		else
 		{
 			// build a zero bit
-			pBuildPacket->period = Tick0t;
-			pBuildPacket->pulse = Tick0h;
+			pPacket->period = Tick0t;
+			pPacket->pulse = Tick0h;
 		}
-		pBuildPacket++;
+		pPacket++;
 		mask <<= 1;
 	}
 
 	// terminator
-	pBuildPacket->period = 0;
-	pBuildPacket->pulse = 0;
+	pPacket->period = 0;
+	pPacket->pulse = 0;
 
-	//__HAL_TIM_SET_AUTORELOAD(&htim2, CurrentPattern->period);
-	//__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, CurrentPattern->pulse);
-	//__HAL_TIM_SET_REPETITION(&htim2, CurrentPattern->count);
 	//ScopeTriggerBitCount = ScopeTriggerBitOffset;
-	//PacketComplete = PACKET_NOT_COMPLETE;
-	//EnableTrack();
+	ReadyPacket(PacketIndex);
 
-	if(PacketComplete == PACKET_COMPLETE)
-	{
-		__HAL_TIM_SET_AUTORELOAD(&htim2, pPacket->period);
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, pPacket->pulse);
-
-		pPacket++;
-
-		ScopeTriggerBitCount = ScopeTriggerBitOffset;
-		CurrentPacket = pPacket;
-		CurrentPattern = pPacket;
-
-		PacketComplete = PACKET_NOT_COMPLETE;
-
-		EnableTrack();
-	}
 	return 0;
 }
 
@@ -829,10 +783,10 @@ int BuildPacketAmbig1(const uint8_t packet_byte, uint16_t clk1t, uint16_t clk0t1
 * @return	none
 *
 *********************************************************************/
-int BuildPacketAmbig2(const uint8_t packet_byte, uint16_t clk1t, uint16_t clk0t1, uint16_t clk0h1, uint16_t clk0t2, uint16_t clk0h2, uint16_t clk0t, uint16_t clk0h)
+int BuildPacketAmbig2(const uint8_t packet_byte, uint32_t clk1t, uint32_t clk0t1, uint32_t clk0h1, uint32_t clk0t2, uint32_t clk0h2, uint32_t clk0t, uint32_t clk0h)
 {
-	PACKET_BITS* pBuildPacket;
 	PACKET_BITS* pPacket;
+	int PacketIndex;
 	uint8_t mask;
 	uint32_t Tick1;
 	uint32_t Tick0t;
@@ -842,26 +796,11 @@ int BuildPacketAmbig2(const uint8_t packet_byte, uint16_t clk1t, uint16_t clk0t1
 	uint32_t Tick0t2;
 	uint32_t Tick0h2;
 
-	if(apPacket1[0].period == 0)
+	pPacket = AcquirePacket(&PacketIndex);
+	if(pPacket == NULL)
 	{
-		pBuildPacket = apPacket1;
+		return 1;
 	}
-	else if(apPacket2[0].period == 0)
-	{
-		pBuildPacket = apPacket2;
-	}
-	else
-	{
-		return 1;		// return an error?
-	}
-
-	//clk1t *= TICKS_PER_MICROSECOND;
-	//clk0t1 *= TICKS_PER_MICROSECOND;
-	//clk0h1 *= TICKS_PER_MICROSECOND;
-	//clk0t2 *= TICKS_PER_MICROSECOND;
-	//clk0h2 *= TICKS_PER_MICROSECOND;
-	//clk0t *= TICKS_PER_MICROSECOND;
-	//clk0h *= TICKS_PER_MICROSECOND;
 
 	Tick1  = clk1t * TICKS_PER_MICROSECOND;
 	Tick0t = clk0t * TICKS_PER_MICROSECOND;
@@ -871,17 +810,16 @@ int BuildPacketAmbig2(const uint8_t packet_byte, uint16_t clk1t, uint16_t clk0t1
 	Tick0t2 = clk0t2 * TICKS_PER_MICROSECOND;
 	Tick0h2 = clk0h2 * TICKS_PER_MICROSECOND;
 
-	pPacket = pBuildPacket;
 
 	// set the zero stretch for the first bit
-	pBuildPacket->period = Tick0t1;
-	pBuildPacket->pulse = Tick0h1;
-	pBuildPacket++;
+	pPacket->period = Tick0t1;
+	pPacket->pulse = Tick0h1;
+	pPacket++;
 
 	// set the zero stretch for the second bit
-	pBuildPacket->period = Tick0t2;
-	pBuildPacket->pulse = Tick0h2;
-	pBuildPacket++;
+	pPacket->period = Tick0t2;
+	pPacket->pulse = Tick0h2;
+	pPacket++;
 
 	// do the rest
 	mask = 0x04;
@@ -890,47 +828,28 @@ int BuildPacketAmbig2(const uint8_t packet_byte, uint16_t clk1t, uint16_t clk0t1
 		if(packet_byte & mask)
 		{
 			// build a one bit
-			pBuildPacket->period = Tick1;
-			pBuildPacket->pulse = Tick1/2;
+			pPacket->period = Tick1;
+			pPacket->pulse = Tick1/2;
 		}
 		else
 		{
 			// build a zero bit
-			pBuildPacket->period = Tick0t;
-			pBuildPacket->pulse = Tick0h;
+			pPacket->period = Tick0t;
+			pPacket->pulse = Tick0h;
 		}
-		pBuildPacket++;
+		pPacket++;
 		mask <<= 1;
 	}
 
 	// interbyte
 
 	// terminator
-	pBuildPacket->period = 0;
-	pBuildPacket->pulse = 0;
+	pPacket->period = 0;
+	pPacket->pulse = 0;
 
-	//__HAL_TIM_SET_AUTORELOAD(&htim2, CurrentPattern->period);
-	//__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, CurrentPattern->pulse);
-	//__HAL_TIM_SET_REPETITION(&htim2, CurrentPattern->count);
 	//ScopeTriggerBitCount = ScopeTriggerBitOffset;
-	//PacketComplete = PACKET_NOT_COMPLETE;
-	//EnableTrack();
+	ReadyPacket(PacketIndex);
 
-	if(PacketComplete == PACKET_COMPLETE)
-	{
-		__HAL_TIM_SET_AUTORELOAD(&htim2, pPacket->period);
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, pPacket->pulse);
-
-		pPacket++;
-
-		ScopeTriggerBitCount = ScopeTriggerBitOffset;
-		CurrentPacket = pPacket;
-		CurrentPattern = pPacket;
-
-		PacketComplete = PACKET_NOT_COMPLETE;
-
-		EnableTrack();
-	}
 	return 0;
 }
 
@@ -950,42 +869,43 @@ int BuildPacketAmbig2(const uint8_t packet_byte, uint16_t clk1t, uint16_t clk0t1
 *********************************************************************/
 int BuildPacketBits(const PACKET_BITS* packet, uint8_t count)
 {
-	PACKET_BITS* pBuildPacket;
 	PACKET_BITS* pPacket;
+	int PacketIndex;
+	int BitCount = 0;
 
 
-	if(apPacket1[0].period == 0)
-	{
-		pBuildPacket = apPacket1;
-	}
-	else if(apPacket2[0].period == 0)
-	{
-		pBuildPacket = apPacket2;
-	}
-	else
+	pPacket = AcquirePacket(&PacketIndex);
+	if(pPacket == NULL)
 	{
 		return 1;
 	}
 
-	pPacket = pBuildPacket;
-
-	memcpy((char*)pBuildPacket, (char*)packet, sizeof(apPacket1));
-	
-	if(PacketComplete == PACKET_COMPLETE)
+	while(packet->period != 0)
 	{
-		__HAL_TIM_SET_AUTORELOAD(&htim2, pPacket->period);
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, pPacket->pulse);
-
+		pPacket->period = packet->period;
+		pPacket->pulse = packet->pulse;
 		pPacket++;
+		packet++;
 
-		ScopeTriggerBitCount = ScopeTriggerBitOffset;
-		CurrentPacket = pPacket;
-		CurrentPattern = pPacket;
-
-		PacketComplete = PACKET_NOT_COMPLETE;
-
-		EnableTrack();
+		BitCount++;
+		if(BitCount == 11)
+		{
+			pPacket->scope = 1;
+		}
+		else
+		{
+			pPacket->scope = 0;
+		}
 	}
+	// terminator
+	// terminator
+	pPacket->period = 0;
+	pPacket->pulse = 0;
+	pPacket->scope = 0;
+	
+	//ScopeTriggerBitCount = ScopeTriggerBitOffset;
+	ReadyPacket(PacketIndex);
+
 	return 0;
 }
 
@@ -1015,14 +935,6 @@ void EnableTrack(void)
 	GPIO_InitStruct.Speed     = TRACK_A_SPEED;
 	GPIO_InitStruct.Alternate = TRACK_A_AF;
 	HAL_GPIO_Init(TRACK_A_PORT, &GPIO_InitStruct);
-
-	/* Tim2 Chan1n GPIO pin configuration  */
-	//GPIO_InitStruct.Pin 	  = TRACK_B_PIN;
-	//GPIO_InitStruct.Mode      = TRACK_B_MODE_E;
-	//GPIO_InitStruct.Pull      = TRACK_B_PU_PD;
-	//GPIO_InitStruct.Speed     = TRACK_B_SPEED;
-	//GPIO_InitStruct.Alternate = TRACK_B_AF;
-	//HAL_GPIO_Init(TRACK_B_PORT, &GPIO_InitStruct);
 
 	HAL_TIM_Base_Start(&htim2);
 
@@ -1080,31 +992,7 @@ void DisableTrack(void)
 	GPIO_InitStruct.Alternate = TRACK_A_AF;
 	HAL_GPIO_Init(TRACK_A_PORT, &GPIO_InitStruct);
 
-	/* Tim2 Chan1n GPIO pin configuration  */
-	//GPIO_InitStruct.Pin 	  = TRACK_B_PIN;
-	//GPIO_InitStruct.Mode      = TRACK_B_MODE_D;
-	//GPIO_InitStruct.Pull      = TRACK_B_PU_PD;
-	//GPIO_InitStruct.Speed     = TRACK_B_SPEED;
-	//GPIO_InitStruct.Alternate = TRACK_B_AF;
-	//HAL_GPIO_Init(TRACK_B_PORT, &GPIO_InitStruct);
-
-
-//k	__HAL_TIM_SET_AUTORELOAD(&htim2, ONE_PERIOD);
-//k	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, ONE_PERIOD);
-
-	//HAL_TIM_Base_Stop(&htim2);
-
 	HAL_NVIC_DisableIRQ(TIM2_IRQn);
-
-	//if(HAL_TIMEx_PWMN_Stop(&htim2, TIM_CHANNEL_1) != HAL_OK)
-	//{
-	//    Error_Handler();
-	//}
-
-	//if(HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1) != HAL_OK)
-	//{
-	//    Error_Handler();
-	//}
 
 	bTrackState = 0;
 }
@@ -1138,25 +1026,25 @@ uint8_t GetTrackState(void)
 * @return	1 = available
 *
 *********************************************************************/
-uint32_t IsPacketBufferAvailable(void)
-{
+//uint32_t IsPacketBufferAvailable(void)
+//{
 	// ToDo - guard this against the interrupt
-	if(apPacket1[0].period == 0)
-	{
-		return 1;
-	}
-	else if(apPacket2[0].period == 0)
-	{
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
+//	if(apPacket1[0].period == 0)
+//	{
+//		return 1;
+//	}
+//	else if(apPacket2[0].period == 0)
+//	{
+//		return 1;
+//	}
+//	else
+//	{
+//		return 0;
+//	}
 
-	return BufferAvailable;
+//	return BufferAvailable;
 
-}
+//}
 
 
 /*********************************************************************
@@ -1170,10 +1058,10 @@ uint32_t IsPacketBufferAvailable(void)
 * @return	1 = complete
 *
 *********************************************************************/
-uint32_t IsPacketComplete(void)
-{
-	return PacketComplete;
-}
+//uint32_t IsPacketComplete(void)
+//{
+//	return PacketComplete;
+//}
 
 
 /*********************************************************************
