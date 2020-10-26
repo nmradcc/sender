@@ -21,8 +21,9 @@
 *
 **********************************************************************/
 
-#define TIMER_PRESCALER			84
-#define TICKS_PER_MICROSECOND	2
+
+#define TIMER_PRESCALER			1
+#define TICKS_PER_MICROSECOND	42
 
 #define ONE_PERIOD  (116 * TICKS_PER_MICROSECOND)
 #define ZERO_PERIOD (200 * TICKS_PER_MICROSECOND)
@@ -33,15 +34,14 @@
 #define NO_OF_PREAMBLE_BITS		18
 
 /** @enum PACKET_BITS
-	@brief The three registers that define the track output bits
+	@brief The two registers that define the track output bits and scope output position
  */
 typedef struct packet_t
 {
-	uint16_t	period;
-	uint16_t	pulse;
-	uint16_t	count;
+	uint32_t	period;
+	uint32_t	pulse;
+	uint32_t	scope;
 } PACKET_BITS;
-
 
 /** @enum TRACK_RESOURCE
 	@brief Which resource is using the track output
@@ -105,7 +105,7 @@ extern void DisableTrack(void);
 
 extern uint8_t GetTrackState(void);
 
-extern int BuildPacket(const uint8_t* buf, uint8_t len, uint16_t clk1t, uint16_t clk0t, uint16_t clk0h);
+extern int BuildPacket(const uint8_t* buf, uint8_t len, uint32_t clk1t, uint32_t clk0t, uint32_t clk0h);
 
 extern int BuildPacketBits(const PACKET_BITS* packet, uint8_t count);
 
