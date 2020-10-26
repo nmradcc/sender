@@ -532,7 +532,9 @@ Zlog::statprint(
 	va_list			ap;						// Variable argument list
 	char			mess [LOG_STRING_SIZE];	// message buffer
 	char			*tptr;					// Temp string pointer.
-	time_t          raw_time;               // Seconds from epoch
+	#if SEND_VERSION < 4
+		time_t          raw_time;               // Seconds from epoch
+	#endif
 	char            t_buf[TIME_STR];        // Buffer for time string
 
 	va_start( ap, fmt );
