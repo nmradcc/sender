@@ -31,10 +31,11 @@
 #if SEND_VERSION >= 4
 extern "C"
 {
-	int BuildPacket(const uint8_t* buf, uint8_t len, uint16_t clk1t, uint16_t clk0t, uint16_t clk0h);
-	int BuildPacketBytes(const uint8_t packet_byte, uint8_t count, uint16_t clk1t, uint16_t clk0t, uint16_t clk0h);
-	int BuildPacketAmbig1(const uint8_t packet_byte, uint16_t clk1t, uint16_t clk0t1, uint16_t clk0h1, uint16_t clk0t, uint16_t clk0h);
-	int BuildPacketAmbig2(const uint8_t packet_byte, uint16_t clk1t, uint16_t clk0t1, uint16_t clk0h1, uint16_t clk0t2, uint16_t clk0h2, uint16_t clk0t, uint16_t clk0h);
+	int BuildPacket(const uint8_t* buf, uint8_t len, uint32_t clk1t, uint32_t clk0t, uint32_t clk0h);
+	int BuildPacketByte(const uint8_t packet_byte, uint32_t clk1t, uint32_t clk0t, uint32_t clk0h, uint32_t clk0ts);
+	int BuildPacketBytes(const uint8_t packet_byte, uint8_t count, uint32_t clk1t, uint32_t clk0t, uint32_t clk0h);
+	int BuildPacketAmbig1(const uint8_t packet_byte, uint16_t clk1t, uint32_t clk0t1, uint32_t clk0h1, uint32_t clk0t, uint32_t clk0h);
+	int BuildPacketAmbig2(const uint8_t packet_byte, uint16_t clk1t, uint32_t clk0t1, uint32_t clk0h1, uint32_t clk0t2, uint32_t clk0h2, uint32_t clk0t, uint32_t clk0h);
 };
 #endif
 
@@ -512,6 +513,7 @@ Send_reg::stop_clk( void )
 Rslt_t
 Send_reg::init_send( void )
 {
+	init_8254();							// Init 8254.
 
 	if ( !m_log_pkts )
 	{
@@ -641,6 +643,7 @@ Send_reg::set_clk(
 	// rebuild the idle packet with the new times
 	//BuildIdlePacket(18);
 	//send_idle();
+	start_clk();
 #else
 	start_clk();
 	if ( send_bytes( 2, 0x55, "Flush clock change through hardware." ) != OK )
@@ -697,8 +700,12 @@ Send_reg::send_bytes(
 	const char		*info )					// Packet log info.
 {
 	const char* my_name = "Send_reg::send_bytes";
-	register u_int	count;			// Count of BYTES sent.
-	register u_long	san_cnt;		// Sanity timeout.
+	#if SEND_VERSION < 4
+		register u_int	count;			// Count of BYTES sent.
+		register u_long	san_cnt;		// Sanity timeout.
+	#else
+		int ret;
+	#endif
 
 	if ( icnt < 1 )
 	{
@@ -712,7 +719,15 @@ Send_reg::send_bytes(
 
 #if SEND_VERSION >= 4
 
-		BuildPacketBytes(ibyte, icnt, clk1t, clk0t, clk0h);
+		//do
+		//{
+		//	ret = BuildPacketBytes(ibyte, icnt, clk1t, clk0t, clk0h);
+		//} while(ret != 0);
+
+		if(BuildPacketBytes(ibyte, icnt, clk1t, clk0t, clk0h))
+		{
+			return ( FAIL );
+		}
 
 #else
 		start_crit();
@@ -812,8 +827,12 @@ Send_reg::send_stretched_byte(
 	const char		*info )					// Packet log info.
 {
 	const char		*my_name = "Send_reg::send_stretched_byte";
-	register u_long	san_cnt;		   		// Sanity timeout.
-	u_short			tclk0t;					// clk0t for stretched 0.
+	#if SEND_VERSION >= 4
+		u_short			tclk0t;					// clk0t for stretched 0.
+		int ret;
+	#else
+		register u_long	san_cnt;		   		// Sanity timeout.
+	#endif
 
 	if ( ibyte & 0x80 )
 	{
@@ -853,11 +872,15 @@ Send_reg::send_stretched_byte(
 		 *	period and the original value for the second half.  The CLK0T
          *	counter is reloaded half way through the square wave period.
 		 */
-		tclk0t	=	(2 * iclk0t) - clk0t;
 
 #if SEND_VERSION >= 4
 
-		BuildPacketBytes(ibyte, 1, 0, tclk0t, iclk0h);
+		tclk0t	=	12000;
+
+		if(BuildPacketByte(ibyte, clk1t, clk0t, clk0h, tclk0t))
+		{
+			return ( FAIL );
+		}
 
 #else
 		if ( inportb( PA ) != 0xff )
@@ -1064,7 +1087,11 @@ Send_reg::send_1_ambig_bit(
 	const char		*info )					// Packet log info.
 {
 	const char		*my_name = "Send_reg::send_1_ambig_bit";
-	register		u_long	san_cnt;		// Sanity timeout.
+	#if SEND_VERSION >= 4
+		int ret;
+	#else
+		register		u_long	san_cnt;		// Sanity timeout.
+	#endif
 
 	if ( ibyte & 0x80 )
 	{
@@ -1106,11 +1133,14 @@ Send_reg::send_1_ambig_bit(
 		return ( FAIL );
 	}
 
-	if ( !m_log_pkts )	// Skip hardware interraction if just logging.
+	if ( !m_log_pkts )	// Skip hardware interaction if just logging.
 	{
 #if SEND_VERSION >= 4
 
-		BuildPacketAmbig1(ibyte, clk1t, iclk0t, iclk0h, clk0t, clk0h);
+		if(BuildPacketAmbig1(ibyte, clk1t, iclk0t, iclk0h, clk0t, clk0h))
+		{
+			return ( FAIL );
+		}
 
 #else
 		start_crit();
@@ -1349,7 +1379,11 @@ Send_reg::send_2_ambig_bits(
 	const char		*info )					// Packet log info.
 {
 	const char		*my_name = "Send_reg::send_2_ambig_bits";
-	register		u_long	san_cnt;	 	// Sanity timeout.
+	#if SEND_VERSION >= 4
+		int ret;
+	#else
+		register		u_long	san_cnt;	 	// Sanity timeout.
+	#endif
 
 	if ( ibyte & 0xC0 )
 	{
@@ -1417,12 +1451,19 @@ Send_reg::send_2_ambig_bits(
 		return ( FAIL );
 	}
 
-	if ( !m_log_pkts )	// Skip hardware interraction if just logging.
+	if ( !m_log_pkts )	// Skip hardware interaction if just logging.
 	{
 #if SEND_VERSION >= 4
 
-		//BuildPacketAmbig2(ibyte, clk1t, iclk0t1, iclk0h1,	iclk0t2, iclk0h2);
-		//void BuildPacketAmbig2(const uint8_t packet_byte, uint16_t clk1t, uint16_t clk0t1, uint16_t clk0h1, uint16_t clk0t2, uint16_t clk0h2, uint16_t clk0t, uint16_t clk0h)
+//k		do
+//k		{
+//k			ret = BuildPacketAmbig2(ibyte, clk1t, iclk0t, iclk0h, clk0t, clk0h);
+//k		} while(ret != 0);
+
+		if(BuildPacketAmbig2(ibyte, clk1t, iclk0t1, iclk0h1, iclk0t2, iclk0h2, clk0t, clk0h))
+		{
+			return ( FAIL );
+		}
 
 #else
 		start_crit();
@@ -1706,8 +1747,12 @@ Send_reg::send_pkt(
 	const char		*info )					// Packet log info.
 {
 	const char *my_name = "Send_reg::send_pkt(BYTE)";
-	register u_int	count;					// Count of BYTES sent.
-	register u_long	san_cnt;		   		// Sanity timeout.
+	#if SEND_VERSION >= 4
+		int ret;
+	#else
+		register u_int	count;					// Count of BYTES sent.
+		register u_long	san_cnt;		   		// Sanity timeout.
+	#endif
 
 	if ( isize < 1 )
 	{
@@ -1716,11 +1761,14 @@ Send_reg::send_pkt(
 	}
 
 
-	if ( !m_log_pkts )	// Skip hardware interraction if just logging.
+	if ( !m_log_pkts )	// Skip hardware interaction if just logging.
 	{
 #if SEND_VERSION >= 4
 
-		BuildPacket(ibytes, isize, clk1t, clk0t, clk0h);
+		if(BuildPacket(ibytes, isize, clk1t, clk0t, clk0h))
+		{
+			return ( FAIL );
+		}
 
 #else
 		/* Send first BYTE, then activate underflow warning */
@@ -1818,6 +1866,8 @@ Rslt_t Send_reg::send_pkt(Bits &ibits, const char *info )					// Packet log info
 	register u_int	count;					// Count of BYTES sent.
 	#if SEND_VERSION < 4
 		register u_long	san_cnt;	   		// Sanity timeout.
+	#else
+		int rret;
 	#endif
 	BYTE			pbyte;					// Present BYTE.
 	uint8_t PacketBuf[10];
@@ -1833,14 +1883,23 @@ Rslt_t Send_reg::send_pkt(Bits &ibits, const char *info )					// Packet log info
 		return ( FAIL );
 	}
 
-	if ( !m_log_pkts )	// Skip hardware interraction if just logging.
+	if ( !m_log_pkts )	// Skip hardware interaction if just logging.
 	{
 		for (	count = 0, ibits.rst_out();	ibits.get_byte( pbyte ) == OK; count++ )
 		{
 			PacketBuf[count] = pbyte;
 		}
 		#if SEND_VERSION >= 4
-			BuildPacket(PacketBuf, count, clk1t, clk0t, clk0h);
+
+//k			do
+//k			{
+//k				ret = BuildPacket(ibits, count, clk1t, clk0t, clk0h);
+//k			} while(ret != 0);
+			if(BuildPacket(PacketBuf, count, clk1t, clk0t, clk0h))
+			{
+				return ( FAIL );
+			}
+
 		#else
 			start_crit();
 			for (	count = 0, ibits.rst_out();
@@ -2082,7 +2141,9 @@ Rslt_t
 Send_reg::set_pc_delay_1usec( void )
 {
 	const char		*my_name = "Send_reg::set_pc_delay_1usec";
-	register u_int	short_san_cnt;	   		// Short sanity timeout.
+	#if SEND_VERSION >= 4
+		register u_int	short_san_cnt;	   		// Short sanity timeout.
+	#endif
 	register u_int	tmp_delay_high;	 		// pc_delay_high() return value.
 	register u_int	tmp_delay_low;	 		// pc_delay_low() return value.
 
@@ -2170,18 +2231,18 @@ Send_reg::set_pc_delay_1usec( void )
 		// Step 6: enable interrupts, stop the hardware, and evaluate the results.
 		enable();
 		stop_clk();
+
+		STATPRINT(	"PC high %4u(%4u), low %4u(%4u)",
+			clk0h, SHORT_SAN_CNT - tmp_delay_high,
+			clk0t - clk0h, SHORT_SAN_CNT - tmp_delay_low );
+		printf(		"PC high %4u(%4u), low %4u(%4u)\n",
+			clk0h, SHORT_SAN_CNT - tmp_delay_high,
+			clk0t - clk0h, SHORT_SAN_CNT - tmp_delay_low );
+
+		m_pc_delay_1usec = ((SHORT_SAN_CNT - tmp_delay_high)/DECODER_0H_NOM) + 1;
+		STATPRINT(	"PC 1 usec delay %u", m_pc_delay_1usec );
+		printf(		"PC 1 usec delay %u\n", m_pc_delay_1usec );
 	#endif
-
-	STATPRINT(	"PC high %4u(%4u), low %4u(%4u)",
-		clk0h, SHORT_SAN_CNT - tmp_delay_high,
-		clk0t - clk0h, SHORT_SAN_CNT - tmp_delay_low );
-	printf(		"PC high %4u(%4u), low %4u(%4u)\n",
-		clk0h, SHORT_SAN_CNT - tmp_delay_high,
-		clk0t - clk0h, SHORT_SAN_CNT - tmp_delay_low );
-
-	m_pc_delay_1usec = ((SHORT_SAN_CNT - tmp_delay_high)/DECODER_0H_NOM) + 1;
-	STATPRINT(	"PC 1 usec delay %u", m_pc_delay_1usec );
-	printf(		"PC 1 usec delay %u\n", m_pc_delay_1usec );
 
 	return ( OK );
 }
