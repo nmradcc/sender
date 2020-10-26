@@ -34,6 +34,9 @@
 *
 **********************************************************************/
 
+extern UART_HandleTypeDef huart3;
+extern HAL_StatusTypeDef HAL_UART_ReceiveReady(UART_HandleTypeDef *huart);
+
 /**********************************************************************
 *
 *							STATIC VARIABLES
@@ -68,7 +71,7 @@ uint8_t kbhit(void)
 	}
 	if(ShKbHit(PORT3))
 	{
-		return 1;
+		return HAL_UART_ReceiveReady(&huart3) == HAL_OK;
 	}
 	if(ShKbHit(PORTT))
 	{
