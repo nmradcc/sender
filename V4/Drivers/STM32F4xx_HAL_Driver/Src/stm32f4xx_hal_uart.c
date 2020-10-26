@@ -1178,6 +1178,47 @@ HAL_StatusTypeDef HAL_UART_Receive(UART_HandleTypeDef *huart, uint8_t *pData, ui
   }
 }
 
+
+
+/**
+  * @brief  Checks to see if a character is ready.
+  * @param  huart  Pointer to a UART_HandleTypeDef structure that contains
+  *                the configuration information for the specified UART module.
+  * @retval HAL status
+  */
+HAL_StatusTypeDef HAL_UART_ReceiveReady(UART_HandleTypeDef *huart)
+{
+
+  /* Check that a Rx process is not already ongoing */
+  if (huart->RxState == HAL_UART_STATE_READY)
+  {
+    /* Process Locked */
+    __HAL_LOCK(huart);
+
+    huart->ErrorCode = HAL_UART_ERROR_NONE;
+    huart->RxState = HAL_UART_STATE_BUSY_RX;
+
+    if (UART_WaitOnFlagUntilTimeout(huart, UART_FLAG_RXNE, RESET, 0, 0) != HAL_OK)
+    {
+      return HAL_TIMEOUT;
+    }
+
+    /* At end of Rx process, restore huart->RxState to Ready */
+    huart->RxState = HAL_UART_STATE_READY;
+
+    /* Process Unlocked */
+    __HAL_UNLOCK(huart);
+
+    return HAL_OK;
+  }
+  else
+  {
+    return HAL_BUSY;
+  }
+}
+
+
+
 /**
   * @brief  Sends an amount of data in non blocking mode.
   * @param  huart  Pointer to a UART_HandleTypeDef structure that contains
