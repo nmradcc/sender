@@ -15,6 +15,7 @@
 #include "cmsis_os.h"
 #include "CS.h"
 #include "Track.h"
+//#include "Packet.h"
 
 /**********************************************************************
 *
@@ -151,7 +152,7 @@ void HandlePackets(void)
 	static uint8_t bfInsertIdle;
 
 //IsTrackOpen - or some such
-	if(IsPacketComplete())
+	if(0)
 	{
 
 //		pPacket = abPacket;
