@@ -187,6 +187,7 @@ const SHELL_TABLE ShellTable[] =
 	{"rem",		CL_SCRIPT,	SUPPRESS_HELP,		ShRem,				"ignore line"},
 	{"prompt",	CL_SCRIPT,	SUPPRESS_HELP,		ShPrompt,			"issue a prompt"},
 	{"script",	CL_SCRIPT,	NO_FLAGS,			ShScripts,			"<name> pause|resume|kill / List the running scripts"},
+	{"inputs",	CL_SCRIPT,	NO_FLAGS,			ShInputs,			"display the state of the inputs"},
 
 // file system
 	{"dir",		CL_FILE,	NO_FLAGS,			ShDir,				"list the files on the drive -h=show hidden -c=color"},
