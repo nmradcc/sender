@@ -213,6 +213,7 @@ void DoDirection(VIRTUAL_CAB* pVirtualCab, int nEvent)
 	unsigned char bDir;
 	Loco* pLoco;
 	char szTemp[10];
+	int nSpeed;
 	
 	pLoco = pVirtualCab->pRecall[pVirtualCab->nWhichRecall];
 	
@@ -247,18 +248,22 @@ void DoDirection(VIRTUAL_CAB* pVirtualCab, int nEvent)
 					switch(GetLocoSpeedMode(pLoco))
 					{
 						case SPEED_MODE_14:
-						case SPEED_MODE_14_PERCENT:
 							sprintf(szTemp, " SPED>%2d", SPEED_DIR_MAX / 18);
 						break;
 
 						case SPEED_MODE_28:
-						case SPEED_MODE_28_PERCENT:
 							sprintf(szTemp, " SPED>%2d", SPEED_DIR_MAX / 9);
 						break;
 
 						case SPEED_MODE_128:
-						case SPEED_MODE_128_PERCENT:
 							sprintf(szTemp, " SPED>%2d", SPEED_DIR_MAX / 2);
+						break;
+
+						case SPEED_MODE_14_PERCENT:
+						case SPEED_MODE_28_PERCENT:
+						case SPEED_MODE_128_PERCENT:
+							nSpeed = (SPEED_DIR_MAX * 100) / SPEED_PRIME_NUMBER;
+							sprintf(szTemp, " SPED>%2d", nSpeed);
 						break;
 					}
 
@@ -1535,6 +1540,11 @@ void DisplayFunction(VIRTUAL_CAB* pVirtualCab, unsigned long FunctionMap)
 	int i;
 	
 	strcpy(szFunctionList, aText[tL123456]);
+
+	// ToDo - make this programmable
+	szFunctionList[2] = 'B';
+	szFunctionList[3] = 'H';
+
 	if((pVirtualCab->nMenuShowing & MENU_SHOWING_LINE_2R) == 0)
 	{
 		for(i = 0; i < 9; i++)
@@ -1551,7 +1561,7 @@ void DisplayFunction(VIRTUAL_CAB* pVirtualCab, unsigned long FunctionMap)
 	{
 		if((FunctionMap & lBitMask[0]) != 0)
 		{
-			strcpy(szFunctionList, " H");
+			strcpy(szFunctionList, " L");
 		}
 		else
 		{
