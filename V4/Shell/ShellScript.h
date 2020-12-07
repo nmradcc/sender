@@ -42,4 +42,6 @@ CMD_RETURN ShPrompt(uint8_t bPort, int argc, char *argv[]);
 
 CMD_RETURN ShScripts(uint8_t bPort, int argc, char *argv[]);
 
+CMD_RETURN ShInputs(uint8_t bPort, int argc, char *argv[]);
+
 #endif /* SHELLSCRIPT_H_ */
