@@ -272,7 +272,12 @@ void DisplayFunctions(VIRTUAL_CAB* pVirtualCab, unsigned long FunctionMap)
 	{
 		//if((pVirtualCab->nMenuShowing & MENU_SHOWING_LINE_2R) == 0)
 		{
-			strcpy(szFunctionList, "  0-9:H123456789");
+			strcpy(szFunctionList, "  0-9:L123456789");
+
+			// ToDo - make this programmable
+			szFunctionList[8] = 'B';
+			szFunctionList[9] = 'H';
+
 			MapIndex = 0;
 			StrIndex = 6;
 			for(i = 0; i < 10; i++)
