@@ -51,7 +51,7 @@ float ProgTrackCurrent = 0.0;
 *
 **********************************************************************/
 
-static ADC_HandleTypeDef AdcHandle;
+//static ADC_HandleTypeDef AdcHandle;
 
 /* Variable used to get converted value */
 static __IO uint16_t uhADCxConvertedValue = 0;
@@ -85,6 +85,8 @@ static uint8_t bfFirstTime;
 **********************************************************************/
 void InitAcknowledge(void)
 {
+
+#ifdef IN_MAIN
 	ADC_ChannelConfTypeDef sConfig;
 
 	/*##-1- Configure the ADC peripheral #######################################*/
@@ -144,7 +146,9 @@ void InitAcknowledge(void)
 	    /* Start Conversation Error */
 	    Error_Handler();
 	}
+#endif
 	bfFirstTime = 1;
+
 }
 
 
