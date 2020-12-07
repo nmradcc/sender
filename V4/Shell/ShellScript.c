@@ -839,6 +839,70 @@ CMD_RETURN ShReturn(uint8_t bPort, int argc, char *argv[])
 }
 
 
+/*********************************************************************
+*
+* ShInput
+* @catagory	Script Command
+*
+* @brief	Display the inputs
+*
+* @param	bPort - port that issued this command
+*			argc - argument count
+*			argv - argc array of arguments
+*
+* @return	CMD_RETURN - shell result
+*
+*********************************************************************/
+CMD_RETURN ShInputs(uint8_t bPort, int argc, char *argv[])
+{
+
+    ShNL(bPort);
+
+	ShFieldOut(bPort, "Inputs: ", 0);
+
+	if(GetInput1())
+	{
+		ShFieldOut(bPort, "1=ON ", 0);
+	}
+	else
+	{
+		ShFieldOut(bPort, "1=OFF ", 0);
+	}
+
+	if(GetInput2())
+	{
+		ShFieldOut(bPort, "2=ON ", 0);
+	}
+	else
+	{
+		ShFieldOut(bPort, "2=OFF ", 0);
+	}
+
+	if(GetInput3())
+	{
+		ShFieldOut(bPort, "3=ON ", 0);
+	}
+	else
+	{
+		ShFieldOut(bPort, "3=OFF ", 0);
+	}
+
+	if(GetInput4())
+	{
+		ShFieldOut(bPort, "4=ON ", 0);
+	}
+	else
+	{
+		ShFieldOut(bPort, "4=OFF ", 0);
+	}
+
+    ShNL(bPort);
+
+
+	return CMD_OK;
+}
+
+
 #ifdef NOT_USED
 /*********************************************************************
 *
