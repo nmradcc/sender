@@ -62,7 +62,7 @@ void DoRecall(VIRTUAL_CAB* pVirtualCab, int nEvent);
 //void DisplayClock(VIRTUAL_CAB* pVirtualCab);
 void DisplaySpeed(VIRTUAL_CAB* pVirtualCab, unsigned int nSpeed);
 void DisplayFunction(VIRTUAL_CAB* pVirtualCab, unsigned long FunctionMap);
-void DisplayUpperFunction(VIRTUAL_CAB* pVirtualCab, unsigned long FunctionMap);
+//void DisplayUpperFunction(VIRTUAL_CAB* pVirtualCab, unsigned long FunctionMap);
 void DisplayAddress(VIRTUAL_CAB* pVirtualCab, unsigned int nAddress);
 void DisplayDirection(VIRTUAL_CAB* pVirtualCab, unsigned char Direction);
 
@@ -808,28 +808,11 @@ void DoFunction(VIRTUAL_CAB* pVirtualCab, int nEvent)
 				FunctionMap |= Mask;
 			}
 			
-			//if(nEvent < EVENT_FIVE)
-			//{
-			//	SetLocoFunctions1(pLoco, FunctionMap);
-			//}
-			//else
-			//{
-			//	SetLocoFunctions2(pLoco, FunctionMap);
-			//}
 			SetLocoFunctions(pLoco, FunctionMap);
 			
 			pLoco = pVirtualCab->pRecall[pVirtualCab->nWhichRecall];
-			//if(nEvent == EVENT_SEVEN || nEvent == EVENT_EIGHT || nEvent == EVENT_NINE)
-			//{
-			//	FunctionMap = GetCombinedFunctions(pVirtualCab, pLoco);
-			//	DisplayUpperFunction(pVirtualCab, FunctionMap);
-			//	SetExpiration(pVirtualCab, EXPIRATION_2_SECONDS);
-			//}
-			//else
-			{
-				FunctionMap = GetCombinedFunctions(pVirtualCab, pLoco);
-				DisplayFunction(pVirtualCab, FunctionMap);
-			}
+			FunctionMap = GetCombinedFunctions(pVirtualCab, pLoco);
+			DisplayFunction(pVirtualCab, FunctionMap);
 		}
 	}
 }
@@ -858,10 +841,6 @@ void DoRefresh(VIRTUAL_CAB* pVirtualCab, int nEvent)
 	
 	if(pLoco != NULL)
 	{
-		//FunctionMap = GetCombinedFunctions(pVirtualCab, pLoco);
-		//DisplayFunction(pVirtualCab, FunctionMap);
-		////DisplayFunction(pVirtualCab, GetLocoFunctions(pVirtualCab->pRecall[pVirtualCab->nWhichRecall]));
-
 		if(pVirtualCab->bSpeedDisconnect != 0)
 		{
 			DisplayDirection(pVirtualCab, GetLocoDirection(pLoco));
@@ -934,17 +913,11 @@ void DoRunFunction(VIRTUAL_CAB* pVirtualCab, int nEvent)
 				break;
 		}
 	
-		//SetLocoFunctions1(pLoco, FunctionMap);
 		SetLocoFunctions(pLoco, FunctionMap);
 			
 		pLoco = pVirtualCab->pRecall[pVirtualCab->nWhichRecall];
 		FunctionMap = GetCombinedFunctions(pVirtualCab, pLoco);
 		DisplayFunction(pVirtualCab, FunctionMap);
-	
-//      if(bOverride)
-//      {
-//			SetExpiration(pVirtualCab, EPIRATION_2_SECONDS);
-//      }
 	}
 }
 
@@ -1085,12 +1058,12 @@ void DoBrake(VIRTUAL_CAB* pVirtualCab, int nEvent)
 void DoEmergencyStop(VIRTUAL_CAB* pVirtualCab, int nEvent)
 {
 	Loco* pLoco;
-	//int i;
-	//unsigned int nSpeed;
 	
 	pLoco = pVirtualCab->pRecall[pVirtualCab->nWhichRecall];
 
 #ifdef NO_WHOLE_LAYOUT_ESTOP
+	int i;
+	unsigned int nSpeed;
 	if((pVirtualCab->nMenuShowing & MENU_SHOWING_ESTOP) == 0)
 	{
 		SetExpiration(pVirtualCab, EPIRATION_1_SECONDS);
@@ -1322,8 +1295,6 @@ void DisplayAddress(VIRTUAL_CAB* pVirtualCab, unsigned int nAddress)
 	char szTemp[17];
 	Loco* pLoco;
 
-//	if((pVirtualCab->nMenuShowing & MENU_SHOWING_LINE_2L) == 0)
-// 	{
 	if(nAddress == ANALOG_LOCO)
 	{
 		NCE_DisplayMessage(pVirtualCab->Cab, 0, 1, aText[tAnalog]);
@@ -1336,18 +1307,15 @@ void DisplayAddress(VIRTUAL_CAB* pVirtualCab, unsigned int nAddress)
 		{
 			if(IsLeadLoco(pLoco))
 			{
-				//snprintf(szTemp, 17, aText[tConLead], nAddress);
 				sprintf(szTemp, aText[tConLead], nAddress);
 			}
 			else
 			{
-				//snprintf(szTemp, 17, aText[tCon], nAddress);
 				sprintf(szTemp, aText[tCon], nAddress);
 			}
 		}
 		else
 		{
-			//snprintf(szTemp, 17, aText[tLoc], nAddress);
 			sprintf(szTemp, aText[tLoc], nAddress);
 		}
 		NCE_DisplayMessage(pVirtualCab->Cab, 0, 1, szTemp);
@@ -1419,7 +1387,6 @@ void DisplaySpeed(VIRTUAL_CAB* pVirtualCab, unsigned int nSpeed)
 	{
 		pLoco = pVirtualCab->pRecall[pVirtualCab->nWhichRecall];
 		
-		//FormatSpeed(szTemp, nSpeed);
 		if(nSpeed == ESTOP)
 		{
 			NCE_DisplayMessage(pVirtualCab->Cab, 2, 0, aText[tEStp]);
@@ -1572,7 +1539,7 @@ void DisplayFunction(VIRTUAL_CAB* pVirtualCab, unsigned long FunctionMap)
 	}
 }
 
-
+#ifdef NOT_USED
 /**********************************************************************
 *
 * FUNCTION:		DisplayUpperFunction
@@ -1604,6 +1571,7 @@ void DisplayUpperFunction(VIRTUAL_CAB* pVirtualCab, unsigned long FunctionMap)
 		NCE_DisplayMessage(pVirtualCab->Cab, 6, 1, szFunctionList);
 	}
 }
+#endif
 
 
 /**********************************************************************
@@ -1623,7 +1591,6 @@ void RestoreOperateScreen(VIRTUAL_CAB* pVirtualCab, unsigned char Line1, unsigne
 {
 	Loco* pLoco;
 	unsigned int FunctionMap;
-//	char szTime[10];
 	
 	pLoco = pVirtualCab->pRecall[pVirtualCab->nWhichRecall];
 	
@@ -1639,11 +1606,7 @@ void RestoreOperateScreen(VIRTUAL_CAB* pVirtualCab, unsigned char Line1, unsigne
 			DisplaySpeed(pVirtualCab, GetLocoSpeed(pLoco));
 		}
 
-//		GetClockString(szTime);
-//		NCE_DisplayMessage(pVirtualCab->Cab, 8, 0, szTime);
-
 		UpdateWangrowClock();
-
 	}
 		
 	if(Line2)
