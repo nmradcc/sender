@@ -177,6 +177,14 @@ void RunState(VIRTUAL_CAB* pVirtualCab, int nEvent)
 			StateNoFunction(pVirtualCab, nEvent);
 			break;
 
+		case STATE_SEND:
+			StateSend(pVirtualCab, nEvent);
+			break;
+
+		case STATE_TRACK:
+			StateTrack(pVirtualCab, nEvent);
+			break;
+
 		default:
 			pVirtualCab->nState = STATE_IDLE;
 			break;

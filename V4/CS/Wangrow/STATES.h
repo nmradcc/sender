@@ -54,6 +54,8 @@ enum
 	//STATE_PROGRAM_MACROS,
 	STATE_PROG_MODE,
 	STATE_NO_FUNCTION,
+	STATE_SEND,
+	STATE_TRACK,
 };
 
 typedef struct
@@ -114,6 +116,9 @@ void StateProgramTrack(VIRTUAL_CAB* pVirtualCab, int nEvent);
 //void StateSetCab(VIRTUAL_CAB* pVirtualCab, int nEvent);
 void StateProgramAccessories(VIRTUAL_CAB* pVirtualCab, int nEvent);
 //void StateProgramMacros(VIRTUAL_CAB* pVirtualCab, int nEvent);
+
+void StateSend(VIRTUAL_CAB* pVirtualCab, int nEvent);
+void StateTrack(VIRTUAL_CAB* pVirtualCab, int nEvent);
 
 /**********************************************************************
 *
