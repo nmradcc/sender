@@ -354,8 +354,10 @@ CMD_RETURN ShSystemStatus(uint8_t bPort, int argc, char *argv[])
 * @return	CMD_RETURN - shell result
 *
 *********************************************************************/
+#ifdef NEW_PACKET
 CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
 {
+	static PACKET_BITS* pPacket = apShellPacket;
     FRESULT ret;
     char szTypeBuf[80];
 	char* pBuf = szTypeBuf;
@@ -366,7 +368,6 @@ CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
 	int period;
 	int pulse;
 	int count;
-	PACKET_BITS* pPacket = apShellPacket;
     FIL fp;
 	
 	
@@ -427,7 +428,11 @@ CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
 					pp = strsep(&pBuf, ",");
 					pulse = atoi(pp) * TICKS_PER_MICROSECOND;
 					pp = strsep(&pBuf, ",");
-					count = atoi(pp) + 1;
+					count = atoi(pp);
+					if(count == 0)
+					{
+						count++;
+					}
 
 					for(i = 0; i < count; i++)
 					{
@@ -481,7 +486,144 @@ CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
 	return CMD_OK;
     
 }
+#else
+CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
+{
+	static PACKET_BITS* pPacket = apShellPacket;
+    FRESULT ret;
+    char szTypeBuf[80];
+	char* pBuf = szTypeBuf;
+	char* pp;
+    uint32_t bc;
+	uint32_t preambles;
+	int i;
+	int period;
+	int pulse;
+	int count;
+    FIL fp;
 
+
+    ShNL(bPort);
+
+	if(argc == 1)
+	{
+		if(apShellPacket[0].period != 0)
+		{
+			bc = atoi(argv[1]);
+			BuildPacketBits(apShellPacket, bc);
+		}
+		else
+		{
+			return CMD_BAD_PACKET;
+		}
+	}
+	else if(argc == 2 || argc == 3)
+	{
+		// open file
+		ret = f_open(&fp, argv[1], FA_READ);
+		if(ret != FR_OK)
+		{
+			// append '.pkt' and try again
+			strcat(argv[1], ".pkt");
+			ret = f_open(&fp, argv[1], FA_READ);
+		}
+
+		if(ret == FR_OK)
+		{
+			while(1)
+			{
+				bc = getLine(&fp, szTypeBuf, sizeof(szTypeBuf));
+				if(bc == 0)
+				{
+					return CMD_BAD_BIT_FILE;
+				}
+
+				// the first line is the header and number of preambles
+				if(strnicmp(szTypeBuf, "PREAMBLES", 9) == 0)
+				{
+					// ToDo - verify the '=' and number format
+
+					preambles = atoi(&szTypeBuf[12]);
+
+					for(i = 0; i < preambles; i++)
+					{
+						pPacket->period = ONE_PERIOD;
+						pPacket->pulse = ONE_PULSE;
+						pPacket++;
+					}
+					break;
+				}
+
+				while(1)
+				{
+					bc = getLine(&fp, szTypeBuf, sizeof(szTypeBuf));
+					if(bc == 0)
+					{
+						break;
+					}
+
+					pBuf = szTypeBuf;
+					pp = strsep(&pBuf, ",");
+
+					period = atoi(pp) * TICKS_PER_MICROSECOND;
+					pp = strsep(&pBuf, ",");
+					pulse = atoi(pp) * TICKS_PER_MICROSECOND;
+					pp = strsep(&pBuf, ",");
+					count = atoi(pp);
+					if(count == 0)
+					{
+						count++;
+					}
+
+					for(i = 0; i < count; i++)
+					{
+						pPacket->period = period;
+						pPacket->pulse = pulse;
+						pPacket++;
+					}
+				}
+				f_close(&fp);
+
+				// add the terminator
+				pPacket->period = 0;
+				pPacket->pulse = 0;
+
+				if(argc == 3)
+				{
+					bc = atoi(argv[1]);
+					BuildPacketBits(apShellPacket, bc);
+				}
+				else
+				{
+					BuildPacketBits(apShellPacket, 1);
+				}
+			}
+		}
+		else
+		{
+			// if no file, try to convert arg to a number,
+			// if less than 100 send that many packets
+			bc = atoi(argv[1]);
+			if(apShellPacket[0].period != 0 && bc != 0 && bc <= 100)
+			{
+				BuildPacketBits(apShellPacket, bc);
+			}
+			else
+			{
+				ShFieldOut(bPort, "File not found.\r\n", 0);
+				// return file not found
+				return CMD_NOT_FOUND;
+			}
+		}
+	}
+	else
+	{
+		return CMD_BAD_PARAMS;
+	}
+	return CMD_OK;
+
+}
+#endif
 
 
 
