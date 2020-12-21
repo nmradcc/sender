@@ -32,6 +32,8 @@
 #include "States.h"
 #include "Expiration.h"
 
+#include "Loco.h"
+
 /**********************************************************************
 *
 *							DEFINITIONS
@@ -45,6 +47,8 @@
 **********************************************************************/
 
 void RefreshDisplay(VIRTUAL_CAB* pVirtualCab, int nEvent);
+void DeleteCurrentRecall(VIRTUAL_CAB* pVirtualCab, int nEvent);
+
 void Expansion(VIRTUAL_CAB* pVirtualCab, int nEvent);
 
 extern void RestoreOperateScreen(VIRTUAL_CAB* pVirtualCab, unsigned char Line1, unsigned char Line2);
@@ -70,7 +74,7 @@ static const EVENT_MAP IdleMap[] =
 	{EVENT_SELECT_MACRO,		STATE_NO_FUNCTION,				NULL},
 	{EVENT_CONSIST_SETUP, 		STATE_NO_FUNCTION,				NULL},
 	{EVENT_CONSIST_ADD,			STATE_NO_FUNCTION,				NULL},
-	{EVENT_CONSIST_DELETE,		STATE_NO_FUNCTION,				NULL},
+	{EVENT_CONSIST_DELETE,		0,								DeleteCurrentRecall},
 	{EVENT_CONSIST_KILL,		STATE_NO_FUNCTION,				NULL},
 	{EVENT_EXPANSION,			STATE_FUNCTIONS,				NULL},
 
@@ -166,3 +170,10 @@ void RefreshDisplay(VIRTUAL_CAB* pVirtualCab, int nEvent)
    //RestoreOperateScreen(pVirtualCab, TRUE, TRUE);
 }
 
+
+void DeleteCurrentRecall(VIRTUAL_CAB* pVirtualCab, int nEvent)
+{
+
+	DeleteRecallLoco(pVirtualCab, pVirtualCab->nWhichRecall);
+	RestoreOperateScreen(pVirtualCab, 1, 1);
+}
