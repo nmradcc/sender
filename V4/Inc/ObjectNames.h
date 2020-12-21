@@ -30,4 +30,6 @@ extern const char szPath[];
 
 extern const char szLed[];
 
+extern const char szInputs[];
+
 #endif /* OBJECTNAMES_H_ */
