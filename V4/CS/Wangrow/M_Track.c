@@ -76,7 +76,7 @@ static const EVENT_MAP IdleMap[] =
 
 /**********************************************************************
 *
-* FUNCTION:	   StateNoFunction
+* FUNCTION:	   StateTrack
 *
 * ARGUMENTS:
 *
@@ -109,7 +109,7 @@ void StateTrack(VIRTUAL_CAB* pVirtualCab, int nEvent)
 
 /**********************************************************************
 *
-* FUNCTION:	   ExitNoFunction
+* FUNCTION:	   ExitTrackDisplay
 *
 * ARGUMENTS:
 *

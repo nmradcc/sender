@@ -76,7 +76,7 @@ static const EVENT_MAP IdleMap[] =
 
 /**********************************************************************
 *
-* FUNCTION:	   StateNoFunction
+* FUNCTION:	   StateSend
 *
 * ARGUMENTS:
 *
@@ -109,7 +109,7 @@ void StateSend(VIRTUAL_CAB* pVirtualCab, int nEvent)
 
 /**********************************************************************
 *
-* FUNCTION:	   ExitNoFunction
+* FUNCTION:	   ExitSendDisplay
 *
 * ARGUMENTS:
 *
@@ -129,4 +129,10 @@ void ExitSendDisplay(VIRTUAL_CAB* pVirtualCab, int nEvent)
 	RestoreOperateScreen(pVirtualCab, 0, 1);
 
 	ChangeState(pVirtualCab, STATE_IDLE);
+}
+
+
+void SendCabMessage(VIRTUAL_CAB* pVirtualCab, char* msg)
+{
+	NCE_DisplayMessage(pVirtualCab->Cab, 0, 1, msg);
 }
