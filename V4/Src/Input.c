@@ -136,9 +136,9 @@ void InputTask(void* argument)
 	{
 		raw_input = 0;
 		raw_input |= HAL_GPIO_ReadPin(IN1_PORT, IN1_PIN);
-		raw_input |= HAL_GPIO_ReadPin(IN1_PORT, IN1_PIN) << 1;
-		raw_input |= HAL_GPIO_ReadPin(IN1_PORT, IN1_PIN) << 2;
-		raw_input |= HAL_GPIO_ReadPin(IN1_PORT, IN1_PIN) << 3;
+		raw_input |= HAL_GPIO_ReadPin(IN2_PORT, IN2_PIN) << 1;
+		raw_input |= HAL_GPIO_ReadPin(IN3_PORT, IN3_PIN) << 2;
+		raw_input |= HAL_GPIO_ReadPin(IN4_PORT, IN4_PIN) << 3;
 
 		Inputs = DebounceInputs(raw_input, abDebounceValue, 4);
 
@@ -176,4 +176,9 @@ uint32_t GetInput3(void)
 uint32_t GetInput4(void)
 {
 	return (Inputs & 0x08) != 0;
+}
+
+uint32_t GetInputs(void)
+{
+	return Inputs;
 }
