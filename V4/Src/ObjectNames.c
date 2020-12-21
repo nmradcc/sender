@@ -75,3 +75,5 @@ const char szPort[] = 				"port";
 const char szPath[] = 				"path";
 
 const char szLed[] = 				"led";
+
+const char szInputs[] = 			"inputs";

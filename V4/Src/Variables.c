@@ -18,6 +18,7 @@
 #include "Track.h"
 #include "minini.h"
 #include "led.h"
+#include "input.h"
 
 /**********************************************************************
 *
@@ -112,6 +113,8 @@ const VAR_TABLE VarCmdTable[] =
 	{szPath,			&szPathVar,			(VAR_TYPE_STRING | VAR_TYPE_PERSIST),	"\\",				"Script search path" },
 
 	{szLed,				NULL,				(VAR_TYPE_LED),							"",					"Green LED on | off | blink | 32 bit pattern" },
+
+	{szInputs,			NULL,				(VAR_TYPE_INPUTS | VAR_TYPE_READ_ONLY),	"",					"Inputs 1 - 4" },
 
 //	{szSpeed,			NULL,				(VAR_TYPE_SPEED),						"",					"Current Train Speed" },
 //	{szDir,				NULL,				(VAR_TYPE_DIR),							"",					"Current Train Direction fwd / rev" },
@@ -267,6 +270,47 @@ char* VarToString(uint32_t idx)
 
     	case VAR_TYPE_LED:
     		sprintf(tempbuf, "%08x", (int)GetStatusLed());
+   		break;
+
+    	case VAR_TYPE_INPUTS:
+    		//sprintf(tempbuf, "%x", (int)GetInputs());
+
+    		if(GetInput1())
+    		{
+    			strcpy(tempbuf, "1=ON ");
+    		}
+    		else
+    		{
+    			strcpy(tempbuf, "1=OFF ");
+    		}
+
+    		if(GetInput2())
+    		{
+    			strcat(tempbuf, "2=ON ");
+    		}
+    		else
+    		{
+    			strcat(tempbuf, "2=OFF ");
+    		}
+
+    		if(GetInput3())
+    		{
+    			strcat(tempbuf, "3=ON ");
+    		}
+    		else
+    		{
+    			strcat(tempbuf, "3=OFF ");
+    		}
+
+    		if(GetInput4())
+    		{
+    			strcat(tempbuf, "4=ON");
+    		}
+    		else
+    		{
+    			strcat(tempbuf, "4=OFF");
+    		}
+
    		break;
     }
     return tempbuf;
@@ -468,6 +512,7 @@ uint32_t GetVariableValue(int idx)
     	case VAR_TYPE_PORT:
     	case VAR_TYPE_TRACK:
     	case VAR_TYPE_LED:
+    	case VAR_TYPE_INPUTS:
     		return *(unsigned int*)(VarCmdTable[idx].var);
        	break;
 
