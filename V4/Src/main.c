@@ -50,7 +50,7 @@ extern void http_server_socket_init(void);
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define VERSION		4
+#define VERSION		5
 
 /* USER CODE END PD */
 
@@ -184,9 +184,9 @@ int main(void)
 	MX_CRC_Init();
 	MX_DAC_Init();
 	MX_RTC_Init();
+HAL_GPIO_WritePin(GREEN_LED_PORT, GREEN_LED, GPIO_PIN_SET);
 HAL_GPIO_WritePin(RED_LED_PORT, RED_LED, GPIO_PIN_SET);
 HAL_GPIO_WritePin(BLUE_LED_PORT, BLUE_LED, GPIO_PIN_SET);
-HAL_GPIO_WritePin(GREEN_LED_PORT, GREEN_LED, GPIO_PIN_SET);
 	MX_SPI3_Init();
 	/* USER CODE BEGIN 2 */
 
