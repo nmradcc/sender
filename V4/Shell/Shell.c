@@ -187,7 +187,7 @@ const SHELL_TABLE ShellTable[] =
 	{"rem",		CL_SCRIPT,	SUPPRESS_HELP,		ShRem,				"ignore line"},
 	{"prompt",	CL_SCRIPT,	SUPPRESS_HELP,		ShPrompt,			"issue a prompt"},
 	{"script",	CL_SCRIPT,	NO_FLAGS,			ShScripts,			"<name> pause|resume|kill / List the running scripts"},
-	{"inputs",	CL_SCRIPT,	NO_FLAGS,			ShInputs,			"display the state of the inputs"},
+//	{"inputs",	CL_SCRIPT,	NO_FLAGS,			ShInputs,			"display the state of the inputs"},
 
 // file system
 	{"dir",		CL_FILE,	NO_FLAGS,			ShDir,				"list the files on the drive -h=show hidden -c=color"},
@@ -633,6 +633,87 @@ FRESULT OpenScript(FIL* fp, char* path, char* name)
 	return FR_NO_FILE;
 }
 
+
+/*********************************************************************
+*
+* OpenPacket
+*
+* @brief	Open a packet file, searching the local directory and all the
+* 			'path' directories and without and with the default script
+* 			extension appended
+*
+* @param	fp - pointer to a file object
+* 			path - the current path variable
+* 			name - the script name
+*
+* @return	0 = no decimal point in string, 1 if decimal point in string
+*
+*********************************************************************/
+FRESULT OpenPacket(FIL* fp, char* path, char* name)
+{
+	FRESULT ret;
+
+	char szFullName[13];
+	char szFullPath[64];
+	char pPath[32];
+	char* pEnvPath;
+	int len;
+
+	strcpy(szFullName, name);
+
+	// try the passed in filename
+	ret = f_open(fp, szFullName, FA_READ);
+	if(ret == FR_OK)
+	{
+		return ret;
+	}
+	else
+	{
+		// try the default extension
+		strcat(szFullName, PACKET_DEFAULT_EXTENSION);
+		ret = f_open(fp, szFullName, FA_READ);
+		if(ret == FR_OK)
+		{
+			return ret;
+		}
+		else
+		{
+			pEnvPath = szPathVar;
+			while((len = GetNextPath(pEnvPath, pPath)) != 0)
+			{
+				// use pPath
+				strcpy(szFullPath, pPath);
+				if(pPath[strlen(pPath)-1] != '/')
+				{
+					strcat(szFullPath, "/");
+				}
+				strcat(szFullPath, name);
+
+				// open file
+				ret = f_open(fp, szFullPath, FA_READ);
+				if(ret == FR_OK)
+				{
+					return ret;
+				}
+
+				// add the default extension
+				strcat(szFullPath, PACKET_DEFAULT_EXTENSION);
+
+				// open file
+				ret = f_open(fp, szFullPath, FA_READ);
+				if(ret == FR_OK)
+				{
+					return ret;
+				}
+
+				pEnvPath += len+1;
+			}
+		}
+	}
+
+	return FR_NO_FILE;
+}
+
 /*********************************************************************
 *
 * ShHelp
@@ -709,6 +790,31 @@ CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[])
 			f_close(&fp);
 			return CMD_OK;
 		}
+
+		res = OpenPacket(&fp, szPathVar, argv[1]);
+		if(res == FR_OK)
+		{
+			bc = getLine(&fp, szTypeBuf, sizeof(szTypeBuf));
+			if(bc != 0)
+			{
+				if(strncmp(szTypeBuf, "rem", 3) == 0)
+				{
+					ShFieldOut(bPort, " - ", 0);
+					ShFieldOut(bPort, &szTypeBuf[4], 0);
+				}
+				else
+				{
+					ShFieldOut(bPort, " - No Help String", 0);
+				}
+			}
+			else
+			{
+				ShFieldOut(bPort, " - No Help String", 0);
+			}
+			f_close(&fp);
+			return CMD_OK;
+		}
+
 
 		if(strcasecmp("-n", argv[1]) == 0)
 		{
@@ -932,7 +1038,6 @@ CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[])
 		ShFieldOut(bPort, "Scripts:", 0);
 		ShNL(bPort);
 
-
 		pEnvPath = szPathVar;
 		while((len = GetNextPath(pEnvPath, pPath)) != 0)
 		{
@@ -950,6 +1055,48 @@ CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[])
 						int len = strlen(fno.fname) - 4;
 						strcpy(szTypeBuf, &fno.fname[len]);
 						if(strcmp(szTypeBuf, ".SCP") == 0)
+						//if(strcmp(fno.fname, "CONFIG.INI") != 0)
+						{
+							ShFieldOut(bPort, fno.fname, HELP_FIELD_WIDTH);
+							cnt++;
+							if(cnt >= 6)
+							{
+								ShNL(bPort);
+								cnt = 0;
+							}
+						}
+					}
+				}
+				f_closedir(&dir);
+			}
+
+			pEnvPath += len+1;
+		}
+
+
+		cnt = 0;
+		ShNL(bPort);
+		ShNL(bPort);
+		ShFieldOut(bPort, "Packets:", 0);
+		ShNL(bPort);
+
+		pEnvPath = szPathVar;
+		while((len = GetNextPath(pEnvPath, pPath)) != 0)
+		{
+			// use pPath
+			res = f_opendir(&dir, pPath);                       /* Open the directory */
+			if (res == FR_OK)
+			{
+				for (;;)
+				{
+					res = f_readdir(&dir, &fno);                   /* Read a directory item */
+					if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
+					if (!(fno.fattrib & AM_DIR))
+					{
+						/* It is a file. */
+						int len = strlen(fno.fname) - 4;
+						strcpy(szTypeBuf, &fno.fname[len]);
+						if(strcmp(szTypeBuf, ".PKT") == 0)
 						//if(strcmp(fno.fname, "CONFIG.INI") != 0)
 						{
 							ShFieldOut(bPort, fno.fname, HELP_FIELD_WIDTH);
