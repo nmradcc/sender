@@ -60,7 +60,7 @@ static unsigned int DebounceInputs(uint32_t Raw, unsigned char const abDebounceV
 **********************************************************************/
 
 static uint8_t abDebounceValue[8];
-static unsigned int Inputs;
+unsigned int Inputs;
 
 /**********************************************************************
 *
@@ -140,7 +140,7 @@ void InputTask(void* argument)
 		raw_input |= HAL_GPIO_ReadPin(IN3_PORT, IN3_PIN) << 2;
 		raw_input |= HAL_GPIO_ReadPin(IN4_PORT, IN4_PIN) << 3;
 
-		Inputs = DebounceInputs(raw_input, abDebounceValue, 4);
+		Inputs = ~DebounceInputs(raw_input, abDebounceValue, 4);
 
 		osDelay(pdMS_TO_TICKS(10));
 	}
