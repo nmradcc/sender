@@ -16,6 +16,7 @@
 #include "ff.h"
 #include "GetLine.h"
 #include "Variables.h"
+#include "BitMask.h"
 
 //*******************************************************************************
 // Global Variables
@@ -63,12 +64,15 @@ extern uint8_t PortIndex(uint8_t p);
 
 const char ConditionTable[][3] =
 {
+	"",
 	"==",
 	"!=",
 	">",
 	"<",
 	">=",
 	"<=",
+	"&&",
+	"!&",
 };
 #define CONDITIONAL_TABLE_COUNT (sizeof(ConditionTable) / 3)
 
@@ -81,6 +85,8 @@ typedef enum
 	COND_LESS_THAN,
 	COND_GREATER_THAN_EQUAL,
 	COND_LESS_THAN_EQUAL,
+	COND_AND,
+	COND_AND_NOT,
 } CONDITIONAL;
 
 
@@ -282,7 +288,10 @@ void DoScriptRun(void)
                     {
                     	cs->RunMode = SKIP_IF;
                     }
-                }
+                    else if(ret & CMD_ELSE)
+                    {
+                    	cs->RunMode = SKIP_ELSE;
+                    }                }
                 else
                 {
                     ScriptDone();
@@ -290,7 +299,7 @@ void DoScriptRun(void)
             break;
 
             case SKIP_IF:
-                if(getLine(&cs->Scriptfp, cs->buffer, sizeof(BUFFER_SIZE)) != (uint8_t)EOF)
+                if(getLine(&cs->Scriptfp, cs->buffer, BUFFER_SIZE) != (uint8_t)EOF)
                 {
                     iCmdIndex = FindCommand(cs->buffer, &cs->nargs, cs->args);
                     if(strcasecmp(ShellTable[iCmdIndex].szCommand, "else") == 0)
@@ -304,6 +313,10 @@ void DoScriptRun(void)
                         	cs->RunMode = RUN_NORMAL;
                         }
                     }
+                    else if(strcasecmp(ShellTable[iCmdIndex].szCommand, "endif") == 0)
+					{
+						cs->RunMode = RUN_NORMAL;
+					}
                 }
                 else
                 {
@@ -312,7 +325,7 @@ void DoScriptRun(void)
             break;
 
             case SKIP_ELSE:
-                if(getLine(&cs->Scriptfp, cs->buffer, sizeof(BUFFER_SIZE)) != (uint8_t)EOF)
+                if(getLine(&cs->Scriptfp, cs->buffer, BUFFER_SIZE) != (uint8_t)EOF)
                 {
                     iCmdIndex = FindCommand(cs->buffer, &cs->nargs, cs->args);
                     if(strcasecmp(ShellTable[iCmdIndex].szCommand, "endif") == 0)
@@ -327,7 +340,7 @@ void DoScriptRun(void)
             break;
 
             case SKIP_LOOP:
-                if(getLine(&cs->Scriptfp, cs->buffer, sizeof(BUFFER_SIZE)) != (uint8_t)EOF)
+                if(getLine(&cs->Scriptfp, cs->buffer, BUFFER_SIZE) != (uint8_t)EOF)
                 {
                     iCmdIndex = FindCommand(cs->buffer, &cs->nargs, cs->args);
                     if(strcasecmp(ShellTable[iCmdIndex].szCommand, "endloop") == 0)
@@ -393,8 +406,9 @@ void DoScriptRun(void)
 CMD_RETURN TestCondition(char* szArg1, char* szCondition, char* szArg2)
 {
 	int i;
-	char szValue1[16];
-	char szValue2[16];
+	int c;
+	//char szValue1[16];
+	//char szValue2[16];
 	int iValue1;
 	int iValue2;
     #ifdef NO_FLOATS
@@ -406,14 +420,14 @@ CMD_RETURN TestCondition(char* szArg1, char* szCondition, char* szArg2)
 //k	GetVariable(szArg2, szValue2, 16);
 
 	// find the conditional
-	for(i = 0; i < CONDITIONAL_TABLE_COUNT; i++)
+	for(c = 0; c < CONDITIONAL_TABLE_COUNT; c++)
 	{
-		if(strcasecmp(ConditionTable[i], szCondition) == 0)
+		if(strcasecmp(ConditionTable[c], szCondition) == 0)
 		{
 			break;
 		}
 	}
-	if(i >= CONDITIONAL_TABLE_COUNT)
+	if(c >= CONDITIONAL_TABLE_COUNT)
 	{
 		return CMD_IF_FALSE;
 	}
@@ -469,27 +483,31 @@ CMD_RETURN TestCondition(char* szArg1, char* szCondition, char* szArg2)
 	else
 #endif
 	{
-		i = FindVariable(szValue1);
+		//i = FindVariable(szValue1);
+		i = FindVariable(szArg1);
 		if(i != -1)
 		{
 			iValue1 = GetVariableValue(i);
 		}
 		else
 		{
-			iValue1 = atoi(szValue1);
+			//iValue1 = atoi(szValue1);
+			iValue1 = atoi(szArg1);
 		}
 
-		i = FindVariable(szValue2);
+		//i = FindVariable(szValue2);
+		i = FindVariable(szArg2);
 		if(i != -1)
 		{
 			iValue2 = GetVariableValue(i);
 		}
 		else
 		{
-			iValue2 = atoi(szValue2);
+			//iValue2 = atoi(szValue2);
+			iValue2 = atoi(szArg2);
 		}
 
-		switch(i)
+		switch(c)
 		{
 			case COND_NONE:
 			break;
@@ -525,6 +543,28 @@ CMD_RETURN TestCondition(char* szArg1, char* szCondition, char* szArg2)
 			break;
 			case COND_LESS_THAN_EQUAL:
 				if(iValue1 <= iValue2)
+				{
+					return CMD_IF_TRUE;
+				}
+			break;
+			case COND_AND:
+				//if(iValue2 != 0)
+				//{
+				//	iValue2--;
+				//}
+				//if(iValue1 & lBitMask[iValue2])
+				if(iValue1 & iValue2)
+				{
+					return CMD_IF_TRUE;
+				}
+			break;
+			case COND_AND_NOT:
+				//if(iValue2 != 0)
+				//{
+				//	iValue2--;
+				//}
+				//if(~(iValue1 & lBitMask[iValue2]))
+				if(~(iValue1 & iValue2))
 				{
 					return CMD_IF_TRUE;
 				}
@@ -672,7 +712,7 @@ CMD_RETURN ShIf(uint8_t bPort, int argc, char *argv[])
 *********************************************************************/
 CMD_RETURN ShElse(uint8_t bPort, int argc, char *argv[])
 {
-	return CMD_OK;
+	return CMD_ELSE;
 }
 
 /*********************************************************************
@@ -839,67 +879,13 @@ CMD_RETURN ShReturn(uint8_t bPort, int argc, char *argv[])
 }
 
 
-/*********************************************************************
-*
-* ShInput
-* @catagory	Script Command
-*
-* @brief	Display the inputs
-*
-* @param	bPort - port that issued this command
-*			argc - argument count
-*			argv - argc array of arguments
-*
-* @return	CMD_RETURN - shell result
-*
-*********************************************************************/
-CMD_RETURN ShInputs(uint8_t bPort, int argc, char *argv[])
+unsigned int GetLoopCount(void)
 {
-
-    ShNL(bPort);
-
-	ShFieldOut(bPort, "Inputs: ", 0);
-
-	if(GetInput1())
+	if(CurrentScript != -1)
 	{
-		ShFieldOut(bPort, "1=ON ", 0);
+		return ScriptNest[CurrentScript].LoopCount;
 	}
-	else
-	{
-		ShFieldOut(bPort, "1=OFF ", 0);
-	}
-
-	if(GetInput2())
-	{
-		ShFieldOut(bPort, "2=ON ", 0);
-	}
-	else
-	{
-		ShFieldOut(bPort, "2=OFF ", 0);
-	}
-
-	if(GetInput3())
-	{
-		ShFieldOut(bPort, "3=ON ", 0);
-	}
-	else
-	{
-		ShFieldOut(bPort, "3=OFF ", 0);
-	}
-
-	if(GetInput4())
-	{
-		ShFieldOut(bPort, "4=ON ", 0);
-	}
-	else
-	{
-		ShFieldOut(bPort, "4=OFF ", 0);
-	}
-
-    ShNL(bPort);
-
-
-	return CMD_OK;
+	return 0xffff;
 }
 
 
