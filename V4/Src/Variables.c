@@ -19,6 +19,7 @@
 #include "minini.h"
 #include "led.h"
 #include "input.h"
+#include "Shell.h"
 
 /**********************************************************************
 *
@@ -114,7 +115,9 @@ const VAR_TABLE VarCmdTable[] =
 
 	{szLed,				NULL,				(VAR_TYPE_LED),							"",					"Green LED on | off | blink | 32 bit pattern" },
 
-	{szInputs,			NULL,				(VAR_TYPE_INPUTS | VAR_TYPE_READ_ONLY),	"",					"Inputs 1 - 4" },
+	{szInputs,			&Inputs,			(VAR_TYPE_INPUTS | VAR_TYPE_READ_ONLY),	"",					"Inputs 1 - 4" },
+
+	{szLoopCount,		NULL,				(VAR_TYPE_LOOP_CNT | VAR_TYPE_READ_ONLY),"",					"Loop Count" },
 
 //	{szSpeed,			NULL,				(VAR_TYPE_SPEED),						"",					"Current Train Speed" },
 //	{szDir,				NULL,				(VAR_TYPE_DIR),							"",					"Current Train Direction fwd / rev" },
@@ -141,7 +144,7 @@ char* VarToString(uint32_t idx)
 	unsigned int t1, t2;
 	uint8_t ip_addr[4];
 	//char szTemp[16];
-
+	unsigned int lc;
 
     switch(VarCmdTable[idx].type & VAR_TYPE_MASK)
     {
@@ -312,6 +315,17 @@ char* VarToString(uint32_t idx)
     		}
 
    		break;
+    	case VAR_TYPE_LOOP_CNT:
+    		lc = GetLoopCount();
+    		if(lc == 0xffff)
+    		{
+    			sprintf(tempbuf, "None");
+    		}
+    		else
+    		{
+    			sprintf(tempbuf, "%u", lc);
+    		}
+    	break;
     }
     return tempbuf;
 }
@@ -516,7 +530,7 @@ uint32_t GetVariableValue(int idx)
     		return *(unsigned int*)(VarCmdTable[idx].var);
        	break;
 
-    	case VAR_TYPE_TIME:
+       	case VAR_TYPE_TIME:
     	case VAR_TYPE_DATE:
     	case VAR_TYPE_TIME_FMT:
     	case VAR_TYPE_DATE_FMT:
