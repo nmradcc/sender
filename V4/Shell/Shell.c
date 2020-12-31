@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <ZModem.h>
 
 #include "Shell.h"
 #include "ShellFile.h"
@@ -26,11 +27,6 @@
 //#include "Clock.h"
 #include "Settings.h"
 #include "ymodem.h"
-
-//#include "usbd_cdc_if.h"
-//#include "VCP.h"
-//k #include "Uart2.h"
-//#include "Uart3.h"
 #include "ff.h"
 #include "GetLine.h"
 
@@ -137,6 +133,8 @@ CMD_RETURN ShSendIdle(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[]);
 
 CMD_RETURN ShYmodem(uint8_t bPort, int argc, char *argv[]);
+CMD_RETURN ShZmodemReceive(uint8_t bPort, int argc, char *argv[]);
+CMD_RETURN ShZmodemSend(uint8_t bPort, int argc, char *argv[]);
 
 
 uint8_t ShellColor[] =
@@ -187,7 +185,6 @@ const SHELL_TABLE ShellTable[] =
 	{"rem",		CL_SCRIPT,	SUPPRESS_HELP,		ShRem,				"ignore line"},
 	{"prompt",	CL_SCRIPT,	SUPPRESS_HELP,		ShPrompt,			"issue a prompt"},
 	{"script",	CL_SCRIPT,	NO_FLAGS,			ShScripts,			"<name> pause|resume|kill / List the running scripts"},
-//	{"inputs",	CL_SCRIPT,	NO_FLAGS,			ShInputs,			"display the state of the inputs"},
 
 // file system
 	{"dir",		CL_FILE,	NO_FLAGS,			ShDir,				"list the files on the drive -h=show hidden -c=color"},
@@ -231,7 +228,9 @@ const SHELL_TABLE ShellTable[] =
 	{"idle",	CL_TEST,	NO_FLAGS, 			ShSendIdle,			"DCC Idle Packet(s) [count]"},
 	{"packet",	CL_TEST,	NO_FLAGS, 			ShSendPacket,		"DCC Packet(s) [file [count]]"},
 
-	{"ymodem",	CL_SYS,		NO_FLAGS, 			ShYmodem,			"YModem receive"},
+//	{"ymodem",	CL_SYS,		NO_FLAGS, 			ShYmodem,			"YModem receive"},
+	{"rz",		CL_SYS,		NO_FLAGS, 			ShZmodemReceive,	"ZModem receive"},
+	{"sz",		CL_SYS,		NO_FLAGS, 			ShZmodemSend,		"ZModem send"},
 };
 #define SHELL_TABLE_COUNT (sizeof(ShellTable) / sizeof(SHELL_TABLE))
 
@@ -1206,6 +1205,24 @@ CMD_RETURN ShEcho(uint8_t bPort, int argc, char *argv[])
 		}
 		else
 		{
+
+			//extern void ClearScreen(uint8_t bPort);
+			//extern void ClearEOL(uint8_t bPort);
+			//extern void GoToXY(uint8_t bPort, int col, int line);
+			//extern void TextColor(uint8_t bPort, FG_COLOR fg, BG_COLOR bg, ATTRIBUTE att);
+			//extern void ResetColor(uint8_t bPort);
+
+			// #c - fg color
+			// #b - bg color
+			// #a - attribute
+			// #p - position
+			// #s - clear screen
+			// #l - clear eol
+
+			// "#c41#b49#a01Input 1 is "
+
+			// "CSI41;49;1mInput 1 is "
+
 			ShFieldOut(bPort, argv[1], 0);
 		}
 	}
@@ -1530,7 +1547,7 @@ CMD_RETURN ShVariables(uint8_t bPort, int argc, char *argv[])
 CMD_RETURN ShTasks(uint8_t bPort, int argc, char *argv[])
 {
 
-	osThreadId_t ThreadIds[20];
+	osThreadId_t ThreadIds[22];
 	uint32_t Threads;
 	uint32_t State;
 	char Status[2];
@@ -1760,12 +1777,38 @@ CMD_RETURN ShYmodem(uint8_t bPort, int argc, char *argv[])
 
     Ymodem_SetPort(bPort);
 	if(Ymodem_Receive(buffer) != 0)
-	//if(ymodem_receive(buffer, 128) != 0)
-
 	{
 		return CMD_FAILED;
 	}
 	return CMD_OK;
+}
+
+
+
+CMD_RETURN ShZmodemReceive(uint8_t bPort, int argc, char *argv[])
+{
+
+    ShNL(bPort);
+    ShFieldOut(bPort, "ZModem Receive - start sending", 0);
+    ShNL(bPort);
+
+    Zmodem_SetPort(bPort);
+	if(ZmodemGet() != 0)
+	{
+		return CMD_FAILED;
+	}
+	return CMD_OK;
+}
+
+CMD_RETURN ShZmodemSend(uint8_t bPort, int argc, char *argv[])
+{
+
+    Zmodem_SetPort(bPort);
+	if(ZmodemSend("test.res") != 0)
+	{
+		return CMD_FAILED;
+	}
+	return CMD_FAILED;
 }
 
 
@@ -2154,41 +2197,6 @@ CMD_RETURN ShSendIdle(uint8_t bPort, int argc, char *argv[])
 	return CMD_OK;
 }
 
-
-
-#ifdef NOW_A_VARIABLE
-CMD_RETURN ShTrack(uint8_t bPort, int argc, char *argv[])
-{
-
-
-	if(argc == 2)
-	{
-		if(strcmpi(argv[1], "on") == 0)
-		{
-			EnableTrack();
-		}
-		else if(strcmpi(argv[1], "off") == 0)
-		{
-			DisableTrack();
-		}
-	}
-	//else
-	//{
-	//	return CMD_BAD_PARAMS;
-	//}
-
-	ShNL(bPort);
-	if(GetTrackState())
-	{
-		ShFieldOut(bPort, "Track is on", 0);
-	}
-	else
-	{
-		ShFieldOut(bPort, "Track is off", 0);
-	}
-	return CMD_OK;
-}
-#endif
 
 
 //***********************************************************************************************************************
@@ -2638,7 +2646,8 @@ int ShellMain(uint8_t bPort, char* buf)
 		if(strlen(buf) != 0)
 		{
 			ShNL(bPort);
-			ShFieldOut(bPort, "Not Found", 0);
+			ShFieldOut(bPort, buf, 0);
+			ShFieldOut(bPort, " Not Found", 0);
 		}
 		ret = CMD_OK;
 	}
