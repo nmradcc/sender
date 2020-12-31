@@ -24,6 +24,7 @@ FATFS USERFatFS;    /* File system object for USER logical drive */
 FIL USERFile;       /* File object for USER */
 
 /* USER CODE BEGIN Variables */
+extern Diskio_drvTypeDef  USER_Driver;
 
 /* USER CODE END Variables */    
 
