@@ -32,4 +32,6 @@ extern const char szLed[];
 
 extern const char szInputs[];
 
+extern const char szLoopCount[];
+
 #endif /* OBJECTNAMES_H_ */

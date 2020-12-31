@@ -77,3 +77,6 @@ const char szPath[] = 				"path";
 const char szLed[] = 				"led";
 
 const char szInputs[] = 			"inputs";
+
+const char szLoopCount[] = 			"loopcnt";
+
