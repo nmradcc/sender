@@ -73,6 +73,7 @@ typedef enum
 
 	CMD_IF_TRUE = 0x400,
 	CMD_IF_FALSE = 0x800,
+	CMD_ELSE = 0x900,
 } CMD_RETURN;
 
 enum
@@ -141,5 +142,9 @@ extern void ShFieldNumberOut(uint8_t bPort, char* szBuffer, int number, int iFie
 extern void ShNL(uint8_t bPort);
 
 extern char ShGetChar(uint8_t bPort);
+extern char ShKbHit(uint8_t port);
+
+extern unsigned int GetLoopCount(void);
+
 
 #endif /* SHELL_H_ */
