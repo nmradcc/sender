@@ -1,0 +1,169 @@
+
+static __flash unsigned char nybble_chars[] = "0123456789ABCDEF";
+
+void GetHexByte(byte b, char *ch1, char *ch2 )
+{
+
+    *ch1 = __load_program_memory(&nybble_chars[(b >> 4) & 0x0F]);
+    *ch2 = __load_program_memory(&nybble_chars[b & 0x0F]);
+}
+
+void PrintHex(word wValue, byte LeadingBlank)
+{
+    char c1;
+    char c2;
+
+    GetHexByte(BYTE1(wValue), &c1, &c2 );
+    if(LeadingBlank && c1 == '0')
+    {
+        c1 = ' ';
+    }
+    else
+    {
+        LeadingBlank = 0;
+    }
+    TransmitByte(c1);
+    if(LeadingBlank && c2 == '0')
+    {
+        c2 = ' ';
+    }
+    else
+    {
+        LeadingBlank = 0;
+    }
+    TransmitByte(c2);
+
+    GetHexByte(BYTE0(wValue), &c1, &c2 );
+    if(LeadingBlank && c1 == '0')
+    {
+        c1 = ' ';
+    }
+    TransmitByte(c1);
+    TransmitByte(c2);
+}
+
+
+void PrintHexByte(byte bValue, byte LeadingBlank)
+{
+    char c1;
+    char c2;
+
+
+    GetHexByte(bValue, &c1, &c2 );
+    if(LeadingBlank && c1 == '0')
+    {
+        c1 = ' ';
+    }
+    TransmitByte(c1);
+    TransmitByte(c2);
+}
+
+
+void PrintDec(word wValue, byte LeadingBlank)
+{
+    word wTemp;
+
+    wTemp = wValue / 10000;
+    if(LeadingBlank && wTemp == 0)
+    {
+        TransmitByte(' ');
+    }
+    else
+    {
+        TransmitByte('0' + wTemp);
+        LeadingBlank = 0;
+    }
+
+    wValue -= (wTemp * 10000);
+    wTemp = wValue / 1000;
+    if(LeadingBlank && wTemp == 0)
+    {
+        TransmitByte(' ');
+    }
+    else
+    {
+        TransmitByte('0' + wTemp);
+        LeadingBlank = 0;
+    }
+
+    wValue -= (wTemp * 1000);
+    wTemp = wValue / 100;
+    if(LeadingBlank && wTemp == 0)
+    {
+        TransmitByte(' ');
+    }
+    else
+    {
+        TransmitByte('0' + wTemp);
+        LeadingBlank = 0;
+    }
+
+    wValue -= (wTemp * 100);
+    wTemp = wValue / 10;
+    if(LeadingBlank && wTemp == 0)
+    {
+        TransmitByte(' ');
+    }
+    else
+    {
+        TransmitByte('0' + wTemp);
+    }
+
+    wValue -= (wTemp * 10);
+    TransmitByte('0' + wValue);
+}
+
+void PrintDecByte(byte bValue, byte LeadingBlank)
+{
+    byte bTemp;
+
+    bTemp = bValue / 100;
+    if(LeadingBlank && bTemp == 0)
+    {
+        TransmitByte(' ');
+    }
+    else
+    {
+        TransmitByte('0' + bTemp);
+        LeadingBlank = 0;
+    }
+
+    bValue -= (bTemp * 100);
+    bTemp = bValue / 10;
+    if(LeadingBlank && bTemp == 0)
+    {
+        TransmitByte(' ');
+    }
+    else
+    {
+        TransmitByte('0' + bTemp);
+    }
+
+    bValue -= (bTemp * 10);
+    TransmitByte('0' + bValue);
+}
+
+
+
+int atohx(const char * src)
+{
+    int ret = 0;
+    unsigned char len;
+    signed char i;
+    char digit;
+    int mult = 1;
+
+    len = strlen(src);
+    if(len)
+    {
+        for(i = len-1; i >= 0; i--)
+        {
+            digit = tolower(src[i]);
+            digit -= isdigit(digit) ? 0x30 : 0x57;
+            ret += digit * mult;
+            mult *= 16;
+        }
+    }
+    return ret;
+}
+

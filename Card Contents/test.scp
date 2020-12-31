@@ -1,0 +1,16 @@
+rem Test Script
+led on
+color green
+dir
+pause 500
+led off
+color cyan
+help
+pause 500
+led on
+color blue
+tasks
+color
+led off
+echo "Test Script Complete" cr
+prompt

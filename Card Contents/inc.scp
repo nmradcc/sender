@@ -1,0 +1,38 @@
+rem Script for testing the AND condition - in color
+echo "Input 1 is "
+if inputs && 1
+color green
+echo "ON" CR
+else
+color red
+echo "OFF" CR
+endif
+color
+echo "Input 2 is "
+if inputs && 2
+color green
+echo "ON" CR
+else
+color red
+echo "OFF" CR
+endif
+color
+echo "Input 3 is "
+if inputs && 4
+color green
+echo "ON" CR
+else
+color red
+echo "OFF" CR
+endif
+color
+echo "Input 4 is "
+if inputs && 8
+color green
+echo "ON" CR
+else
+color red
+echo "OFF" CR
+endif
+color
+prompt

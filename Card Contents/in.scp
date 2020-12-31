@@ -1,0 +1,26 @@
+rem Script for testing the AND condition
+echo "Input 1 is "
+if inputs && 1
+ echo "ON" CR
+else
+ echo "OFF" CR
+endif
+echo "Input 2 is "
+if inputs && 2
+ echo "ON" CR
+else
+ echo "OFF" CR
+endif
+echo "Input 3 is "
+if inputs && 4
+ echo "ON" CR
+else
+ echo "OFF" CR
+endif
+echo "Input 4 is "
+if inputs && 8
+ echo "ON" CR
+else
+ echo "OFF" CR
+endif
+prompt
