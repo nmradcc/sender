@@ -8,6 +8,8 @@
 #ifndef INPUT_H_
 #define INPUT_H_
 
+extern unsigned int Inputs;
+
 extern void InputTask(void* argument);
 
 extern uint32_t GetInput1(void);
