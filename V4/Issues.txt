@@ -4,7 +4,7 @@ P - Partially completed
 C - coded & compiled
 X - complete
 F - Future
-G - move to Git Hub
+GH - issue moved to Git Hub
 
 General
 X - test the reading of the config.ini file - bug: GetSettings() hangs (Replace persist with minini library)
@@ -13,7 +13,7 @@ X - test the writing of the config.ini file
 P - set the lwip IP addresses from the variables (requires a reboot for now)
 - change the dhcp setting using the variable
 X - change the date format using a variable
-P - change the time format using a variable
+X - change the time format using a variable
 - Make the primary USB a composite device: CDC (aka VCP) and MSD.
 	The SD card will appear on the PC as a removable drive, as it does now.
 	The secondary (debug port) already enumerates as an ST-Link, CDC, and MSD (as an mBed drive).
@@ -22,7 +22,9 @@ C - add a resource lock for the track - send vs command station
 - finish compiling and testing the ZIP command
 C - finish compiling and testing the YMODEM command
 F - use the battery backed-up RAM for selected variables
-C - Convert DCC timer to 32 bit to get more resolution
+X - Convert DCC timer to 32 bit to get more resolution
+- There seems to be an issue with USB file transfer, a charactor get garbled (a quick count seems to be aroiund 490)
+- add a 'theme' variable to switch the colors for a light background terminal
 
 Shell
 X - dir doesn't seem to work in a subdirectory
@@ -51,7 +53,11 @@ X - ANSI gotoxy doesn't seem to work - it does, the script we wrong
 X - Variable output should not display the "=" or CR/LF if in a script - " =" removed for all
 X - if Enter is hit while a script is running, the script stops
 X - make the led command a variable
-- Add an AND operator to mask inputs for an if condition
+X - Add an AND (&& and !&) operator to mask inputs for an if condition
+- make sure variables have a pointer to the variable in the table so scripts can use them for the if command (like track)
+X - add a loop count 'variable' - to echo and set duing a script
+- change echo to use printf style escape sequences (instead of CR) and add ANSI escape commands
+- the tasks command is broken
 
 Send
 - get scope trace in the correct location
@@ -69,8 +75,8 @@ X - track, when the track output is disabled the output floats, it should be set
 
 Command Station
 - debug why the cab doesn't work when it is connected at reset
-- test all of the menus
-G - add the track output
+X - test all of the menus
+GH - add the track output
 - add the programming support
 - display status on cab (track in use, Send running, ...)
 F - add the XpressNet interface
@@ -88,8 +94,8 @@ F - Add a CAN tranceiver and LCC
 
 Major Tasks
 - completely replace the porting layer - Stewart suggested using the code from OpenMRN
-- telent
-- tftp (or ftp)
 - composite USB (vcp and mass storage)
+- telent, and a way to connect to the shell with multiple contexts
+- tftp (or ftp) - FTP Rush for windows does both and can list file using tftp
 - zip command
 - web server
