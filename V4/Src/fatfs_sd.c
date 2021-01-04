@@ -3,11 +3,10 @@
 #define bool BYTE
 
 #include "main.h"
+#include "stm32f4xx_hal.h"
 
 #include "diskio.h"
 #include "fatfs_sd.h"
-
-uint16_t Timer1, Timer2;					/* 1ms Timer Counter */
 
 static volatile DSTATUS Stat = STA_NOINIT;	/* Disk Status */
 static uint8_t CardType;                    /* Type 0:MMC, 1:SDC, 2:Block addressing */
@@ -70,15 +69,16 @@ static void SPI_RxBytePtr(uint8_t *buff)
 /* wait SD ready */
 static uint8_t SD_ReadyWait(void)
 {
-	uint8_t res;
+	uint8_t 	res;
+	uint32_t    tickstart;
 
 	/* timeout 500ms */
-	Timer2 = 500;
+	tickstart = HAL_GetTick();
 
 	/* if SD goes ready, receives 0xFF */
 	do {
 		res = SPI_RxByte();
-	} while ((res != 0xFF) && Timer2);
+	} while ((res != 0xFF) && ((HAL_GetTick() - tickstart) >=  500) && (500 != HAL_MAX_DELAY));
 
 	return res;
 }
@@ -136,15 +136,16 @@ static uint8_t SD_CheckPower(void)
 /* receive data block */
 static bool SD_RxDataBlock(BYTE *buff, UINT len)
 {
-	uint8_t token;
+	uint8_t 	token;
+	uint32_t    tickstart;
 
 	/* timeout 200ms */
-	Timer1 = 200;
+	tickstart = HAL_GetTick();
 
 	/* loop until receive a response or timeout */
 	do {
 		token = SPI_RxByte();
-	} while((token == 0xFF) && Timer1);
+	} while((token == 0xFF) && ((HAL_GetTick() - tickstart) >=  200) && (200 != HAL_MAX_DELAY));
 
 	/* invalid response */
 	if(token != 0xFE) return FALSE;
@@ -246,8 +247,9 @@ static BYTE SD_SendCmd(BYTE cmd, uint32_t arg)
 /* initialize SD */
 DSTATUS SD_disk_initialize(BYTE drv) 
 {
-	uint8_t n, type, ocr[4];
-	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	uint8_t 			n, type, ocr[4];
+	GPIO_InitTypeDef 	GPIO_InitStruct = {0};
+	uint32_t			tickstart;
 
 	/* single drive, drv should be 0 */
 	if(drv) return STA_NOINIT;
@@ -276,7 +278,7 @@ DSTATUS SD_disk_initialize(BYTE drv)
 	if (SD_SendCmd(CMD0, 0) == 1)
 	{
 		/* timeout 1 sec */
-		Timer1 = 1000;
+		tickstart = HAL_GetTick();
 
 		/* SDC V2+ accept CMD8 command, http://elm-chan.org/docs/mmc/mmc_e.html */
 		if (SD_SendCmd(CMD8, 0x1AA) == 1)
@@ -293,10 +295,10 @@ DSTATUS SD_disk_initialize(BYTE drv)
 				/* ACMD41 with HCS bit */
 				do {
 					if (SD_SendCmd(CMD55, 0) <= 1 && SD_SendCmd(CMD41, 1UL << 30) == 0) break;
-				} while (Timer1);
+				} while (((HAL_GetTick() - tickstart) >=  500) && (500 != HAL_MAX_DELAY));
 
 				/* READ_OCR */
-				if (Timer1 && SD_SendCmd(CMD58, 0) == 0)
+				if (((HAL_GetTick() - tickstart) >=  1000) && (1000 != HAL_MAX_DELAY) && SD_SendCmd(CMD58, 0) == 0)
 				{
 					/* Check CCS bit */
 					for (n = 0; n < 4; n++)
@@ -325,10 +327,10 @@ DSTATUS SD_disk_initialize(BYTE drv)
 					if (SD_SendCmd(CMD1, 0) == 0) break; /* CMD1 */
 				}
 
-			} while (Timer1);
+			} while (((HAL_GetTick() - tickstart) >=  1000) && (1000 != HAL_MAX_DELAY));
 
 			/* SET_BLOCKLEN */
-			if (!Timer1 || SD_SendCmd(CMD16, 512) != 0) type = 0;
+			if (!(((HAL_GetTick() - tickstart) >=  1000) && (1000 != HAL_MAX_DELAY)) || SD_SendCmd(CMD16, 512) != 0) type = 0;
 		}
 	}
 
