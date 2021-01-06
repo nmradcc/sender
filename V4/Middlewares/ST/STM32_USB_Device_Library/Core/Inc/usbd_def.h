@@ -258,6 +258,12 @@ typedef struct _USBD_HandleTypeDef
   void                    *pClassData;
   void                    *pUserData;
   void                    *pData;
+  // added for Composite Device
+  USBD_MSC_BOT_HandleTypeDef	*pClassDataMSC;
+  const USBD_StorageTypeDef		*pClassSpecificInterfaceMSC;
+  USBD_CDC_HandleTypeDef		*pClassDataCDC;
+  const USBD_CDC_Itf_TypeData	*pClassSpecificInterfaceCDC;
+  PCD_HandleTypeDef				*pPCDHandle;
 } USBD_HandleTypeDef;
 
 /**
