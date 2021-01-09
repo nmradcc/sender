@@ -20,6 +20,7 @@
 //#include "TrackProg.h"
 #include "Service.h"
 #include "GetLine.h"
+#include "Bitmask.h"
 
 //*******************************************************************************
 // Definitions
@@ -63,7 +64,7 @@ CMD_RETURN ShCabStat(uint8_t bPort, int argc, char *argv[])
 {
 	int i;
 	int j;
-	int index;
+	//int index;
 	//char CabBuf[64];
 	char LabelBuf[64];
 	//int cab;
@@ -78,20 +79,19 @@ CMD_RETURN ShCabStat(uint8_t bPort, int argc, char *argv[])
 	{
 		ShNL(bPort);
 		strcpy(LabelBuf, "Active Cabs:");
-		for(i = 0; i < (MAX_CABS / 8); i++)
+		ShFieldOut(bPort, LabelBuf, 16);
+		for(i = 0; i < MAX_CABS; i++)
 		{
-			index = i * 8;
-			if(abCabActiveQueue[index])
+			if(abCabActiveQueue[i])
 			{
-				ShFieldOut(bPort, LabelBuf, 16);
-				for(j = 0; j < 8; j++)
-				{
-					if(abCabActiveQueue[(i * 8) + j])
-					{
-						ShFieldNumberOut(bPort, "", abCabActiveQueue[(i * 8) + j], 3);
-					}
-				}
-				ShNL(bPort);
+				//for(j = 0; j < 8; j++)
+				//{
+				//	if(abCabActiveQueue[(i * 8) + j])
+				//	{
+						ShFieldNumberOut(bPort, "", abCabActiveQueue[i], 3);
+				//	}
+				//}
+				//ShNL(bPort);
 				strcpy(LabelBuf, "");
 			}
 			else
@@ -99,22 +99,23 @@ CMD_RETURN ShCabStat(uint8_t bPort, int argc, char *argv[])
 				break;
 			}
 		}
+		ShNL(bPort);
 
 		strcpy(LabelBuf, "Inactive Cabs:");
-		for(i = 0; i < (MAX_CABS / 8); i++)
+		ShFieldOut(bPort, LabelBuf, 16);
+		for(i = 0; i < MAX_CABS; i++)
 		{
-			index = i * 8;
-			if(abCabInactiveQueue[index])
+			//index = i * 8;
+			if(abCabInactiveQueue[i])
 			{
-				ShFieldOut(bPort, LabelBuf, 16);
-				for(j = 0; j < 8; j++)
-				{
-					if(abCabInactiveQueue[(i * 8) + j])
-					{
-						ShFieldNumberOut(bPort, "", abCabInactiveQueue[(i * 8) + j], 3);
-					}
-				}
-				ShNL(bPort);
+				//for(j = 0; j < 8; j++)
+				//{
+				//	if(abCabInactiveQueue[(i * 8) + j])
+				//	{
+						ShFieldNumberOut(bPort, "", abCabInactiveQueue[i], 3);
+				//	}
+				//}
+				//ShNL(bPort);
 				strcpy(LabelBuf, "");
 			}
 			else
@@ -158,11 +159,14 @@ CMD_RETURN ShCabStat(uint8_t bPort, int argc, char *argv[])
 * @return	CMD_RETURN - shell result
 *
 *********************************************************************/
+#define SPEED_PRIME_NUMBER	252
+//#define SPEED_DIR_MAX		36
 CMD_RETURN ShLocoStat(uint8_t bPort, int argc, char *argv[])
 {
 	int i;
 	int address;
 	word temp;
+	word sm;
 	Loco* pLoco;
 
 	if(argc == 2)
@@ -173,34 +177,89 @@ CMD_RETURN ShLocoStat(uint8_t bPort, int argc, char *argv[])
 		if(pLoco)
 		{
 			ShNL(bPort);
-			ShFieldNumberOut(bPort, "Loco", address, 16);
+			ShFieldOut(bPort, "Loco", 15);
+			ShFieldNumberOut(bPort, "", address, 0);
 			ShNL(bPort);
 			//ShFieldNumberOut(bPort, "Address", ActiveLocos[nIndex].Address, 0);
 			//ShNL(bPort);
 			//ShFieldNumberOut(bPort, "Alias", ActiveLocos[nIndex].Alias, 0);
 			//ShNL(bPort);
+
 			temp = GetLocoSpeed(pLoco);
-			ShFieldNumberOut(bPort, "Speed", temp, 16);
-			ShNL(bPort);
-			ShFieldOut(bPort, aText[t28SpeedMode], 10);
-			temp = GetLocoSpeedMode(pLoco);
-			ShFieldOut(bPort, aText[tSpd_28 + temp], 16);
-			ShNL(bPort);
-			temp = GetLocoMaxSpeed(pLoco);
-			ShFieldNumberOut(bPort, "Max Speed", temp, 16);
-			ShNL(bPort);
-			ShFieldOut(bPort, aText[tDirection], 12);
-			if(GetLocoDirection(pLoco))
+			sm = GetLocoSpeedMode(pLoco);
+			ShFieldOut(bPort, "Speed", 15);
+			//ShFieldNumberOut(bPort, "", temp, 0);
+
+			char szTemp[10];
+			if(temp == ESTOP)
 			{
-				ShFieldOut(bPort,  " Rev", 0);
+				strcpy(szTemp, aText[tEStp]);
+			}
+			else if(temp == 0)
+			{
+				strcpy(szTemp, aText[tStop]);
 			}
 			else
 			{
-				ShFieldOut(bPort,  " Fwd", 0);
+				switch(sm)
+				{
+					case SPEED_MODE_14:
+						sprintf(szTemp, "%d", temp / 18);
+					break;
+
+					case SPEED_MODE_28:
+						sprintf(szTemp, "%d", temp / 9);
+					break;
+
+					case SPEED_MODE_128:
+						sprintf(szTemp, "%d", temp / 2);
+					break;
+
+					case SPEED_MODE_14_PERCENT:
+					case SPEED_MODE_28_PERCENT:
+					case SPEED_MODE_128_PERCENT:
+						sprintf(szTemp, "%d%%", (temp * 100) / SPEED_PRIME_NUMBER);
+					break;
+				}
+			}
+			ShFieldOut(bPort, szTemp, 0);
+			ShNL(bPort);
+
+			ShFieldOut(bPort, aText[t28SpeedMode], 14);
+			ShFieldOut(bPort, aText[tSpd_28 + sm], 0);
+			ShNL(bPort);
+
+			temp = GetLocoMaxSpeed(pLoco);
+			ShFieldOut(bPort, "Max Speed", 15);
+			ShFieldNumberOut(bPort, "", temp, 0);
+			ShNL(bPort);
+
+			ShFieldOut(bPort, aText[tDirection], 15);
+			if(GetLocoDirection(pLoco))
+			{
+				ShFieldOut(bPort,  "Rev", 0);
+			}
+			else
+			{
+				ShFieldOut(bPort,  "Fwd", 0);
 			}
 			ShNL(bPort);
+
 			temp = GetLocoFunctions(pLoco);
-			ShFieldNumberOut(bPort, "Function Map", temp, 16);
+			char szFunctionList[32];
+			strcpy(szFunctionList, "L1BH4567890123456789012345678");
+
+			for(i = 0; i < 29; i++)
+			{
+				if((temp & lBitMask[i]) == 0)
+				{
+					szFunctionList[i] = '-';
+				}
+			}
+			ShFieldOut(bPort, "Function Map", 15);
+			ShFieldOut(bPort, szFunctionList, 0);
+
+
 			ShNL(bPort);
 			//ShFieldNumberOut(bPort, "FunctionOverrideMap", ActiveLocos[nIndex].FunctionOverrideMap, 0);
 			//ShNL(bPort);
