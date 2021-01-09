@@ -23,8 +23,9 @@ C - add a resource lock for the track - send vs command station
 C - finish compiling and testing the YMODEM command
 F - use the battery backed-up RAM for selected variables
 X - Convert DCC timer to 32 bit to get more resolution
-- There seems to be an issue with USB file transfer, a charactor get garbled (a quick count seems to be aroiund 490)
+- There seems to be an issue with USB file transfer, a character gets garbled (a quick count seems to be aroiund 490)
 - add a 'theme' variable to switch the colors for a light background terminal
+- the green LED no longer works
 
 Shell
 X - dir doesn't seem to work in a subdirectory
