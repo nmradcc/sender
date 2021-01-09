@@ -119,7 +119,7 @@ void HandleCabCommunication(void)
 
 #else
 
-	HandleNCECabCommunication(2);
+	HandleNCECabCommunication();
 //k	XpressNetUpdate();
 
 #endif
