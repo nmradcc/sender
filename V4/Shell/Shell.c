@@ -98,6 +98,18 @@ extern void test_bits(void);
 // Source
 //*******************************************************************************
 
+const uint8_t ShellColor[] =
+{
+	FG_White,	// CL_NONE,
+	FG_Yellow,	// CL_ANSI,
+	FG_Blue, 	// CL_FILE,
+	FG_Green,	// CL_SCRIPT,
+	FG_Purple,	// CL_CS,
+	FG_Cyan,	// CL_SYS,
+	FG_Red,		// CL_TEST,
+};
+
+
 CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShRem(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShDelay(uint8_t bPort, int argc, char *argv[]);
@@ -135,19 +147,6 @@ CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShYmodem(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShZmodemReceive(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShZmodemSend(uint8_t bPort, int argc, char *argv[]);
-
-
-uint8_t ShellColor[] =
-{
-	FG_White,	// CL_NONE,
-	FG_Yellow,	// CL_ANSI,
-	FG_Blue, 	// CL_FILE,
-	FG_Green,	// CL_SCRIPT,
-	FG_Purple,	// CL_CS,
-	FG_Cyan,	// CL_SYS,
-	FG_Red,		// CL_TEST,
-};
-
 
 int RunScript(uint8_t bPort, char* filename, size_t nargs, char** args);
 
@@ -1206,20 +1205,30 @@ CMD_RETURN ShEcho(uint8_t bPort, int argc, char *argv[])
 		else
 		{
 
+			//int GetColorOffset(char* c)
+			//int GetAttribute(char* c)
+
 			//extern void ClearScreen(uint8_t bPort);
 			//extern void ClearEOL(uint8_t bPort);
 			//extern void GoToXY(uint8_t bPort, int col, int line);
 			//extern void TextColor(uint8_t bPort, FG_COLOR fg, BG_COLOR bg, ATTRIBUTE att);
 			//extern void ResetColor(uint8_t bPort);
 
-			// #c - fg color
-			// #b - bg color
-			// #a - attribute
-			// #p - position
+			// #c - fg color, bg color, attribute#
+			// #p - position#
 			// #s - clear screen
 			// #l - clear eol
 
-			// "#c41#b49#a01Input 1 is "
+			// printf codes
+
+			// echo "#cgreen,black,bold#Input 1 is "
+
+			// echo "#c#Input 1 is "
+			// if inputs && 1
+			//    echo "#cgreen#ON"
+			// else
+			//    echo "#cred#Off"
+			// endif
 
 			// "CSI41;49;1mInput 1 is "
 
