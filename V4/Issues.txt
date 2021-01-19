@@ -59,6 +59,9 @@ X - Add an AND (&& and !&) operator to mask inputs for an if condition
 X - add a loop count 'variable' - to echo and set duing a script
 - change echo to use printf style escape sequences (instead of CR) and add ANSI escape commands
 - the tasks command is broken
+- time and date are broken
+  - time is off by 1 hour
+  - date must be entered in numbers and fixed at m/d/y (not the current data format)
 
 Send
 - get scope trace in the correct location
@@ -95,8 +98,9 @@ F - Add a CAN tranceiver and LCC
 
 Major Tasks
 - completely replace the porting layer - Stewart suggested using the code from OpenMRN
-- composite USB (vcp and mass storage)
+Brian - composite USB (vcp and mass storage)
 - telent, and a way to connect to the shell with multiple contexts
 - tftp (or ftp) - FTP Rush for windows does both and can list file using tftp
 - zip command
 - web server
+Karl - ZModem
