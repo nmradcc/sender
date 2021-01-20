@@ -139,8 +139,9 @@ void InputTask(void* argument)
 		raw_input |= HAL_GPIO_ReadPin(IN2_PORT, IN2_PIN) << 1;
 		raw_input |= HAL_GPIO_ReadPin(IN3_PORT, IN3_PIN) << 2;
 		raw_input |= HAL_GPIO_ReadPin(IN4_PORT, IN4_PIN) << 3;
+		raw_input |= HAL_GPIO_ReadPin(USER_Btn_GPIO_Port, USER_Btn_Pin) << 4;
 
-		Inputs = ~DebounceInputs(raw_input, abDebounceValue, 4);
+		Inputs = ~DebounceInputs(raw_input, abDebounceValue, 5);
 
 		osDelay(pdMS_TO_TICKS(10));
 	}
@@ -176,6 +177,11 @@ uint32_t GetInput3(void)
 uint32_t GetInput4(void)
 {
 	return (Inputs & 0x08) != 0;
+}
+
+uint32_t GetInput5(void)
+{
+	return (Inputs & 0x10) != 0;
 }
 
 uint32_t GetInputs(void)
