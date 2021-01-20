@@ -146,7 +146,7 @@ char* VarToString(uint32_t idx)
 {
 	RTC_TimeTypeDef time;
 	RTC_DateTypeDef date;
-	unsigned int t1, t2;
+	unsigned int t1, t2, t3;
 	uint8_t ip_addr[4];
 	//char szTemp[16];
 	unsigned int lc;
@@ -160,8 +160,21 @@ char* VarToString(uint32_t idx)
     	case VAR_TYPE_TIME:
     		if(HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN) == HAL_OK)
     		{
-    			//uint32_t bTimeFmt;
-    			sprintf(tempbuf, "%2d:%02d:%02d", time.Hours, time.Minutes, time.Seconds);
+				if(bTimeFmt == 0)
+				{
+					if(time.Hours > 12)
+					{
+						sprintf(tempbuf, "%2d:%02d:%02d PM", time.Hours-12, time.Minutes, time.Seconds);
+					}
+					else
+					{
+						sprintf(tempbuf, "%2d:%02d:%02d AM", time.Hours, time.Minutes, time.Seconds);
+					}
+				}
+				else
+				{
+	    			sprintf(tempbuf, "%2d:%02d:%02d", time.Hours, time.Minutes, time.Seconds);
+				}
     		}
     		// call the date read to unlock the clock
     		HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
@@ -233,9 +246,13 @@ char* VarToString(uint32_t idx)
 
     	case VAR_TYPE_VER:
     		t1 = *(unsigned int*)(VarCmdTable[idx].var);
+    		t3 = t1 % 100;
+    		t1 -= t3;
+    		t1 /= 100;
     		t2 = t1 % 100;
     		t1 -= t2;
-    		sprintf(tempbuf, "%u.%02u", t1 / 100, t2);
+    		t1 /= 100;
+    		sprintf(tempbuf, "%u.%02u.%02u", t1, t2, t3);
     	break;
 
     	case VAR_TYPE_ON_OFF:
@@ -312,13 +329,21 @@ char* VarToString(uint32_t idx)
 
     		if(GetInput4())
     		{
-    			strcat(tempbuf, "4=ON");
+    			strcat(tempbuf, "4=ON ");
     		}
     		else
     		{
-    			strcat(tempbuf, "4=OFF");
+    			strcat(tempbuf, "4=OFF ");
     		}
 
+    		if(GetInput5())
+    		{
+    			strcat(tempbuf, "5=ON");
+    		}
+    		else
+    		{
+    			strcat(tempbuf, "5=OFF");
+    		}
    		break;
     	case VAR_TYPE_LOOP_CNT:
     		lc = GetLoopCount();
@@ -596,6 +621,41 @@ uint32_t hexadecimalToDecimal(char hexVal[])
     return dec_val;
 }
 
+
+
+/*********************************************************************
+*
+* GetAmPm
+*
+* @brief	See in the time string also contains AM or PM
+* 			or am/pm, or A/P or a/p
+*
+* @param	const char* s
+*
+* @return	0 = am
+* 			1 = pm
+* 			-1 not found
+*********************************************************************/
+int GetAmPm(const char* ptm)
+{
+
+	while(*ptm)
+	{
+		if(*ptm == 'a' || *ptm == 'A')
+		{
+			return 0;
+		}
+		else if(*ptm == 'p' || *ptm == 'P')
+		{
+			return 1;
+		}
+		ptm++;
+	}
+	return -1;
+}
+
+
+
 /*********************************************************************
 *
 * SetVariable
@@ -623,7 +683,7 @@ int SetVariable(const char* szObject, char* pStrValue)
 	char* pMt;
 	char* pDa;
 	char* pOct;
-
+	int ampm;
 
 	idx = FindVariable((char*)szObject);
 
@@ -661,7 +721,7 @@ int SetVariable(const char* szObject, char* pStrValue)
 
 			case VAR_TYPE_TIME:
 				pHr = strsep(&pStrValue, ":");
-				pMn = strsep(&pStrValue, ":");
+				pMn = strsep(&pStrValue, ": ");
 				if(pHr != NULL && pMn != NULL)
 				{
 					time.Hours = (uint8_t)atoi(pHr);
@@ -671,18 +731,25 @@ int SetVariable(const char* szObject, char* pStrValue)
 					if(pSc)
 					{
 						time.Seconds = (uint8_t)atoi(pSc);
+						ampm = GetAmPm(pSc);
 					}
 					else
 					{
 						time.Seconds = 0;
+						ampm = GetAmPm(pMn);
 					}
+
+					if(ampm == 1)
+					{
+						time.Hours += 12;
+					}
+
 					time.SecondFraction = 0;
 					time.SubSeconds = 0;
 					time.TimeFormat = RTC_HOURFORMAT_24;	// RTC_HOURFORMAT12_AM;
 					time.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
 
 					HAL_RTC_SetTime(&hrtc, &time, RTC_FORMAT_BIN);
-					// HAL_StatusTypeDef HAL_RTC_SetDate(RTC_HandleTypeDef *hrtc, RTC_DateTypeDef *sDate, uint32_t Format);
 				}
 			break;
 
@@ -693,21 +760,21 @@ int SetVariable(const char* szObject, char* pStrValue)
     				case 0:
     				case 3:
     				default:
-    	    			//sprintf(tempbuf, "%2d/%02d/%04d", date.Month, date.Date, date.Year+2000);
+    	    			// M/D/Y
     					pMt = strsep(&pStrValue, "/-");
     					pDa = strsep(&pStrValue, "/-");
     					pYr = strsep(&pStrValue, "/-");
     				break;
     				case 1:
     				case 4:
-    	    			//sprintf(tempbuf, "%2d/%02d/%04d", date.Date, date.Month, date.Year+2000);
+    	    			// D/M/Y
     					pDa = strsep(&pStrValue, "/-");
     					pMt = strsep(&pStrValue, "/-");
     					pYr = strsep(&pStrValue, "/-");
        				break;
     				case 2:
     				case 5:
-    	    			//sprintf(tempbuf, "%04d/%2d/%02d", date.Year+2000, date.Month, date.Date);
+    	    			// Y/M/D
     					pYr = strsep(&pStrValue, "/-");
     					pMt = strsep(&pStrValue, "/-");
     					pDa = strsep(&pStrValue, "/-");
@@ -748,11 +815,14 @@ int SetVariable(const char* szObject, char* pStrValue)
 				{
 					bTimeFmt = 0;
 				}
-				else
+				else if(strcmp(pStrValue, "24") == 0)
 				{
 					bTimeFmt = 1;
 				}
-
+				else
+				{
+					return CMD_BAD_PARAMS;
+				}
 				if((type & VAR_TYPE_PERSIST) != 0)
 				{
 					(void)ini_putl("", szObject, (long)bTimeFmt, SETTINGS_FILE);
@@ -796,6 +866,7 @@ int SetVariable(const char* szObject, char* pStrValue)
 			break;
 
 	    	case VAR_TYPE_VER:
+	    	case VAR_TYPE_INPUTS:
 				return CMD_READ_ONLY;
 			break;
 
