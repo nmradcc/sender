@@ -1,4 +1,4 @@
-rem packet with a bad one bit
+rem Bad Packet 1
 preambles = 16
 200, 100, 1
 116, 58, 4
