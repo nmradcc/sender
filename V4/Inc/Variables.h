@@ -60,7 +60,9 @@ extern uint32_t lVersion;
 extern uint32_t lSerialNumber;
 
 //extern uint32_t nClockRatio;
-extern uint32_t bClock12_24;
+//extern uint32_t bClock12_24;
+extern uint32_t bTimeFmt;
+extern uint32_t bDateFmt;
 
 extern uint32_t CabPort;
 
