@@ -23,4 +23,10 @@ if inputs && 8
 else
  echo "OFF" CR
 endif
+echo "Input 5 is "
+if inputs && 16
+ echo "ON" CR
+else
+ echo "OFF" CR
+endif
 prompt

@@ -35,4 +35,13 @@ color red
 echo "OFF" CR
 endif
 color
+echo "Input 5 is "
+if inputs && 16
+color green
+echo "ON" CR
+else
+color red
+echo "OFF" CR
+endif
+color
 prompt
