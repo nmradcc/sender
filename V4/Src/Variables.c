@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "ObjectNames.h"
 #include "Shell.h"
 #include "Settings.h"
@@ -56,6 +57,10 @@ uint32_t IpAddress;
 uint32_t IpMask;
 uint32_t GwAddress;
 uint32_t DHCP;
+
+uint32_t TrackState;
+extern uint32_t GreenPattern;
+
 
 char szPathVar[80];
 
@@ -109,11 +114,11 @@ const VAR_TABLE VarCmdTable[] =
 	{szDHCP,			&DHCP,				(VAR_TYPE_ON_OFF | VAR_TYPE_PERSIST),	"0",				"DHCP on | off" },
 
 	{szPort,			&CabPort,			(VAR_TYPE_PORT | VAR_TYPE_PERSIST),		"off",				"Port nce | xpressnet" },
-	{szTrack,			NULL,				(VAR_TYPE_TRACK),						"off",				"Track on | off" },
+	{szTrack,			&TrackState,		(VAR_TYPE_TRACK),						"off",				"Track on | off" },
 
 	{szPath,			&szPathVar,			(VAR_TYPE_STRING | VAR_TYPE_PERSIST),	"\\",				"Script search path" },
 
-	{szLed,				NULL,				(VAR_TYPE_LED),							"",					"Green LED on | off | blink | 32 bit pattern" },
+	{szLed,				&GreenPattern,		(VAR_TYPE_LED),							"",					"Green LED on | off | blink | 32 bit pattern" },
 
 	{szInputs,			&Inputs,			(VAR_TYPE_INPUTS | VAR_TYPE_READ_ONLY),	"",					"Inputs 1 - 4" },
 
@@ -673,7 +678,7 @@ int SetVariable(const char* szObject, char* pStrValue)
 					}
 					time.SecondFraction = 0;
 					time.SubSeconds = 0;
-					time.TimeFormat = RTC_HOURFORMAT12_AM;
+					time.TimeFormat = RTC_HOURFORMAT_24;	// RTC_HOURFORMAT12_AM;
 					time.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
 
 					HAL_RTC_SetTime(&hrtc, &time, RTC_FORMAT_BIN);
@@ -682,13 +687,55 @@ int SetVariable(const char* szObject, char* pStrValue)
 			break;
 
 			case VAR_TYPE_DATE:
-				pMt = strsep(&pStrValue, "/-");
-				pDa = strsep(&pStrValue, "/-");
-				pYr = strsep(&pStrValue, "/-");
+
+    			switch(bDateFmt)
+    			{
+    				case 0:
+    				case 3:
+    				default:
+    	    			//sprintf(tempbuf, "%2d/%02d/%04d", date.Month, date.Date, date.Year+2000);
+    					pMt = strsep(&pStrValue, "/-");
+    					pDa = strsep(&pStrValue, "/-");
+    					pYr = strsep(&pStrValue, "/-");
+    				break;
+    				case 1:
+    				case 4:
+    	    			//sprintf(tempbuf, "%2d/%02d/%04d", date.Date, date.Month, date.Year+2000);
+    					pDa = strsep(&pStrValue, "/-");
+    					pMt = strsep(&pStrValue, "/-");
+    					pYr = strsep(&pStrValue, "/-");
+       				break;
+    				case 2:
+    				case 5:
+    	    			//sprintf(tempbuf, "%04d/%2d/%02d", date.Year+2000, date.Month, date.Date);
+    					pYr = strsep(&pStrValue, "/-");
+    					pMt = strsep(&pStrValue, "/-");
+    					pDa = strsep(&pStrValue, "/-");
+       				break;
+    			}
+
 				if(pDa != NULL && pMt != NULL && pYr != NULL)
 				{
+					if(!isdigit(pMt[0]))
+					{
+						for(i = 1; i < 12; i++)
+						{
+							if(stricmp(szMonth[i], pMt) == 0)
+							{
+								date.Month = (uint8_t)i;
+								break;
+							}
+						}
+						if(i > 12)
+						{
+							return CMD_BAD_PARAMS;
+						}
+					}
+					else
+					{
+						date.Month = (uint8_t)atoi(pMt);
+					}
 					date.Date = (uint8_t)atoi(pDa);
-					date.Month = (uint8_t)atoi(pMt);
 					date.Year = (uint8_t)(atoi(pYr) - 2000);
 					date.WeekDay = 0;
 
@@ -736,6 +783,10 @@ int SetVariable(const char* szObject, char* pStrValue)
 				else if(stricmp(pStrValue, "Y/MM/D") == 0)
 				{
 					bDateFmt = 5;
+				}
+				else
+				{
+					return CMD_BAD_PARAMS;
 				}
 
 				if((type & VAR_TYPE_PERSIST) != 0)
