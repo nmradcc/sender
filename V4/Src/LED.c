@@ -16,7 +16,7 @@ struct netif gnetif;
 static uint32_t LedMask = 1;
 
 static uint32_t RedPattern;
-static uint32_t GreenPattern;
+uint32_t GreenPattern;
 
 
 /*********************************************************************
