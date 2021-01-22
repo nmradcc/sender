@@ -461,11 +461,11 @@ static void MX_ADC3_Init(void)
 		Error_Handler();
 	}
 	/* USER CODE BEGIN ADC1_Init 2 */
-	GPIO_InitStruct.Pin       = LCC_CURRENT_PIN;
-	GPIO_InitStruct.Mode      = LCC_CURRENT_MODE;
-	GPIO_InitStruct.Pull      = LCC_CURRENT_PU_PD;
-	GPIO_InitStruct.Speed     = LCC_CURRENT_SPEED;
-	HAL_GPIO_Init(LCC_CURRENT_PORT, &GPIO_InitStruct);
+//k	GPIO_InitStruct.Pin       = LCC_CURRENT_PIN;
+//k	GPIO_InitStruct.Mode      = LCC_CURRENT_MODE;
+//k	GPIO_InitStruct.Pull      = LCC_CURRENT_PU_PD;
+//k	GPIO_InitStruct.Speed     = LCC_CURRENT_SPEED;
+//k	HAL_GPIO_Init(LCC_CURRENT_PORT, &GPIO_InitStruct);
 	/* USER CODE END ADC1_Init 2 */
 }
 
@@ -754,6 +754,15 @@ static void MX_RTC_Init(void)
 	  HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR1, 0x32F2);
   }
 
+  // make sure the RCT output is disabled - same pin as the user button
+
+  /* Disable the write protection for RTC registers */
+  __HAL_RTC_WRITEPROTECTION_DISABLE(&hrtc);
+
+  __HAL_RTC_CALIBRATION_OUTPUT_DISABLE(&hrtc);
+
+  /* Enable the write protection for RTC registers */
+  __HAL_RTC_WRITEPROTECTION_ENABLE(&hrtc);
 
   /* USER CODE END RTC_Init 2 */
 
@@ -860,7 +869,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : USER_Btn_Pin */
   GPIO_InitStruct.Pin = USER_Btn_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(USER_Btn_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LD3_Pin LD2_Pin */
