@@ -139,8 +139,10 @@ void InputTask(void* argument)
 		raw_input |= HAL_GPIO_ReadPin(IN2_PORT, IN2_PIN) << 1;
 		raw_input |= HAL_GPIO_ReadPin(IN3_PORT, IN3_PIN) << 2;
 		raw_input |= HAL_GPIO_ReadPin(IN4_PORT, IN4_PIN) << 3;
-		raw_input |= HAL_GPIO_ReadPin(USER_Btn_GPIO_Port, USER_Btn_Pin) << 4;
-
+		if(HAL_GPIO_ReadPin(USER_Btn_GPIO_Port, USER_Btn_Pin) == GPIO_PIN_RESET)
+		{
+			raw_input |= 0x10;
+		}
 		Inputs = ~DebounceInputs(raw_input, abDebounceValue, 5);
 
 		osDelay(pdMS_TO_TICKS(10));
