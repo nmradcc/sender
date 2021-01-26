@@ -140,6 +140,7 @@ extern void ShBuffOut(uint8_t port, char* s, int len);
 
 extern void ShFieldNumberOut(uint8_t bPort, char* szBuffer, int number, int iFieldWidth);
 extern void ShNL(uint8_t bPort);
+extern void ShCR(uint8_t bPort);
 
 extern char ShGetChar(uint8_t bPort);
 extern char ShKbHit(uint8_t port);
