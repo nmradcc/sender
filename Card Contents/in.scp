@@ -1,32 +1,33 @@
 rem Script for testing the AND condition
+echo cr
 echo "Input 1 is "
 if inputs && 1
- echo "ON" CR
+ echo "ON" nl
 else
- echo "OFF" CR
+ echo "OFF" nl
 endif
 echo "Input 2 is "
 if inputs && 2
- echo "ON" CR
+ echo "ON" nl
 else
- echo "OFF" CR
+ echo "OFF" nl
 endif
 echo "Input 3 is "
 if inputs && 4
- echo "ON" CR
+ echo "ON" nl
 else
- echo "OFF" CR
+ echo "OFF" nl
 endif
 echo "Input 4 is "
 if inputs && 8
- echo "ON" CR
+ echo "ON" nl
 else
- echo "OFF" CR
+ echo "OFF" nl
 endif
 echo "Input 5 is "
 if inputs && 16
- echo "ON" CR
+ echo "ON" nl
 else
- echo "OFF" CR
+ echo "OFF" nl
 endif
 prompt

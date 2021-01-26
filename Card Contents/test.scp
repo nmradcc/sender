@@ -12,5 +12,5 @@ color blue
 tasks
 color
 led off
-echo "Test Script Complete" cr
+echo "Test Script Complete" nl
 prompt

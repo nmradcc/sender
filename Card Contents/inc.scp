@@ -1,47 +1,49 @@
 rem Script for testing the AND condition - in color
+echo cr
 echo "Input 1 is "
 if inputs && 1
 color green
-echo "ON" CR
+echo "ON" nl
 else
 color red
-echo "OFF" CR
+echo "OFF" nl
 endif
 color
 echo "Input 2 is "
 if inputs && 2
 color green
-echo "ON" CR
+echo "ON" nl
 else
 color red
-echo "OFF" CR
+echo "OFF" nl
 endif
 color
 echo "Input 3 is "
 if inputs && 4
 color green
-echo "ON" CR
+echo "ON" nl
 else
 color red
-echo "OFF" CR
+echo "OFF" nl
 endif
 color
 echo "Input 4 is "
 if inputs && 8
 color green
-echo "ON" CR
+echo "ON" nl
 else
 color red
-echo "OFF" CR
+echo "OFF" nl
 endif
 color
+rem comment line
 echo "Input 5 is "
 if inputs && 16
 color green
-echo "ON" CR
+echo "ON" nl
 else
 color red
-echo "OFF" CR
+echo "OFF" nl
 endif
 color
 prompt
