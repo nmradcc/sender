@@ -407,11 +407,14 @@ void ShFieldNumberOut(uint8_t bPort, char* szBuffer, int number, int iFieldWidth
 *********************************************************************/
 void ShNL(uint8_t bPort)
 {
-
     ShCharOut(bPort, '\r');
     ShCharOut(bPort, '\n');
 }
 
+void ShCR(uint8_t bPort)
+{
+    ShCharOut(bPort, '\r');
+}
 
 /*********************************************************************
 *
@@ -1200,7 +1203,11 @@ CMD_RETURN ShEcho(uint8_t bPort, int argc, char *argv[])
 	{
 		if(strcasecmp(argv[1], "cr") == 0)
 		{
-		    ShNL(bPort);
+		    ShCR(bPort);
+		}
+		else if(strcasecmp(argv[1], "nl") == 0)
+		{
+			ShNL(bPort);
 		}
 		else
 		{
@@ -1239,6 +1246,10 @@ CMD_RETURN ShEcho(uint8_t bPort, int argc, char *argv[])
 	if(argc == 3)
 	{
 		if(strcasecmp(argv[2], "cr") == 0)
+		{
+		    ShCR(bPort);
+		}
+		else if(strcasecmp(argv[2], "nl") == 0)
 		{
 		    ShNL(bPort);
 		}
