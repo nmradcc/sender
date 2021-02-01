@@ -1,0 +1,8 @@
+reset 10
+scopea
+idle 10
+scopeb
+idle 10
+warble
+echo "All Tests Done" cr
+prompt

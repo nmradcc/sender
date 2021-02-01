@@ -1,0 +1,106 @@
+Issue List
+
+P - Partially completed
+C - coded & compiled
+X - complete
+F - Future
+
+
+General
+P - set the lwip IP addresses from the variables (requires a reboot for now)
+- change the dhcp setting using the variable
+C - add a resource lock for the track - send vs command station
+C - finish compiling and testing the YMODEM command
+- There seems to be an issue with USB file transfer, a character gets garbled (a quick count seems to be aroiund 490)
+- add a 'theme' variable to switch the colors for a light background terminal
+
+Shell
+- Test the new variables and math
+P - Debug why some varaibles don't update until after a re-start
+- time is off by 1 hour
+
+Send
+- get scope trace in the correct location
+C - test the shell packet commands
+- the IDLE packet generator doesn't work - split this into 4 calls to BuildPacket to avoid buffer overflow
+
+Command Station
+- debug why the cab doesn't work when it is connected at reset
+- display status on cab (track in use, Send running, ...)
+F - add the XpressNet interface
+
+TCP/IP
+- add the file system to the web server
+- finish Telnet
+F - add FTP
+- add TFTP
+
+Other
+F - Add a CAN driver and LCC
+
+
+Completed
+General
+X - test the reading of the config.ini file - bug: GetSettings() hangs (Replace persist with minini library)
+X - test the writing of the config.ini file
+X - change the date format using a variable
+X - change the time format using a variable
+X - Convert DCC timer to 32 bit to get more resolution
+X - the green LED no longer works
+
+Shell
+X - dir doesn't seem to work in a subdirectory
+X - dir path doesn't work
+X - type path doesn't work (same bug as dir)
+X - add getcwd instead of a string variable for any path releated functions (dir, type, shell prompt)
+X - add a path variable
+X - search for scripts in the current directory and then the path
+X - search the path for scripts for help
+X - add a way for scripts to pass arguments
+X - re-visit variables
+X    C - set a variable from a variable
+X    C - math on variables
+X    C - if/endif condition using either value as a variable
+X - Make the "=" for setting a variable optional
+X - add a copy command
+X - if no attributes are entered for attrib, display the current attributes
+X - Add the month in three characters (Jan, Feb,...) and the support in datefmt
+X - clean up help and add a colorized option (-c) Change switches to -a -s and -c
+X - clean up dir so arg count and order doesn't matter
+X - the script engine only executes shell commands. Add variables and scripts (re-factor ShellMain)
+X - ANSI gotoxy doesn't seem to work - it does, the script we wrong
+X - Variable output should not display the "=" or CR/LF if in a script - " =" removed for all
+X - if Enter is hit while a script is running, the script stops
+X - make the led command a variable
+X - Add an AND (&& and !&) operator to mask inputs for an if condition
+X - make sure variables have a pointer to the variable in the table so scripts can use them for the if command (like track)
+X	track
+X	led
+X - add a loop count 'variable' - to echo and set duing a script
+X - clock can be set using 24 or 12 hour formats regardless of the time format, but must not contain spaces
+X - date must be entered in numbers and fixed at m/d/y (not the current data format)
+X - add the Nucleo User button to the input variable
+
+Send
+X - get the number of preambles from the DEC_TST variable
+X - test the number of preambles
+X - make an arbitrary packet builder script command (file based ?)
+X - track, when the track output is disabled the output floats, it should be set to zero
+
+Command Station
+X - test all of the menus
+F - add the XpressNet interface
+X - shorten the direction and loco prompt to one character and add 2 more function status's
+X - display the time in the current time format
+
+
+
+Major Tasks
+- finish Send
+- completely replace the porting layer - Stewart suggested using the code from OpenMRN
+Brian - composite USB (vcp and mass storage)
+- telent, and a way to connect to the shell with multiple contexts
+- tftp (or ftp) - FTP Rush for windows does both and can list file using tftp
+- zip command
+- web server
+Karl - ZModem

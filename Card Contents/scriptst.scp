@@ -1,0 +1,43 @@
+rem Script for testing the script commands
+loop 10
+echo "Input 1 is "
+if inputs && 1
+echo "ON" nl
+else
+echo "OFF" nl
+endif
+echo "Input 2 is "
+if inputs && 2
+echo "ON" nl
+else
+echo "OFF" nl
+endif
+echo "Input 3 is "
+if inputs && 4
+echo "ON" nl
+else
+echo "OFF" nl
+endif
+echo "Input 4 is "
+if inputs && 8
+echo "ON" nl
+else
+echo "OFF" nl
+endif
+if inputs && 1
+if inputs && 2
+if inputs && 3
+if inputs && 4
+break
+endif
+endif
+endif
+endif
+rem a comment line to move the character count
+echo "Loop Count:"
+loopcnt
+echo nl
+echo "pause for 2 seconds" nl
+pause 2000
+endloop
+prompt
