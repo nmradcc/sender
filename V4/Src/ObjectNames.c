@@ -80,3 +80,4 @@ const char szInputs[] = 			"inputs";
 
 const char szLoopCount[] = 			"loopcnt";
 
+const char szTheme[] = 				"theme";
