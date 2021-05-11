@@ -20,6 +20,7 @@
 #include <ctype.h>
 
 #include "ansi.h"
+#include "variables.h"
 
 //*******************************************************************************
 // Global Variables
@@ -158,7 +159,14 @@ FRESULT scan_files(uint8_t bPort, char* path, _Bool sh, _Bool col)
 						{
 			                if ((fno.fattrib & AM_HID) != 0)
 			                {
-			                	TextColor(bPort, FG_Cyan, BG_Default, ATT_Bold);
+			            		if(Theme)
+			            		{
+			            			TextColor(bPort, BG_Green, BG_Default, ATT_Bold);
+			            		}
+			            		else
+			            		{
+			            			TextColor(bPort, FG_Cyan, BG_Default, ATT_Bold);
+			            		}
 			                }
 			                else
 			                {
@@ -275,7 +283,14 @@ CMD_RETURN ShDir(uint8_t bPort, int argc, char *argv[])
 	
 	if(color)
 	{
-		TextColor(bPort, FG_White, FG_Black, ATT_Bold);
+		if(Theme)
+		{
+			TextColor(bPort, FG_Black, BG_Default, ATT_Bold);
+		}
+		else
+		{
+			TextColor(bPort, FG_White, BG_Default, ATT_Bold);
+		}
 	}
 
 	ShNL(bPort);
