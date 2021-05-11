@@ -34,4 +34,6 @@ extern const char szInputs[];
 
 extern const char szLoopCount[];
 
+extern const char szTheme[];
+
 #endif /* OBJECTNAMES_H_ */
