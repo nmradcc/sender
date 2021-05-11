@@ -58,6 +58,8 @@ uint32_t IpMask;
 uint32_t GwAddress;
 uint32_t DHCP;
 
+uint32_t Theme;
+
 uint32_t TrackState;
 extern uint32_t GreenPattern;
 
@@ -123,6 +125,8 @@ const VAR_TABLE VarCmdTable[] =
 	{szInputs,			&Inputs,			(VAR_TYPE_INPUTS | VAR_TYPE_READ_ONLY),	"",					"Inputs 1 - 4" },
 
 	{szLoopCount,		NULL,				(VAR_TYPE_LOOP_CNT | VAR_TYPE_READ_ONLY),"",					"Loop Count" },
+
+	{szTheme,			&Theme,				(VAR_TYPE_THEME | VAR_TYPE_PERSIST),	"0",				"Color Theme light | dark" },
 
 //	{szSpeed,			NULL,				(VAR_TYPE_SPEED),						"",					"Current Train Speed" },
 //	{szDir,				NULL,				(VAR_TYPE_DIR),							"",					"Current Train Direction fwd / rev" },
@@ -355,6 +359,10 @@ char* VarToString(uint32_t idx)
     		{
     			sprintf(tempbuf, "%u", lc);
     		}
+    	break;
+
+    	case VAR_TYPE_THEME:
+    		sprintf(tempbuf, "%s", ((*(unsigned int*)VarCmdTable[idx].var) == 0) ? "dark" : "light");
     	break;
     }
     return tempbuf;
@@ -1001,6 +1009,23 @@ int SetVariable(const char* szObject, char* pStrValue)
 	    			StatusLed(hexadecimalToDecimal(pStrValue));
 	    		}
 			break;
+
+	    	case VAR_TYPE_THEME:
+				if((type & VAR_TYPE_READ_ONLY) == 0)
+				{
+					temp = 0;
+					if(stricmp(pStrValue, "light") == 0)
+					{
+						temp = 1;
+					}
+
+					*(uint32_t*)(VarCmdTable[idx].var) = temp;
+					if((type & VAR_TYPE_PERSIST) != 0)
+					{
+						(void)ini_putl("", szObject, (long)temp, SETTINGS_FILE);
+					}
+				}
+	    	break;
 		}
 	}
 	return CMD_OK;
