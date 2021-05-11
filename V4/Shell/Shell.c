@@ -31,6 +31,7 @@
 #include "GetLine.h"
 
 #include "cmsis_os.h"
+#include "task.h"
 
 //*******************************************************************************
 // Global Variables
@@ -98,15 +99,26 @@ extern void test_bits(void);
 // Source
 //*******************************************************************************
 
-const uint8_t ShellColor[] =
+const uint8_t ShellColor[2][7] =
 {
-	FG_White,	// CL_NONE,
-	FG_Yellow,	// CL_ANSI,
-	FG_Blue, 	// CL_FILE,
-	FG_Green,	// CL_SCRIPT,
-	FG_Purple,	// CL_CS,
-	FG_Cyan,	// CL_SYS,
-	FG_Red,		// CL_TEST,
+	{	// dark theme
+		FG_White,	// CL_NONE,
+		FG_Cyan,	// CL_ANSI,
+		FG_Blue, 	// CL_FILE,
+		FG_Green,	// CL_SCRIPT,
+		FG_Purple,	// CL_CS,
+		FG_Yellow,	// CL_SYS,
+		FG_Red,		// CL_TEST,
+	},
+	{	// light theme
+		FG_Black,	// CL_NONE,
+		FG_Cyan,	// CL_ANSI,
+		FG_Blue, 	// CL_FILE,
+		FG_Green,	// CL_SCRIPT,
+		FG_Purple,	// CL_CS,
+		FG_Black,	// CL_SYS,
+		FG_Red,		// CL_TEST,
+	},
 };
 
 
@@ -194,7 +206,7 @@ const SHELL_TABLE ShellTable[] =
 	{"rd",	    CL_FILE,	SUPPRESS_HELP, 		ShRmdir,			"remove directory"},
 	{"cd",	    CL_FILE,	NO_FLAGS, 			ShChdir,			"change directory"},
 	{"cwd",	    CL_FILE,	SUPPRESS_HELP, 		ShCWD,				"change working directory"},
-	{"atrib",   CL_FILE,	NO_FLAGS, 			ShAtrib,			"Set/Reset attributes +/- R,H,S,A"},
+	{"atrib",   CL_FILE,	NO_FLAGS, 			ShAtrib,			"Set/Reset attributes +/- R-read only,H-hidden,S-system,A-archive"},
 	{"copy",    CL_FILE,	NO_FLAGS,	 		ShCopy,				"copy source destination"},
 	{"rename",  CL_FILE,	NO_FLAGS,	 		ShRename,			"rename source destination"},
 
@@ -962,7 +974,7 @@ CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[])
 			ShNL(bPort);
 			for(i = 0; i < SHELL_TABLE_COUNT; i++)
 			{
-				TextColor(bPort, ShellColor[ShellTable[i].bClass], BG_Black, ATT_Bold);
+				TextColor(bPort, ShellColor[Theme][ShellTable[i].bClass], BG_Default, ATT_Bold);
 				ShFieldOut(bPort, (char*)ShellTable[i].szCommand, HELP_FIELD_WIDTH);
 				cnt++;
 				if(cnt >= 6)
@@ -975,17 +987,17 @@ CMD_RETURN ShHelp(uint8_t bPort, int argc, char *argv[])
 			//TextColor(bPort, ShellColor[0], BG_Black, ATT_Bold);
 			//ShFieldOut(bPort, "Default ", 0);
 			ShNL(bPort);
-			TextColor(bPort, ShellColor[1], BG_Black, ATT_Bold);
+			TextColor(bPort, ShellColor[Theme][1], BG_Default, ATT_Bold);
 			ShFieldOut(bPort, "ANSI ", 0);
-			TextColor(bPort, ShellColor[2], BG_Black, ATT_Bold);
+			TextColor(bPort, ShellColor[Theme][2], BG_Default, ATT_Bold);
 			ShFieldOut(bPort, "File ", 0);
-			TextColor(bPort, ShellColor[3], BG_Black, ATT_Bold);
+			TextColor(bPort, ShellColor[Theme][3], BG_Default, ATT_Bold);
 			ShFieldOut(bPort, "Script ", 0);
-			TextColor(bPort, ShellColor[4], BG_Black, ATT_Bold);
+			TextColor(bPort, ShellColor[Theme][4], BG_Default, ATT_Bold);
 			ShFieldOut(bPort, "CS ", 0);
-			TextColor(bPort, ShellColor[5], BG_Black, ATT_Bold);
+			TextColor(bPort, ShellColor[Theme][5], BG_Default, ATT_Bold);
 			ShFieldOut(bPort, "Sys ", 0);
-			TextColor(bPort, ShellColor[6], BG_Black, ATT_Bold);
+			TextColor(bPort, ShellColor[Theme][6], BG_Default, ATT_Bold);
 			ShFieldOut(bPort, "Test ", 0);
 			ShNL(bPort);
 
@@ -1226,18 +1238,21 @@ CMD_RETURN ShEcho(uint8_t bPort, int argc, char *argv[])
 			// #s - clear screen
 			// #l - clear eol
 
+			// echo "#green,black,bold#Input 1 is "
+
 			// printf codes
 
-			// echo "#cgreen,black,bold#Input 1 is "
 
-			// echo "#c#Input 1 is "
+			// echo "#normal#\rInput 1 is "
 			// if inputs && 1
-			//    echo "#cgreen#ON"
+			//    echo "#green#ON\n"
 			// else
-			//    echo "#cred#Off"
+			//    echo "#red#Off\n"
 			// endif
+			// echo "#normal#\n"
 
-			// "CSI41;49;1mInput 1 is "
+			// echo "#normal#\rInput 1 is %l" "inputs && 1 :: ON|OFF
+			//    echo "#green#ON\n"
 
 			ShFieldOut(bPort, argv[1], 0);
 		}
@@ -1566,76 +1581,127 @@ CMD_RETURN ShVariables(uint8_t bPort, int argc, char *argv[])
 *********************************************************************/
 CMD_RETURN ShTasks(uint8_t bPort, int argc, char *argv[])
 {
-
-	osThreadId_t ThreadIds[22];
-	uint32_t Threads;
+	#define MAX_TASKS 15
+	TaskStatus_t pxTaskStatusArray[MAX_TASKS];
+	volatile UBaseType_t uxArraySize, x;
+	unsigned long ulTotalRunTime;
+	unsigned long ulStatsAsPercentage;
 	uint32_t State;
 	char Status[2];
-
+	char num[10];
 
 	// print the header
 	ShNL(bPort);
 	ShFieldOut(bPort, "Name", 16);
 	ShFieldOut(bPort, "ST", 3);
 	ShFieldOut(bPort, "Pri", 6);
-	ShFieldOut(bPort, "Stack", 6);
+	ShFieldOut(bPort, "Stack", 12);
 	ShFieldOut(bPort, "Space", 6);
+	//ShFieldOut(bPort, "Run Time", 0);
 	ShNL(bPort);
 
-	Threads = osThreadEnumerate (ThreadIds, 20);
+   /* Take a snapshot of the number of tasks in case it changes while this
+   function is executing. */
+   uxArraySize = uxTaskGetNumberOfTasks();
+   if(uxArraySize > MAX_TASKS)
+   {
+	   uxArraySize = MAX_TASKS;
+   }
 
-	for(int i = 0; i < Threads; i++)
-	{
-		// print the name
-		ShFieldOut(bPort, (char*)osThreadGetName (ThreadIds[i]), 16);
+   /* Allocate a TaskStatus_t structure for each task.  An array could be
+   allocated statically at compile time. */
+   //pxTaskStatusArray = pvPortMalloc( uxArraySize * sizeof( TaskStatus_t ) );
+
+   //if( pxTaskStatusArray != NULL )
+   {
+	  /* Generate raw status information about each task. */
+	  uxArraySize = uxTaskGetSystemState( pxTaskStatusArray,
+								 uxArraySize,
+								 &ulTotalRunTime );
+
+	  /* For percentage calculations. */
+	  ulTotalRunTime /= 100UL;
+
+	  /* Avoid divide by zero errors. */
+	  //if( ulTotalRunTime > 0 )
+	  {
+		 /* For each populated position in the pxTaskStatusArray array,
+		 format the raw data as human readable ASCII data. */
+		 for( x = 0; x < uxArraySize; x++ )
+		 {
+			/* What percentage of the total run time has the task used?
+			This will always be rounded down to the nearest integer.
+			ulTotalRunTimeDiv100 has already been divided by 100. */
+			if( ulTotalRunTime > 0 )
+			{
+				ulStatsAsPercentage = pxTaskStatusArray[x].ulRunTimeCounter / ulTotalRunTime;
+			}
+			else
+			{
+				ulStatsAsPercentage = 0;
+			}
+
+			// print the name
+			ShFieldOut(bPort, (char*)pxTaskStatusArray[x].pcTaskName, 16);
 
 
-		// print the status
-		State = osThreadGetState (ThreadIds[i]);
-		Status[1] = 0;
-		switch( State )
-		{
-			case osThreadInactive:
-				Status[0] = 'I';
-			break;
+			// print the status
+			//State = osThreadGetState (ThreadIds[i]);
+			State = pxTaskStatusArray[x].eCurrentState;
+			Status[1] = 0;
+			switch( State )
+			{
+				case osThreadInactive:
+					Status[0] = 'I';
+				break;
 
-			case osThreadReady:
-				Status[0] = 'X';
-			break;
+				case osThreadReady:
+					Status[0] = 'X';
+				break;
 
-			case osThreadRunning:
-				Status[0] = 'R';
-			break;
+				case osThreadRunning:
+					Status[0] = 'R';
+				break;
 
-			case osThreadBlocked:
-				Status[0] = 'B';
-			break;
+				case osThreadBlocked:
+					Status[0] = 'B';
+				break;
 
-			case osThreadTerminated:
-				Status[0] = 'T';
-			break;
+				case osThreadTerminated:
+					Status[0] = 'T';
+				break;
 
-			case osThreadError:
-				Status[0] = 'E';
-			break;
+				case osThreadError:
+					Status[0] = 'E';
+				break;
 
-			default:			/* Should not get here, but it is included to prevent static checking errors. */
-				Status[0] = 0;
-			break;
-		}
-		ShFieldOut(bPort, Status, 3);
+				default:			/* Should not get here, but it is included to prevent static checking errors. */
+					Status[0] = 0;
+				break;
+			}
+			ShFieldOut(bPort, Status, 3);
 
-		// print the Priority
-		ShFieldNumberOut(bPort, "", osThreadGetPriority (ThreadIds[i]), 6);
+			// print the Priority
+			ShFieldNumberOut(bPort, "", pxTaskStatusArray[x].uxCurrentPriority, 6);
 
-		// print the Stack
-		ShFieldNumberOut(bPort, "", osThreadGetStackSize (ThreadIds[i]), 6);
+			// print the Stack
+			//ShFieldNumberOut(bPort, "", pxTaskStatusArray[x].pxStackBase, 12);
+			sprintf(num, "0x%X", (unsigned int)pxTaskStatusArray[x].pxStackBase);
+			ShFieldOut(bPort, num, 12);
 
-		// print the Space
-		ShFieldNumberOut(bPort, "", osThreadGetStackSpace (ThreadIds[i]), 6);
+			// print the Space
+			ShFieldNumberOut(bPort, "", pxTaskStatusArray[x].usStackHighWaterMark, 6);
 
-		ShNL(bPort);
-	}
+			// print the time
+			//ShFieldNumberOut(bPort, "", ulStatsAsPercentage, 0);
+
+			ShNL(bPort);
+		 }
+	  }
+
+	  /* The array is no longer needed, free the memory it consumes. */
+	  //vPortFree( pxTaskStatusArray );
+   }
 	return CMD_OK;
 }
 
