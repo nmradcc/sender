@@ -8,13 +8,13 @@
 #ifndef ACKNOWLEDGE_H_
 #define ACKNOWLEDGE_H_
 
-enum
+typedef enum
 {
 	NO_ACK,
 	LOCO_PRESENT,
 	ACK_DETECTED,
 	OVER_CURRENT,
-};
+} ACK_STATUS;
 
 
 extern void InitAcknowledge(void);
@@ -24,6 +24,6 @@ extern void Acknowledge(void);
 //extern void ClearAck(void);
 //extern byte IsAck(void);
 
-extern uint8_t GetAck(void);
+extern ACK_STATUS GetAck(void);
 
 #endif /* ACKNOWLEDGE_H_ */
