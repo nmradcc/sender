@@ -29,18 +29,19 @@ enum
 
 #define VAR_TYPE_INT		1
 #define VAR_TYPE_STRING		2
-#define VAR_TYPE_VER		3
-#define VAR_TYPE_TIME		4
-#define VAR_TYPE_DATE		5
-#define VAR_TYPE_TIME_FMT	6
-#define VAR_TYPE_DATE_FMT	7
-#define VAR_TYPE_ON_OFF		8
-#define VAR_TYPE_PORT		9
-#define VAR_TYPE_IP			10
-#define VAR_TYPE_LED		11
-#define VAR_TYPE_INPUTS		12
-#define VAR_TYPE_LOOP_CNT	13
-#define VAR_TYPE_THEME		14
+#define VAR_TYPE_FLOAT		3
+#define VAR_TYPE_VER		4
+#define VAR_TYPE_TIME		5
+#define VAR_TYPE_DATE		6
+#define VAR_TYPE_TIME_FMT	7
+#define VAR_TYPE_DATE_FMT	8
+#define VAR_TYPE_ON_OFF		9
+#define VAR_TYPE_PORT		10
+#define VAR_TYPE_IP			11
+#define VAR_TYPE_LED		12
+#define VAR_TYPE_INPUTS		13
+#define VAR_TYPE_LOOP_CNT	14
+#define VAR_TYPE_THEME		15
 
 #define VAR_TYPE_TRACK		20
 
@@ -59,6 +60,7 @@ enum
 
 extern uint32_t lVersion;
 extern uint32_t lSerialNumber;
+extern char szBuildDateVar[];
 
 //extern uint32_t nClockRatio;
 //extern uint32_t bClock12_24;
@@ -76,6 +78,8 @@ extern char szPathVar[];
 
 extern uint32_t Theme;
 
+extern float TrackCurrent;
+extern float TrackVoltage;
 
 typedef struct var_table_t
 {
@@ -89,7 +93,7 @@ typedef struct var_table_t
 extern const VAR_TABLE VarCmdTable[];
 
 //#define NUM_VARIABLES	(sizeof(VarCmdTable) / sizeof(VAR_TABLE))
-#define NUM_VARIABLES 17
+#define NUM_VARIABLES 20
 
 extern int IsVariable(char* pBuffer);
 
