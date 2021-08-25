@@ -57,6 +57,7 @@
 
 const char szVersion[] =			"version";
 const char szSerialNumber[] =		"serial";
+const char szBuildDate[] =			"build";
 
 const char szTime[] =				"time";
 const char szDate[] =				"date";
@@ -81,3 +82,8 @@ const char szInputs[] = 			"inputs";
 const char szLoopCount[] = 			"loopcnt";
 
 const char szTheme[] = 				"theme";
+
+const char szTrackCurrent[] =		"track_i";
+const char szTrackVoltage[] =		"track_v";
+
+
