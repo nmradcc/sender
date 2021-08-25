@@ -65,6 +65,7 @@ PACKET_BITS* AcquirePacket(int* idx)
 	if((track_queue_in == track_queue_out) && (TrackQueue[track_queue_in] != PKT_NONE))
 	{
 		/* queue is full */
+		*idx = -1;
 		return NULL;
 	}
 	else
@@ -98,7 +99,10 @@ PACKET_BITS* AcquirePacket(int* idx)
 void ReadyPacket(int idx)
 {
 
-	TrackQueue[idx] = PKT_READY;
+	if(idx != -1)
+	{
+		TrackQueue[idx] = PKT_READY;
+	}
 }
 
 
@@ -117,15 +121,16 @@ void ReadyPacket(int idx)
 PACKET_BITS* GetPacket(int* idx)
 {
 
-	if((track_queue_in == track_queue_out) && (TrackQueue[track_queue_in] == PKT_NONE))
+	if((track_queue_in == track_queue_out) && (TrackQueue[track_queue_out] == PKT_NONE))
 	{
 		/* queue is empty */
+		*idx = -1;
 		return NULL;
 	}
 	else
 	{
 		/* queue is not empty */
-		*idx = track_queue_in;
+		*idx = track_queue_out;
 		return apPacket[track_queue_out];
 	}
 }
