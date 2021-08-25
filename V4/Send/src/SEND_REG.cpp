@@ -37,6 +37,8 @@ extern "C"
 	int BuildPacketAmbig1(const uint8_t packet_byte, uint16_t clk1t, uint32_t clk0t1, uint32_t clk0h1, uint32_t clk0t, uint32_t clk0h);
 	int BuildPacketAmbig2(const uint8_t packet_byte, uint16_t clk1t, uint32_t clk0t1, uint32_t clk0h1, uint32_t clk0t2, uint32_t clk0h2, uint32_t clk0t, uint32_t clk0h);
 };
+
+#define SEND_PACKET_TIMEOUT 10000
 #endif
 
 static const char sccsid[]      = "@(#) $Workfile: SEND_REG.CPP $$ $Revision: 19 $$";
@@ -704,7 +706,7 @@ Send_reg::send_bytes(
 		register u_int	count;			// Count of BYTES sent.
 		register u_long	san_cnt;		// Sanity timeout.
 	#else
-		int ret;
+//		int ret;
 	#endif
 
 	if ( icnt < 1 )
@@ -719,15 +721,19 @@ Send_reg::send_bytes(
 
 #if SEND_VERSION >= 4
 
-		//do
+		//if(BuildPacketBytes(ibyte, icnt, clk1t, clk0t, clk0h))
 		//{
-		//	ret = BuildPacketBytes(ibyte, icnt, clk1t, clk0t, clk0h);
-		//} while(ret != 0);
+		//	return ( FAIL );
+		//}
 
-		if(BuildPacketBytes(ibyte, icnt, clk1t, clk0t, clk0h))
+		for(int i = 0; i < SEND_PACKET_TIMEOUT; i++)
 		{
-			return ( FAIL );
+			if(BuildPacketBytes(ibyte, icnt, clk1t, clk0t, clk0h) == 0)
+			{
+				return ( OK );
+			}
 		}
+		return ( FAIL );
 
 #else
 		start_crit();
@@ -829,7 +835,7 @@ Send_reg::send_stretched_byte(
 	const char		*my_name = "Send_reg::send_stretched_byte";
 	#if SEND_VERSION >= 4
 		u_short			tclk0t;					// clk0t for stretched 0.
-		int ret;
+//		int ret;
 	#else
 		register u_long	san_cnt;		   		// Sanity timeout.
 	#endif
@@ -877,10 +883,19 @@ Send_reg::send_stretched_byte(
 
 		tclk0t	=	12000;
 
-		if(BuildPacketByte(ibyte, clk1t, clk0t, clk0h, tclk0t))
+		//if(BuildPacketByte(ibyte, clk1t, clk0t, clk0h, tclk0t))
+		//{
+		//	return ( FAIL );
+		//}
+
+		for(int i = 0; i < SEND_PACKET_TIMEOUT; i++)
 		{
-			return ( FAIL );
+			if(BuildPacketByte(ibyte, clk1t, clk0t, clk0h, tclk0t) == 0)
+			{
+				return ( OK );
+			}
 		}
+		return ( FAIL );
 
 #else
 		if ( inportb( PA ) != 0xff )
@@ -1088,7 +1103,7 @@ Send_reg::send_1_ambig_bit(
 {
 	const char		*my_name = "Send_reg::send_1_ambig_bit";
 	#if SEND_VERSION >= 4
-		int ret;
+//		int ret;
 	#else
 		register		u_long	san_cnt;		// Sanity timeout.
 	#endif
@@ -1137,10 +1152,19 @@ Send_reg::send_1_ambig_bit(
 	{
 #if SEND_VERSION >= 4
 
-		if(BuildPacketAmbig1(ibyte, clk1t, iclk0t, iclk0h, clk0t, clk0h))
+		//if(BuildPacketAmbig1(ibyte, clk1t, iclk0t, iclk0h, clk0t, clk0h))
+		//{
+		//	return ( FAIL );
+		//}
+
+		for(int i = 0; i < SEND_PACKET_TIMEOUT; i++)
 		{
-			return ( FAIL );
+			if(BuildPacketAmbig1(ibyte, clk1t, iclk0t, iclk0h, clk0t, clk0h) == 0)
+			{
+				return ( OK );
+			}
 		}
+		return ( FAIL );
 
 #else
 		start_crit();
@@ -1380,7 +1404,7 @@ Send_reg::send_2_ambig_bits(
 {
 	const char		*my_name = "Send_reg::send_2_ambig_bits";
 	#if SEND_VERSION >= 4
-		int ret;
+//		int ret;
 	#else
 		register		u_long	san_cnt;	 	// Sanity timeout.
 	#endif
@@ -1455,15 +1479,19 @@ Send_reg::send_2_ambig_bits(
 	{
 #if SEND_VERSION >= 4
 
-//k		do
-//k		{
-//k			ret = BuildPacketAmbig2(ibyte, clk1t, iclk0t, iclk0h, clk0t, clk0h);
-//k		} while(ret != 0);
+		//if(BuildPacketAmbig2(ibyte, clk1t, iclk0t1, iclk0h1, iclk0t2, iclk0h2, clk0t, clk0h))
+		//{
+		//	return ( FAIL );
+		//}
 
-		if(BuildPacketAmbig2(ibyte, clk1t, iclk0t1, iclk0h1, iclk0t2, iclk0h2, clk0t, clk0h))
+		for(int i = 0; i < SEND_PACKET_TIMEOUT; i++)
 		{
-			return ( FAIL );
+			if(BuildPacketAmbig2(ibyte, clk1t, iclk0t1, iclk0h1, iclk0t2, iclk0h2, clk0t, clk0h) == 0)
+			{
+				return ( OK );
+			}
 		}
+		return ( FAIL );
 
 #else
 		start_crit();
@@ -1748,7 +1776,7 @@ Send_reg::send_pkt(
 {
 	const char *my_name = "Send_reg::send_pkt(BYTE)";
 	#if SEND_VERSION >= 4
-		int ret;
+//		int ret;
 	#else
 		register u_int	count;					// Count of BYTES sent.
 		register u_long	san_cnt;		   		// Sanity timeout.
@@ -1765,10 +1793,19 @@ Send_reg::send_pkt(
 	{
 #if SEND_VERSION >= 4
 
-		if(BuildPacket(ibytes, isize, clk1t, clk0t, clk0h))
+		//if(BuildPacket(ibytes, isize, clk1t, clk0t, clk0h))
+		//{
+		//	return ( FAIL );
+		//}
+
+		for(int i = 0; i < SEND_PACKET_TIMEOUT; i++)
 		{
-			return ( FAIL );
+			if(BuildPacket(ibytes, isize, clk1t, clk0t, clk0h) == 0)
+			{
+				return ( OK );
+			}
 		}
+		return ( FAIL );
 
 #else
 		/* Send first BYTE, then activate underflow warning */
@@ -1867,7 +1904,7 @@ Rslt_t Send_reg::send_pkt(Bits &ibits, const char *info )					// Packet log info
 	#if SEND_VERSION < 4
 		register u_long	san_cnt;	   		// Sanity timeout.
 	#else
-		int rret;
+//		int ret;
 	#endif
 	BYTE			pbyte;					// Present BYTE.
 	uint8_t PacketBuf[10];
@@ -1887,18 +1924,29 @@ Rslt_t Send_reg::send_pkt(Bits &ibits, const char *info )					// Packet log info
 	{
 		for (	count = 0, ibits.rst_out();	ibits.get_byte( pbyte ) == OK; count++ )
 		{
-			PacketBuf[count] = pbyte;
+			#if SEND_VERSION >= 4
+				if(count >= 10)
+				{
+					break;
+				}
+				PacketBuf[count] = pbyte;
+			#endif
 		}
 		#if SEND_VERSION >= 4
 
-//k			do
-//k			{
-//k				ret = BuildPacket(ibits, count, clk1t, clk0t, clk0h);
-//k			} while(ret != 0);
-			if(BuildPacket(PacketBuf, count, clk1t, clk0t, clk0h))
+			//if(BuildPacket(PacketBuf, count, clk1t, clk0t, clk0h))
+			//{
+			//	return ( FAIL );
+			//}
+
+			for(int i = 0; i < SEND_PACKET_TIMEOUT; i++)
 			{
-				return ( FAIL );
+				if(BuildPacket(PacketBuf, count, clk1t, clk0t, clk0h) == 0)
+				{
+					return ( OK );
+				}
 			}
+			return ( FAIL );
 
 		#else
 			start_crit();
@@ -2141,12 +2189,11 @@ Rslt_t
 Send_reg::set_pc_delay_1usec( void )
 {
 	const char		*my_name = "Send_reg::set_pc_delay_1usec";
-	#if SEND_VERSION >= 4
+	#if SEND_VERSION < 4
 		register u_int	short_san_cnt;	   		// Short sanity timeout.
+		register u_int	tmp_delay_high;	 		// pc_delay_high() return value.
+		register u_int	tmp_delay_low;	 		// pc_delay_low() return value.
 	#endif
-	register u_int	tmp_delay_high;	 		// pc_delay_high() return value.
-	register u_int	tmp_delay_low;	 		// pc_delay_low() return value.
-
 	/*
 	 *	Skip this check if we are just logging packets.
 	 */
