@@ -11,6 +11,7 @@
 #include "main.h"
 #include "BitMask.h"
 #include "cmsis_os.h"
+#include "Acknowledge.h"
 
 /**********************************************************************
 *
@@ -134,6 +135,8 @@ void InputTask(void* argument)
 
 	while(1)
 	{
+		Acknowledge();
+
 		raw_input = 0;
 		raw_input |= HAL_GPIO_ReadPin(IN1_PORT, IN1_PIN);
 		raw_input |= HAL_GPIO_ReadPin(IN2_PORT, IN2_PIN) << 1;
@@ -143,7 +146,14 @@ void InputTask(void* argument)
 		{
 			raw_input |= 0x10;
 		}
-		Inputs = ~DebounceInputs(raw_input, abDebounceValue, 5);
+
+		raw_input |= 0x20;
+		if(GetAck() == ACK_DETECTED)
+		{
+			raw_input &= ~0x20;
+		}
+
+		Inputs = (~DebounceInputs(raw_input, abDebounceValue, 6)) & 0x3f;
 
 		osDelay(pdMS_TO_TICKS(10));
 	}
@@ -184,6 +194,11 @@ uint32_t GetInput4(void)
 uint32_t GetInput5(void)
 {
 	return (Inputs & 0x10) != 0;
+}
+
+uint32_t GetInput6(void)
+{
+	return (Inputs & 0x20) != 0;
 }
 
 uint32_t GetInputs(void)
