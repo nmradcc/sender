@@ -47,6 +47,7 @@ extern char* strsep(char **stringp, const char *delim);
 
 uint32_t lVersion;
 uint32_t lSerialNumber;
+char szBuildDateVar[20];
 
 uint32_t bTimeFmt;
 uint32_t bDateFmt;
@@ -63,6 +64,8 @@ uint32_t Theme;
 uint32_t TrackState;
 extern uint32_t GreenPattern;
 
+float TrackCurrent;
+float TrackVoltage;
 
 char szPathVar[80];
 
@@ -104,6 +107,7 @@ const VAR_TABLE VarCmdTable[] =
 	// name				variable			type									default				help string
 	{szVersion,			&lVersion,			(VAR_TYPE_VER | VAR_TYPE_READ_ONLY),	"",					"Version" },
 	{szSerialNumber,	&lSerialNumber,		(VAR_TYPE_INT | VAR_TYPE_READ_ONLY),	"",					"Serial Number" },
+	{szBuildDate,		&szBuildDateVar,	(VAR_TYPE_STRING | VAR_TYPE_READ_ONLY),	"",					"Build Date" },
 
 	{szTime,			NULL,				(VAR_TYPE_TIME),						"",					"Real Time hh:mm" },
 	{szDate,			NULL,				(VAR_TYPE_DATE),						"",					"Real Time dd/mm/yyyy" },
@@ -128,12 +132,172 @@ const VAR_TABLE VarCmdTable[] =
 
 	{szTheme,			&Theme,				(VAR_TYPE_THEME | VAR_TYPE_PERSIST),	"0",				"Color Theme light | dark" },
 
+	{szTrackCurrent,	&TrackCurrent,		(VAR_TYPE_FLOAT | VAR_TYPE_READ_ONLY),	"",					"Track Current" },
+	{szTrackVoltage,	&TrackVoltage,		(VAR_TYPE_FLOAT | VAR_TYPE_READ_ONLY),	"",					"Track Voltage" },
+
 //	{szSpeed,			NULL,				(VAR_TYPE_SPEED),						"",					"Current Train Speed" },
 //	{szDir,				NULL,				(VAR_TYPE_DIR),							"",					"Current Train Direction fwd / rev" },
 //	{szFunction,		NULL,				(VAR_TYPE_FUNCTION),					"",					"Current Train Functions" },
 };
 
+char m_szAscii[24];
 
+char *F2A(float fValue)
+{
+	char szExp[10];
+	char szMan[20];
+	char bSign = 0;
+	long lWhole, lFrac;
+
+	if (fValue < 0.0)
+	{
+		bSign = 1;
+		fValue = -fValue;
+	}
+	if (fValue < 0.00000000001)
+	{
+		sprintf(szExp, "");
+		sprintf(szMan, "0.0");
+	}
+	else
+	{
+		if (fValue < 0.0000000001)
+		{
+			fValue *= 1000000000.0;
+			sprintf(szExp, "e-10");
+		}
+		else if (fValue < 0.000000001)
+		{
+			fValue *= 100000000.0;
+			sprintf(szExp, "e-09");
+		}
+		else if (fValue < 0.00000001)
+		{
+			fValue *= 100000000.0;
+			sprintf(szExp, "e-08");
+		}
+		else if (fValue < 0.0000001)
+		{
+			fValue *= 10000000.0;
+			sprintf(szExp, "e-07");
+		}
+		else if (fValue < 0.000001)
+		{
+			fValue *= 1000000.0;
+			sprintf(szExp, "e-06");
+		}
+		else if (fValue < 0.00001)
+		{
+			fValue *= 100000.0;
+			sprintf(szExp, "e-05");
+		}
+		else if (fValue < 0.0001)
+		{
+			fValue *= 10000.0;
+			sprintf(szExp, "e-04");
+		}
+		else if (fValue < 0.001)
+		{
+			fValue *= 1000.0;
+			sprintf(szExp, "e-03");
+		}
+		else if (fValue < 0.01)
+		{
+			fValue *= 100.0;
+			sprintf(szExp, "e-02");
+		}
+		else if (fValue < 10000.0)
+		{
+			sprintf(szExp, "");
+		}
+		else if (fValue < 100000.0)
+		{
+			fValue /= 10000.0;
+			sprintf(szExp, "e+04");
+		}
+		else if (fValue < 1000000.0)
+		{
+			fValue /= 100000.0;
+			sprintf(szExp, "e+05");
+		}
+		else if (fValue < 10000000.0)
+		{
+			fValue /= 1000000.0;
+			sprintf(szExp, "e+06");
+		}
+		else if (fValue < 100000000.0)
+		{
+			fValue /= 10000000.0;
+			sprintf(szExp, "e+07");
+		}
+		else if (fValue < 1000000000.0)
+		{
+			fValue /= 100000000.0;
+			sprintf(szExp, "e+08");
+		}
+		else if (fValue < 1.0e+10)
+		{
+			fValue /= 1.0e+9;
+			sprintf(szExp, "e+09");
+		}
+		else if (fValue < 1.0e+11)
+		{
+			fValue /= 1.0e+10;
+			sprintf(szExp, "e+10");
+		}
+		else if (fValue < 1.0e+12)
+		{
+			fValue /= 1.0e+11;
+			sprintf(szExp, "e+11");
+		}
+		else if (fValue < 1.0e+13)
+		{
+			fValue /= 1.0e+12;
+			sprintf(szExp, "e+12");
+		}
+		else if (fValue < 1.0e+14)
+		{
+			fValue /= 1.0e+13;
+			sprintf(szExp, "e+13");
+		}
+		else if (fValue < 1.0e+15)
+		{
+			fValue /= 1.0e+14;
+			sprintf(szExp, "e+14");
+		}
+		else if (fValue < 1.0e+16)
+		{
+			fValue /= 1.0e+15;
+			sprintf(szExp, "e+15");
+		}
+		else if (fValue < 1.0e+17)
+		{
+			fValue /= 1.0e+16;
+			sprintf(szExp, "e+16");
+		}
+		else if (fValue < 1.0e+18)
+		{
+			fValue /= 1.0e+17;
+			sprintf(szExp, "e+17");
+		}
+		else if (fValue < 1.0e+19)
+		{
+			fValue /= 1.0e+18;
+			sprintf(szExp, "e+18");
+		}
+		else
+		{
+			fValue /= 1.0e+19;
+			sprintf(szExp, "e+19");
+		}
+
+		lWhole = (long)fValue;
+		lFrac = (long)((fValue - (float)lWhole) * 10000.0);
+		sprintf(szMan, "%ld.%04ld", lWhole, lFrac);
+	}
+	sprintf(m_szAscii, "%c%s%s", (bSign ? '-' : ' '), szMan, szExp);
+	return (m_szAscii);
+}
 
 /*********************************************************************
 *
@@ -159,6 +323,10 @@ char* VarToString(uint32_t idx)
     {
     	case VAR_TYPE_INT:
     		sprintf(tempbuf, "%u", *(unsigned int*)(VarCmdTable[idx].var));
+    	break;
+
+    	case VAR_TYPE_FLOAT:
+    		strcpy(tempbuf, F2A(*(float*)(VarCmdTable[idx].var)));
     	break;
 
     	case VAR_TYPE_TIME:
@@ -342,13 +510,22 @@ char* VarToString(uint32_t idx)
 
     		if(GetInput5())
     		{
-    			strcat(tempbuf, "5=ON");
+    			strcat(tempbuf, "5=ON ");
     		}
     		else
     		{
-    			strcat(tempbuf, "5=OFF");
+    			strcat(tempbuf, "5=OFF ");
     		}
-   		break;
+
+    		if(GetInput6())
+    		{
+    			strcat(tempbuf, "Ack");
+    		}
+    		else
+    		{
+    			strcat(tempbuf, "Nack");
+    		}
+    		break;
     	case VAR_TYPE_LOOP_CNT:
     		lc = GetLoopCount();
     		if(lc == 0xffff)
@@ -791,7 +968,7 @@ int SetVariable(const char* szObject, char* pStrValue)
 
 				if(pDa != NULL && pMt != NULL && pYr != NULL)
 				{
-					if(!isdigit(pMt[0]))
+					if(!isdigit((int)pMt[0]))
 					{
 						for(i = 1; i < 12; i++)
 						{
