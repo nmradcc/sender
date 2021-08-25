@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <stdlib.h>		// Needed for abort()
+#include <stdarg.h>
 
 #if SEND_VERSION >= 4
   #include "main.h"
