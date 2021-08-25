@@ -40,6 +40,28 @@ extern void ShBuffOut(uint8_t port, char* s, int len);
 // Static Variables
 //*******************************************************************************
 
+FIL File1;
+FIL File2;
+FIL File3;
+FIL File4;
+
+#define NUM_FILE_POINTERS	4
+//FIL* FilArray[NUM_FILE_POINTERS] = {NULL, NULL, NULL, NULL};
+
+typedef struct
+{
+	FIL* File;
+	int Inuse;
+} FILES;
+
+FILES Files[NUM_FILE_POINTERS] =
+{
+	{&File1, 0},
+	{&File2, 0},
+	{&File3, 0},
+	{&File4, 0}
+};
+
 //*******************************************************************************
 // Global Variables
 //*******************************************************************************
@@ -51,6 +73,44 @@ extern void ShBuffOut(uint8_t port, char* s, int len);
 //*******************************************************************************
 // Source
 //*******************************************************************************
+
+/**********************************************************************
+*
+* FUNCTION:		GetFilPointer / FreeFilePointer
+*
+* ARGUMENTS:
+*
+* RETURNS:
+*
+* DESCRIPTION:
+*
+* RESTRICTIONS:
+*
+**********************************************************************/
+FIL* GetFilPointer()
+{
+	for(int i = 0; i < NUM_FILE_POINTERS; i++)
+	{
+		if(Files[i].Inuse == 0)
+		{
+			Files[i].Inuse = 1;
+			return Files[i].File;
+		}
+	}
+	return NULL;
+}
+
+void FreeFilePointer(FIL* fp)
+{
+	for(int i = 0; i < NUM_FILE_POINTERS; i++)
+	{
+		if(Files[i].File == fp)
+		{
+			Files[i].Inuse = 0;
+			return;
+		}
+	}
+}
 
 
 /**********************************************************************
@@ -72,7 +132,8 @@ FILE* fopen(const char* filename, const char* mode)
 	FIL *fp;
 
 	//fp = (FIL*)malloc(sizeof(FIL));
-	fp = (FIL*)pvPortMalloc(sizeof(FIL));
+	//fp = (FIL*)pvPortMalloc(sizeof(FIL));
+	fp = GetFilPointer();
 
 	if(fp)
 	{
@@ -117,7 +178,8 @@ FILE* fopen(const char* filename, const char* mode)
 			return fp;
 		}
 	}
-	vPortFree(fp);
+	//vPortFree(fp);
+	FreeFilePointer(fp);
 	return NULL;
 }
 
@@ -145,7 +207,8 @@ void fclose(FILE* fp)
 		if(fp)
 		{
 			//free(fp);
-			vPortFree(fp);
+			//vPortFree(fp);
+			FreeFilePointer(fp);
 		}
 	}
 }
