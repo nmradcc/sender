@@ -18,6 +18,7 @@ Shell
 - Test the new variables and math
 P - Debug why some varaibles don't update until after a re-start
 - time is off by 1 hour
+- add a run packet to the list of things the shell does
 
 Send
 - get scope trace in the correct location
