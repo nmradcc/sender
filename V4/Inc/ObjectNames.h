@@ -10,6 +10,7 @@
 
 extern const char szVersion[];
 extern const char szSerialNumber[];
+extern const char szBuildDate[];
 
 extern const char szTime[];
 extern const char szDate[];
@@ -35,5 +36,8 @@ extern const char szInputs[];
 extern const char szLoopCount[];
 
 extern const char szTheme[];
+
+extern const char szTrackCurrent[];
+extern const char szTrackVoltage[];
 
 #endif /* OBJECTNAMES_H_ */
