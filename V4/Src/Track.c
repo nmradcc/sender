@@ -22,6 +22,7 @@
 **********************************************************************/
 
 //#define IDLE_IDLE_PACKETS
+
 #define ENABLE_AT_STARTUP
 
 /** 
@@ -65,6 +66,8 @@ void BuildOnesPacket(void);
 **********************************************************************/
 
 PACKET_BITS apIdlePacket[60];
+PACKET_BITS apOnesPacket[60];
+PACKET_BITS pCurrentIdlePacket;
 
 // 18 bit preamble + 6 bytes and interbyte bits + terminator = 72
 PACKET_BITS apPacket[TRACK_QUEUE_DEPTH][80];
@@ -171,12 +174,15 @@ void MainTrackConfig(void)
 
 	InitTrackQueue();
 
-	#ifdef IDLE_IDLE_PACKETS
-		BuildIdlePacket(NO_OF_PREAMBLE_BITS);
-	#endif
-	#ifndef IDLE_IDLE_PACKETS
-		BuildOnesPacket();
-	#endif
+	BuildIdlePacket(NO_OF_PREAMBLE_BITS);
+	BuildOnesPacket();
+
+	//#ifdef IDLE_IDLE_PACKETS
+	//	pCurrentIdlePacket = apIdlePacket;
+	//#endif
+	//#ifndef IDLE_IDLE_PACKETS
+	//	pCurrentIdlePacket = apOnesPacket;
+	//#endif
 
 	CurrentPacket = apIdlePacket;
 	CurrentPacketIdx = -1;
@@ -270,6 +276,7 @@ void TIM2_IRQHandler(void)
 		if(CurrentPacket == NULL)
 		{
 			CurrentPacket = apIdlePacket;
+			//CurrentPacket = pCurrentIdlePacket;
 			CurrentPacketIdx = -1;
 		}
 
@@ -369,7 +376,7 @@ void BuildIdlePacket(uint16_t no_preambles)
 void BuildOnesPacket(void)
 {
 	int i;
-	PACKET_BITS* pPacket = apIdlePacket;
+	PACKET_BITS* pPacket = apOnesPacket;
 
 	// ones
 	for(i = 0; i < 20; i++)
@@ -457,6 +464,114 @@ int BuildPacket(const uint8_t* buf, uint8_t len, uint32_t clk1t, uint32_t clk0t,
 				pPacket->scope = 0;
 			}
 		}
+	}
+
+	// terminator
+	pPacket->period = 0;
+	pPacket->pulse = 0;
+	pPacket->scope = 0;
+
+	ReadyPacket(PacketIndex);
+
+	return 0;
+}
+
+
+/*********************************************************************
+*
+* BuildPacketPreamble
+*
+* @brief	Build a bit pattern for a packet based on the bits in buf,
+*			and the bit widths in  clk1t, clk0t, and clk0h
+*
+* @param	pointer to packet bytes
+*			length
+*			1 total width
+*			0 total width
+*			0 first half width
+*			preamble bits
+*
+* @return	0 = sucess
+*
+*********************************************************************/
+int BuildPacketCS(const uint8_t* buf, uint8_t len, uint32_t clk1t, uint32_t clk0t, uint32_t clk0h, uint32_t no_preambles)
+{
+	PACKET_BITS* pPacket;
+	int PacketIndex;
+	int BitCount = 0;
+	uint8_t mask;
+	uint8_t packet_byte;
+	uint32_t Tick1;
+	uint32_t Tick0t;
+	uint32_t Tick0h;
+
+
+	pPacket = AcquirePacket(&PacketIndex);
+	if(pPacket == NULL)
+	{
+		return 1;
+	}
+
+	//Tick1  = clk1t * TICKS_PER_MICROSECOND;
+	//Tick0t = clk0t * TICKS_PER_MICROSECOND;
+	//Tick0h = clk0h * TICKS_PER_MICROSECOND;
+
+	Tick1  = 116 * TICKS_PER_MICROSECOND;
+	Tick0t = 200 * TICKS_PER_MICROSECOND;
+	Tick0h = 100 * TICKS_PER_MICROSECOND;
+
+	for(int i = 0; i < no_preambles; i++)
+	{
+		pPacket->period = Tick1;
+		pPacket->pulse = Tick1/2;
+		pPacket->scope = 0;
+		pPacket++;
+	}
+
+	// interbyte bit
+	pPacket->period = Tick0t;
+	pPacket->pulse = Tick0h;
+	pPacket->scope = 1;
+	pPacket++;
+
+	for(int i = 0; i < len; i++)
+	{
+		mask = 0x80;
+		packet_byte = *buf++;
+		for(int b = 0; b < 8; b++)
+		{
+			if(packet_byte & mask)
+			{
+				// build a one bit
+				pPacket->period = Tick1;
+				pPacket->pulse = Tick1/2;
+			}
+			else
+			{
+				// build a zero bit
+				pPacket->period = Tick0t;
+				pPacket->pulse = Tick0h;
+			}
+			pPacket->scope = 0;
+			pPacket++;
+			BitCount++;
+			mask >>= 1;
+		}
+
+		if(i == len-1)
+		{
+			// packet end bit
+			pPacket->period = Tick1;
+			pPacket->pulse = Tick1/2;
+		}
+		else
+		{
+			// interbyte bit
+			pPacket->period = Tick0t;
+			pPacket->pulse = Tick0h;
+		}
+		pPacket->scope = 0;
+		pPacket++;
 	}
 
 	// terminator
@@ -1141,3 +1256,22 @@ uint8_t IsTrackOpen(TRACK_RESOURCE tr)
 
 	return TrackLock.lock == tr;
 }
+
+/*********************************************************************
+*
+* GetTrackLock
+*
+* @brief	Return the track resource ID
+*
+* @param	Track Resource ID
+*
+* @return	Track Resource ID
+*
+*********************************************************************/
+TRACK_RESOURCE GetTrackLock(void)
+{
+	// ToDo - make this threadsafe
+
+	return TrackLock.lock;
+}
+
