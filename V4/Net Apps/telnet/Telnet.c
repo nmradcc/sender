@@ -21,7 +21,8 @@
 #include "lwip/netdb.h"
 #include "lwip/api.h"
 
-#define MAX_CMD_LINE 64
+#define MAX_CMD_LINE 	64
+#define MAX_CONNECTIONS	5
 
 // rx support data
 static uint8_t rload_ptr=0;
@@ -33,7 +34,22 @@ static uint8_t RxNumberChars;
 static uint8_t GetRxChar(char* c);
 static void BufferChar(uint8_t c);
 
-static void telnet_server_netconn_serve(struct netconn *conn)
+// The idea here is to have an array of handles, or netcomm structures, that map
+// into the bit mask port ID implemented in the Shell.
+// The bitmaps correspond to a channel, one bit for each channel.
+// There are two defined for the USB channels, that leaved five for Telnet
+// (unless all of the shell functions are changed to use a larger number of bits.
+// 5 seems like enough, time will tell
+// Further question, is more that one needed?
+//
+// Accept connections and save the 'handle' until the number of connections is
+// reached and the refuse them
+// The functions that interface to the shell will pass in the port mask
+
+uint32_t connectionInfo[MAX_CONNECTIONS];
+
+
+static void telnet_server_netconn_server(struct netconn *conn)
 {
 	struct netbuf *inbuf;
 	char *buf;
@@ -73,7 +89,7 @@ static void telnet_server(void *pvParameters)
   do {
      err = netconn_accept(conn, &newconn);
      if (err == ERR_OK) {
-       telnet_server_netconn_serve(newconn);
+       telnet_server_netconn_server(newconn);
        netconn_delete(newconn);
      }
    } while(err == ERR_OK);
