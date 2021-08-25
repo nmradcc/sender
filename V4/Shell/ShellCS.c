@@ -63,7 +63,7 @@ extern Loco ActiveLocos[];
 CMD_RETURN ShCabStat(uint8_t bPort, int argc, char *argv[])
 {
 	int i;
-	int j;
+	//int j;
 	//int index;
 	//char CabBuf[64];
 	char LabelBuf[64];
@@ -546,7 +546,7 @@ CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
     
 }
 #else
-CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
+CMD_RETURN ShSendPacketOrig(uint8_t bPort, int argc, char *argv[])
 {
 	static PACKET_BITS* pPacket = apShellPacket;
     FRESULT ret;
@@ -684,6 +684,167 @@ CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
 }
 #endif
 
+CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
+{
+	static PACKET_BITS* pPacket = apShellPacket;
+    FRESULT ret;
+    char szTypeBuf[80];
+	char* pBuf = szTypeBuf;
+	char* pp;
+    uint32_t bc;
+	uint32_t preambles = 16;
+	uint32_t scope;
+	int i;
+	int period;
+	int pulse;
+	int count;
+    FIL fp;
+
+    ShNL(bPort);
+
+	if(argc == 1)
+	{
+		if(apShellPacket[0].period != 0)
+		{
+			bc = atoi(argv[1]);
+			BuildPacketBits(apShellPacket, bc);
+		}
+		else
+		{
+			return CMD_BAD_PACKET;
+		}
+	}
+	else if(argc == 2 || argc == 3)
+	{
+		// open file
+		ret = f_open(&fp, argv[1], FA_READ);
+		if(ret != FR_OK)
+		{
+			// append '.pkt' and try again
+			strcat(argv[1], ".pkt");
+			ret = f_open(&fp, argv[1], FA_READ);
+		}
+
+		if(ret == FR_OK)
+		{
+			while(1)
+			{
+				bc = getLine(&fp, szTypeBuf, sizeof(szTypeBuf));
+				if(bc == 0)
+				{
+					//return CMD_BAD_BIT_FILE;
+					break;
+				}
+
+				// the first lines are optional modifiers:
+				//	- REM - for shell help
+				//	- number of preambles
+				//	- override of the scope position
+				if(strnicmp(szTypeBuf, "REM", 3) == 0)
+				{
+					;	// just skip this
+				}
+				else if(strnicmp(szTypeBuf, "PREAMBLES", 9) == 0)
+				{
+					// ToDo - verify the '=' and number format
+					for(i = 9; i < bc; i++)
+					{
+						if(szTypeBuf[i] != ' ' && szTypeBuf[i] != '=')
+						{
+							break;
+						}
+					}
+					preambles = atoi(&szTypeBuf[i]);
+				}
+				else if(strnicmp(szTypeBuf, "SCOPE", 5) == 0)
+				{
+					// ToDo - verify the '=' and number format
+					for(i = 5; i < bc; i++)
+					{
+						if(szTypeBuf[i] != ' ' && szTypeBuf[i] != '=')
+						{
+							break;
+						}
+					}
+
+					scope = atoi(&szTypeBuf[i]);
+				}
+				else
+				{
+					if(preambles)
+					{
+						// build the preamble before any defined bits
+						for(i = 0; i < preambles; i++)
+						{
+							pPacket->period = ONE_PERIOD;
+							pPacket->pulse = ONE_PULSE;
+							pPacket++;
+						}
+						preambles = 0;		// done, done do it again
+					}
+
+					pBuf = szTypeBuf;
+					pp = strsep(&pBuf, ",");
+
+					period = atoi(pp) * TICKS_PER_MICROSECOND;
+					pp = strsep(&pBuf, ",");
+					pulse = atoi(pp) * TICKS_PER_MICROSECOND;
+					pp = strsep(&pBuf, ",");
+					count = atoi(pp);
+					if(count == 0)
+					{
+						count++;
+					}
+
+					for(i = 0; i < count; i++)
+					{
+						pPacket->period = period;
+						pPacket->pulse = pulse;
+						pPacket++;
+					}
+				}
+			}
+
+			f_close(&fp);
+
+			// add the terminator
+			pPacket->period = 0;
+			pPacket->pulse = 0;
+
+			if(argc == 3)
+			{
+				bc = atoi(argv[1]);
+				BuildPacketBits(apShellPacket, bc);
+			}
+			else
+			{
+				BuildPacketBits(apShellPacket, 1);
+			}
+		}
+		else
+		{
+			// if no file, try to convert arg to a number,
+			// if less than 100 send that many packets
+			bc = atoi(argv[1]);
+			if(apShellPacket[0].period != 0 && bc != 0 && bc <= 100)
+			{
+				BuildPacketBits(apShellPacket, bc);
+			}
+			else
+			{
+				ShFieldOut(bPort, "File not found.\r\n", 0);
+				// return file not found
+				return CMD_NOT_FOUND;
+			}
+		}
+	}
+	else
+	{
+		return CMD_BAD_PARAMS;
+	}
+	return CMD_OK;
+
+}
 
 
 #ifdef FUTURE
