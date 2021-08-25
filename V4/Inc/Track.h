@@ -50,6 +50,7 @@ typedef enum
 {
 	TR_NONE,
 	TR_TESTER,
+	TR_SHELL,
 	TR_COMMAND_STATION,
 } TRACK_RESOURCE;
 
@@ -107,6 +108,14 @@ extern uint8_t GetTrackState(void);
 
 extern int BuildPacket(const uint8_t* buf, uint8_t len, uint32_t clk1t, uint32_t clk0t, uint32_t clk0h);
 
+extern int BuildPacketCS(const uint8_t* buf, uint8_t len, uint32_t clk1t, uint32_t clk0t, uint32_t clk0h, uint32_t no_preambles);
+
 extern int BuildPacketBits(const PACKET_BITS* packet, uint8_t count);
+
+
+TRACK_LOCK_STATUS OpenTrack(TRACK_RESOURCE tr, TRACK_IDLE ti, uint16_t preambles);
+void CloseTrack(void);
+uint8_t IsTrackOpen(TRACK_RESOURCE tr);
+TRACK_RESOURCE GetTrackLock(void);
 
 #endif
