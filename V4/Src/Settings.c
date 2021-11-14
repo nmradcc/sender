@@ -131,6 +131,7 @@ int GetSettings(void)
 				case VAR_TYPE_ON_OFF:
 				case VAR_TYPE_PORT:
 				case VAR_TYPE_THEME:
+		    	case VAR_TYPE_TRACK_IDLE:
 					lTemp = atoi(VarCmdTable[i].pszDefault);
 					lTemp = ini_getl("", VarCmdTable[i].szCmdString, lTemp, SETTINGS_FILE);
 
