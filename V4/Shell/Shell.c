@@ -426,6 +426,7 @@ void ShNL(uint8_t bPort)
 void ShCR(uint8_t bPort)
 {
     ShCharOut(bPort, '\r');
+    ShCharOut(bPort, '\n');
 }
 
 /*********************************************************************
