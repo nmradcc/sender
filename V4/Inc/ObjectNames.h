@@ -24,6 +24,8 @@ extern const char szGwAdr[];
 extern const char szDHCP[];
 
 extern const char szTrack[];
+extern const char szTrackIdle[];
+extern const char szTrackLock[];
 
 extern const char szPort[];
 
