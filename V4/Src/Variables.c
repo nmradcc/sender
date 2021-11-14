@@ -62,6 +62,9 @@ uint32_t DHCP;
 uint32_t Theme;
 
 uint32_t TrackState;
+uint32_t TrackIdle;
+//uint32_t TrackLck;
+
 extern uint32_t GreenPattern;
 
 float TrackCurrent;
@@ -117,20 +120,22 @@ const VAR_TABLE VarCmdTable[] =
 	{szIpAdr,			&IpAddress,			(VAR_TYPE_IP | VAR_TYPE_PERSIST),		"169.254.172,10",	"IP Address" },
 	{szIpMsk,			&IpMask,			(VAR_TYPE_IP | VAR_TYPE_PERSIST),		"255.255.255.0",	"IP Mask" },
 	{szGwAdr,			&GwAddress,			(VAR_TYPE_IP | VAR_TYPE_PERSIST),		"0.0.0.0",			"GW Address" },
-	{szDHCP,			&DHCP,				(VAR_TYPE_ON_OFF | VAR_TYPE_PERSIST),	"0",				"DHCP on | off" },
+	{szDHCP,			&DHCP,				(VAR_TYPE_ON_OFF | VAR_TYPE_PERSIST),	"0",				"DHCP - on | off" },
 
-	{szPort,			&CabPort,			(VAR_TYPE_PORT | VAR_TYPE_PERSIST),		"off",				"Port nce | xpressnet" },
-	{szTrack,			&TrackState,		(VAR_TYPE_TRACK),						"off",				"Track on | off" },
+	{szPort,			&CabPort,			(VAR_TYPE_PORT | VAR_TYPE_PERSIST),		"off",				"Port - nce | xpressnet" },
+	{szTrack,			&TrackState,		(VAR_TYPE_TRACK),						"off",				"Track - on | off" },
+	{szTrackIdle,		&TrackIdle,			(VAR_TYPE_TRACK_IDLE | VAR_TYPE_PERSIST), "idle",			"Track Idle - off | none | idle | reset | ones | zeros" },
+	{szTrackLock,		NULL,				(VAR_TYPE_TRACK_LOCK | CMD_READ_ONLY),	"",					"Track Lock -  None send | shell | cs" },
 
 	{szPath,			&szPathVar,			(VAR_TYPE_STRING | VAR_TYPE_PERSIST),	"\\",				"Script search path" },
 
-	{szLed,				&GreenPattern,		(VAR_TYPE_LED),							"",					"Green LED on | off | blink | 32 bit pattern" },
+	{szLed,				&GreenPattern,		(VAR_TYPE_LED),							"",					"Green Idle - LED on | off | blink | 32 bit pattern" },
 
 	{szInputs,			&Inputs,			(VAR_TYPE_INPUTS | VAR_TYPE_READ_ONLY),	"",					"Inputs 1 - 4" },
 
-	{szLoopCount,		NULL,				(VAR_TYPE_LOOP_CNT | VAR_TYPE_READ_ONLY),"",					"Loop Count" },
+	{szLoopCount,		NULL,				(VAR_TYPE_LOOP_CNT | VAR_TYPE_READ_ONLY),"",				"Loop Count" },
 
-	{szTheme,			&Theme,				(VAR_TYPE_THEME | VAR_TYPE_PERSIST),	"0",				"Color Theme light | dark" },
+	{szTheme,			&Theme,				(VAR_TYPE_THEME | VAR_TYPE_PERSIST),	"0",				"Color Theme - light | dark" },
 
 	{szTrackCurrent,	&TrackCurrent,		(VAR_TYPE_FLOAT | VAR_TYPE_READ_ONLY),	"",					"Track Current" },
 	{szTrackVoltage,	&TrackVoltage,		(VAR_TYPE_FLOAT | VAR_TYPE_READ_ONLY),	"",					"Track Voltage" },
@@ -208,7 +213,7 @@ char *F2A(float fValue)
 		}
 		else if (fValue < 10000.0)
 		{
-			sprintf(szExp, "");
+			strcpy(szExp, "");
 		}
 		else if (fValue < 100000.0)
 		{
@@ -449,6 +454,53 @@ char* VarToString(uint32_t idx)
 
     	case VAR_TYPE_TRACK:
     		sprintf(tempbuf, "%s", GetTrackState() == 0 ? "off" : "on");
+       	break;
+
+    	case VAR_TYPE_TRACK_LOCK:
+    		switch(GetTrackLock())
+    		{
+    			case TR_NONE:
+    			default:
+    	    		sprintf(tempbuf, "None");
+    			break;
+
+    			case TR_TESTER:
+    	    		sprintf(tempbuf, "Send");
+    			break;
+
+    			case TR_SHELL:
+    	    		sprintf(tempbuf, "Shell");
+    			break;
+
+    			case TR_COMMAND_STATION:
+    	    		sprintf(tempbuf, "CS");
+    			break;
+    		}
+    	break;
+
+    	case VAR_TYPE_TRACK_IDLE:
+    		switch(TrackIdle)
+    		{
+    			case TI_NONE:
+    	    		sprintf(tempbuf, "Off");
+    			break;
+
+    			case TI_IDLE:
+    	    		sprintf(tempbuf, "Idle");
+    			break;
+
+    			case TI_RESET:
+    	    		sprintf(tempbuf, "Reset");
+    			break;
+
+    			case TI_ONES:
+    	    		sprintf(tempbuf, "ones");
+    			break;
+
+    			case TI_ZEROS:
+    	    		sprintf(tempbuf, "zeros");
+    			break;
+    		}
        	break;
 
     	case VAR_TYPE_IP:
@@ -1050,6 +1102,7 @@ int SetVariable(const char* szObject, char* pStrValue)
 				}
 			break;
 
+	    	case VAR_TYPE_TRACK_LOCK:
 	    	case VAR_TYPE_VER:
 	    	case VAR_TYPE_INPUTS:
 				return CMD_READ_ONLY;
@@ -1123,6 +1176,39 @@ int SetVariable(const char* szObject, char* pStrValue)
 				{
 				}
 	       	break;
+
+	    	case VAR_TYPE_TRACK_IDLE:
+				if(stricmp(pStrValue, "off") == 0 || stricmp(pStrValue, "none") == 0)
+				{
+					TrackIdle = TI_NONE;
+					SetTrackIdle(TI_NONE);
+				}
+				else if(stricmp(pStrValue, "reset") == 0)
+				{
+					TrackIdle = TI_RESET;
+					SetTrackIdle(TI_RESET);
+				}
+				else if(stricmp(pStrValue, "ones") == 0)
+				{
+					TrackIdle = TI_ONES;
+					SetTrackIdle(TI_ONES);
+				}
+				else if(stricmp(pStrValue, "zeros") == 0)
+				{
+					TrackIdle = TI_ZEROS;
+					SetTrackIdle(TI_ZEROS);
+				}
+				else	// if(stricmp(pStrValue, "idle") == 0)
+				{
+					//TrackIdle = TI_IDLE;
+					//SetTrackIdle(TI_IDLE);
+					return CMD_BAD_PARAMS;
+				}
+				if((type & VAR_TYPE_PERSIST) != 0)
+				{
+					(void)ini_putl("", szObject, (long)TrackIdle, SETTINGS_FILE);
+				}
+			break;
 
 	    	case VAR_TYPE_IP:
 				if((type & VAR_TYPE_PERSIST) != 0)
