@@ -70,6 +70,8 @@ const char szGwAdr[] =				"gwaddress";
 const char szDHCP[] =				"dhcp";
 
 const char szTrack[] =				"track";
+const char szTrackIdle[] =			"track_idle";
+const char szTrackLock[] =			"track_lock";
 
 const char szPort[] = 				"port";
 
