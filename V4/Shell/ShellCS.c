@@ -693,7 +693,7 @@ CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
 	char* pp;
     uint32_t bc;
 	uint32_t preambles = 16;
-	uint32_t scope;
+	uint32_t scope = 0;
 	int i;
 	int period;
 	int pulse;
@@ -727,6 +727,9 @@ CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
 
 		if(ret == FR_OK)
 		{
+			// start a new packet
+			pPacket = apShellPacket;
+
 			while(1)
 			{
 				bc = getLine(&fp, szTypeBuf, sizeof(szTypeBuf));
@@ -778,9 +781,25 @@ CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
 						{
 							pPacket->period = ONE_PERIOD;
 							pPacket->pulse = ONE_PULSE;
+							if(scope)
+							{
+								scope--;
+								if(scope == 0)
+								{
+									pPacket->scope = 1;
+								}
+								else
+								{
+									pPacket->scope = 0;
+								}
+							}
+							else
+							{
+								pPacket->scope = 0;
+							}
 							pPacket++;
 						}
-						preambles = 0;		// done, done do it again
+						preambles = 0;		// done, don't do it again
 					}
 
 					pBuf = szTypeBuf;
@@ -800,6 +819,22 @@ CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
 					{
 						pPacket->period = period;
 						pPacket->pulse = pulse;
+						if(scope)
+						{
+							scope--;
+							if(scope == 0)
+							{
+								pPacket->scope = 1;
+							}
+							else
+							{
+								pPacket->scope = 0;
+							}
+						}
+						else
+						{
+							pPacket->scope = 0;
+						}
 						pPacket++;
 					}
 				}
@@ -810,6 +845,7 @@ CMD_RETURN ShSendPacket(uint8_t bPort, int argc, char *argv[])
 			// add the terminator
 			pPacket->period = 0;
 			pPacket->pulse = 0;
+			pPacket->scope = 0;
 
 			if(argc == 3)
 			{
