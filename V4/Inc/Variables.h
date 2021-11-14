@@ -44,6 +44,8 @@ enum
 #define VAR_TYPE_THEME		15
 
 #define VAR_TYPE_TRACK		20
+#define VAR_TYPE_TRACK_IDLE	21
+#define VAR_TYPE_TRACK_LOCK	22
 
 #define VAR_TYPE_SPEED		40
 #define VAR_TYPE_DIR		41
@@ -81,6 +83,9 @@ extern uint32_t Theme;
 extern float TrackCurrent;
 extern float TrackVoltage;
 
+extern uint32_t TrackIdle;
+//extern uint32_t TrackLck;
+
 typedef struct var_table_t
 {
 	const char* szCmdString;
@@ -93,7 +98,7 @@ typedef struct var_table_t
 extern const VAR_TABLE VarCmdTable[];
 
 //#define NUM_VARIABLES	(sizeof(VarCmdTable) / sizeof(VAR_TABLE))
-#define NUM_VARIABLES 20
+#define NUM_VARIABLES 22
 
 extern int IsVariable(char* pBuffer);
 
