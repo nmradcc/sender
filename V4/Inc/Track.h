@@ -33,6 +33,8 @@
 
 #define NO_OF_PREAMBLE_BITS		18
 
+#define DEFAULT_PREAMBLES		0
+
 /** @enum PACKET_BITS
 	@brief The two registers that define the track output bits and scope output position
  */
@@ -63,6 +65,8 @@ typedef enum
 	TI_NONE,
 	TI_IDLE,
 	TI_RESET,
+	TI_ONES,
+	TI_ZEROS,
 } TRACK_IDLE;
 
 
@@ -117,5 +121,7 @@ TRACK_LOCK_STATUS OpenTrack(TRACK_RESOURCE tr, TRACK_IDLE ti, uint16_t preambles
 void CloseTrack(void);
 uint8_t IsTrackOpen(TRACK_RESOURCE tr);
 TRACK_RESOURCE GetTrackLock(void);
+TRACK_IDLE GetTrackIdle(void);
+void SetTrackIdle(TRACK_IDLE ti);
 
 #endif
