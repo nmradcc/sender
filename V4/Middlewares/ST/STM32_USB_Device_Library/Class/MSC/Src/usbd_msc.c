@@ -281,6 +281,7 @@ __ALIGN_BEGIN  uint8_t USBD_MSC_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_DESC] 
   * @}
   */
 
+unsigned char MSC_USB_Buffer[sizeof (USBD_MSC_BOT_HandleTypeDef)];
 
 /** @defgroup MSC_CORE_Private_Functions
   * @{
@@ -315,7 +316,12 @@ uint8_t  USBD_MSC_Init (USBD_HandleTypeDef *pdev, uint8_t cfgidx)
     USBD_LL_OpenEP(pdev, MSC_EPIN_ADDR, USBD_EP_TYPE_BULK, MSC_MAX_FS_PACKET);
     pdev->ep_in[MSC_EPIN_ADDR & 0xFU].is_used = 1U;
   }
+
+#ifdef REMOVE_MALLOC
   pdev->pClassData = USBD_malloc(sizeof (USBD_MSC_BOT_HandleTypeDef));
+#else
+  pdev->pClassData = MSC_USB_Buffer;
+#endif
 
   if(pdev->pClassData == NULL)
   {
@@ -349,12 +355,15 @@ uint8_t  USBD_MSC_DeInit (USBD_HandleTypeDef *pdev,
     /* De-Init the BOT layer */
   MSC_BOT_DeInit(pdev);
 
+#ifdef REMOVE_MALLOC
   /* Free MSC Class Resources */
   if(pdev->pClassData != NULL)
   {
     USBD_free(pdev->pClassData);
     pdev->pClassData  = NULL;
   }
+#endif
+
   return USBD_OK;
 }
 /**
