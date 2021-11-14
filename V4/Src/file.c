@@ -147,6 +147,7 @@ FILE* fopen(const char* filename, const char* mode)
 
 		switch(mode[0])
 		{
+			default:
 			case 'r':
 				m = FA_READ;
 				if(mode[1] == '+')
