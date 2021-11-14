@@ -14,14 +14,13 @@
 #include <string.h>
 #include "Track.h"
 #include "TrkQueue.h"
+#include "Variables.h"
 
 /**********************************************************************
 *
 *							DEFINITIONS
 *
 **********************************************************************/
-
-//#define IDLE_IDLE_PACKETS
 
 #define ENABLE_AT_STARTUP
 
@@ -55,8 +54,10 @@
 *
 **********************************************************************/
 
-void BuildIdlePacket(uint16_t no_preambles);
-void BuildOnesPacket(void);
+void TrackIdlePacket(uint16_t no_preambles);
+void TrackResetPacket(uint16_t no_preambles);
+void TrackOnesPacket(void);
+void TrackZerosPacket(void);
 
 
 /**********************************************************************
@@ -66,8 +67,11 @@ void BuildOnesPacket(void);
 **********************************************************************/
 
 PACKET_BITS apIdlePacket[60];
+PACKET_BITS apResetPacket[60];
 PACKET_BITS apOnesPacket[60];
-PACKET_BITS pCurrentIdlePacket;
+PACKET_BITS apZerosPacket[60];
+
+//PACKET_BITS pCurrentIdlePacket;
 
 // 18 bit preamble + 6 bytes and interbyte bits + terminator = 72
 PACKET_BITS apPacket[TRACK_QUEUE_DEPTH][80];
@@ -89,6 +93,7 @@ static int CurrentPacketIdx;
 
 static uint32_t ScopeTriggerBitOffset = 12;
 //static uint32_t ScopeTriggerBitCount;
+
 
 /**********************************************************************
 *
@@ -174,8 +179,10 @@ void MainTrackConfig(void)
 
 	InitTrackQueue();
 
-	BuildIdlePacket(NO_OF_PREAMBLE_BITS);
-	BuildOnesPacket();
+	TrackIdlePacket(NO_OF_PREAMBLE_BITS);
+	TrackResetPacket(NO_OF_PREAMBLE_BITS);
+	TrackOnesPacket();
+	TrackZerosPacket();
 
 	//#ifdef IDLE_IDLE_PACKETS
 	//	pCurrentIdlePacket = apIdlePacket;
@@ -255,47 +262,73 @@ void MainTrackConfig(void)
 void TIM2_IRQHandler(void)
 {
 
-	if(CurrentPacket->scope == 1)
+	if(TrackLock.lock != TR_NONE)
 	{
-		HAL_GPIO_WritePin(SCOPE_TRIGGER_Port, SCOPE_TRIGGER_Pin, GPIO_PIN_SET);
-	}
-	else
-	{
-		HAL_GPIO_WritePin(SCOPE_TRIGGER_Port, SCOPE_TRIGGER_Pin, GPIO_PIN_RESET);
-	}
-
-	CurrentPacket++;
-
-	if(CurrentPacket->period == 0)
-	{
-		// if not a fill packet, pop the old packet off the queue
-		ReleasePacket(CurrentPacketIdx);
-
-		// try and get a new packet
-		CurrentPacket = GetPacket(&CurrentPacketIdx);
-		if(CurrentPacket == NULL)
+		if(CurrentPacket->scope == 1)
 		{
-			CurrentPacket = apIdlePacket;
-			//CurrentPacket = pCurrentIdlePacket;
-			CurrentPacketIdx = -1;
+			HAL_GPIO_WritePin(SCOPE_TRIGGER_Port, SCOPE_TRIGGER_Pin, GPIO_PIN_SET);
+		}
+		else
+		{
+			HAL_GPIO_WritePin(SCOPE_TRIGGER_Port, SCOPE_TRIGGER_Pin, GPIO_PIN_RESET);
 		}
 
-		__HAL_TIM_SET_AUTORELOAD(&htim2, CurrentPacket->period);
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, CurrentPacket->pulse);
-	}
-	else
-	{
-		__HAL_TIM_SET_AUTORELOAD(&htim2, CurrentPacket->period);
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, CurrentPacket->pulse);
+		CurrentPacket++;
+
+		if(CurrentPacket->period == 0)
+		{
+			// if not a fill packet, pop the old packet off the queue
+			ReleasePacket(CurrentPacketIdx);
+
+			// try and get a new packet
+			CurrentPacket = GetPacket(&CurrentPacketIdx);
+			if(CurrentPacket == NULL)
+			{
+				switch(TrackLock.idle)
+				{
+					case TI_NONE:
+						// this may stop the output, but it doesn't re-start
+						__HAL_TIM_SET_AUTORELOAD(&htim2, 0);
+						__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
+					return;
+
+					case TI_IDLE:
+					default:
+						CurrentPacket = apIdlePacket;
+					break;
+
+					case TI_RESET:
+						CurrentPacket = apResetPacket;
+					break;
+
+					case TI_ONES:
+						CurrentPacket = apOnesPacket;
+					break;
+
+					case TI_ZEROS:
+						CurrentPacket = apZerosPacket;
+					break;
+				}
+				CurrentPacketIdx = -1;
+			}
+
+			__HAL_TIM_SET_AUTORELOAD(&htim2, CurrentPacket->period);
+			__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, CurrentPacket->pulse);
+		}
+		else
+		{
+			__HAL_TIM_SET_AUTORELOAD(&htim2, CurrentPacket->period);
+			__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, CurrentPacket->pulse);
+		}
 	}
 
-    HAL_TIM_IRQHandler(&htim2);
+	HAL_TIM_IRQHandler(&htim2);
 }
 
 
 /*********************************************************************
 *
-* BuildIdlePacket
+* TrackIdlePacket
 *
 * @brief	Pre-build a bit pattern for an idle packet to be ready if 
 *			the track generator runs out of packets
@@ -305,7 +338,7 @@ void TIM2_IRQHandler(void)
 * @return	none
 *
 *********************************************************************/
-void BuildIdlePacket(uint16_t no_preambles)
+void TrackIdlePacket(uint16_t no_preambles)
 {
 	int i;
 	PACKET_BITS* pPacket = apIdlePacket;
@@ -363,9 +396,9 @@ void BuildIdlePacket(uint16_t no_preambles)
 
 /*********************************************************************
 *
-* BuildOnesPacket
+* TrackResetPacket
 *
-* @brief	Pre-build a bit pattern for a packet of ones to be ready if
+* @brief	Pre-build a bit pattern for an Reset packet to be ready if
 *			the track generator runs out of packets
 *
 * @param	number of preambles
@@ -373,7 +406,75 @@ void BuildIdlePacket(uint16_t no_preambles)
 * @return	none
 *
 *********************************************************************/
-void BuildOnesPacket(void)
+void TrackResetPacket(uint16_t no_preambles)
+{
+	int i;
+	PACKET_BITS* pPacket = apResetPacket;
+
+	// ToDo - change this to use the programmed clock registers
+
+	// preamble
+	for(i = 0; i < no_preambles; i++)
+	{
+		pPacket->period = ONE_PERIOD;
+		pPacket->pulse = ONE_PULSE;
+		pPacket->scope = 0;
+		pPacket++;
+	}
+
+	// first interbyte
+	pPacket->period = ZERO_PERIOD;
+	pPacket->pulse = ZERO_PULSE;
+	pPacket->scope = 0;
+	pPacket++;
+
+	// first byte
+	for(i = 0; i < 8; i++)
+	{
+		pPacket->period = ZERO_PERIOD;
+		pPacket->pulse = ZERO_PULSE;
+		pPacket->scope = 0;
+		pPacket++;
+	}
+
+	// second byte and second interbyte
+	for(i = 0; i < 10; i++)
+	{
+		pPacket->period = ZERO_PERIOD;
+		pPacket->pulse = ZERO_PULSE;
+		pPacket->scope = 0;
+		pPacket++;
+	}
+
+	// third byte
+	for(i = 0; i < 9; i++)
+	{
+		pPacket->period = ZERO_PERIOD;
+		pPacket->pulse = ZERO_PULSE;
+		pPacket->scope = 0;
+		pPacket++;
+	}
+
+	// terminator
+	pPacket->period = 0;
+	pPacket->pulse = 0;
+	pPacket->scope = 0;
+}
+
+
+/*********************************************************************
+*
+* TrackOnesPacket
+*
+* @brief	Pre-build a bit pattern for a packet of ones to be ready if
+*			the track generator runs out of packets
+*
+* @param	none
+*
+* @return	none
+*
+*********************************************************************/
+void TrackOnesPacket(void)
 {
 	int i;
 	PACKET_BITS* pPacket = apOnesPacket;
@@ -393,6 +494,37 @@ void BuildOnesPacket(void)
 	pPacket->scope = 0;
 }
 
+/*********************************************************************
+*
+* TrackZerosPacket
+*
+* @brief	Pre-build a bit pattern for a packet of zeros to be ready if
+*			the track generator runs out of packets
+*
+* @param	none
+*
+* @return	none
+*
+*********************************************************************/
+void TrackZerosPacket(void)
+{
+	int i;
+	PACKET_BITS* pPacket = apZerosPacket;
+
+	// ones
+	for(i = 0; i < 20; i++)
+	{
+		pPacket->period = ZERO_PERIOD;
+		pPacket->pulse = ZERO_PULSE;
+		pPacket->scope = 0;
+		pPacket++;
+	}
+
+	// terminator
+	pPacket->period = 0;
+	pPacket->pulse = 0;
+	pPacket->scope = 0;
+}
 
 /*********************************************************************
 *
@@ -1273,5 +1405,46 @@ TRACK_RESOURCE GetTrackLock(void)
 	// ToDo - make this threadsafe
 
 	return TrackLock.lock;
+}
+
+/*********************************************************************
+*
+* GetTrackIdle
+*
+* @brief	Return the track resource ID
+*
+* @param	Track Resource ID
+*
+* @return	Track Resource ID
+*
+*********************************************************************/
+TRACK_IDLE GetTrackIdle(void)
+{
+	// ToDo - make this threadsafe
+
+	return TrackLock.idle;
+}
+
+
+/*********************************************************************
+*
+* SetTrackIdle
+*
+* @brief	Set the track idle
+*
+* @param	Track Resource ID
+*
+* @return	Track Resource ID
+*
+*********************************************************************/
+void SetTrackIdle(TRACK_IDLE ti)
+{
+	// ToDo - make this threadsafe
+
+	if(TrackLock.lock == TR_SHELL)
+	{
+		// only allow this while the track is open in the shell
+		TrackLock.idle = ti;
+	}
 }
 
