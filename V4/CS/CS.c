@@ -15,7 +15,7 @@
 #include "cmsis_os.h"
 #include "CS.h"
 #include "Track.h"
-//#include "Packet.h"
+#include "Packet.h"
 
 /**********************************************************************
 *
@@ -42,6 +42,8 @@ void HandlePackets(void);
 *							STATIC VARIABLES
 *
 **********************************************************************/
+
+static unsigned char PacketBuf[8];
 
 /**********************************************************************
 *
@@ -70,6 +72,7 @@ void CommandStationTask(void* argument)
 	//uint8_t work[_MAX_SS];
 	//FRESULT res;
 	uint8_t ExpirationCount = 10;
+	//TRACK_RESOURCE tl;
 
 	InitMessageQueue();
 
@@ -89,10 +92,12 @@ void CommandStationTask(void* argument)
 	InitState(STATE_IDLE);
 	// ************ Wangrow / NCE state machine
 
+	// temporary - open the track for the Command Station
+//	(void)OpenTrack(TR_COMMAND_STATION, TI_IDLE, 0);
+	// temporary - open the track for the Command Station
 
 	while(1)
 	{
-
 		HandleCabCommunication();
 		HandlePackets();
 		Acknowledge();
@@ -120,8 +125,12 @@ void CommandStationTask(void* argument)
 			HandleExpiration();
 
 			CheckClockUpdate();
-
 		}
+
+		//if(GetTrackLock() != tl)
+		//{
+		//	QueueMessage(0, &aVirtualCab[i], EVENT_TIMER_EXPIRED);
+		//}
 
 		osDelay(pdMS_TO_TICKS(1));
 	}
@@ -143,7 +152,7 @@ void CommandStationTask(void* argument)
 **********************************************************************/
 void HandlePackets(void)
 {
-	static uint8_t* pPacket;
+	uint8_t* pPacket = PacketBuf;
 	//static BOOL fWhich;
 	//static BOOL fWhichFunction;
 	uint32_t len = 0;
@@ -151,8 +160,8 @@ void HandlePackets(void)
 	unsigned int nAlias;
 	static uint8_t bfInsertIdle;
 
-//IsTrackOpen - or some such
-	if(0)
+
+	if(IsTrackOpen(TR_COMMAND_STATION))
 	{
 
 //		pPacket = abPacket;
@@ -180,6 +189,14 @@ void HandlePackets(void)
 					{
 						len = BuildFunction2Packet(pPacket, pLoco->Address, pLoco->FunctionMap);
 					}
+					else if(pLoco->bChange == CH_FUNCTION_3)
+					{
+						len = BuildFunction3Packet(pPacket, pLoco->Address, pLoco->FunctionMap);
+					}
+					else if(pLoco->bChange == CH_FUNCTION_4)
+					{
+						len = BuildFunction4Packet(pPacket, pLoco->Address, pLoco->FunctionMap);
+					}
 					else
 					{
 						nAlias = GetLocoAlias(pLoco);
@@ -199,11 +216,10 @@ void HandlePackets(void)
 //
 //			}
 		}
-		
+
 		if(len)
 		{
-			//BuildPacket(pPacket, len, DECODER_1T_NOM, DECODER_0T_NOM, DECODER_0H_NOM);
-			BuildPacket(pPacket, len, 116, 100, 50);
+			BuildPacketCS(pPacket, len, 116, 100, 50, 18);
 		}
 	}
 }
