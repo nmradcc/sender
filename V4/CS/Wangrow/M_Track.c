@@ -31,6 +31,7 @@
 #include "CabNCE.h"
 #include "States.h"
 #include "Expiration.h"
+#include "Track.h"
 
 /**********************************************************************
 *
@@ -45,8 +46,11 @@
 **********************************************************************/
 
 void ExitTrackDisplay(VIRTUAL_CAB* pVirtualCab, int nEvent);
+void TrackStatus(VIRTUAL_CAB* pVirtualCab, int nEvent);
 
 extern void RestoreOperateScreen(VIRTUAL_CAB* pVirtualCab, unsigned char Line1, unsigned char Line2);
+
+void DisplayTrackStatus(VIRTUAL_CAB* pVirtualCab);
 
 /**********************************************************************
 *
@@ -63,7 +67,8 @@ extern int bfFMode;
 **********************************************************************/
 static const EVENT_MAP IdleMap[] =
 {
-//	{EVENT_TIMER_EXPIRED,	0,			ExitSendDisplay},
+	{EVENT_ENTER,			0,			ExitTrackDisplay},
+	{EVENT_UPDATE_TRACK,	0,			TrackStatus},
 	{0, 0, NULL}
 };
 
@@ -73,6 +78,7 @@ static const EVENT_MAP IdleMap[] =
 *							CODE
 *
 **********************************************************************/
+
 
 /**********************************************************************
 *
@@ -92,9 +98,8 @@ void StateTrack(VIRTUAL_CAB* pVirtualCab, int nEvent)
 
 	if(nEvent == EVENT_STATE_ENTER)
 	{
-												  //1234567890123456
-		NCE_DisplayMessage(pVirtualCab->Cab, 0, 0, "TRACK DISABLED  ");
 		pVirtualCab->nMenuShowing = MENU_SHOWING_LINE_1L | MENU_SHOWING_LINE_1R | MENU_SHOWING_LINE_2L | MENU_SHOWING_LINE_2R;
+		DisplayTrackStatus(pVirtualCab);
 	}
 	else if(nEvent == EVENT_STATE_EXIT)
 	{
@@ -105,7 +110,62 @@ void StateTrack(VIRTUAL_CAB* pVirtualCab, int nEvent)
 	}
 }
 
+/**********************************************************************
+*
+* FUNCTION:	   TrackStatus
+*
+* ARGUMENTS:
+*
+* RETURNS:
+*
+* DESCRIPTION:
+*
+* RESTRICTIONS:
+*
+**********************************************************************/
+void DisplayTrackStatus(VIRTUAL_CAB* pVirtualCab)
+{
 
+	if(IsTrackOpen(TR_NONE))
+	{
+												  //1234567890123456
+		NCE_DisplayMessage(pVirtualCab->Cab, 0, 0, "TRACK FREE      ");
+		NCE_DisplayMessage(pVirtualCab->Cab, 0, 1, "PRESS ENTER     ");
+	}
+	else
+	{
+												  //1234567890123456
+		NCE_DisplayMessage(pVirtualCab->Cab, 0, 0, "TRACK IN USE BY ");
+		if(IsTrackOpen(TR_TESTER))
+		{
+													  //1234567890123456
+			NCE_DisplayMessage(pVirtualCab->Cab, 0, 1, "DECODER TEST    ");
+		}
+		else
+		{
+			NCE_DisplayMessage(pVirtualCab->Cab, 0, 1, "SHELL COMMANDS  ");
+		}
+	}
+}
+
+/**********************************************************************
+*
+* FUNCTION:	   TrackStatus
+*
+* ARGUMENTS:
+*
+* RETURNS:
+*
+* DESCRIPTION:
+*
+* RESTRICTIONS:
+*
+**********************************************************************/
+void TrackStatus(VIRTUAL_CAB* pVirtualCab, int nEvent)
+{
+
+	DisplayTrackStatus(pVirtualCab);
+}
 
 /**********************************************************************
 *
