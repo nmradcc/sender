@@ -13,6 +13,7 @@
 **********************************************************************/
 #include "main.h"
 #include "Acknowledge.h"
+#include "variables.h"
 
 /**********************************************************************
 *
@@ -41,7 +42,9 @@
 *
 **********************************************************************/
 
-uint8_t AckStatus = NO_ACK;
+extern ADC_HandleTypeDef hadc1;
+
+ACK_STATUS AckStatus = NO_ACK;
 
 float ProgTrackCurrent = 0.0;
 
@@ -54,7 +57,7 @@ float ProgTrackCurrent = 0.0;
 //static ADC_HandleTypeDef AdcHandle;
 
 /* Variable used to get converted value */
-static __IO uint16_t uhADCxConvertedValue = 0;
+static __IO uint16_t uhADCxConvertedValue[2];
 
 
 static float fBaseAvg;
@@ -63,6 +66,7 @@ static float fLevelAvg;
 static uint8_t BaseDelay;
 
 static uint8_t bfFirstTime;
+static uint8_t bfFirstConversionDone = 0;
 
 /**********************************************************************
 *
@@ -139,16 +143,23 @@ void InitAcknowledge(void)
 	//    /* Calibration Error */
 	//    Error_Handler();
 	//}
+#endif
 
 	/*##-3- Start the conversion process #######################################*/
-	if (HAL_ADC_Start_IT(&AdcHandle) != HAL_OK)
+	//if (HAL_ADC_Start_IT(&hadc1) != HAL_OK)
+	//{
+	//    /* Start Conversation Error */
+	//    Error_Handler();
+	//}
+
+	bfFirstTime = 1;
+	bfFirstConversionDone = 0;
+
+	if(HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&uhADCxConvertedValue, 2) != HAL_OK)
 	{
 	    /* Start Conversation Error */
 	    Error_Handler();
 	}
-#endif
-	bfFirstTime = 1;
-
 }
 
 
@@ -188,15 +199,14 @@ float E_AverageFloat(float OldValue, float NewValue, unsigned char AverageConsta
 **********************************************************************/
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
 {
-	/* Get the converted value of regular channel */
-	uhADCxConvertedValue = HAL_ADC_GetValue(AdcHandle);
 
-	if(bfFirstTime)
-	{
-		bfFirstTime = 0;
-		fBaseAvg = uhADCxConvertedValue;
-		BaseDelay = 0;
-	}
+	bfFirstConversionDone = 1;
+
+	//if(AdcHandle == &hadc1)
+	//{
+	//	/* Get the converted value of regular channel */
+	//	uhADCxConvertedValue[0] = HAL_ADC_GetValue(AdcHandle);
+	//}
 }
 
 
@@ -220,41 +230,55 @@ void Acknowledge(void)
     float fRaw;
     //float fLevel;
 
+    TrackCurrent = (float)uhADCxConvertedValue[0];
+    TrackVoltage = (float)uhADCxConvertedValue[1];
 
-    fRaw = (float)uhADCxConvertedValue;
-
-    // convert to real-world current
-
-    fLevelAvg = E_AverageFloat(fLevelAvg, fRaw, 80);
-    ProgTrackCurrent = fLevelAvg;
-
-
-    if(fLevelAvg > LOCO_CURRENT)
+    if(bfFirstConversionDone)
     {
-      	// indicate loco present
-    	AckStatus = LOCO_PRESENT;
-    }
-    else if(fLevelAvg > MAX_CURRENT)
-    {
-    	// indicate over-current
-		AckStatus = OVER_CURRENT;
-    }
-    else if(fLevelAvg > (fBaseAvg + ACK_CURRENT))
-    {
-    	// indicate ACK
-		AckStatus = ACK_DETECTED;
+		fRaw = (float)uhADCxConvertedValue[0];
 
-    	// set a delay before the base average is started again
-    	BaseDelay = BASE_DELAY;
-    }
-    else
-    {
-    	--BaseDelay;
-    	if(BaseDelay == 0)
-    	{
-    		BaseDelay = 1;
-    		fBaseAvg = E_AverageFloat(fBaseAvg, fLevelAvg, 10);
-    	}
+		// convert to real-world current
+
+		fLevelAvg = E_AverageFloat(fLevelAvg, fRaw, 80);
+
+		if(bfFirstTime)
+		{
+			bfFirstTime = 0;
+			fBaseAvg = fLevelAvg;
+			BaseDelay = 0;
+		}
+
+		ProgTrackCurrent = fLevelAvg;
+
+
+		if(fLevelAvg > LOCO_CURRENT)
+		{
+			// indicate loco present
+			AckStatus = LOCO_PRESENT;
+		}
+		else if(fLevelAvg > MAX_CURRENT)
+		{
+			// indicate over-current
+			AckStatus = OVER_CURRENT;
+		}
+		else if(fLevelAvg > (fBaseAvg + ACK_CURRENT))
+		{
+			// indicate ACK
+			AckStatus = ACK_DETECTED;
+
+			// set a delay before the base average is started again
+			BaseDelay = BASE_DELAY;
+		}
+		else
+		{
+			--BaseDelay;
+			if(BaseDelay == 0)
+			{
+				BaseDelay = 1;
+				fBaseAvg = E_AverageFloat(fBaseAvg, fLevelAvg, 10);
+			}
+		}
+		//return AckStatus;
     }
 }
 
@@ -311,7 +335,7 @@ uint8_t IsAck(void)
 * RESTRICTIONS:
 *
 **********************************************************************/
-uint8_t GetAck(void)
+ACK_STATUS GetAck(void)
 {
 
 	return AckStatus;
