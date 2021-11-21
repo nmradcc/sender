@@ -161,7 +161,7 @@ extern unsigned char abCabInactiveQueue[MAX_CABS];
 *
 **********************************************************************/
 
-extern void HandleNCECabCommunication(unsigned char Ports);
+extern void HandleNCECabCommunication(void);
 
 extern void InitCabCommunication(unsigned char Ports);
 
