@@ -146,14 +146,14 @@ const unsigned char Speed28Table[] =
 	0x1f,		// 28
 };
 
-void BuildLocoPacket(unsigned char* pPacket, int nAddress, unsigned short nSpeed, unsigned char fDirection, int SpeedSteps)
+int BuildLocoPacket(unsigned char* pPacket, int nAddress, unsigned short nSpeed, unsigned char fDirection, int SpeedSteps)
 {
 	unsigned char bChecksum;
 	unsigned char bTemp;
 	unsigned char bLength;
-	unsigned char* pTemp;
+	//unsigned char* pTemp;
 	
-	pTemp = pPacket++;				// leave room for the length byte
+	//pTemp = pPacket++;				// leave room for the length byte
 	
 	pPacket = BuildAddress(pPacket, nAddress, &bChecksum, &bLength);
 	
@@ -222,7 +222,9 @@ void BuildLocoPacket(unsigned char* pPacket, int nAddress, unsigned short nSpeed
 	
 	*pPacket++ = bChecksum;
 	*pPacket = '\0';
-	*pTemp = bLength + 1;
+	//*pTemp = bLength + 1;
+
+	return (int)bLength+1;
 }
 
 
@@ -239,14 +241,14 @@ void BuildLocoPacket(unsigned char* pPacket, int nAddress, unsigned short nSpeed
 * RESTRICTIONS:
 *
 **********************************************************************/
-void BuildLocoEStopPacket(unsigned char* pPacket, int nAddress, unsigned char fDirection, int SpeedSteps)
+int BuildLocoEStopPacket(unsigned char* pPacket, int nAddress, unsigned char fDirection, int SpeedSteps)
 {
 	unsigned char bChecksum;
 	unsigned char bTemp;
 	unsigned char bLength;
-	unsigned char* pTemp;
+	//unsigned char* pTemp;
 	
-	pTemp = pPacket++;				// leave room for the length byte
+	//pTemp = pPacket++;				// leave room for the length byte
 	
 	pPacket = BuildAddress(pPacket, nAddress, &bChecksum, &bLength);
 	
@@ -279,7 +281,8 @@ void BuildLocoEStopPacket(unsigned char* pPacket, int nAddress, unsigned char fD
 
 	*pPacket++ = bChecksum;
 	*pPacket = '\0';
-	*pTemp = bLength + 1;
+	//*pTemp = bLength + 1;
+	return bLength + 1;
 }
 
 
@@ -299,14 +302,14 @@ void BuildLocoEStopPacket(unsigned char* pPacket, int nAddress, unsigned char fD
 * RESTRICTIONS:	
 *
 **********************************************************************/
-void BuildFunction1Packet(unsigned char* pPacket, int nAddress, unsigned int nFunctions)
+int BuildFunction1Packet(unsigned char* pPacket, int nAddress, unsigned int nFunctions)
 {
 	unsigned char bChecksum;
 	unsigned char bTemp;
 	unsigned char bLength;
-	unsigned char* pTemp;
+	//unsigned char* pTemp;
 	
-	pTemp = pPacket++;				// leave room for the length byte
+	//pTemp = pPacket++;				// leave room for the length byte
 	
 	pPacket = BuildAddress(pPacket, nAddress, &bChecksum, &bLength);
 	
@@ -321,7 +324,9 @@ void BuildFunction1Packet(unsigned char* pPacket, int nAddress, unsigned int nFu
 	
 	*pPacket++ = bChecksum;
 	*pPacket = '\0';
-	*pTemp = bLength + 2;
+	//*pTemp = bLength + 2;
+
+	return (int)bLength+2;
 }
 
 
@@ -338,14 +343,14 @@ void BuildFunction1Packet(unsigned char* pPacket, int nAddress, unsigned int nFu
 * RESTRICTIONS:
 *
 **********************************************************************/
-void BuildFunction2Packet(unsigned char* pPacket, int nAddress, unsigned int nFunctions)
+int BuildFunction2Packet(unsigned char* pPacket, int nAddress, unsigned int nFunctions)
 {
 	unsigned char bChecksum;
 	unsigned char bTemp;
 	unsigned char bLength;
-	unsigned char* pTemp;
+	//unsigned char* pTemp;
 	
-	pTemp = pPacket++;				// leave room for the length byte
+	//pTemp = pPacket++;				// leave room for the length byte
 	
 	pPacket = BuildAddress(pPacket, nAddress, &bChecksum, &bLength);
 	
@@ -356,7 +361,9 @@ void BuildFunction2Packet(unsigned char* pPacket, int nAddress, unsigned int nFu
 	
 	*pPacket++ = bChecksum;
 	*pPacket = '\0';
-	*pTemp = bLength + 2;
+	//*pTemp = bLength + 2;
+
+	return (int)bLength+2;
 }
 
 
@@ -375,14 +382,14 @@ void BuildFunction2Packet(unsigned char* pPacket, int nAddress, unsigned int nFu
 * RESTRICTIONS:
 *
 **********************************************************************/
-void BuildFunction3Packet(unsigned char* pPacket, int nAddress, unsigned int nFunctions)
+int BuildFunction3Packet(unsigned char* pPacket, int nAddress, unsigned int nFunctions)
 {
 	unsigned char bChecksum;
 	unsigned char bTemp;
 	unsigned char bLength;
-	unsigned char* pTemp;
+	//unsigned char* pTemp;
 
-	pTemp = pPacket++;				// leave room for the length byte
+	//pTemp = pPacket++;				// leave room for the length byte
 
 	pPacket = BuildAddress(pPacket, nAddress, &bChecksum, &bLength);
 
@@ -397,7 +404,9 @@ void BuildFunction3Packet(unsigned char* pPacket, int nAddress, unsigned int nFu
 
 	*pPacket++ = bChecksum;
 	*pPacket = '\0';
-	*pTemp = bLength + 2;
+	//*pTemp = bLength + 2;
+
+	return (int)bLength+2;
 }
 
 // Fcn	21-28			110 11111	2
@@ -414,14 +423,14 @@ void BuildFunction3Packet(unsigned char* pPacket, int nAddress, unsigned int nFu
 * RESTRICTIONS:
 *
 **********************************************************************/
-void BuildFunction4Packet(unsigned char* pPacket, int nAddress, unsigned int nFunctions)
+int BuildFunction4Packet(unsigned char* pPacket, int nAddress, unsigned int nFunctions)
 {
 	unsigned char bChecksum;
 	unsigned char bTemp;
 	unsigned char bLength;
-	unsigned char* pTemp;
+	//unsigned char* pTemp;
 
-	pTemp = pPacket++;				// leave room for the length byte
+	//pTemp = pPacket++;				// leave room for the length byte
 
 	pPacket = BuildAddress(pPacket, nAddress, &bChecksum, &bLength);
 
@@ -436,7 +445,9 @@ void BuildFunction4Packet(unsigned char* pPacket, int nAddress, unsigned int nFu
 
 	*pPacket++ = bChecksum;
 	*pPacket = '\0';
-	*pTemp = bLength + 2;
+	//*pTemp = bLength + 2;
+
+	return (int)bLength+2;
 }
 
 
@@ -453,16 +464,16 @@ void BuildFunction4Packet(unsigned char* pPacket, int nAddress, unsigned int nFu
 * RESTRICTIONS:	
 *
 **********************************************************************/
-void BuildAccessoryPacket(unsigned char* pPacket, int nAddress, unsigned char fState)
+int BuildAccessoryPacket(unsigned char* pPacket, int nAddress, unsigned char fState)
 {
 	unsigned char bChecksum;
 	unsigned char bTemp;
 	unsigned char bLowAddress;
 	unsigned char bHighAddress;
 	unsigned char Accessory;
-	unsigned char* pTemp;
+	//unsigned char* pTemp;
 	
-	pTemp = pPacket++;				// leave room for the length byte
+	//pTemp = pPacket++;				// leave room for the length byte
 	
 	//	nAddress += 3;
 	bTemp = (nAddress - 1) / 4;
@@ -489,7 +500,8 @@ void BuildAccessoryPacket(unsigned char* pPacket, int nAddress, unsigned char fS
 	
 	*pPacket++ = bChecksum;
 	*pPacket = '\0';
-	*pTemp = 3;
+	//*pTemp = 3;
+	return 3;
 }
 
 
@@ -506,14 +518,14 @@ void BuildAccessoryPacket(unsigned char* pPacket, int nAddress, unsigned char fS
 * RESTRICTIONS:	
 *
 **********************************************************************/
-void BuildOpsWriteCVPacket(unsigned char* pPacket, int nAddress, unsigned short nCV, unsigned char bValue)
+int BuildOpsWriteCVPacket(unsigned char* pPacket, int nAddress, unsigned short nCV, unsigned char bValue)
 {
 	unsigned char bChecksum;
 	unsigned char bTemp;
 	unsigned char bLength;
-	unsigned char* pTemp;
+	//unsigned char* pTemp;
 	
-	pTemp = pPacket++;				// leave room for the length byte
+	//pTemp = pPacket++;				// leave room for the length byte
 	pPacket = BuildAddress(pPacket, nAddress, &bChecksum, &bLength);
 	
 	if(nCV != 0)
@@ -534,8 +546,8 @@ void BuildOpsWriteCVPacket(unsigned char* pPacket, int nAddress, unsigned short 
 	
 	*pPacket++ = bChecksum;
 	*pPacket = '\0';
-	*pTemp = bLength + 4;
-
+	//*pTemp = bLength + 4;
+	return bLength+4;
 }
 
 
@@ -552,19 +564,20 @@ void BuildOpsWriteCVPacket(unsigned char* pPacket, int nAddress, unsigned short 
 * RESTRICTIONS:	
 *
 **********************************************************************/
-void BuildPresetPagePacket(unsigned char* pPacket)
+int BuildPresetPagePacket(unsigned char* pPacket)
 {
-	*pPacket++ = 0x03;
+	//*pPacket++ = 0x03;
 	*pPacket++ = 0xfd;
 	*pPacket++ = 0x01;
 	*pPacket++ = 0x7c;
 	*pPacket = 0x00;
+	return 3;
 }
 
-void BuildSetPagePacket(unsigned char* pPacket, unsigned char page)
+int BuildSetPagePacket(unsigned char* pPacket, unsigned char page)
 {
 
-	BuildWriteCVPacket(pPacket, 6, page, MODE_DIRECT);
+	return BuildWriteCVPacket(pPacket, 6, page, MODE_DIRECT);
 }
 
 
@@ -581,18 +594,18 @@ void BuildSetPagePacket(unsigned char* pPacket, unsigned char page)
 * RESTRICTIONS:
 *
 **********************************************************************/
-void BuildWriteCVPacket(unsigned char* pPacket, unsigned short nCV, unsigned char bValue, unsigned char Mode)
+int BuildWriteCVPacket(unsigned char* pPacket, unsigned short nCV, unsigned char bValue, unsigned char Mode)
 {
 	unsigned char bChecksum = 0;
 	unsigned char bTemp;
 	unsigned char bLength;
-	unsigned char* pTemp;
+	//unsigned char* pTemp;
 
 	bLength = 0;
 
 	if(Mode == MODE_DIRECT)
 	{
-		pTemp = pPacket++;				// leave room for the length byte
+		//pTemp = pPacket++;				// leave room for the length byte
 
 		if(nCV != 0)
 		{
@@ -612,11 +625,11 @@ void BuildWriteCVPacket(unsigned char* pPacket, unsigned short nCV, unsigned cha
 		
 		*pPacket++ = bChecksum;
 		*pPacket = '\0';
-		*pTemp = bLength + 4;
+		//*pTemp = bLength + 4;
 	}
 	else
 	{
-		pTemp = pPacket++;				// leave room for the length byte
+		//pTemp = pPacket++;				// leave room for the length byte
 		
 		if(nCV != 0)
 		{
@@ -632,8 +645,9 @@ void BuildWriteCVPacket(unsigned char* pPacket, unsigned short nCV, unsigned cha
 		
 		*pPacket++ = bChecksum;
 		*pPacket = '\0';
-		*pTemp = bLength + 4;
+		//*pTemp = bLength + 4;
 	}
+	return bLength + 4;
 }
 
 
@@ -650,18 +664,18 @@ void BuildWriteCVPacket(unsigned char* pPacket, unsigned short nCV, unsigned cha
 * RESTRICTIONS:
 *
 **********************************************************************/
-void BuildVerifyCVPacket(unsigned char* pPacket, unsigned short nCV, unsigned char bValue, unsigned char Mode)
+int BuildVerifyCVPacket(unsigned char* pPacket, unsigned short nCV, unsigned char bValue, unsigned char Mode)
 {
 	unsigned char bChecksum = 0;
 	unsigned char bTemp;
 	unsigned char bLength;
-	unsigned char* pTemp;
+	//unsigned char* pTemp;
 
 	bLength = 0;
 
 	if(Mode == MODE_DIRECT)
 	{
-		pTemp = pPacket++;				// leave room for the length byte
+		//pTemp = pPacket++;				// leave room for the length byte
 
 		if(nCV != 0)
 		{
@@ -681,11 +695,11 @@ void BuildVerifyCVPacket(unsigned char* pPacket, unsigned short nCV, unsigned ch
 
 		*pPacket++ = bChecksum;
 		*pPacket = '\0';
-		*pTemp = bLength + 4;
+		//*pTemp = bLength + 4;
 	}
 	else
 	{
-		pTemp = pPacket++;				// leave room for the length byte
+		//pTemp = pPacket++;				// leave room for the length byte
 
 		if(nCV != 0)
 		{
@@ -701,8 +715,9 @@ void BuildVerifyCVPacket(unsigned char* pPacket, unsigned short nCV, unsigned ch
 
 		*pPacket++ = bChecksum;
 		*pPacket = '\0';
-		*pTemp = bLength + 4;
+		//*pTemp = bLength + 4;
 	}
+	return bLength + 4;
 }
 
 
@@ -719,16 +734,16 @@ void BuildVerifyCVPacket(unsigned char* pPacket, unsigned short nCV, unsigned ch
 * RESTRICTIONS:
 *
 **********************************************************************/
-void BuildWriteBitPacket(unsigned char* pPacket, unsigned short nCV, unsigned char bBit, unsigned char bValue)
+int BuildWriteBitPacket(unsigned char* pPacket, unsigned short nCV, unsigned char bBit, unsigned char bValue)
 {
 	unsigned char bChecksum = 0;
 	unsigned char bTemp;
 	unsigned char bLength;
-	unsigned char* pTemp;
+	//unsigned char* pTemp;
 
 	bLength = 0;
 
-	pTemp = pPacket++;				// leave room for the length byte
+	//pTemp = pPacket++;				// leave room for the length byte
 
 	if(nCV != 0)
 	{
@@ -753,7 +768,8 @@ void BuildWriteBitPacket(unsigned char* pPacket, unsigned short nCV, unsigned ch
 
 	*pPacket++ = bChecksum;
 	*pPacket = '\0';
-	*pTemp = bLength + 4;
+	//*pTemp = bLength + 4;
+	return bLength + 4;
 }
 
 
@@ -770,16 +786,16 @@ void BuildWriteBitPacket(unsigned char* pPacket, unsigned short nCV, unsigned ch
 * RESTRICTIONS:
 *
 **********************************************************************/
-void BuildVerifyBitPacket(unsigned char* pPacket, unsigned short nCV, unsigned char bBit, unsigned char bValue)
+int BuildVerifyBitPacket(unsigned char* pPacket, unsigned short nCV, unsigned char bBit, unsigned char bValue)
 {
 	unsigned char bChecksum = 0;
 	unsigned char bTemp;
 	unsigned char bLength;
-	unsigned char* pTemp;
+	//unsigned char* pTemp;
 
 	bLength = 0;
 
-	pTemp = pPacket++;				// leave room for the length byte
+	//pTemp = pPacket++;				// leave room for the length byte
 
 	if(nCV != 0)
 	{
@@ -804,7 +820,8 @@ void BuildVerifyBitPacket(unsigned char* pPacket, unsigned short nCV, unsigned c
 
 	*pPacket++ = bChecksum;
 	*pPacket = '\0';
-	*pTemp = bLength + 4;
+	//*pTemp = bLength + 4;
+	return bLength + 4;
 }
 
 
@@ -831,14 +848,15 @@ void BuildVerifyBitPacket(unsigned char* pPacket, unsigned short nCV, unsigned c
 * RESTRICTIONS:
 *
 **********************************************************************/
-void BuildResetPacket(unsigned char* pPacket)
+int BuildResetPacket(unsigned char* pPacket)
 {
 
-	*pPacket++ = 0x03;
+	//*pPacket++ = 0x03;
 	*pPacket++ = 0x00;
 	*pPacket++ = 0x00;
 	*pPacket++ = 0x00;
 	*pPacket = 0x00;
+	return 3;
 }
 
 /**********************************************************************
@@ -854,14 +872,15 @@ void BuildResetPacket(unsigned char* pPacket)
 * RESTRICTIONS:
 *
 **********************************************************************/
-//kvoid BuildIdlePacket(unsigned char* pPacket)
+//kint BuildIdlePacket(unsigned char* pPacket)
 //k{
 //k
-//k	*pPacket++ = 0x03;
+//k	//*pPacket++ = 0x03;
 //k	*pPacket++ = 0xff;
 //k	*pPacket++ = 0x00;
 //k	*pPacket++ = 0xff;
 //k	*pPacket = 0x00;
+//k return 3;
 //k}
 
 
