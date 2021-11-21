@@ -21,7 +21,7 @@
 #include "Uart2.h"
 //#include "Uart3.h"
 #include "BitMask.h"
-//#include "Clock.h"
+#include "Variables.h"
 
 #include <stdio.h>
 
@@ -234,6 +234,10 @@ void InitCabCommunication(unsigned char Ports)
 		CabBus[i].nQueue4 = 0;
 	}
 
+	//CabResponse[5];
+	GotCabResponse = 0;
+	CabRxIndex = 0;
+
 	bCabIndex = MAX_CABS;
 	bInactiveCabIndex = 0;
 	bCab = 1;					// anything non-zero
@@ -245,14 +249,14 @@ void SelectNextCab(void)
 
 	if(bCab == 0)
 	{
-		//bInactiveCabIndex++;
+		bInactiveCabIndex++;
 		bCab = abCabInactiveQueue[bInactiveCabIndex];
 		if(bCab == 0)
 		{
 			bInactiveCabIndex = 0;
 			bCab = abCabInactiveQueue[bInactiveCabIndex];
 		}
-		bInactiveCabIndex++;
+		//bInactiveCabIndex++;
 	}
 	else
 	{
@@ -280,14 +284,55 @@ void MakeCabActive(unsigned char bCab)
 	abCabInactiveQueue[i] = 0;
 
 	// put it in the active list
-	abCabActiveQueue[bCabIndex] = bCab;
-
+	//abCabActiveQueue[bCabIndex] = bCab;
+	for(i = 0; i < MAX_CABS; i++)
+	{
+		if(abCabActiveQueue[i] == 0)
+		{
+			abCabActiveQueue[i] = bCab;
+			break;
+		}
+	}
 	// reset to beginning of list
 	bCabIndex = 0;
 
 	//bCab = abCabActiveQueue[bCabIndex];
 }
 
+void MakeCabActiveN(unsigned char bCab)
+{
+	unsigned char i;
+
+	// take it out of the inactive list
+	for(i = 0; i < MAX_CABS - 1; i++)
+	{
+		if(abCabInactiveQueue[i] == bCab)
+		{
+			break;
+		}
+	}
+
+	for( ; i < MAX_CABS - 1; i++)
+	{
+		abCabInactiveQueue[i] = abCabInactiveQueue[i + 1];
+	}
+	abCabInactiveQueue[i] = 0;
+
+	// put it in the active list
+	for(i = 0; i < MAX_CABS - 1; i++)
+	{
+		if(abCabActiveQueue[i] == 0)
+		{
+			abCabActiveQueue[i] = bCab;
+			break;
+		}
+	}
+
+	// reset to beginning of list
+	bCabIndex = 0;
+
+	//bCab = abCabActiveQueue[bCabIndex];
+}
 
 void MakeCabInactive(unsigned char bCab)
 {
@@ -312,6 +357,21 @@ void MakeCabInactive(unsigned char bCab)
 }
 
 
+int IsCabActive(unsigned char bCab)
+{
+	unsigned char i;
+
+	for(i = 0; i < MAX_CABS; i++)
+	{
+		if(abCabActiveQueue[i] == bCab)
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
 /**********************************************************************
 *
 * FUNCTION:		HandleCabCommunication
@@ -325,7 +385,7 @@ void MakeCabInactive(unsigned char bCab)
 * RESTRICTIONS:
 *
 **********************************************************************/
-void HandleNCECabCommunication(unsigned char Ports)
+void HandleNCECabCommunication(void)
 {
 	//byte i;
 	static int iPollTime;
@@ -346,15 +406,7 @@ void HandleNCECabCommunication(unsigned char Ports)
 			if(--iPollTime == 0)
 			{
 				poll = bCab + 0x80;
-				//if(Ports == CAB_PORT_RIGHT)
-				//{
-					Uart2_SendToken(poll);
-				//}
-
-				//if(Ports == CAB_PORT_LEFT)
-				//{
-				//	Uart3_SendToken(poll);
-				//}
+				Uart2_SendToken(poll);
 				GotCabResponse = 0;
 				CabRxIndex = 0;
 
@@ -367,13 +419,6 @@ void HandleNCECabCommunication(unsigned char Ports)
 					}
 					else
 					{
-						//bCab = abCabInactiveQueue[bInactiveCabIndex];
-
-						//if(bCab == 0)
-						//{
-						//	bInactiveCabIndex = 0;
-						//	bCab = abCabInactiveQueue[bInactiveCabIndex];
-						//}
 						SelectNextCab();
 
 						CabBus[bCab].NewCab = 1;
@@ -450,7 +495,10 @@ void HandleNCECabCommunication(unsigned char Ports)
 					//}
 					//abCabInactiveQueue[i] = bCab;
 
-					MakeCabInactive(bCab);
+					if(IsCabActive(bCab))
+					{
+						MakeCabInactive(bCab);
+					}
 
 					// select the next Cab
 					//bCabIndex++;
@@ -475,21 +523,7 @@ void HandleNCECabCommunication(unsigned char Ports)
 				// this cab responded - queue a 'cab' message
 				HandleCabResponse(bCab);
 
-				// handle any cab list management
-				// take it out of the inactive list
-				//for(i = bInactiveCabIndex; i < MAX_CABS - 1; i++)
-				//{
-            	//	abCabInactiveQueue[i] = abCabInactiveQueue[i + 1];
-            	//}
-            	//abCabInactiveQueue[i] = 0;
-
-				// put it in the active list
-				//abCabActiveQueue[bCabIndex] = bCab;
-
-				// reset to beginning of list
-				//bCabIndex = 0;
-
-				MakeCabActive(bCab);
+//				MakeCabActive(bCab);
 
 				if(HandleCabOutput(bCab))
 				{
@@ -512,15 +546,6 @@ void HandleNCECabCommunication(unsigned char Ports)
 
 					// reset to beginning of list
 					bCabIndex = 0;
-
-					// select next inactive Can
-					//bInactiveCabIndex++;
-					//if(abCabInactiveQueue[bInactiveCabIndex] == 0)
-        			//{
-					//	bInactiveCabIndex = 0;
-					//}
-
-					//bCab = abCabActiveQueue[bCabIndex];
 
 					bCab = 0;		// force a cab from the inactive queue
 					SelectNextCab();
@@ -580,6 +605,9 @@ void HandleCabResponse(unsigned char bCab)
 		{
 			CabBus[bCab].bCabType = bCabType;
 			CabBus[bCab].pVirtualCab = WM_RegisterCab((int)bCab, CAB_TYPE_NCE, bCabType, (void *)&CabBus[bCab]);
+
+			MakeCabActive(bCab);
+
 		}
 		CabBus[bCab].VersionReturn = 0;
 	}
@@ -1183,7 +1211,21 @@ void UpdateWangrowClock(void)
 	{
 		if(HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN) == HAL_OK)
 		{
-			sprintf(szTime, "   %2d:%02d", time.Hours, time.Minutes);
+			if(bTimeFmt)
+			{
+				sprintf(szTime, "   %2d:%02d", time.Hours, time.Minutes);
+			}
+			else
+			{
+				if(time.Hours > 12)
+				{
+					sprintf(szTime, "  %2d:%02dP", time.Hours-12, time.Minutes);
+				}
+				else
+				{
+					sprintf(szTime, "  %2d:%02dA", time.Hours, time.Minutes);
+				}
+			}
 		}
 		// call the date read to unlock the clock
 		HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
