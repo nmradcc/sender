@@ -21,6 +21,7 @@
 #include "Packet.h"
 #include "CV.h"
 #include "PacketQueue.h"
+#include "Acknowledge.h"
 
 
 /**********************************************************************
@@ -44,8 +45,8 @@ enum
 *
 **********************************************************************/
 
-void AckStart(void);
-int GetAck(void);
+//void AckStart(void);
+//int GetAck(void);
 
 /**********************************************************************
 *
@@ -96,6 +97,7 @@ void ServiceMode(void)
 {
 	unsigned char packet[8];
 	int status;
+	ACK_STATUS ack_status;
 
 	// get the ACK status, overcurrent status, and the state of the Prog Track state machine and set status accordingly
 	//if()
@@ -141,18 +143,26 @@ void ServiceMode(void)
 }
 
 
-//void AckStart(void)
-//{
-//
-//	// snapshot the current for the base level
-//}
-
-//int GetAck(void)
-//{
-//
-//	return 0;
-//}
-
+/**********************************************************************
+*
+* FUNCTION:		WaitForAck
+*
+* ARGUMENTS:
+*
+* RETURNS:
+*
+* DESCRIPTION:	Run the service mode state machine
+*
+* RESTRICTIONS:
+*
+**********************************************************************/
+void WaitForAck(void)
+{
+	while(SmState != SM_IDLE)
+	{
+		;
+	}
+}
 
 
 #ifdef NOT_USED
@@ -211,6 +221,33 @@ void ServiceModeWriteCV(unsigned short nCV, unsigned char bValue)
 	SmValue = bValue;
 
 	SmState = SM_WRITE;
+}
+
+
+/**********************************************************************
+*
+* FUNCTION:		ServiceModeWriteCV
+*
+* ARGUMENTS:
+*
+* RETURNS:
+*
+* DESCRIPTION:	Run the service mode state machine
+*
+* RESTRICTIONS:
+*
+**********************************************************************/
+ACK_STATUS ServiceModeReadCV(unsigned short nCV, unsigned char bValue)
+{
+
+	SmCV = nCV;
+//	SmValue = bValue;
+
+	SmState = SM_VERIFY;
+
+	WaitForAck();
+	return GetAck();
+
 }
 
 
