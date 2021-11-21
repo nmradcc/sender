@@ -50,7 +50,7 @@ extern void http_server_socket_init(void);
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define VERSION		10007	// 10005 x.yy.zz = 1.00.05
+#define VERSION		10008	// 10005 x.yy.zz = 1.00.05
 
 /* USER CODE END PD */
 
