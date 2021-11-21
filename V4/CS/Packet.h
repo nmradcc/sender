@@ -37,27 +37,27 @@ enum
 *
 **********************************************************************/
 
-void BuildLocoPacket(unsigned char* pPacket, int nAddress, unsigned short nSpeed, unsigned char fDirection, int SpeedSteps);
+int BuildLocoPacket(unsigned char* pPacket, int nAddress, unsigned short nSpeed, unsigned char fDirection, int SpeedSteps);
 
-void BuildFunction1Packet(unsigned char* pPacket, int nAddress, unsigned int nFunctions);
-void BuildFunction2Packet(unsigned char* pPacket, int nAddress, unsigned int nFunctions);
-void BuildFunction3Packet(unsigned char* pPacket, int nAddress, unsigned int nFunctions);
-void BuildFunction4Packet(unsigned char* pPacket, int nAddress, unsigned int nFunctions);
+int BuildFunction1Packet(unsigned char* pPacket, int nAddress, unsigned int nFunctions);
+int BuildFunction2Packet(unsigned char* pPacket, int nAddress, unsigned int nFunctions);
+int BuildFunction3Packet(unsigned char* pPacket, int nAddress, unsigned int nFunctions);
+int BuildFunction4Packet(unsigned char* pPacket, int nAddress, unsigned int nFunctions);
 
-void BuildAccessoryPacket(unsigned char* pPacket, int nAddress, unsigned char fState);
+int BuildAccessoryPacket(unsigned char* pPacket, int nAddress, unsigned char fState);
 
-void BuildOpsWriteCVPacket(unsigned char* pPacket, int nAddress, unsigned short nCV, unsigned char bValue);
+int BuildOpsWriteCVPacket(unsigned char* pPacket, int nAddress, unsigned short nCV, unsigned char bValue);
 
-void BuildWriteCVPacket(unsigned char* pPacket, unsigned short nCV, unsigned char bValue, unsigned char Mode);
+int BuildWriteCVPacket(unsigned char* pPacket, unsigned short nCV, unsigned char bValue, unsigned char Mode);
 
-void BuildVerifyCVPacket(unsigned char* pPacket, unsigned short nCV, unsigned char bValue, unsigned char Mode);
+int BuildVerifyCVPacket(unsigned char* pPacket, unsigned short nCV, unsigned char bValue, unsigned char Mode);
 
-void BuildPresetPagePacket(unsigned char* pPacket);
+int BuildPresetPagePacket(unsigned char* pPacket);
 
-void BuildSetPagePacket(unsigned char* pPacket, unsigned char page);
+int BuildSetPagePacket(unsigned char* pPacket, unsigned char page);
 
-void BuildResetPacket(unsigned char* pPacket);
+int BuildResetPacket(unsigned char* pPacket);
 
-void BuildIdlePacket(unsigned char* pPacket);
+int BuildIdlePacket(unsigned char* pPacket);
 
 #endif
