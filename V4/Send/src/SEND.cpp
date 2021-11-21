@@ -338,7 +338,7 @@ main(
 	/*
 	 *	Pass user arguements to decoder test object Ldec_tst.
 	 */
-#ifdef OUT_FOR_NOW
+//#ifdef OUT_FOR_NOW
 //k	Ldec_tst.set_run_mask( Args.get_run_mask() );
 //k	Ldec_tst.set_clk_mask( Args.get_clk_mask() );
 	Ldec_tst.set_trig_rev( Args.get_trig_rev() );
@@ -381,7 +381,7 @@ main(
 		STATPRINT(	"Skipping self tests, Data sent to log" );
 		printf(		"Skipping self tests, Data sent to log\n" );
 	}
-#endif
+//#endif
 
 
 	/*
@@ -570,12 +570,12 @@ get_log_file(
 
 	strcpy( fname, buf );
 	strcat( fname, ".log" );
-	if ( Deflog.open_log( fname ) != OK )
-	{
-		ERRPRINT( my_name, LOG_CRIT,
-			"Log file <%s> could not be opened", buf );
-		exit_send( 1 );
-	}
+//	if ( Deflog.open_log( fname ) != OK )
+//	{
+//		ERRPRINT( my_name, LOG_CRIT,
+//			"Log file <%s> could not be opened", buf );
+//		exit_send( 1 );
+//	}
 
 	strcpy( fname, buf );
 	strcat( fname, ".sum" );
@@ -655,15 +655,15 @@ get_log_file(
 	TO_STAT( "--------------------------------\n\n" );
 
 	// Log summary of command line switches and .INI file
-	if ( (fp = Deflog.get_fp_log()) != NULL )
-	{
-    	fputs(
-    		"Summary of command line and 'SEND.INI' switches:\n\n",
-			fp );
-		Args.usage( fp );
-        fputc( '\n', fp );
-		fflush( fp );
-	}
+//	if ( (fp = Deflog.get_fp_log()) != NULL )
+//	{
+//    	fputs(
+//    		"Summary of command line and 'SEND.INI' switches:\n\n",
+//			fp );
+//		Args.usage( fp );
+//        fputc( '\n', fp );
+//		fflush( fp );
+//	}
 
 	if ( (fp = Deflog.get_fp_stat()) != NULL )
 	{
