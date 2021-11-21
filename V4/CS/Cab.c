@@ -31,6 +31,8 @@
 //#include "Clock.h"
 #include "MsgQueue.h"
 #include "Settings.h"
+#include "Track.h"
+#include "States.h"
 
 /**********************************************************************
 *
@@ -164,7 +166,15 @@ VIRTUAL_CAB* WM_RegisterCab(int Cab, int CabType, int CabSubType, void* CabHandl
 		aVirtualCab[Cab].CabSubType = CabSubType;
 		aVirtualCab[Cab].CabHandle = CabHandle;
 
-		aVirtualCab[Cab].nState = 0;
+		//if(IsTrackOpen(TR_NONE) || IsTrackOpen(TR_COMMAND_STATION))
+		//if(IsTrackOpen(TR_COMMAND_STATION))
+		//{
+			aVirtualCab[Cab].nState = STATE_IDLE;
+		//}
+		//else
+		//{
+		//	aVirtualCab[Cab].nState = STATE_TRACK;
+		//}
 
 		aVirtualCab[Cab].nCursor = 0;
 
