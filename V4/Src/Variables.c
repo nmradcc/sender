@@ -57,7 +57,7 @@ uint32_t CabPort;
 uint32_t IpAddress;
 uint32_t IpMask;
 uint32_t GwAddress;
-uint32_t DHCP;
+uint32_t DHCP_Control;
 
 uint32_t Theme;
 
@@ -120,7 +120,7 @@ const VAR_TABLE VarCmdTable[] =
 	{szIpAdr,			&IpAddress,			(VAR_TYPE_IP | VAR_TYPE_PERSIST),		"169.254.172,10",	"IP Address" },
 	{szIpMsk,			&IpMask,			(VAR_TYPE_IP | VAR_TYPE_PERSIST),		"255.255.255.0",	"IP Mask" },
 	{szGwAdr,			&GwAddress,			(VAR_TYPE_IP | VAR_TYPE_PERSIST),		"0.0.0.0",			"GW Address" },
-	{szDHCP,			&DHCP,				(VAR_TYPE_ON_OFF | VAR_TYPE_PERSIST),	"0",				"DHCP - on | off" },
+	{szDHCP,			&DHCP_Control,		(VAR_TYPE_ON_OFF | VAR_TYPE_PERSIST),	"0",				"DHCP - on | off" },
 
 	{szPort,			&CabPort,			(VAR_TYPE_PORT | VAR_TYPE_PERSIST),		"off",				"Port - nce | xpressnet" },
 	{szTrack,			&TrackState,		(VAR_TYPE_TRACK),						"off",				"Track - on | off" },
