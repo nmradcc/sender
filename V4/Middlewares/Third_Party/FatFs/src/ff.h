@@ -123,6 +123,7 @@ typedef struct {
 	DWORD	database;		/* Data base sector */
 	DWORD	winsect;		/* Current sector appearing in the win[] */
 	BYTE	win[_MAX_SS];	/* Disk access window for Directory, FAT (and file data at tiny cfg) */
+	DWORD	dummy_pad;
 } FATFS;
 
 
