@@ -14,7 +14,7 @@
 //*******************************************************************************
 #include "main.h"
 #include "fatfs.h"
-//#include <stdio.h>	- ToDo - including this cause conflicts
+//#include <stdio.h>	- ToDo - including this causes conflicts
 #include <stdarg.h>
 
 //#include "shell.h"
