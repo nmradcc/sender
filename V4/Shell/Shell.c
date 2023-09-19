@@ -4,8 +4,8 @@
 *
 * @author K. Kobel
 * @date 9/15/2019
-* @Revision: 24 $
-* @Modtime: 10/31/2019
+* @revision: 24 $
+* @modtime: 10/31/2019
 *
 * @copyright	(c) 2019  all Rights Reserved.
 *******************************************************************************/
@@ -46,6 +46,16 @@ extern UART_HandleTypeDef huart3;
 //*******************************************************************************
 // Definitions
 //*******************************************************************************
+
+#define ESC_CODE		27
+#define UP_ARROW		'A'
+#define DOWN_ARROW		'B'
+#define RIGHT_ARROW		'C'
+#define LEFT_ARROW		'D'
+#define KEY_HOME		'H'
+#define KEY_END			'F'
+#define KEY_INSERT		'I'
+
 
 #define SCRIPT_DEFAULT_EXTENSION	".scp"
 #define PACKET_DEFAULT_EXTENSION	".pkt"
@@ -160,6 +170,8 @@ CMD_RETURN ShYmodem(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShZmodemReceive(uint8_t bPort, int argc, char *argv[]);
 CMD_RETURN ShZmodemSend(uint8_t bPort, int argc, char *argv[]);
 
+CMD_RETURN ShRedirect(uint8_t bPort, int argc, char *argv[]);
+
 int RunScript(uint8_t bPort, char* filename, size_t nargs, char** args);
 
 
@@ -242,6 +254,8 @@ const SHELL_TABLE ShellTable[] =
 //	{"ymodem",	CL_SYS,		NO_FLAGS, 			ShYmodem,			"YModem receive"},
 	{"rz",		CL_SYS,		NO_FLAGS, 			ShZmodemReceive,	"ZModem receive"},
 	{"sz",		CL_SYS,		NO_FLAGS, 			ShZmodemSend,		"ZModem send"},
+
+	{"redirect",CL_SYS,		NO_FLAGS, 			ShRedirect,			"Redirect STDIN & STDOUT to here"},
 };
 #define SHELL_TABLE_COUNT (sizeof(ShellTable) / sizeof(SHELL_TABLE))
 
@@ -473,6 +487,7 @@ void shprintf(uint8_t port, const char *fmt, ... )
 * @remarks	If multiple consoles are specified, the first received char is returned
 *
 *********************************************************************/
+#ifdef USE_NEW
 char ShGetChar(uint8_t port)
 {
 	uint8_t c;
@@ -505,6 +520,37 @@ char ShGetChar(uint8_t port)
 
 	return 0;
 }
+#else
+char ShGetChar(uint8_t* port)
+{
+	uint8_t c;
+
+	// this is the main (front) USB port
+//	if(VCP_GetRxChar(&c))
+//	{
+//		*port = PORT1;
+//		return c;
+//	}
+
+	// this is the debug (rear) USB port
+   	if(HAL_UART_Receive(&huart3, &c, 1, 0) == HAL_OK)
+   	{
+   	    *port = PORT3;
+   	   	return c;
+   	}
+
+   	// this the Telnet port. If there is more than one allowed, split it into multiple calls,
+   	// or let the Telnet layer haddle multiple connections. In that case the Telnet layer must
+   	// return the proper port ID
+// 	c = telnet_getc();
+// 	{
+// 	    *port = PORTT1;
+// 		return c;
+// 	}
+
+	return 0;
+}
+#endif
 
 /*********************************************************************
 *
@@ -1198,7 +1244,7 @@ CMD_RETURN ShDelay(uint8_t bPort, int argc, char *argv[])
 * @brief	Shell echo command
 * @details
 *			the cr argument will add a new line
-*			multi-word strings may be surronded with doulbe quotes
+*			multi-word strings may be surrounded with double quotes
 * @example
 *			echo "Hello World" cr
 *
@@ -1862,7 +1908,7 @@ CMD_RETURN ShYmodem(uint8_t bPort, int argc, char *argv[])
     ShFieldOut(bPort, "YModem Receive - start sending", 0);
     ShNL(bPort);
 
-    Ymodem_SetPort(bPort);
+    //Ymodem_SetPort(bPort);
 	if(Ymodem_Receive(buffer) != 0)
 	{
 		return CMD_FAILED;
@@ -1879,7 +1925,7 @@ CMD_RETURN ShZmodemReceive(uint8_t bPort, int argc, char *argv[])
     ShFieldOut(bPort, "ZModem Receive - start sending", 0);
     ShNL(bPort);
 
-    Zmodem_SetPort(bPort);
+    //Zmodem_SetPort(bPort);
 	if(ZmodemGet() != 0)
 	{
 		return CMD_FAILED;
@@ -1890,7 +1936,7 @@ CMD_RETURN ShZmodemReceive(uint8_t bPort, int argc, char *argv[])
 CMD_RETURN ShZmodemSend(uint8_t bPort, int argc, char *argv[])
 {
 
-    Zmodem_SetPort(bPort);
+    //Zmodem_SetPort(bPort);
 	if(ZmodemSend("test.res") != 0)
 	{
 		return CMD_FAILED;
@@ -2286,6 +2332,26 @@ CMD_RETURN ShSendIdle(uint8_t bPort, int argc, char *argv[])
 
 
 
+/*********************************************************************
+*
+* @catagory	Shell Command
+* ShRedirect
+*
+* @brief	Redirect STDIN, STDOUT, & STDERR to this port
+*
+* @param	bPort - port that issued this command
+*			argc - argument count
+*			argv - argc array of arguments
+*
+* @return	CMD_RETURN - shell result
+*
+*********************************************************************/
+CMD_RETURN ShRedirect(uint8_t bPort, int argc, char *argv[])
+{
+	return CMD_OK;
+}
+
+
 //***********************************************************************************************************************
 //***********************************************************************************************************************
 
@@ -2310,6 +2376,13 @@ void AddToHistory(uint8_t idx, uint8_t* buf)
 	{
 		HistoryIndex[idx] = 0;
 	}
+
+
+	/*
+	Write the buffer to a file
+	Which file depends on the 'port', one file per port
+	if we change the port bit mask to an index, we can remive the pot to index function
+	 */
 }
 
 /*********************************************************************
@@ -2608,7 +2681,7 @@ int ShellMain(uint8_t bPort, char* buf)
 	static char *args[ARG_SIZE];
 	static size_t nargs;
 	char StrTemp[64];
-	int ret;
+	int ret = CMD_FAILED;
 
 	iCmdIndex = FindCommand(buf, &nargs, args);
 	if(iCmdIndex != -1)
@@ -2793,8 +2866,10 @@ void DoShell(void)
 	uint8_t port;
 	uint8_t portidx;
 	int ret;
+	static int ProcessEsc = 0;
 
 	// get the next character to process
+#ifdef USE_NEW
 	port = PORT1;
 	c = ShGetChar(PORT1);
 	if(c == 0)
@@ -2807,11 +2882,38 @@ void DoShell(void)
 //			c = ShGetChar(PORTT);
 		}
 	}
+#else
+	c = ShGetChar(&port);
+#endif
 
 	if(c)
 	{
 		portidx = PortIndex(port);
-		if(c == '\r')
+		if(ProcessEsc)
+		{
+			ProcessEsc = 0;
+			if(c == LEFT_ARROW)
+			{
+				ShFieldOut(port, "Left", 0);
+				ShNL(port);
+			}
+			if(c == RIGHT_ARROW)
+			{
+				ShFieldOut(port, "Right", 0);
+				ShNL(port);
+			}
+			if(c == UP_ARROW)
+			{
+				ShFieldOut(port, "Up", 0);
+				ShNL(port);
+			}
+			if(c == DOWN_ARROW)
+			{
+				ShFieldOut(port, "Down", 0);
+				ShNL(port);
+			}
+		}
+		else if(c == '\r')
 		{
 			ret = ShellMain(port, (char*)shell_buf[portidx]);
 			Prompt(port);
@@ -2846,6 +2948,11 @@ void DoShell(void)
 			shell_buf[portidx][shell_index++] = c;
 			shell_buf[portidx][shell_index] = 0;
 		}
+		else if(c == ESC_CODE)
+		{
+			// trap the arrow and other keys
+			ProcessEsc = 1;
+		}
 		else
 		{
 			// ignore invalid characters
@@ -2872,6 +2979,7 @@ int GetInput(char* buf)
 
 	while(1)
 	{
+#ifdef USE_NEW
 		// get the next character to process
 		port = PORT1;
 		c = ShGetChar(PORT1);
@@ -2885,6 +2993,10 @@ int GetInput(char* buf)
 //				c = ShGetChar(PORTT);
 			}
 		}
+#else
+	c = ShGetChar(&port);
+#endif
+
 
 		if(c)
 		{
@@ -2943,7 +3055,7 @@ void ShellTask(void *argument)
 	while(1)
 	{
 		DoShell();
-		osDelay(10);
+		osDelay(pdMS_TO_TICKS(10));
 	}
 }
 
@@ -2967,7 +3079,7 @@ void ScriptTask(void *argument)
 	while(1)
 	{
 		DoScriptRun();
-		osDelay(1);
+		osDelay(pdMS_TO_TICKS(1));
 	}
 }
 

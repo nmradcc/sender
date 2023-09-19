@@ -29,13 +29,13 @@
 #include "ymodem.h"
 #include "string.h"
 #include "ff.h"
-#include "shell.h"
+//#include "shell.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-static uint8_t YmPort;
+//static uint8_t YmPort;
 
 static uint8_t FileName[FILE_NAME_LENGTH];
 static FIL fp;
@@ -54,29 +54,30 @@ static uint8_t packet_data[PACKET_1K_SIZE + PACKET_OVERHEAD];
   *         -1: Timeout
   */
 
-extern UART_HandleTypeDef huart3;
+//extern UART_HandleTypeDef huart3;
+extern uint8_t kbhit(void);
+extern uint8_t getch(void);
+extern void putch(char c);
 
 static int32_t Receive_Byte (uint8_t *c, uint32_t timeout)
 {
-//	int8_t ch;
-//
-//	while (timeout-- > 0)
-//	{
-//		ch = ShGetChar(YmPort);
-//		if(ch)
-//		{
-//			*c = ch;
-//			return 0;
-//		}
-//	}
-//	return -1;
 
-
-	if(HAL_UART_Receive(&huart3, c, 1, timeout) == HAL_OK)
+	while (timeout-- > 0)
 	{
-	   	return 0;
+		if(kbhit())
+		{
+			*c = getch();
+			return 0;
+		}
 	}
 	return -1;
+
+
+//	if(HAL_UART_Receive(&huart3, c, 1, timeout) == HAL_OK)
+//	{
+//	   	return 0;
+//	}
+//	return -1;
 }
 
 /**
@@ -86,7 +87,8 @@ static int32_t Receive_Byte (uint8_t *c, uint32_t timeout)
   */
 static uint32_t Send_Byte (uint8_t c)
 {
-	ShCharOut(YmPort, c);
+	//ShCharOut(YmPort, c);
+	putch(c);
 	return 0;
 }
 
@@ -334,7 +336,7 @@ void Ymodem_PrepareIntialPacket(uint8_t *data, const uint8_t* fileName, uint32_t
 
   data[i + PACKET_HEADER] = 0x00;
   
-  length = atoi((uint32_t*)file_ptr);
+  length = (uint32_t)atoi((uint32_t*)file_ptr);
   for (j =0, i = i + PACKET_HEADER + 1; file_ptr[j] != '\0' ; )
   {
      data[i++] = file_ptr[j++];
@@ -702,10 +704,10 @@ uint8_t Ymodem_Transmit (uint8_t *buf, const uint8_t* sendFileName, uint32_t siz
   * @brief  Set the communications port for the ymodem protocol
   * @param  port: Bit mask of port
   */
-void Ymodem_SetPort (uint8_t port)
-{
-	YmPort = port;
-}
+//void Ymodem_SetPort (uint8_t port)
+//{
+//	YmPort = port;
+//}
 
 /**
   * @}

@@ -85,7 +85,7 @@ enum
 	CL_CS,
 	CL_SYS,
 	CL_TEST,
-} SHELL_CLASS;
+} /* SHELL_CLASS */;
 
 /** @struct SHELL_TABLE
 	@brief a shell command table entry
@@ -142,7 +142,12 @@ extern void ShFieldNumberOut(uint8_t bPort, char* szBuffer, int number, int iFie
 extern void ShNL(uint8_t bPort);
 extern void ShCR(uint8_t bPort);
 
+#ifdef USE_NEW
 extern char ShGetChar(uint8_t bPort);
+#else
+extern char ShGetChar(uint8_t* bPort);
+#endif
+
 extern char ShKbHit(uint8_t port);
 
 extern unsigned int GetLoopCount(void);

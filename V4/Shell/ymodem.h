@@ -60,7 +60,7 @@ enum
 	YMR_WRITE = -2,
 	YMR_ABORT = -3,
 	YMR_MAX_ERRORS = -4,
-} YMR_ERRORS;
+} /* YMR_ERRORS */;
 
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */

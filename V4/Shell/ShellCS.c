@@ -159,7 +159,7 @@ CMD_RETURN ShCabStat(uint8_t bPort, int argc, char *argv[])
 * @return	CMD_RETURN - shell result
 *
 *********************************************************************/
-#define SPEED_PRIME_NUMBER	252
+//#define SPEED_PRIME_NUMBER	252
 //#define SPEED_DIR_MAX		36
 CMD_RETURN ShLocoStat(uint8_t bPort, int argc, char *argv[])
 {
@@ -204,15 +204,15 @@ CMD_RETURN ShLocoStat(uint8_t bPort, int argc, char *argv[])
 				switch(sm)
 				{
 					case SPEED_MODE_14:
-						sprintf(szTemp, "%d", temp / 18);
+						sprintf(szTemp, "%d", temp / SPEED_14_DIVISOR);
 					break;
 
 					case SPEED_MODE_28:
-						sprintf(szTemp, "%d", temp / 9);
+						sprintf(szTemp, "%d", temp / SPEED_28_DIVISOR);
 					break;
 
 					case SPEED_MODE_128:
-						sprintf(szTemp, "%d", temp / 2);
+						sprintf(szTemp, "%d", temp / SPEED_128_DIVISOR);
 					break;
 
 					case SPEED_MODE_14_PERCENT:
