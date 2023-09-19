@@ -16,6 +16,42 @@
 #include <stdarg.h>
 //#include "PDS601.h"
 
+// needed
+// fputs
+// fgets
+// puts
+// putchar (alias for putch)
+// fprintf
+
+/*
+The shell has a single function to get characters from how ever many interfaces there are.
+It calls the getch (or equlivent) and it returns false if there are no characters,
+or true with the character in the buffer using the passed in pointer.
+There can also be a isCharAvail (or equlivent) to call in front of getch.
+
+The shell keeps track of which interface the character comes from and will call the appropriate
+output method for any shell output.
+
+
+There are 2 USB interfaces:
+  The main USB on the front (which will work after Brian gets the composite USB implemented)
+  The USB on the debug interface on the back and is connected to UART3 at 115200 BAUD
+  This port is also used for firmware updates.
+
+We will implement STDIN, STDOUT, and STDERR and all of the upper layers for serial streams (fprintf fputs, et all)
+There are a few shell commands (like the SEND program and ZModem) that need to know what 'port'
+they are supposed to communicate over, and currently this a a bit funky (the shell sets a module variable
+to the correct port). If these commands are written to use the STD interface, the shell can just redirect
+them to the port in use (the shell command has a wrapper that calls the command).
+
+That can also mean that if a long process is running (like SEND which takes 24 hours for the full test)
+a user can connect to a different interface and re-direct the STD interface to it and interact with
+the running command.
+*/
+
+
+
+
 /**********************************************************************
 *
 *							DEFINITIONS
@@ -96,27 +132,28 @@ uint8_t kbhit(void)
 **********************************************************************/
 uint8_t getch(void)
 {
-	uint8_t c;
+//	uint8_t c;
 
 
-	while(1)
-	{
-		c = ShGetChar(PORT1);
-		if(c != 0)
-		{
-			return c;
-		}
-		c = ShGetChar(PORT3);
-		if(c != 0)
-		{
-			return c;
-		}
+//	while(1)
+//	{
+		//c = ShGetChar(PORT1);
+		//if(c != 0)
+		//{
+		//	return c;
+		//}
+		//c = ShGetChar(PORT3);
+		//if(c != 0)
+		//{
+		//	return c;
+		//}
 		//c = ShGetChar(PORTT);
 		//if(c != 0)
 		//{
 		//	return c;
 		//}
-	}
+//	}
+	return 0;
 }
 
 
