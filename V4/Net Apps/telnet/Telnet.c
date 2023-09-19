@@ -43,7 +43,7 @@ static void BufferChar(uint8_t c);
 // Further question, is more that one needed?
 //
 // Accept connections and save the 'handle' until the number of connections is
-// reached and the refuse them
+// reached and then refuse them
 // The functions that interface to the shell will pass in the port mask
 
 uint32_t connectionInfo[MAX_CONNECTIONS];

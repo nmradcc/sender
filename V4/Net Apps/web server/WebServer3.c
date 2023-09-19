@@ -137,6 +137,10 @@ http_server_netconn_serve(struct netconn *conn)
 
 		// open file
 		ret = f_open(&fp, pfn, FA_READ);
+		if(ret != FR_OK)
+		{
+			ret = f_open(&fp, "index.html", FA_READ);
+		}
 
 		if(ret == FR_OK)
 		{
