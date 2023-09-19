@@ -195,7 +195,7 @@ int main(void)
 
 
 	/* Mount SD Card */
-	if(f_mount(&fs, "", 0) != FR_OK)
+	if(f_mount(&fs, "", 1) != FR_OK)
 	{
 	    Error_Handler();
 	}
@@ -287,7 +287,7 @@ int main(void)
 
 	HeartbeatLed(LED_NORMAL);
 
-//	http_server_init();
+//k	http_server_init();
 	telnet_server_init();
 
   /* USER CODE END RTOS_THREADS */
