@@ -3280,7 +3280,11 @@ void HAL_TIM_IRQHandler(TIM_HandleTypeDef *htim)
       htim->Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
     }
   }
-  /* TIM Update event */
+  /*
+   *
+   * TIM Update event
+   *
+   * */
   if (__HAL_TIM_GET_FLAG(htim, TIM_FLAG_UPDATE) != RESET)
   {
     if (__HAL_TIM_GET_IT_SOURCE(htim, TIM_IT_UPDATE) != RESET)
