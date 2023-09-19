@@ -11,7 +11,7 @@
 #define LED_PIN_OFF GPIO_PIN_RESET
 
 
-struct netif gnetif;
+extern struct netif gnetif;
 
 static uint32_t LedMask = 1;
 
