@@ -12,7 +12,7 @@ P - set the lwip IP addresses from the variables (requires a reboot for now)
 C - add a resource lock for the track - send vs command station
 C - finish compiling and testing the YMODEM command
 - There seems to be an issue with USB file transfer, a character gets garbled (a quick count seems to be aroiund 490)
-- add a 'theme' variable to switch the colors for a light background terminal
+X - add a 'theme' variable to switch the colors for a light background terminal
 
 Shell
 - Test the new variables and math
