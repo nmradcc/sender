@@ -455,11 +455,13 @@ int BuildFunction4Packet(unsigned char* pPacket, int nAddress, unsigned int nFun
 *
 * FUNCTION:	   	BuildAccessoryPacket
 *
-* ARGUMENTS:	
+* ARGUMENTS:	Pointer to the packet buffer
+*				Accessory Address
+*				Accessory State
 *
-* RETURNS:		
+* RETURNS:		packet length
 *
-* DESCRIPTION:	
+* DESCRIPTION:	Build an accessory packet
 *
 * RESTRICTIONS:	
 *
@@ -471,11 +473,7 @@ int BuildAccessoryPacket(unsigned char* pPacket, int nAddress, unsigned char fSt
 	unsigned char bLowAddress;
 	unsigned char bHighAddress;
 	unsigned char Accessory;
-	//unsigned char* pTemp;
-	
-	//pTemp = pPacket++;				// leave room for the length byte
-	
-	//	nAddress += 3;
+
 	bTemp = (nAddress - 1) / 4;
 	bTemp++;
 	
@@ -500,7 +498,7 @@ int BuildAccessoryPacket(unsigned char* pPacket, int nAddress, unsigned char fSt
 	
 	*pPacket++ = bChecksum;
 	*pPacket = '\0';
-	//*pTemp = 3;
+
 	return 3;
 }
 

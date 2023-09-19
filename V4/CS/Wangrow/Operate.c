@@ -35,7 +35,7 @@
 *
 **********************************************************************/
 
-#define SPEED_PRIME_NUMBER	252
+//#define SPEED_PRIME_NUMBER	252
 
 #define SPEED_DIR_MAX		36
 
@@ -248,15 +248,15 @@ void DoDirection(VIRTUAL_CAB* pVirtualCab, int nEvent)
 					switch(GetLocoSpeedMode(pLoco))
 					{
 						case SPEED_MODE_14:
-							sprintf(szTemp, " SPED>%2d", SPEED_DIR_MAX / 18);
+							sprintf(szTemp, " SPED>%2d", SPEED_DIR_MAX / SPEED_14_DIVISOR);
 						break;
 
 						case SPEED_MODE_28:
-							sprintf(szTemp, " SPED>%2d", SPEED_DIR_MAX / 9);
+							sprintf(szTemp, " SPED>%2d", SPEED_DIR_MAX / SPEED_28_DIVISOR);
 						break;
 
 						case SPEED_MODE_128:
-							sprintf(szTemp, " SPED>%2d", SPEED_DIR_MAX / 2);
+							sprintf(szTemp, " SPED>%2d", SPEED_DIR_MAX / SPEED_128_DIVISOR);
 						break;
 
 						case SPEED_MODE_14_PERCENT:
@@ -362,15 +362,15 @@ void DoSpeed(VIRTUAL_CAB* pVirtualCab, int nEvent)
 		switch(GetLocoSpeedMode(pLoco))
 		{
 			case SPEED_MODE_14:
-				nIncAmount = 18;
+				nIncAmount = SPEED_14_DIVISOR;
 				break;
 			
 			case SPEED_MODE_28:
-				nIncAmount = 9;
+				nIncAmount = SPEED_28_DIVISOR;
 				break;
 			
 			case SPEED_MODE_128:
-				nIncAmount = 2;
+				nIncAmount = SPEED_128_DIVISOR;
 				break;
 			
 			case SPEED_MODE_14_PERCENT:
@@ -563,17 +563,17 @@ void DoSpeedKnob(VIRTUAL_CAB* pVirtualCab)
 			switch(GetLocoSpeedMode(pLoco))
 			{
 				case SPEED_MODE_14:
-					nNewSpeed /= 18;
+					nNewSpeed /= SPEED_14_DIVISOR;
 					sprintf(szTemp, " %3d", nNewSpeed);
 				break;
 
 				case SPEED_MODE_28:
-					nNewSpeed /= 9;
+					nNewSpeed /= SPEED_28_DIVISOR;
 					sprintf(szTemp, " %3d", nNewSpeed);
 				break;
 
 				case SPEED_MODE_128:
-					nNewSpeed /= 2;
+					nNewSpeed /= SPEED_128_DIVISOR;
 					sprintf(szTemp, " %3d", nNewSpeed);
 				break;
 

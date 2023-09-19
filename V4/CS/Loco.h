@@ -22,12 +22,17 @@
 *
 **********************************************************************/
 
+#define SPEED_PRIME_NUMBER	252
+#define SPEED_14_DIVISOR	18
+#define SPEED_28_DIVISOR	9
+#define SPEED_128_DIVISOR	2
+
 enum
 {
 	SPEED_MODE_NORMAL,
 	SPEED_MODE_STOP,
 	SPEED_MODE_GTZ,
-} SPEED_FCN_MODE;
+} /* SPEED_FCN_MODE */;
 
 enum
 {
@@ -37,7 +42,7 @@ enum
 	SPEED_MODE_128_PERCENT,
 	SPEED_MODE_14,
 	SPEED_MODE_14_PERCENT,
-} SPEED_MODE;
+} /* SPEED_MODE */;
 
 enum
 {
@@ -46,7 +51,7 @@ enum
 	CH_FUNCTION_2,
 	CH_FUNCTION_3,
 	CH_FUNCTION_4,
-} CHANGE;
+} /* CHANGE */;
 
 #define SPEED_UNITS_MASK	0x8000
 
@@ -102,7 +107,7 @@ enum
 {
 	DIR_FORWARD,
 	DIR_REVERSE,
-} LOCO_DIRECTION;
+} /* LOCO_DIRECTION */;
 
 typedef unsigned short word;
 
