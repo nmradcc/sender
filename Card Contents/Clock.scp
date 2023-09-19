@@ -1,4 +1,4 @@
-rem background clock display
+rem "background clock display"
 loop 0
 cursor save
 gotoxy 66, 0

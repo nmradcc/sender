@@ -1,4 +1,4 @@
-rem Script for testing the AND condition
+rem "Script for testing the AND condition"
 echo cr
 echo "Input 1 is "
 if inputs && 1
