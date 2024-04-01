@@ -1,4 +1,4 @@
-rem "Script for testing the script commands"
+rem Script for testing the script commands
 loop 10
 echo "Input 1 is "
 if inputs && 1

@@ -1,4 +1,4 @@
-rem "Test Script"
+rem Test Script
 led on
 color green
 dir

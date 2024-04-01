@@ -1,4 +1,4 @@
-rem Bad Packet 0
+rem packet with a bad zero bit
 preambles = 16
 200, 100, 1
 116, 58, 8
