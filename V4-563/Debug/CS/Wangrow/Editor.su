@@ -1,0 +1,6 @@
+../CS/Wangrow/Editor.c:81:5:FormatLen	16	static
+../CS/Wangrow/Editor.c:105:6:EditNumeric	56	static
+../CS/Wangrow/Editor.c:215:6:EditList	32	static
+../CS/Wangrow/Editor.c:308:6:EditSelection	32	static
+../CS/Wangrow/Editor.c:386:6:EditChoice	24	static
+../CS/Wangrow/Editor.c:431:6:EditSelection2	24	static

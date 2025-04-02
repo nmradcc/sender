@@ -1,0 +1,14 @@
+../CS/LinkedList.c:50:8:GetKey	1
+../CS/LinkedList.c:53:11:GetNext	1
+../CS/LinkedList.c:54:9:SetNext	1
+../CS/LinkedList.c:57:6:Clear	1
+../CS/LinkedList.c:65:6:setup	1
+../CS/LinkedList.c:74:6:InsertAtTop	2
+../CS/LinkedList.c:86:6:Append	1
+../CS/LinkedList.c:96:6:Remove	3
+../CS/LinkedList.c:120:6:BringToTop	3
+../CS/LinkedList.c:136:15:isEmpty	1
+../CS/LinkedList.c:150:7:isInList	4
+../CS/LinkedList.c:169:7:First	1
+../CS/LinkedList.c:176:7:Next	2
+../CS/LinkedList.c:185:7:FindByKey	4

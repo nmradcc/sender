@@ -1,0 +1,2 @@
+../Send/SRC/SEND/ST_VECT.cpp:31:13:void dummy(const char*, const char*)	16	static
+../Send/SRC/SEND/ST_VECT.cpp:33:6:void dummy_driver()	8	static

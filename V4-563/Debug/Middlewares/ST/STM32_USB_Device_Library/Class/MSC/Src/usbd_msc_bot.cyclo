@@ -1,0 +1,10 @@
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_bot.c:102:6:MSC_BOT_Init	1
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_bot.c:128:6:MSC_BOT_Reset	1
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_bot.c:146:6:MSC_BOT_DeInit	1
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_bot.c:159:6:MSC_BOT_DataIn	5
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_bot.c:192:6:MSC_BOT_DataOut	4
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_bot.c:225:14:MSC_BOT_CBW_Decode	13
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_bot.c:289:14:MSC_BOT_SendData	2
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_bot.c:310:7:MSC_BOT_SendCSW	1
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_bot.c:334:14:MSC_BOT_Abort	5
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_bot.c:362:7:MSC_BOT_CplClrFeature	4

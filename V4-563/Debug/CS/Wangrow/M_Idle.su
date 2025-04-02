@@ -1,0 +1,3 @@
+../CS/Wangrow/M_Idle.c:116:6:StateIdle	16	static
+../CS/Wangrow/M_Idle.c:149:6:RefreshDisplay	40	static
+../CS/Wangrow/M_Idle.c:175:6:DeleteCurrentRecall	16	static

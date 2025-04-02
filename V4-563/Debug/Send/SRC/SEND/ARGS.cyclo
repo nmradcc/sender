@@ -1,0 +1,19 @@
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/zlog.h:115:8:bool Zlog::get_dbg_on()	1
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/zlog.h:122:7:void Zlog::set_dbg_on(bool)	1
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/z_core.h:122:2:Z_core::Z_core()	1
+../Send/SRC/SEND/args.h:112:17:BYTE Args_obj::get_acc_pair() const	1
+../Send/SRC/SEND/args.h:114:11:BYTE Args_obj::get_acc_pre() const	1
+../Send/SRC/SEND/args.h:116:11:BYTE Args_obj::get_acc_trg() const	1
+../Send/SRC/SEND/ARGS.cpp:37:13:void dummy(const char*, const char*)	1
+../Send/SRC/SEND/ARGS.cpp:83:1:Args_obj::Args_obj()	1
+../Send/SRC/SEND/ARGS.cpp:151:1:Args_obj::~Args_obj()	2
+../Send/SRC/SEND/ARGS.cpp:177:1:void Args_obj::usage(FILE*)	18
+../Send/SRC/SEND/ARGS.cpp:330:1:Rslt_t Args_obj::get_args(int, char**)	9
+../Send/SRC/SEND/ARGS.cpp:405:1:Rslt_t Args_obj::argscan(int, char**)	70
+../Send/SRC/SEND/ARGS.cpp:762:1:Rslt_t Args_obj::iniopen(const char*, const char*, const char*)	7
+../Send/SRC/SEND/ARGS.cpp:892:1:Rslt_t Args_obj::iniscan()	45
+../Send/SRC/SEND/ARGS.cpp:1157:1:Rslt_t Args_obj::zcmd(const char*)	9
+../Send/SRC/SEND/ARGS.cpp:1211:1:char* Args_obj::get_str(char*, char*&)	11
+../Send/SRC/SEND/ARGS.cpp:1272:1:void __static_initialization_and_destruction_0(int, int)	5
+../Send/SRC/SEND/ARGS.cpp:1272:1:cpp)	1
+../Send/SRC/SEND/ARGS.cpp:1272:1:cpp)	1

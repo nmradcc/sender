@@ -1,0 +1,17 @@
+../Core/Src/file.c:90:6:GetFilPointer	16	static
+../Core/Src/file.c:103:6:FreeFilePointer	24	static
+../Core/Src/file.c:129:7:fopen	24	static
+../Core/Src/file.c:201:6:fclose	16	static
+../Core/Src/file.c:231:8:fread	32	static
+../Core/Src/file.c:255:8:fwrite	32	static
+../Core/Src/file.c:281:5:fseek	32	static
+../Core/Src/file.c:318:5:remove	16	static
+../Core/Src/file.c:337:5:rename	16	static
+../Core/Src/file.c:444:7:fgets	24	static
+../Core/Src/file.c:464:5:fputc	16	static
+../Core/Src/file.c:483:5:fputs	16	static
+../Core/Src/file.c:503:6:ftell	16	static
+../Core/Src/file.c:522:6:rewind	16	static
+../Core/Src/file.c:541:5:feof	16	static
+../Core/Src/file.c:560:5:ferror	16	static
+../Core/Src/file.c:579:6:getcwd	16	static

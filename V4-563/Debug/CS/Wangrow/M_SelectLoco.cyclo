@@ -1,0 +1,5 @@
+../CS/Wangrow/M_SelectLoco.c:124:6:StateSelectLoco	6
+../CS/Wangrow/M_SelectLoco.c:171:7:SelectLoco	12
+../CS/Wangrow/M_SelectLoco.c:257:6:DoSelectLoco	2
+../CS/Wangrow/M_SelectLoco.c:309:6:ExitSelectLoco	1
+../CS/Wangrow/M_SelectLoco.c:334:6:RepdisplayPrompt	1

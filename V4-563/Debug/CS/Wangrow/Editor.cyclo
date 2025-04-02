@@ -1,0 +1,6 @@
+../CS/Wangrow/Editor.c:81:5:FormatLen	3
+../CS/Wangrow/Editor.c:105:6:EditNumeric	15
+../CS/Wangrow/Editor.c:215:6:EditList	12
+../CS/Wangrow/Editor.c:308:6:EditSelection	9
+../CS/Wangrow/Editor.c:386:6:EditChoice	7
+../CS/Wangrow/Editor.c:431:6:EditSelection2	9

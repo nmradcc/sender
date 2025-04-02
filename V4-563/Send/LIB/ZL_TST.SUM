@@ -1,0 +1,7 @@
+<Tue Sep 12 18:14:36 2023> STATUS  zl_tst: Test message to file   7
+<Tue Sep 12 18:14:36 2023> STATUS  zl_tst: Test message to file & stderr   9
+to_stat msg  20
+<Tue Sep 12 18:14:36 2023> STATUS  zl_tst: Initial debug_on value <false> , step  25.
+<Tue Sep 12 18:14:36 2023> STATUS  zl_tst: torf( true ) = "true", torf( false ) = "false", step  34.
+<Tue Sep 12 18:14:36 2023> STATUS  zl_tst: After log close  35
+Should print to stat only file  36

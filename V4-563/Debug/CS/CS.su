@@ -1,0 +1,4 @@
+../CS/CS.c:76:6:CommandStationTask	32	static
+../CS/CS.c:153:6:HandlePackets	16	static
+../CS/CS.c:244:6:CabTestInProgress	24	static
+../CS/CS.c:283:6:CabTestComplete	16	static

@@ -1,0 +1,6 @@
+../Core/Src/Acknowledge.c:90:6:InitAcknowledge	2
+../Core/Src/Acknowledge.c:177:7:E_AverageFloat	1
+../Core/Src/Acknowledge.c:200:6:HAL_ADC_ConvCpltCallback	1
+../Core/Src/Acknowledge.c:226:6:Acknowledge	7
+../Core/Src/Acknowledge.c:318:9:IsAck	1
+../Core/Src/Acknowledge.c:338:12:GetAck	1

@@ -1,0 +1,10 @@
+../Core/Src/LED.c:28:6:RedLed	2
+../Core/Src/LED.c:50:6:YellowLed	2
+../Core/Src/LED.c:72:6:GreenLed	2
+../Core/Src/LED.c:94:10:GetRedLed	1
+../Core/Src/LED.c:99:10:GetYellowLed	1
+../Core/Src/LED.c:104:10:GetGreenLed	1
+../Core/Src/LED.c:110:6:DoYellowLed	3
+../Core/Src/LED.c:126:6:DoRedLed	3
+../Core/Src/LED.c:142:6:DoGreenLed	3
+../Core/Src/LED.c:158:6:LedTask	2

@@ -1,0 +1,7 @@
+../CS/Cab.c:98:6:HandleCabCommunication	8	static
+../CS/Cab.c:145:14:WM_RegisterCab	32	static
+../CS/Cab.c:210:6:WM_UnRegisterCab	16	static
+../CS/Cab.c:229:6:SetExpiration	16	static
+../CS/Cab.c:249:6:InitExpiration	4	static
+../CS/Cab.c:268:6:HandleExpiration	16	static
+../CS/Cab.c:302:6:InitVirtualCab	8	static

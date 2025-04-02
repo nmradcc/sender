@@ -1,0 +1,12 @@
+../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_useNewlib_ST.c:161:8:_sbrk_r	24	static
+../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_useNewlib_ST.c:206:8:sbrk	16	static
+C:\ST\STM32CubeIDE_1.12.0\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.12.3.rel1.win32_1.0.100.202403111256\tools\bin/../lib/gcc/arm-none-eabi/12.3.1/../../../../arm-none-eabi/include/malloc.h:136:13:__malloc_lock	32	static,ignoring_inline_asm
+C:\ST\STM32CubeIDE_1.12.0\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.12.3.rel1.win32_1.0.100.202403111256\tools\bin/../lib/gcc/arm-none-eabi/12.3.1/../../../../arm-none-eabi/include/malloc.h:138:13:__malloc_unlock	16	static
+../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_useNewlib_ST.c:237:6:__env_lock	8	static
+../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_useNewlib_ST.c:238:6:__env_unlock	8	static
+../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_useNewlib_ST.c:247:9:__wrap_malloc	24	static
+../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_useNewlib_ST.c:256:9:__wrap__malloc_r	24	static
+../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_useNewlib_ST.c:272:7:pvPortMalloc	24	static
+../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_useNewlib_ST.c:276:6:vPortFree	16	static
+../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_useNewlib_ST.c:280:8:xPortGetFreeHeapSize	48	static
+../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_useNewlib_ST.c:289:6:vPortInitialiseBlocks	4	static

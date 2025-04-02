@@ -1,0 +1,9 @@
+../Core/Src/Input.c:95:21:DebounceInputs	40	static
+../Core/Src/Input.c:134:6:InputTask	24	static
+../Core/Src/Input.c:180:10:GetInput1	4	static
+../Core/Src/Input.c:185:10:GetInput2	4	static
+../Core/Src/Input.c:190:10:GetInput3	4	static
+../Core/Src/Input.c:195:10:GetInput4	4	static
+../Core/Src/Input.c:200:10:GetInput5	4	static
+../Core/Src/Input.c:205:10:GetInput6	4	static
+../Core/Src/Input.c:210:10:GetInputs	4	static

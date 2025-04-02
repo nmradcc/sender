@@ -1,0 +1,37 @@
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/zlog.h:108:2:const char* Zlog::get_err_pri_str(Zlog_pri) const	16	static
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/zlog.h:121:7:void Zlog::set_no_abort_flag(bool)	16	static
+../Send/LIB/ZLOG.cpp:41:13:void dummy(const char*, const char*)	16	static
+../Send/LIB/ZLOG.cpp:94:1:Zlog::Zlog()	16	static
+../Send/LIB/ZLOG.cpp:126:1:Zlog::~Zlog()	16	static
+../Send/LIB/ZLOG.cpp:151:1:void Zlog::set_cmd_name(const char*)	24	static
+../Send/LIB/ZLOG.cpp:199:1:Rslt_t Zlog::open_log(const char*)	32	static
+../Send/LIB/ZLOG.cpp:251:1:void Zlog::close_log()	16	static
+../Send/LIB/ZLOG.cpp:282:1:Rslt_t Zlog::open_stat(const char*)	32	static
+../Send/LIB/ZLOG.cpp:332:1:void Zlog::close_stat()	16	static
+../Send/LIB/ZLOG.cpp:362:1:)	32	static
+../Send/LIB/ZLOG.cpp:397:1:)	44	static
+../Send/LIB/ZLOG.cpp:433:1:void Zlog::verrprint(const char*, Zlog_pri, const char*, va_list)	600	static
+../Send/LIB/ZLOG.cpp:512:1:)	588	static
+../Send/LIB/ZLOG.cpp:582:1:)	36	static
+../Send/LIB/ZLOG.cpp:635:1:void Zlog::vlogprint(const char*, Bits_t, const char*, va_list)	24	static
+../Send/LIB/ZLOG.cpp:682:1:)	36	static
+../Send/LIB/ZLOG.cpp:734:1:void Zlog::vlib_logprint(const char*, Bits_t, const char*, va_list)	24	static
+../Send/LIB/ZLOG.cpp:786:1:)	36	static
+../Send/LIB/ZLOG.cpp:802:1:)	32	static
+../Send/LIB/ZLOG.cpp:817:1:)	32	static
+../Send/LIB/ZLOG.cpp:832:1:)	36	static
+../Send/LIB/ZLOG.cpp:867:1:)	32	static
+../Send/LIB/ZLOG.cpp:882:1:)	36	static
+../Send/LIB/ZLOG.cpp:917:1:)	36	static
+../Send/LIB/ZLOG.cpp:952:1:)	36	static
+../Send/LIB/ZLOG.cpp:985:1:void Zlog::vdbgprint(bool, Dbg_hdr, const char*, va_list)	24	static
+../Send/LIB/ZLOG.cpp:1033:1:)	32	static
+../Send/LIB/ZLOG.cpp:1067:1:)	44	static
+../Send/LIB/ZLOG.cpp:1103:1:void Zlog::vlogdump(const char*, const char*, va_list)	32	static
+../Send/LIB/ZLOG.cpp:1131:1:void Zlog::vlogdump(int, const char*, const char*, va_list)	80	static
+../Send/LIB/ZLOG.cpp:1195:1:)	28	static
+../Send/LIB/ZLOG.cpp:1236:1:)	28	static
+../Send/LIB/ZLOG.cpp:1283:1:)	28	static
+../Send/LIB/ZLOG.cpp:1294:1:void __static_initialization_and_destruction_0(int, int)	16	static
+../Send/LIB/ZLOG.cpp:1294:1:cpp)	8	static
+../Send/LIB/ZLOG.cpp:1294:1:cpp)	8	static

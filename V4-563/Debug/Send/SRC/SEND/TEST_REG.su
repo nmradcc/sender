@@ -1,0 +1,21 @@
+../Send/SRC/SEND/sr_core.h:52:7:BYTE Sr_core::get_gen() const	16	static
+../Send/SRC/SEND/sr_core.h:53:7:BYTE Sr_core::get_pa() const	16	static
+../Send/SRC/SEND/sr_core.h:54:7:BYTE Sr_core::get_pb() const	16	static
+../Send/SRC/SEND/sr_core.h:55:7:BYTE Sr_core::get_pc() const	16	static
+../Send/SRC/SEND/sr_core.h:56:7:BYTE Sr_core::get_s0t() const	16	static
+../Send/SRC/SEND/sr_core.h:57:7:BYTE Sr_core::get_s0h() const	16	static
+../Send/SRC/SEND/sr_core.h:58:7:BYTE Sr_core::get_s1t() const	16	static
+../Send/SRC/SEND/sr_core.h:59:10:u_short Sr_core::get_cnt0t() const	16	static
+../Send/SRC/SEND/sr_core.h:60:10:u_short Sr_core::get_cnt0h() const	16	static
+../Send/SRC/SEND/sr_core.h:61:10:u_short Sr_core::get_cnt1t() const	16	static
+../Send/SRC/SEND/test_reg.h:98:7:void Test_reg::set_vm(const Test_reg_vm&)	16	static
+../Send/SRC/SEND/test_reg.h:116:9:Rslt_t Test_reg::test(const Sr_core&) const	16	static
+../Send/SRC/SEND/test_reg.h:122:2:static Rslt_t Test_reg::test(const Sr_core&, const Test_reg_vm&)	16	static
+../Send/SRC/SEND/test_reg.h:134:9:Rslt_t Test_reg::set_test(const Sr_core&, const Test_reg_vm&)	24	static
+../Send/SRC/SEND/TEST_REG.cpp:33:13:void dummy(const char*, const char*)	16	static
+../Send/SRC/SEND/TEST_REG.cpp:58:1:Rslt_t Test_reg::set_vm(int)	32	static
+../Send/SRC/SEND/TEST_REG.cpp:99:1:static Rslt_t Test_reg::test(const Sr_core&, const Sr_core_vals&, const Test_reg_mask&, const char*)	40	static
+../Send/SRC/SEND/TEST_REG.cpp:286:1:Rslt_t Test_reg::test(const Sr_core&, int) const	40	static
+../Send/SRC/SEND/TEST_REG.cpp:325:1:Rslt_t Test_reg::set_test(const Sr_core&, int)	40	static
+../Send/SRC/SEND/TEST_REG.cpp:363:1:void Test_reg::print(bool) const	16	static
+../Send/SRC/SEND/TEST_REG.cpp:437:1:void Test_reg::init()	16	static

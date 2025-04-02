@@ -1,0 +1,11 @@
+../Shell/ShellCS.c:63:12:ShCabStat	6
+../Shell/ShellCS.c:164:12:ShLocoStat	14
+../Shell/ShellCS.c:307:12:ShAssign	7
+../Shell/ShellCS.c:374:12:ShSystemStatus	1
+../Shell/ShellCS.c:549:12:ShSendPacketOrig	17
+../Shell/ShellCS.c:687:12:ShSendPacket	29
+../Shell/ShellCS.c:937:12:ShSetLoco	7
+../Shell/ShellCS.c:1000:12:ShCabDisplay	2
+../Shell/ShellCS.c:1023:6:ServiceModeCallback	1
+../Shell/ShellCS.c:1039:12:ShProgTrackWriteCV	1
+../Shell/ShellCS.c:1060:12:ShProgTrackReadCV	1

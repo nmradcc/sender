@@ -1,0 +1,6 @@
+../CS/TrakList.c:72:6:InitLocoList	16	static
+../CS/TrakList.c:116:7:NextLocoMsg	16	static
+../CS/TrakList.c:176:6:MakeMostRecentLoco	32	static
+../CS/TrakList.c:220:6:RemoveLocoMsg	16	static
+../CS/TrakList.c:245:7:OldestLoco	32	static
+../CS/TrakList.c:283:7:GetFree	16	static

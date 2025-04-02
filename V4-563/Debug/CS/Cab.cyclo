@@ -1,0 +1,7 @@
+../CS/Cab.c:98:6:HandleCabCommunication	1
+../CS/Cab.c:145:14:WM_RegisterCab	5
+../CS/Cab.c:210:6:WM_UnRegisterCab	1
+../CS/Cab.c:229:6:SetExpiration	1
+../CS/Cab.c:249:6:InitExpiration	1
+../CS/Cab.c:268:6:HandleExpiration	5
+../CS/Cab.c:302:6:InitVirtualCab	1

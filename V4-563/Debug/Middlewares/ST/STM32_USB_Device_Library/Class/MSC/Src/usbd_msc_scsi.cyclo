@@ -1,0 +1,16 @@
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c:115:8:SCSI_ProcessCmd	13
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c:181:15:SCSI_TestUnitReady	3
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c:212:16:SCSI_Inquiry	5
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c:257:15:SCSI_ReadCapacity10	2
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c:290:15:SCSI_ReadFormatCapacity	3
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c:332:15:SCSI_ModeSense6	2
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c:353:15:SCSI_ModeSense10	2
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c:377:15:SCSI_RequestSense	5
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c:420:6:SCSI_SenseCode	2
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c:439:15:SCSI_StartStopUnit	1
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c:453:15:SCSI_Read10	6
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c:507:15:SCSI_Write10	7
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c:581:15:SCSI_Verify10	3
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c:608:15:SCSI_CheckAddressRange	2
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c:627:15:SCSI_ProcessRead	3
+../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c:665:15:SCSI_ProcessWrite	3

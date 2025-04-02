@@ -1,0 +1,6 @@
+../Shell/Ansi.c:88:6:ClearScreen	16	static
+../Shell/Ansi.c:105:6:ClearEOL	16	static
+../Shell/Ansi.c:125:6:GoToXY	24	static
+../Shell/Ansi.c:148:6:TextColor	32	static
+../Shell/Ansi.c:155:6:ResetColor	16	static
+../Shell/Ansi.c:174:6:Cursor	16	static

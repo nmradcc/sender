@@ -1,0 +1,36 @@
+<Tue Sep 12 18:14:36 2023> STATUS  argc 1: NULL cmd_name test message   1
+<Tue Sep 12 18:14:36 2023> WARNING main - NULL cmd_name test message   2
+<Tue Sep 12 18:14:36 2023> STATUS  testme: Test message   3
+<Tue Sep 12 18:14:36 2023> WARNING testme: main - Test message   4
+<Tue Sep 12 18:14:36 2023> STATUS  zl_tst: Test message   5
+<Tue Sep 12 18:14:36 2023> WARNING zl_tst: main - Test message   6
+<Tue Sep 12 18:14:36 2023> STATUS  zl_tst: Test message to file & stderr   9
+<Tue Sep 12 18:14:36 2023> WARNING zl_tst: main - Test message to file & stderr  10
+<Tue Sep 12 18:14:36 2023> EMERG   zl_tst: main - Test message  11
+<Tue Sep 12 18:14:36 2023> ALERT   zl_tst: main - Test message  12
+<Tue Sep 12 18:14:36 2023> CRIT    zl_tst: main - Test message  13
+<Tue Sep 12 18:14:36 2023> ERROR   zl_tst: main - Test message  14
+<Tue Sep 12 18:14:36 2023> WARNING zl_tst: main - Test message  15
+<Tue Sep 12 18:14:36 2023> NOTICE  zl_tst: main - Test message  16
+<Tue Sep 12 18:14:36 2023> INFO    zl_tst: main - Test message  17
+<Tue Sep 12 18:14:36 2023> DEBUG   zl_tst: main - Test message  18
+to_log msg  19
+to_stat msg  20
+to_dump msg  21
+<Tue Sep 12 18:14:36 2023> DUMP    zl_tst: main - Test message  22
+	main - Test message  23
+Log msg zl_tst: main - Should print  24
+<Tue Sep 12 18:14:36 2023> STATUS  zl_tst: Initial debug_on value <false> , step  25.
+!> dbgprint() Should print with DBG_DFLT header, print_msg set to true, step  26.
+!P dbgprint() Should print with DBG_PKT header, print_msg set to true, step  27.
+!> dbgprint() Should print with DBG_DFLT header, dbg_on set, step  28.
+!P dbgprint() Should print with DBG_PKT header, dbg_on set, step  29.
+!> dbgall() Should print with DBG_DFLT header regardless of printing state, step  30.
+!P dbgall() Should print with DBG_PKT header regardless of printing state, step  31.
+!L dbglog() Should print with DBG_LOG header regardless of printing state, step  32.
+!P dbgpkt() Should print with DBG_PKT header regardless of printing state, step  33.
+<Tue Sep 12 18:14:36 2023> STATUS  zl_tst: torf( true ) = "true", torf( false ) = "false", step  34.
+<Tue Sep 12 18:14:36 2023> STATUS  zl_tst: After log close  35
+Should print to stat only file  36
+<Tue Sep 12 18:14:36 2023> ERROR   zl_tst: main - Abort test message  37
+<Tue Sep 12 18:14:36 2023> ERROR   zl_tst: errprint - Aborting program - error priority <ERROR>

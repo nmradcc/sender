@@ -1,0 +1,4 @@
+../CS/Service.c:96:6:ServiceMode	6
+../CS/Service.c:159:6:WaitForAck	2
+../CS/Service.c:217:6:ServiceModeWriteCV	1
+../CS/Service.c:240:12:ServiceModeReadCV	1

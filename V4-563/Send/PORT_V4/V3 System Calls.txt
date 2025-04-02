@@ -1,0 +1,129 @@
+/*****************************************************************************
+ *
+ * File:                 $Workfile: V3 System Calls.txt $
+ * Path:                 $Logfile: /NMRA/Portt_V4/V3 System Calls.txt $
+ * Project:              NMRA DCC Conformance Tests
+ *
+ * Creation date:        #
+ * Designed by:          K. West
+ *
+ * Current version:      $Revision: 2 $
+ * Last Modified on:     $Modtime: 8/25/19 2:05p $
+ *               by:     $Author: Kenw $
+ * Last checkin on:      $Date: 8/25/19 2:16p $
+ *
+ *****************************************************************************
+ *
+ * DESCRIPTION:
+ *
+ *  Borland C++ System call list for Sender V3 program.
+ *  Include files located in .\BC5\INCLUDE.
+ *
+ *****************************************************************************/
+
+ // ==========================================================================
+ <_defs.h>
+    #define _RTLENTRY       __cdecl
+    #define _USERENTRY      __cdecl
+    #define _EXPFUNC
+
+// ==========================================================================
+<stddefs.h>
+    typedef unsigned        size_t;
+
+// ==========================================================================
+<stdlib>
+    #define EOF             (-1)           // End of file indicator.
+    #define BUFSIZ          512            // Buffer size for stdio.
+    #define _MAX_PATH       80             // DOS Max path + file name. Please make this longer.
+    #define _MAX_DRIVE      3              // DOS Max drive name.       Please make this longer.
+    #define _MAX_DIR        66             // DOS Max directory name.   Please make this longer.
+    #define _MAX_FNAME      9              // DOS Max file name.        Please make this longer.
+    #define _MAX_EXT        5              // DOS Max extension name.   Please make this longer.
+
+    void        _RTLENTRY  exit(int __status);
+        (BIT_TEST.CPP, cktest.cpp, ZLOG.CPP, ZL_TST.CPP)
+
+// ==========================================================================
+<stdio>
+	typedef stuct          FILE
+    #define stdin          (&_streams[0])
+    #define stdout         (&_streams[1])
+    #define stderr         (&_streams[2])
+	#define _FAR           {}              // <stdio.h> kube 120: Definition of the control structure for streams
+
+
+    FILE   _FAR *_RTLENTRY _EXPFUNC fopen(const char _FAR *__path, const char _FAR *__mode);
+	    (cksum.h, cksum.cpp, cktest.cpp)
+
+    size_t  _RTLENTRY _EXPFUNC fread(void _FAR *__ptr, size_t __size, size_t __n,
+        (cksum.h, cksum.cpp, cktest.cpp)		
+
+    int     _RTLENTRY          ferror(FILE _FAR *__fp);
+        (cksum.h, cksum.cpp, cktest.cpp)		
+
+    int     _RTLENTRY _EXPFUNC fclose(FILE _FAR *__stream);
+        (cksum.h, cksum.cpp, cktest.cpp)			
+        
+    int     _RTLENTRY _EXPFUNC printf(const char * __format, ...);
+	    (BITS.H, BIITS,CPP, BIT_TEST.CPP, cksum.h, cksum.cpp, cktest.cpp)  
+		
+    int     _RTLENTRY _EXPFUNC fprintf(FILE _FAR *__stream, const char _FAR *__format, ...);
+	    (cksum.h, cksum.cpp, cktest.cpp)
+
+// ==========================================================================
+<string.h>		
+    char _FAR * _RTLENTRYF _EXPFUNC strcpy(char _FAR *__dest, const char _FAR *__src);
+	    (cksum.h, cksum.cpp, cktest.cpp)
+
+    char _FAR * _RTLENTRYF _EXPFUNC strcat(char _FAR *__dest, const char _FAR *__src);
+	    (cksum.h, cksum.cpp, cktest.cpp)
+
+// ==========================================================================
+<stdarg.h>
+    typedef void _FAR      *va_list;
+	
+    #define va_start(ap, parmN) ((void)((ap) = (va_list)((char _FAR *)(&parmN)+__size(parmN))))
+    #define va_arg(ap, type) (*(type _FAR *)(((*(char _FAR *_FAR *)&(ap))+=__size(type))-(__size(type))))
+    #define va_end(ap)          ((void)0)
+	    (ZLOG.H, ZLOG.CPP, ZL_TST.CPP)
+    
+
+// ==========================================================================
+<ctype.h>
+    int _CType tolower(int __ch);
+	    (ZLOG.H, ZLOG.CPP, ZL_TST.CPP)
+		
+// ==========================================================================
+<time.h>
+    typedef long           time_t;
+
+    time_t      _RTLENTRY _EXPFUNC32 time(time_t _FAR *__timer);
+	    (ZLOG.H, ZLOG.CPP, ZL_TST.CPP)
+
+    char _FAR * _RTLENTRY _EXPFUNC   ctime(const time_t _FAR *__time);
+	    (ZLOG.H, ZLOG.CPP, ZL_TST.CPP)
+
+    
+
+/*****************************************************************************
+ * $History: V3 System Calls.txt $
+ * 
+ * *****************  Version 2  *****************
+ * User: Kenw         Date: 8/25/19    Time: 2:16p
+ * Updated in $/NMRA/Portt_V4
+ * Updated to include system calls for library  files and assocuated unit
+ * tests.
+ * 
+ * *****************  Version 1  *****************
+ * User: Kenw         Date: 8/24/19    Time: 2:14p
+ * Created in $/NMRA/Portt_V4
+ * Sender V3 System Call List.
+ * 
+ * *****************  Version 1  *****************
+ * User: Kenw         Date: 4/21/96    Time: 1:19p
+ * Created in $/NMRA/INCLUDE
+ * Header file for 'class Z_core' the base class of the class tree.
+ *
+ *****************************************************************************/
+

@@ -1,0 +1,14 @@
+../Shell/ShellScript.c:152:12:DoRun	3
+../Shell/ShellScript.c:194:6:ScriptDone	2
+../Shell/ShellScript.c:215:6:DoScriptRun	30
+../Shell/ShellScript.c:410:12:TestCondition	22
+../Shell/ShellScript.c:597:12:ShScripts	11
+../Shell/ShellScript.c:694:12:ShIf	2
+../Shell/ShellScript.c:717:12:ShElse	1
+../Shell/ShellScript.c:736:12:ShEndif	1
+../Shell/ShellScript.c:757:12:ShLoop	4
+../Shell/ShellScript.c:795:12:ShEndLoop	5
+../Shell/ShellScript.c:829:12:ShBreak	2
+../Shell/ShellScript.c:853:12:ShPrompt	1
+../Shell/ShellScript.c:875:12:ShReturn	2
+../Shell/ShellScript.c:886:14:GetLoopCount	2

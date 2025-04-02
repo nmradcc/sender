@@ -1,0 +1,7 @@
+../CS/Wangrow/Menu.c:79:6:DisplayPrompt	16	static
+../CS/Wangrow/Menu.c:100:6:DisplayMenu	16	static
+../CS/Wangrow/Menu.c:125:6:NewMenu	40	static
+../CS/Wangrow/Menu.c:170:6:NextMenu	16	static
+../CS/Wangrow/Menu.c:192:6:RestartMenu	16	static
+../CS/Wangrow/Menu.c:212:6:ExitMenu	16	static
+../CS/Wangrow/Menu.c:243:6:HandleEnter	24	static

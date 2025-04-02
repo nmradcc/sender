@@ -1,0 +1,10 @@
+../Core/Src/LED.c:28:6:RedLed	16	static
+../Core/Src/LED.c:50:6:YellowLed	16	static
+../Core/Src/LED.c:72:6:GreenLed	16	static
+../Core/Src/LED.c:94:10:GetRedLed	4	static
+../Core/Src/LED.c:99:10:GetYellowLed	4	static
+../Core/Src/LED.c:104:10:GetGreenLed	4	static
+../Core/Src/LED.c:110:6:DoYellowLed	8	static
+../Core/Src/LED.c:126:6:DoRedLed	8	static
+../Core/Src/LED.c:142:6:DoGreenLed	8	static
+../Core/Src/LED.c:158:6:LedTask	16	static

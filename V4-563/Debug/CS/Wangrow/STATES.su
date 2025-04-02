@@ -1,0 +1,4 @@
+../CS/Wangrow/STATES.c:73:6:RunState	24	static
+../CS/Wangrow/STATES.c:207:6:InitState	16	static
+../CS/Wangrow/STATES.c:227:6:ChangeState	16	static
+../CS/Wangrow/STATES.c:274:15:DispatchEvent	32	static
