@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug send.exe (CMake)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${command:cmake.launchTargetPath}",
+      "args": [],
+      "cwd": "${command:cmake.launchTargetDirectory}",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    }
+  ]
+}

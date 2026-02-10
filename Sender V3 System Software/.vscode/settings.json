@@ -1,0 +1,7 @@
+{
+  "cmake.configurePreset": "windows-msvc",
+  "cmake.buildPreset": "windows-msvc",
+  "chat.tools.terminal.autoApprove": {
+    "cmake": true
+  }
+}
