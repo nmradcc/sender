@@ -1,0 +1,44 @@
+(ExpressProject ""
+  (ProjectType "UNKNOWN")
+  (Folder "Design Resources"
+    (Folder "Library"
+      (File "C:\ORCADWIN\CAPTURE\LIBRARY\QTRACK.OLB"
+        (Type "Schematic Library")))
+    (File ".\send2.dsn"
+      (Type "Schematic Design"))
+    (BuildFileAddedOrDeleted "x")
+    (CompileFileAddedOrDeleted "x")
+    (NoModify))
+  (Folder "Outputs"
+    (File ".\send2.net"
+      (Type "Report"))
+    (File ".\send2.bom"
+      (Type "Report"))
+    (File ".\send2.drc"
+      (Type "Report"))
+    (File ".\send2.xrf"
+      (Type "Report")))
+  (Folder "Referenced Projects")
+  (Folder "Simulation Resources"
+    (Folder "In Design")
+    (Folder "Compiled")
+    (Folder "Timed"))
+  (GlobalState
+    (Physical 0)
+    (FileView
+      (Path "Design Resources")
+      (Path "Design Resources" ".\send2.dsn")
+      (Path "Design Resources" ".\send2.dsn" "SEND1")
+      (Path "Design Resources" ".\send2.dsn" "SEND2")
+      (Path "Design Resources" ".\send2.dsn" "SEND3")
+      (Path "Design Resources" ".\send2.dsn" "SEND4")
+      (Path "Design Resources" ".\send2.dsn" "SEND5")
+      (Path "Design Resources" ".\send2.dsn" "SEND6")
+      (Path "Design Resources" "Library")
+      (Path "Outputs"))
+    (HierarchyView)
+    (Document
+      (Type "COrCapturePMDoc")
+      (Frame
+        (Placement "44 2 3 -1 -1 -4 -23 -1 290 -2 462"))
+      (Tab 0))))

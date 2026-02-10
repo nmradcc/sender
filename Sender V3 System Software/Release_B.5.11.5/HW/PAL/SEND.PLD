@@ -1,0 +1,74 @@
+Name      JDRPROTO;
+Partno    JDRPROTO;
+Date      08/20/90;
+Revision  02;
+Designer  DERICK;
+Company   JDR;
+Assembly  00000;
+Location  PAL;
+Device    G20V8;
+/* Device    P20L8; */
+
+/****************************************************************/
+/* THIS IS THE PAL FOR JDR'S PDS-601 & PDS-611                  */
+/****************************************************************/
+
+/**  Inputs  **/
+
+pin  1      = !SA6;            /* ADDRESS 6' SWITCH 3            */
+pin  2      = !SA7;            /* ADDRESS 7' SWITCH 2            */
+pin  3      = A2;              /* ADDRESS 2                      */
+pin  4      = A3;              /* ADDRESS 3                      */
+pin  5      = A4;              /* ADDRESS 4                      */
+pin  6      = A5;              /* ADDRESS 5                      */
+pin  7      = A6;              /* ADDRESS 6                      */
+pin  8      = A7;              /* ADDRESS 7                      */
+pin  9      = A8;              /* ADDRESS 8                      */
+pin 10      = A9;              /* ADDRESS 9                      */
+pin 11      = DMAAEN;          /* DMA ADDRESS ENABLE             */
+pin 13      = !SA5;            /* ADDRESS 5' SWITCH 4            */
+pin 14      = !SA4;            /* ADDRESS 4' SWITCH 5, NOT USED  */
+pin 18      = !SEL3;           /* SELECT OUT 3, COMBINATORIAL IN */
+pin 23      = !SA8;            /* ADDRESS 8' SWITCH 1            */
+
+/**  Outputs  **/
+
+pin 15      = !SEL4;            /* SELECT OUT 4                  */
+pin 16      = !SEL8255;         /* SELECT OUT 8255               */
+pin 17      = !SEL8253;         /* SELECT OUT 8253               */
+pin 19      = !SEL2;            /* SELECT OUT 2                  */
+pin 20      = !SEL1;            /* SELECT OUT 1                  */
+pin 21      = !SEL0;            /* SELECT OUT 0                  */
+pin 22      = !GATE;            /* GATE BI-DI BUFFER             */
+
+/** Declarations and Intermediate Variable Definitions **/
+
+field ADDHI  = [A9..6];         /* HIGH ORDER ADDRESSES         */
+field ADDLO  = [A4..2];         /* LOW ORDER ADDRESSES          */
+field SWHI   = [SA8..6];        /* HIGH ORDER SWITCHES          */
+
+OK5          = (A5 & SA5 # !A5 & !SA5) & !DMAAEN;
+
+/** Logic Equations **/
+
+GATE         =  SEL3 & OK5 & ADDLO:[00..17];
+
+SEL0         =  SEL3 & OK5 & ADDLO:[00..03];
+
+SEL1         =  SEL3 & OK5 & ADDLO:[04..07];
+
+SEL2         =  SEL3 & OK5 & ADDLO:[08..0B];
+
+/* SEL4         =  SEL3 & OK5 & ADDLO:[0C..0F]; */
+
+SEL8255      =  SEL3 & OK5 & ADDLO:[10..13];
+
+SEL8253      =  SEL3 & OK5 & ADDLO:[14..17];
+
+SEL3         =  SWHI:[040] & ADDHI:[240]
+              # SWHI:[080] & ADDHI:[280]
+              # SWHI:[0C0] & ADDHI:[2C0]
+              # SWHI:[100] & ADDHI:[300]
+              # SWHI:[140] & ADDHI:[340]
+              # SWHI:[180] & ADDHI:[380]
+              # SWHI:[1C0] & ADDHI:[3C0];

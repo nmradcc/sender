@@ -1,3 +1,0 @@
-rem linux style directoy - now in color
-dir -c %1
-prompt

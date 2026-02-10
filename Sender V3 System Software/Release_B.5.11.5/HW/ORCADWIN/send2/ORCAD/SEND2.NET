@@ -1,0 +1,938 @@
+Wire List
+
+DCC Packet Sender V2, Block Diagram           Revised: December 28, 1999
+2                                             Revision: 2.1
+NMRA
+4121 Cromwell Road
+Chattanooga, TN 37421
+
+
+
+<<< Component List >>>
+100 uFd                       C101      CT20D08S
+100 uFd                       C102      CT20D08S
+.1 uFd                        C201      CC1S2X13
+.1 uFd                        C202      CC1S2X13
+.01 uFd                       C203      CC100
+.1 uFd                        C301      CC1S2X13
+.1 uFd                        C302      CC1S2X13
+.01 uFd                       C303      CC100
+.01 uFd                       C304      CC100
+.1 uFd                        C401      CC1S2X13
+.1 uFd                        C402      CC1S2X13
+.1 uFd                        C403      CC1S2X13
+.01 uFd                       C404      CC100
+.01 uFd                       C405      CC100
+.01 uFd                       C406      CC100
+.1 uFd                        C501      CC1S2X13
+.1 uFd                        C502      CC1S2X13
+.01 uFd                       C503      CC100
+.01 uFd                       C504      CC100
+.1 uFd                        C601      CC1S2X13
+.1 uFd                        C602      CC1S2X13
+.01 uFd                       C603      CC100
+.01 uFd                       C604      CC100
+CON XTA                       J201      XTTOPCON
+CON XTB                       J202      XTBOTCON
+PC104                         J203      2X32CONA
+HEADER 6X2                    JP301     2X6CON
+DB25-S                        P601      DB25FRA
+DB9-S                         P602      DB9FRA
+10K                           R201      RCR07S
+10K                           R301      RCR07S
+10K                           R302      RCR07S
+10K                           R303      RCR07S
+10K                           R401      RCR07S
+10K                           R501      RCR07S
+10K                           R502      RCR07S
+10K                           R503      RCR07S
+10K                           R601      RCR07S
+10K                           R602      RCR07S
+10K                           R603      RCR07S
+10K                           R604      RCR07S
+100 Ohm 1 Watt                R605      R-YAG1W
+SIP10C-10K                    RS301     SIP10PU
+SIP10C-10K                    RS601     SIP10PU
+SW DIP-5                      SW301     SWDIP10
+74ACT245                      U201      DIP20
+74ACT244                      U202      DIP20
+74ACT244                      U203      DIP20
+82C55A                        U301      DIP40
+20V8                          U302      DIP24S
+74AC04                        U303      DIP14
+74AC02                        U304      DIP14
+82C54-10                      U401      DIP24
+1 MHZ OSC.                    U402      DIP14OSC
+74AC74                        U403      DIP14
+74AC00                        U404      DIP14
+74AC08                        U405      DIP14
+74AC02                        U406      DIP14
+74LS166                       U501      DIP16
+74AC161                       U502      DIP16
+74AC74                        U503      DIP14
+74AC74                        U504      DIP14
+DS26C31TN                     U601      DIP16
+DS26C32ATN                    U602      DIP16
+74AC273                       U603      DIP20
+74ACT244                      U604      DIP20
+
+<<< Wire List >>>
+
+  NODE  REFERENCE    PIN #   PIN NAME           PIN TYPE       PART VALUE
+
+[00001] BD3
+        U301            31      D3              BiDirectional  82C55A
+        U201            15      B4              BiDirectional  74ACT245
+        U401            5       D3              BiDirectional  82C54-10
+        U602            13      4Y              Hi-Z           DS26C32ATN
+        U604            12      1Y4             Hi-Z           74ACT244
+        U603            8       D4              Input          74AC273
+
+[00002] BD4
+        U301            30      D4              BiDirectional  82C55A
+        U201            14      B5              BiDirectional  74ACT245
+        U401            4       D4              BiDirectional  82C54-10
+        U604            9       2Y1             Hi-Z           74ACT244
+        U603            13      D5              Input          74AC273
+
+[00003] BA6
+        U302            7       I6              Input          20V8
+        U202            5       2Y3             Hi-Z           74ACT244
+
+[00004] BA7
+        U302            8       I7              Input          20V8
+        U202            3       2Y4             Hi-Z           74ACT244
+
+[00005] BD0
+        U301            34      D0              BiDirectional  82C55A
+        U201            18      B1              BiDirectional  74ACT245
+        U401            8       D0              BiDirectional  82C54-10
+        U602            3       1Y              Hi-Z           DS26C32ATN
+        U604            18      1Y1             Hi-Z           74ACT244
+        U603            3       D1              Input          74AC273
+
+[00006] BD1
+        U301            33      D1              BiDirectional  82C55A
+        U201            17      B2              BiDirectional  74ACT245
+        U401            7       D1              BiDirectional  82C54-10
+        U602            5       2Y              Hi-Z           DS26C32ATN
+        U604            16      1Y2             Hi-Z           74ACT244
+        U603            4       D2              Input          74AC273
+
+[00007] BD2
+        U301            32      D2              BiDirectional  82C55A
+        U201            16      B3              BiDirectional  74ACT245
+        U401            6       D2              BiDirectional  82C54-10
+        U602            11      3Y              Hi-Z           DS26C32ATN
+        U604            14      1Y3             Hi-Z           74ACT244
+        U603            7       D3              Input          74AC273
+
+[00008] RDBAK
+        U304            1       O_A             Output         74AC02
+        U602            4       G               Input          DS26C32ATN
+
+[00009] -PCRST
+        U303            2       O_A             Output         74AC04
+        U403            4       PR_A            Input          74AC74
+        U403            10      PR_B            Input          74AC74
+        U603            1       CLR             Input          74AC273
+        U504            1       CL_A            Input          74AC74
+        U503            10      PR_B            Input          74AC74
+        U503            4       PR_A            Input          74AC74
+        U501            9       CLR             Input          74LS166
+        U502            1       CLR             Input          74AC161
+
+[00010] BA3
+        U302            4       I3              Input          20V8
+        U202            12      1Y4             Hi-Z           74ACT244
+
+[00011] BA4
+        U302            5       I4              Input          20V8
+        U202            9       2Y1             Hi-Z           74ACT244
+
+[00012] BA5
+        U302            6       I5              Input          20V8
+        U202            7       2Y2             Hi-Z           74ACT244
+
+[00013] BD5
+        U301            29      D5              BiDirectional  82C55A
+        U201            13      B6              BiDirectional  74ACT245
+        U401            3       D5              BiDirectional  82C54-10
+        U604            7       2Y2             Hi-Z           74ACT244
+        U603            14      D6              Input          74AC273
+
+[00014] BD6
+        U301            28      D6              BiDirectional  82C55A
+        U201            12      B7              BiDirectional  74ACT245
+        U401            2       D6              BiDirectional  82C54-10
+        U604            5       2Y3             Hi-Z           74ACT244
+        U603            17      D7              Input          74AC273
+
+[00015] BD7
+        U301            27      D7              BiDirectional  82C55A
+        U201            11      B8              BiDirectional  74ACT245
+        U401            1       D7              BiDirectional  82C54-10
+        U604            3       2Y4             Hi-Z           74ACT244
+        U603            18      D8              Input          74AC273
+
+[00016] BRESET
+        U301            35      RESET           Input          82C55A
+        U203            5       2Y3             Hi-Z           74ACT244
+
+[00017] BAEN
+        U302            11      I10             Input          20V8
+        U203            7       2Y2             Hi-Z           74ACT244
+
+[00018] -GATE
+        U302            22      F7              BiDirectional  20V8
+        U201            19      G               Input          74ACT245
+
+[00019] BA0
+        U301            9       A0              Input          82C55A
+        U202            18      1Y1             Hi-Z           74ACT244
+        U401            19      A0              Input          82C54-10
+
+[00020] BA1
+        U301            8       A1              Input          82C55A
+        U202            16      1Y2             Hi-Z           74ACT244
+        U401            20      A1              Input          82C54-10
+
+[00021] BA2
+        U302            3       I2              Input          20V8
+        U202            14      1Y3             Hi-Z           74ACT244
+
+[00022] PA0
+        U301            4       PA0             Output         82C55A
+        U501            2       A               Input          74LS166
+
+[00023] BA8
+        U302            9       I8              Input          20V8
+        U203            18      1Y1             Hi-Z           74ACT244
+
+[00024] BA9
+        U302            10      I9              Input          20V8
+        U203            16      1Y2             Hi-Z           74ACT244
+
+[00025] CLK1
+        U405            3       O_A             Output         74AC08
+        U406            3       I1_A            Input          74AC02
+        U406            5       I0_B            Input          74AC02
+        U303            5       I_C             Input          74AC04
+        U503            3       CLK_A           Input          74AC74
+
+[00026] DCCOUTD
+        U601            1       1A              Input          DS26C31TN
+        U301            25      PB7             Input          82C55A
+        U503            5       Q_A             Output         74AC74
+
+[00027] SCOPE
+        U601            7       2A              Input          DS26C31TN
+        U301            24      PB6             Input          82C55A
+        U406            13      O_D             Output         74AC02
+
+[00028] DCCOUT
+        U405            6       O_B             Output         74AC08
+        U303            11      I_E             Input          74AC04
+        U504            3       CLK_A           Input          74AC74
+        U503            2       D_A             Input          74AC74
+        U502            2       CLK             Input          74AC161
+        U405            10      I1_C            Input          74AC08
+        U501            7       CLK             Input          74LS166
+
+[00029] -BIOR
+        U301            5       R\D\            Input          82C55A
+        U304            6       I1_B            Input          74AC02
+        U304            3       I1_A            Input          74AC02
+        U203            12      1Y4             Hi-Z           74ACT244
+        U201            1       DIR             Input          74ACT245
+        U401            22      R\D\            Input          82C54-10
+
+[00030] -BIOW
+        U301            36      W\R\            Input          82C55A
+        U304            9       I1_C            Input          74AC02
+        U203            9       2Y1             Hi-Z           74ACT244
+        U401            23      W\R\            Input          82C54-10
+
+[00031] PB0
+        U301            18      PB0             Input          82C55A
+        U504            6       Q\_A            Output         74AC74
+
+[00032] PB1
+        U301            19      PB1             Input          82C55A
+        U401            15      CLK1            Input          82C54-10
+        U303            6       O_C             Output         74AC04
+        U503            11      CLK_B           Input          74AC74
+
+[00033] PB2
+        U301            20      PB2             Input          82C55A
+        U403            9       Q_B             Output         74AC74
+        U405            4       I0_B            Input          74AC08
+
+[00034] PB3
+        U301            21      PB3             Input          82C55A
+        U406            2       I0_A            Input          74AC02
+        U303            9       I_D             Input          74AC04
+        U406            9       I1_C            Input          74AC02
+        R503            2       2               Passive        10K
+        U501            13      QH              Output         74LS166
+
+[00035] PB4
+        U301            22      PB4             Input          82C55A
+        U401            14      G1              Input          82C54-10
+        U406            10      O_C             Output         74AC02
+
+[00036] PB5
+        U301            23      PB5             Input          82C55A
+        U502            7       ENP             Input          74AC161
+        U404            8       O_C             Output         74AC00
+        U405            13      I1_D            Input          74AC08
+
+[00037] +5V
+        C101            1       1               Passive        100 uFd
+        C102            1       1               Passive        100 uFd
+        U304            14      VCC             Power          74AC02
+        U303            14      VCC             Power          74AC04
+        U302            24      VCC             Power          20V8
+        U301            26      VCC             Power          82C55A
+        C301            1       1               Passive        .1 uFd
+        RS301           1       1               Passive        SIP10C-10K
+        R301            1       1               Passive        10K
+        R303            2       2               Passive        10K
+        R302            2       2               Passive        10K
+        C304            1       1               Passive        .01 uFd
+        C302            1       1               Passive        .1 uFd
+        C303            1       1               Passive        .01 uFd
+        R201            1       1               Passive        10K
+        U201            20      VCC             Power          74ACT245
+        U203            20      VCC             Power          74ACT244
+        U202            20      VCC             Power          74ACT244
+        J202            B3      B3              Passive        CON XTB
+        C203            1       1               Passive        .01 uFd
+        C201            1       1               Passive        .1 uFd
+        C202            1       1               Passive        .1 uFd
+        J202            B29     B29             Passive        CON XTB
+        J203            5       B3              Passive        PC104
+        J203            57      B29             Passive        PC104
+        U401            24      VCC             Power          82C54-10
+        U404            14      VCC             Power          74AC00
+        U406            14      VCC             Power          74AC02
+        U403            14      VCC             Power          74AC74
+        U402            14      VCC             Power          1 MHZ OSC.
+        U405            14      VCC             Power          74AC08
+        R401            1       1               Passive        10K
+        U401            16      G2              Input          82C54-10
+        U401            11      G0              Input          82C54-10
+        C401            1       1               Passive        .1 uFd
+        C403            1       1               Passive        .1 uFd
+        C402            1       1               Passive        .1 uFd
+        C404            1       1               Passive        .01 uFd
+        C406            1       1               Passive        .01 uFd
+        C405            1       1               Passive        .01 uFd
+        U601            16      VCC             Power          DS26C31TN
+        U602            16      VCC             Power          DS26C32ATN
+        U603            20      VCC             Power          74AC273
+        U604            20      VCC             Power          74ACT244
+        U602            12      G\              Input          DS26C32ATN
+        C604            1       1               Passive        .01 uFd
+        C603            1       1               Passive        .01 uFd
+        R605            1       1               Passive        100 Ohm 1 Watt
+        RS601           1       1               Passive        SIP10C-10K
+        C602            1       1               Passive        .1 uFd
+        C601            1       1               Passive        .1 uFd
+        U501            16      VCC             Power          74LS166
+        U503            14      VCC             Power          74AC74
+        U504            14      VCC             Power          74AC74
+        U502            16      VCC             Power          74AC161
+        R501            1       1               Passive        10K
+        R502            1       1               Passive        10K
+        R503            1       1               Passive        10K
+        C501            1       1               Passive        .1 uFd
+        C504            1       1               Passive        .01 uFd
+        C503            1       1               Passive        .01 uFd
+        C502            1       1               Passive        .1 uFd
+
+[00038] IRQ4
+        J203            47      B24             Passive        PC104
+        JP301           4       4               Passive        HEADER 6X2
+        J202            B24     B24             Passive        CON XTB
+
+[00039] IRQ5
+        JP301           6       6               Passive        HEADER 6X2
+        J202            B23     B23             Passive        CON XTB
+        J203            45      B23             Passive        PC104
+
+[00040] IRQ3
+        J202            B25     B25             Passive        CON XTB
+        J203            49      B25             Passive        PC104
+        JP301           2       2               Passive        HEADER 6X2
+
+[00041] IRQ7
+        J202            B21     B21             Passive        CON XTB
+        JP301           10      10              Passive        HEADER 6X2
+        J203            41      B41             Passive        PC104
+
+[00042] IRQ6
+        J202            B22     B22             Passive        CON XTB
+        JP301           8       8               Passive        HEADER 6X2
+        J203            43      B22             Passive        PC104
+
+[00043] A5
+        J203            52      A51             Passive        PC104
+        J201            A26     A26             Passive        CON XTA
+        U202            13      2A2             Input          74ACT244
+
+[00044] A4
+        J201            A27     A27             Passive        CON XTA
+        J203            54      A27             Passive        PC104
+        U202            11      2A1             Input          74ACT244
+
+[00045] A9
+        U203            4       1A2             Input          74ACT244
+        J201            A22     A22             Passive        CON XTA
+        J203            44      A22             Passive        PC104
+
+[00046] A0
+        J203            62      A31             Passive        PC104
+        J201            A31     A31             Passive        CON XTA
+        U202            2       1A1             Input          74ACT244
+
+[00047] AEN
+        J203            22      A11             Passive        PC104
+        J201            A11     A11             Passive        CON XTA
+        U203            13      2A2             Input          74ACT244
+
+[00048] A6
+        U202            15      2A3             Input          74ACT244
+        J203            50      A25             Passive        PC104
+        J201            A25     A25             Passive        CON XTA
+
+[00049] D4
+        U201            6       A5              BiDirectional  74ACT245
+        J201            A5      A5              Passive        CON XTA
+        J203            10      A5              Passive        PC104
+
+[00050] A8
+        U203            2       1A1             Input          74ACT244
+        J203            46      A23             Passive        PC104
+        J201            A23     A23             Passive        CON XTA
+
+[00051] D7
+        J201            A2      A2              Passive        CON XTA
+        J203            4       A2              Passive        PC104
+        U201            9       A8              BiDirectional  74ACT245
+
+[00052] D3
+        U201            5       A4              BiDirectional  74ACT245
+        J203            12      A6              Passive        PC104
+        J201            A6      A6              Passive        CON XTA
+
+[00053] D0
+        U201            2       A1              BiDirectional  74ACT245
+        J203            18      A9              Passive        PC104
+        J201            A9      A9              Passive        CON XTA
+
+[00054] A1
+        J203            60      A30             Passive        PC104
+        J201            A30     A30             Passive        CON XTA
+        U202            4       1A2             Input          74ACT244
+
+[00055] A7
+        U202            17      2A4             Input          74ACT244
+        J203            48      A24             Passive        PC104
+        J201            A24     A24             Passive        CON XTA
+
+[00056] D2
+        J201            A7      A7              Passive        CON XTA
+        J203            14      A7              Passive        PC104
+        U201            4       A3              BiDirectional  74ACT245
+
+[00057] -IOW
+        J203            25      B13             Passive        PC104
+        J202            B13     B13             Passive        CON XTB
+        U203            11      2A1             Input          74ACT244
+
+[00058] D5
+        J201            A4      A4              Passive        CON XTA
+        J203            8       A4              Passive        PC104
+        U201            7       A6              BiDirectional  74ACT245
+
+[00059] D1
+        J201            A8      A8              Passive        CON XTA
+        U201            3       A2              BiDirectional  74ACT245
+        J203            16      A8              Passive        PC104
+
+[00060] D6
+        U201            8       A7              BiDirectional  74ACT245
+        J201            A3      A3              Passive        CON XTA
+        J203            6       A3              Passive        PC104
+
+[00061] RESET
+        J203            3       B2              Passive        PC104
+        J202            B2      B2              Passive        CON XTB
+        U203            15      2A3             Input          74ACT244
+
+[00062] -IOR
+        J202            B14     B14             Passive        CON XTB
+        J203            27      B14             Passive        PC104
+        U203            8       1A4             Input          74ACT244
+
+[00063] A3
+        J201            A28     A28             Passive        CON XTA
+        U202            8       1A4             Input          74ACT244
+        J203            56      A28             Passive        PC104
+
+[00064] A2
+        U202            6       1A3             Input          74ACT244
+        J203            58      A29             Passive        PC104
+        J201            A29     A29             Passive        CON XTA
+
+[00065] PC2
+        U301            16      PC2             Output         82C55A
+        U404            1       I0_A            Input          74AC00
+
+[00066] PC3
+        U301            17      PC3             Output         82C55A
+        U203            6       1A3             Input          74ACT244
+
+[00067] PC4
+        U301            13      PC4             Output         82C55A
+        R303            1       1               Passive        10K
+        U504            4       PR_A            Input          74AC74
+
+[00068] PC5
+        U301            12      PC5             Output         82C55A
+        U406            12      I1_D            Input          74AC02
+
+[00069] -SEL8254
+        U302            17      F2              BiDirectional  20V8
+        U401            21      C\S\            Input          82C54-10
+
+[00070] PA6
+        U301            38      PA6             Output         82C55A
+        U501            12      G               Input          74LS166
+
+[00071] PA7
+        U301            37      PA7             Output         82C55A
+        U501            14      H               Input          74LS166
+
+[00072] PC6
+        U301            11      PC6             Input          82C55A
+        U501            15      SH/L\D\         Input          74LS166
+        U502            9       LOAD            Input          74AC161
+        U404            11      O_D             Output         74AC00
+        U406            11      I0_D            Input          74AC02
+        U503            13      CL_B            Input          74AC74
+
+[00073] PC7
+        U301            10      PC7             Output         82C55A
+        U503            12      D_B             Input          74AC74
+
+[00074] PA1
+        U301            3       PA1             Output         82C55A
+        U501            3       B               Input          74LS166
+
+[00075] PA2
+        U301            2       PA2             Output         82C55A
+        U501            4       C               Input          74LS166
+
+[00076] PA3
+        U301            1       PA3             Output         82C55A
+        U501            5       D               Input          74LS166
+
+[00077] PA4
+        U301            40      PA4             Output         82C55A
+        U501            10      E               Input          74LS166
+
+[00078] PA5
+        U301            39      PA5             Output         82C55A
+        U501            11      F               Input          74LS166
+
+[00079] PC0
+        U301            14      PC0             Output         82C55A
+        R301            2       2               Passive        10K
+        U303            1       I_A             Input          74AC04
+
+[00080] PC1
+        U301            15      PC1             Output         82C55A
+        R302            1       1               Passive        10K
+        U403            2       D_A             Input          74AC74
+
+[00081] -SEL1
+        U302            20      F5              BiDirectional  20V8
+        U304            5       I0_B            Input          74AC02
+
+[00082] -SEL0
+        U302            21      F6              BiDirectional  20V8
+        U304            2       I0_A            Input          74AC02
+
+[00083] -SA7
+        U302            2       I1              Input          20V8
+        RS301           9       9               Passive        SIP10C-10K
+        SW301           2       A2              Passive        SW DIP-5
+
+[00084] -SA5
+        U302            13      I11             Input          20V8
+        SW301           4       A4              Passive        SW DIP-5
+        RS301           7       7               Passive        SIP10C-10K
+
+[00085] -SA6
+        U302            1       I0              Input          20V8
+        RS301           8       8               Passive        SIP10C-10K
+        SW301           3       A3              Passive        SW DIP-5
+
+[00086] -SA8
+        U302            23      I13             Input          20V8
+        RS301           10      10              Passive        SIP10C-10K
+        SW301           1       A1              Passive        SW DIP-5
+
+[00087] -SA4
+        U302            14      I12             Input          20V8
+        SW301           5       A5              Passive        SW DIP-5
+        RS301           6       6               Passive        SIP10C-10K
+
+[00088] -SEL4
+        U301            6       C\S\            Input          82C55A
+        U302            16      F1              BiDirectional  20V8
+
+[00089] IRQ9
+        J203            7       B4              Passive        PC104
+        J202            B4      B4              Passive        CON XTB
+        JP301           12      12              Passive        HEADER 6X2
+
+[00090] N28242
+        R201            2       2               Passive        10K
+        U203            17      2A4             Input          74ACT244
+
+[00091] 82OUT0H
+        U401            13      OUT1            Output         82C54-10
+        U403            13      CL_B            Input          74AC74
+
+[00092] -LCPUEN
+        U403            6       Q\_A            Output         74AC74
+        U404            4       I0_B            Input          74AC00
+
+[00093] N01426
+        U404            3       O_A             Output         74AC00
+        U405            1       I0_A            Input          74AC08
+
+[00094] -OSC1
+        U404            5       I1_B            Input          74AC00
+        U303            3       I_B             Input          74AC04
+        U402            8       OUT             Output         1 MHZ OSC.
+
+[00095] 82OUT0T
+        U401            10      OUT0            Output         82C54-10
+        U403            11      CLK_B           Input          74AC74
+
+[00096] 82CLK1T
+        U406            4       O_B             Output         74AC02
+        U401            18      CLK2            Input          82C54-10
+
+[00097] N01429
+        U404            6       O_B             Output         74AC00
+        U405            2       I1_A            Input          74AC08
+
+[00098] OSC1
+        U403            3       CLK_A           Input          74AC74
+        U303            4       O_B             Output         74AC04
+
+[00099] LCPUEN
+        U403            5       Q_A             Output         74AC74
+        U404            2       I1_A            Input          74AC00
+
+[00100] 82CLK0T
+        U406            1       O_A             Output         74AC02
+        U401            9       CLK0            Input          82C54-10
+
+[00101] -DCCQH
+        U406            6       I1_B            Input          74AC02
+        U303            8       O_D             Output         74AC04
+
+[00102] PU403
+        U403            1       CL_A            Input          74AC74
+        U403            12      D_B             Input          74AC74
+        R401            2       2               Passive        10K
+
+[00103] AUXIN
+        U304            4       O_B             Output         74AC02
+        U601            9       3A              Input          DS26C31TN
+
+[00104] DCC1
+        U401            17      OUT2            Output         82C54-10
+        U405            5       I1_B            Input          74AC08
+
+[00105] DCCB
+        U601            3       1Z              Hi-Z           DS26C31TN
+        P601            3       3               Passive        DB25-S
+
+[00106] SCOPEA
+        P601            5       5               Passive        DB25-S
+        U601            6       2Y              Hi-Z           DS26C31TN
+
+[00107] IN2B
+        P601            16      16              Passive        DB25-S
+        U602            9       3B              Input          DS26C32ATN
+        R603            1       1               Passive        10K
+
+[00108] IN0A
+        P601            9       9               Passive        DB25-S
+        U602            2       1A              Input          DS26C32ATN
+
+[00109] IN3A
+        P601            18      18              Passive        DB25-S
+        U602            14      4A              Input          DS26C32ATN
+
+[00110] IN3B
+        P601            19      19              Passive        DB25-S
+        R604            1       1               Passive        10K
+        U602            15      4B              Input          DS26C32ATN
+
+[00111] HIGH
+        P601            8       8               Passive        DB25-S
+        R605            2       2               Passive        100 Ohm 1 Watt
+
+[00112] DCCA
+        P601            2       2               Passive        DB25-S
+        U601            2       1Y              Hi-Z           DS26C31TN
+
+[00113] -AUXIN
+        U604            19      2G              Input          74ACT244
+        U604            1       1G              Input          74ACT244
+        U601            11      3Z              Hi-Z           DS26C31TN
+
+[00114] IN1B
+        P601            13      13              Passive        DB25-S
+        U602            7       2B              Input          DS26C32ATN
+        R602            1       1               Passive        10K
+
+[00115] IN0B
+        P601            10      10              Passive        DB25-S
+        U602            1       1B              Input          DS26C32ATN
+        R601            1       1               Passive        10K
+
+[00116] IN2A
+        P601            15      15              Passive        DB25-S
+        U602            10      3A              Input          DS26C32ATN
+
+[00117] IN1A
+        P601            12      12              Passive        DB25-S
+        U602            6       2A              Input          DS26C32ATN
+
+[00118] SCOPEB
+        U601            5       2Z              Hi-Z           DS26C31TN
+        P601            6       6               Passive        DB25-S
+
+[00119] -DCCOUTD
+        U503            6       Q\_A            Output         74AC74
+        U405            9       I0_C            Input          74AC08
+
+[00120] N01165
+        U405            8       O_C             Output         74AC08
+        U406            8       I0_C            Input          74AC02
+
+[00121] -DATARDY
+        U503            9       Q_B             Output         74AC74
+        U404            9       I0_C            Input          74AC00
+
+[00122] N01669
+        U405            12      I0_D            Input          74AC08
+        U504            5       Q_A             Output         74AC74
+
+[00123] N01665
+        U504            2       D_A             Input          74AC74
+        U405            11      O_D             Output         74AC08
+
+[00124] -DCCOUT
+        U303            10      O_E             Output         74AC04
+        U502            10      ENT             Input          74AC161
+
+[00125] DATARDY
+        U503            8       Q\_B            Output         74AC74
+        U404            13      I1_D            Input          74AC00
+
+[00126] RCO
+        U404            10      I1_C            Input          74AC00
+        U404            12      I0_D            Input          74AC00
+        U502            15      RCO             Output         74AC161
+
+[00127] GND
+        C101            2       2               Passive        100 uFd
+        C102            2       2               Passive        100 uFd
+        C301            2       2               Passive        .1 uFd
+        SW301           10      B1              Passive        SW DIP-5
+        SW301           9       B2              Passive        SW DIP-5
+        SW301           8       B3              Passive        SW DIP-5
+        SW301           7       B4              Passive        SW DIP-5
+        SW301           6       B5              Passive        SW DIP-5
+        C302            2       2               Passive        .1 uFd
+        C304            2       2               Passive        .01 uFd
+        C303            2       2               Passive        .01 uFd
+        U304            7       GND             Power          74AC02
+        U303            7       GND             Power          74AC04
+        U302            12      GND             Power          20V8
+        U301            7       GND             Power          82C55A
+        J202            B10     B10             Passive        CON XTB
+        J202            B1      B1              Passive        CON XTB
+        J203            63      B32             Passive        PC104
+        U203            1       1G              Input          74ACT244
+        U203            19      2G              Input          74ACT244
+        J203            19      B10             Passive        PC104
+        J203            61      B31             Passive        PC104
+        C201            2       2               Passive        .1 uFd
+        J203            1       B1              Passive        PC104
+        C202            2       2               Passive        .1 uFd
+        J203            64      A32             Passive        PC104
+        U202            1       1G              Input          74ACT244
+        U202            19      2G              Input          74ACT244
+        C203            2       2               Passive        .01 uFd
+        J202            B31     B31             Passive        CON XTB
+        U201            10      GND             Power          74ACT245
+        U203            10      GND             Power          74ACT244
+        U202            10      GND             Power          74ACT244
+        C401            2       2               Passive        .1 uFd
+        C406            2       2               Passive        .01 uFd
+        C404            2       2               Passive        .01 uFd
+        C405            2       2               Passive        .01 uFd
+        C403            2       2               Passive        .1 uFd
+        C402            2       2               Passive        .1 uFd
+        U401            12      GND             Power          82C54-10
+        U404            7       GND             Power          74AC00
+        U406            7       GND             Power          74AC02
+        U403            7       GND             Power          74AC74
+        U402            7       GND             Power          1 MHZ OSC.
+        U405            7       GND             Power          74AC08
+        P601            1       1               Passive        DB25-S
+        P601            14      14              Passive        DB25-S
+        P601            4       4               Passive        DB25-S
+        P601            7       7               Passive        DB25-S
+        P601            11      11              Passive        DB25-S
+        P601            17      17              Passive        DB25-S
+        U601            12      G\              Input          DS26C31TN
+        U601            4       G               Input          DS26C31TN
+        R604            2       2               Passive        10K
+        R601            2       2               Passive        10K
+        R602            2       2               Passive        10K
+        R603            2       2               Passive        10K
+        P602            9       9               Passive        DB9-S
+        C604            2       2               Passive        .01 uFd
+        C603            2       2               Passive        .01 uFd
+        C602            2       2               Passive        .1 uFd
+        C601            2       2               Passive        .1 uFd
+        U601            8       GND             Power          DS26C31TN
+        U602            8       GND             Power          DS26C32ATN
+        U603            10      GND             Power          74AC273
+        U604            10      GND             Power          74ACT244
+        U501            6       INH             Input          74LS166
+        U502            4       B               Input          74AC161
+        U502            5       C               Input          74AC161
+        U502            3       A               Input          74AC161
+        C501            2       2               Passive        .1 uFd
+        C502            2       2               Passive        .1 uFd
+        C503            2       2               Passive        .01 uFd
+        C504            2       2               Passive        .01 uFd
+        U501            8       GND             Power          74LS166
+        U503            7       GND             Power          74AC74
+        U504            7       GND             Power          74AC74
+        U502            8       GND             Power          74AC161
+
+[00128] BINTRA
+        JP301           9       9               Passive        HEADER 6X2
+        JP301           11      11              Passive        HEADER 6X2
+        U203            14      1Y3             Hi-Z           74ACT244
+        JP301           3       3               Passive        HEADER 6X2
+        JP301           5       5               Passive        HEADER 6X2
+        JP301           7       7               Passive        HEADER 6X2
+        JP301           1       1               Passive        HEADER 6X2
+
+[00129] PU502
+        U502            6       D               Input          74AC161
+        R501            2       2               Passive        10K
+        U503            1       CL_A            Input          74AC74
+
+[00130] SHIFTIN
+        U603            19      Q8              Output         74AC273
+        U501            1       SER             Input          74LS166
+
+[00131] AUXOUT
+        U304            10      O_C             Output         74AC02
+        U601            15      4A              Input          DS26C31TN
+
+[00132] -SEL2
+        U302            19      F4              BiDirectional  20V8
+        U304            8       I0_C            Input          74AC02
+
+[00133] AUXIN7
+        U604            17      2A4             Input          74ACT244
+        P602            8       8               Passive        DB9-S
+        RS601           9       9               Passive        SIP10C-10K
+
+[00134] AUXIN6
+        U604            15      2A3             Input          74ACT244
+        P602            7       7               Passive        DB9-S
+        RS601           8       8               Passive        SIP10C-10K
+
+[00135] AUXIN5
+        P602            6       6               Passive        DB9-S
+        RS601           7       7               Passive        SIP10C-10K
+        U604            13      2A2             Input          74ACT244
+
+[00136] AUXIN3
+        U604            8       1A4             Input          74ACT244
+        P602            4       4               Passive        DB9-S
+        RS601           5       5               Passive        SIP10C-10K
+
+[00137] AUXIN1
+        U604            4       1A2             Input          74ACT244
+        P602            2       2               Passive        DB9-S
+        RS601           3       3               Passive        SIP10C-10K
+
+[00138] AUXIN2
+        U604            6       1A3             Input          74ACT244
+        P602            3       3               Passive        DB9-S
+        RS601           4       4               Passive        SIP10C-10K
+
+[00139] AUXOUT3
+        P601            23      23              Passive        DB25-S
+        U603            9       Q4              Output         74AC273
+
+[00140] AUXOUT2
+        P601            22      22              Passive        DB25-S
+        U603            6       Q3              Output         74AC273
+
+[00141] AUXOUT5
+        P601            25      25              Passive        DB25-S
+        U603            15      Q6              Output         74AC273
+
+[00142] AUXIN4
+        U604            11      2A1             Input          74ACT244
+        P602            5       5               Passive        DB9-S
+        RS601           6       6               Passive        SIP10C-10K
+
+[00143] AUXIN0
+        U604            2       1A1             Input          74ACT244
+        RS601           2       2               Passive        SIP10C-10K
+        P602            1       1               Passive        DB9-S
+
+[00144] AUXOUT4
+        P601            24      24              Passive        DB25-S
+        U603            12      Q5              Output         74AC273
+
+[00145] -AUXOUT
+        U601            13      4Z              Hi-Z           DS26C31TN
+        U603            11      CLK             Input          74AC273
+
+[00146] AUXOUT1
+        P601            21      21              Passive        DB25-S
+        U603            5       Q2              Output         74AC273
+
+[00147] AUXOUT0
+        P601            20      20              Passive        DB25-S
+        U603            2       Q1              Output         74AC273
+
+[00148] PU504
+        U504            10      PR_B            Input          74AC74
+        R502            2       2               Passive        10K
+        U504            13      CL_B            Input          74AC74
+        U504            12      D_B             Input          74AC74
+        U504            11      CLK_B           Input          74AC74
+

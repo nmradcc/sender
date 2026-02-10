@@ -1,0 +1,76 @@
+Partlist
+
+Exported from Send3.sch at 6/14/2019 9:57 PM
+
+EAGLE Version 9.2.2 Copyright (c) 1988-2018 Autodesk, Inc.
+
+Assembly variant: 
+
+Part     Value          Device            Package        Library     Sheet
+
+C1                      C-USC0805K        C0805K         Project Lib 2
+C2                      C-USC0805K        C0805K         Project Lib 2
+C4                      C-USC0805K        C0805K         Project Lib 3
+C5                      C-USC0805K        C0805K         Project Lib 4
+C6                      C-USC0805K        C0805K         Project Lib 6
+C7                      C-USC0805K        C0805K         Project Lib 6
+C8                      C-USC0805K        C0805K         Project Lib 6
+C9                      C-USC0805K        C0805K         Project Lib 6
+C10                     C-USC0805K        C0805K         Project Lib 4
+C12                     C-USC0805K        C0805K         Project Lib 3
+C13                     C-USC0805K        C0805K         Project Lib 4
+C14                     C-USC0805K        C0805K         Project Lib 4
+C15                     C-USC0805K        C0805K         Project Lib 4
+C16                     C-USC0805K        C0805K         Project Lib 4
+C17                     C-USC0805K        C0805K         Project Lib 5
+C18                     C-USC0805K        C0805K         Project Lib 5
+C19                     C-USC0805K        C0805K         Project Lib 5
+C20                     C-USC0805K        C0805K         Project Lib 5
+CON2                    PINHD-2X13        2X13           pinhead     6
+CON3                    PINHD-2X5         2X05           pinhead     6
+JMPR2                   JUMPER            SOLDER_BRIDGE  Project Lib 2
+JMPR3                   JUMPER            SOLDER_BRIDGE  Project Lib 2
+JMPR4                   JUMPER            SOLDER_BRIDGE  Project Lib 2
+JMPR5                   JUMPER            SOLDER_BRIDGE  Project Lib 2
+JMPR6                   JUMPER            SOLDER_BRIDGE  Project Lib 2
+JMPR7                   JUMPER            SOLDER_BRIDGE  Project Lib 2
+JMPR8                   JUMPER            SOLDER_BRIDGE  Project Lib 2
+R1       10K            R-US_0805W        R0805W         Project Lib 5
+R2       10K            R-US_0805W        R0805W         Project Lib 5
+R3       10K            R-US_0805W        R0805W         Project Lib 6
+R4       10K            R-US_0805W        R0805W         Project Lib 6
+R5       10K            R-US_0805W        R0805W         Project Lib 6
+R6       10K            R-US_0805W        R0805W         Project Lib 6
+R7       10K            R-US_0805W        R0805W         Project Lib 6
+R8       10K            R-US_0805W        R0805W         Project Lib 6
+R9       10K            R-US_0805W        R0805W         Project Lib 6
+R10      10K            R-US_0805W        R0805W         Project Lib 6
+R11      10K            R-US_0805W        R0805W         Project Lib 6
+R12      10K            R-US_0805W        R0805W         Project Lib 6
+R13      10K            R-US_0805W        R0805W         Project Lib 6
+R14      10K            R-US_0805W        R0805W         Project Lib 6
+R15      10K            R-US_0805W        R0805W         Project Lib 4
+R16      10K            R-US_0805W        R0805W         Project Lib 3
+R17      10K            R-US_0805W        R0805W         Project Lib 3
+R18      10K            R-US_0805W        R0805W         Project Lib 3
+R27      10K            R-US_0805W        R0805W         Project Lib 5
+U1       74AHC138D      74AHC138D         SO16           Project Lib 2
+U3       AM26C32CD      AM26C32CD         SO16           Project Lib 6
+U4                      8255A-S           PLCC44         Project Lib 3
+U5       8254           8254              PLCC28S        Project Lib 4
+U6       74ACT540       74540             SO20W          Project Lib 6
+U7       74LS273DW      74LS273DW         SO20W          74xx-us     6
+U8       74HCT166D      74HCT166D         SO16           Project Lib 5
+U9       74ACT74D       7474D             SO14           Project Lib 5
+U10      74ACT08D       74AC08D           SO14           Project Lib 4
+U11      74ACT02D       74AC02D           SO14           Project Lib 4
+U12      74ACT00D       74AC00D           SO14           Project Lib 4
+U13      74ACT74D       7474D             SO14           Project Lib 5
+U14      74ACT161D      74161D            SO16           Project Lib 5
+U15      74AC04D        74AC04D           SO14           Project Lib 3
+U16      AM26C31CD      AM26C31CD         SO16           Project Lib 6
+U17      74ACT74D       7474D             SO14           Project Lib 4
+U18      74ACT02D       74ACT02D          SO14           Project Lib 3
+U20      74AHC138D      74AHC138D         SO16           Project Lib 2
+X1                      CRYSTAL_RES-1100S 1100S          crystal     4
+X2       PC104_CARD1    PC104_CARD1       PC104-STANDARD Project Lib 2

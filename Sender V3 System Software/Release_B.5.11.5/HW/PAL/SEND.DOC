@@ -1,0 +1,278 @@
+
+*******************************************************************************
+                                   JDRPROTO
+*******************************************************************************
+
+CUPL            2.10a Serial# 2-00001-120
+Device          g20v8ma  Library DLIB-d-21-1
+Created         Wed Dec 21 22:38:27 1994
+Name            JDRPROTO
+Partno          JDRPROTO
+Revision        02
+Date            08/20/90
+Designer        DERICK
+Company         JDR
+Assembly        00000
+Location        PAL
+
+===============================================================================
+                            Expanded Product Terms 
+===============================================================================
+
+OK5 =>
+    !SA5 & !A5 & !DMAAEN
+  # SA5 & A5 & !DMAAEN
+
+SWHI =>
+    SA8 , SA7 , SA6
+
+SEL8253 =>
+    !SA5 & A2 & !A3 & A4 & !A5 & !DMAAEN & SEL3
+  # SA5 & A2 & !A3 & A4 & A5 & !DMAAEN & SEL3
+
+SEL8255 =>
+    !SA5 & !A2 & !A3 & A4 & !A5 & !DMAAEN & SEL3
+  # SA5 & !A2 & !A3 & A4 & A5 & !DMAAEN & SEL3
+
+ADDHI =>
+    A9 , A8 , A7 , A6
+
+ADDLO =>
+    A4 , A3 , A2
+
+SEL0 =>
+    !SA5 & !A2 & !A3 & !A4 & !A5 & !DMAAEN & SEL3
+  # SA5 & !A2 & !A3 & !A4 & A5 & !DMAAEN & SEL3
+
+SEL1 =>
+    !SA5 & A2 & !A3 & !A4 & !A5 & !DMAAEN & SEL3
+  # SA5 & A2 & !A3 & !A4 & A5 & !DMAAEN & SEL3
+
+SEL2 =>
+    !SA5 & !A2 & A3 & !A4 & !A5 & !DMAAEN & SEL3
+  # SA5 & !A2 & A3 & !A4 & A5 & !DMAAEN & SEL3
+
+SEL3 =>
+    SA6 & !SA7 & !SA8 & A6 & !A7 & !A8 & A9
+  # !SA6 & SA7 & !SA8 & !A6 & A7 & !A8 & A9
+  # SA6 & SA7 & !SA8 & A6 & A7 & !A8 & A9
+  # !SA6 & !SA7 & SA8 & !A6 & !A7 & A8 & A9
+  # SA6 & !SA7 & SA8 & A6 & !A7 & A8 & A9
+  # !SA6 & SA7 & SA8 & !A6 & A7 & A8 & A9
+  # SA6 & SA7 & SA8 & A6 & A7 & A8 & A9
+
+GATE =>
+    SA5 & !A3 & A4 & A5 & !DMAAEN & SEL3
+  # !SA5 & !A3 & A4 & !A5 & !DMAAEN & SEL3
+  # !SA5 & !A4 & !A5 & !DMAAEN & SEL3
+  # SA5 & !A4 & A5 & !DMAAEN & SEL3
+
+SEL8253.oe  =>
+    1 
+
+SEL8255.oe  =>
+    1 
+
+SEL0.oe  =>
+    1 
+
+SEL1.oe  =>
+    1 
+
+SEL2.oe  =>
+    1 
+
+SEL3.oe  =>
+    1 
+
+GATE.oe  =>
+    1 
+
+
+===============================================================================
+                                 Symbol Table 
+===============================================================================
+
+Pin Variable                                    Pterms   Max     Min    
+Pol   Name              Ext     Pin     Type     Used   Pterms  Level   
+--- --------            ---     ---     ----    ------  ------  -----   
+
+ !  SA4                         14       V        -       -       -     
+ !  SA5                         13       V        -       -       -     
+ !  SA6                         1        V        -       -       -     
+ !  SA7                         2        V        -       -       -     
+ !  SA8                         23       V        -       -       -     
+    OK5                         0        I        2       -       -     
+    A2                          3        V        -       -       -     
+    A3                          4        V        -       -       -     
+    A4                          5        V        -       -       -     
+    A5                          6        V        -       -       -     
+    A6                          7        V        -       -       -     
+    A7                          8        V        -       -       -     
+    SWHI                        0        F        -       -       -     
+    A8                          9        V        -       -       -     
+    A9                          10       V        -       -       -     
+    DMAAEN                      11       V        -       -       -     
+ !  SEL8253                     17       V        2       7       1     
+ !  SEL8255                     16       V        2       7       1     
+    ADDHI                       0        F        -       -       -     
+    ADDLO                       0        F        -       -       -     
+ !  SEL0                        21       V        2       7       1     
+ !  SEL1                        20       V        2       7       1     
+ !  SEL2                        19       V        2       7       1     
+ !  SEL3                        18       V        7       7       1     
+ !  SEL4                        15       V        -       -       -     
+ !  GATE                        22       V        4       7       1     
+    SEL8253             oe      17       D        1       1       0     
+    SEL8255             oe      16       D        1       1       0     
+    SEL0                oe      21       D        1       1       0     
+    SEL1                oe      20       D        1       1       0     
+    SEL2                oe      19       D        1       1       0     
+    SEL3                oe      18       D        1       1       0     
+    GATE                oe      22       D        1       1       0     
+
+
+LEGEND    F : field      D : default variable        M : extended node
+          N : node       I : intermediate variable   T : function
+          V : variable   X : extended variable       U : undefined
+
+
+===============================================================================
+                                   Fuse Plot
+===============================================================================
+
+Syn   2704 - Ac0   2705 - 
+
+Pin #22  2560  Pol x  2632  Ac1 - 
+ 0000 ---------------------------------------- 
+ 0040 ---------x--x---x------x-------------x-x 
+ 0080 ---------x--x----x-----x-------------xx- 
+ 0120 -------------x---x-----x-------------xx- 
+ 0160 -------------x--x------x-------------x-x 
+ 0200 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 0240 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 0280 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+Pin #21  2561  Pol x  2633  Ac1 - 
+ 0320 ---------------------------------------- 
+ 0360 -----x---x---x---x-----x-------------xx- 
+ 0400 -----x---x---x--x------x-------------x-x 
+ 0440 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 0480 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 0520 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 0560 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 0600 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+Pin #20  2562  Pol x  2634  Ac1 - 
+ 0640 ---------------------------------------- 
+ 0680 ----x----x---x---x-----x-------------xx- 
+ 0720 ----x----x---x--x------x-------------x-x 
+ 0760 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 0800 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 0840 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 0880 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 0920 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+Pin #19  2563  Pol x  2635  Ac1 - 
+ 0960 ---------------------------------------- 
+ 1000 -----x--x----x---x-----x-------------xx- 
+ 1040 -----x--x----x--x------x-------------x-x 
+ 1080 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 1120 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 1160 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 1200 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 1240 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+Pin #18  2564  Pol x  2636  Ac1 - 
+ 1280 ---------------------------------------- 
+ 1320 x--x--x-------------x----x---x--x------- 
+ 1360 -xx---x--------------x--x----x--x------- 
+ 1400 -x-x--x-------------x---x----x--x------- 
+ 1440 x-x----x-------------x---x--x---x------- 
+ 1480 x--x---x------------x----x--x---x------- 
+ 1520 -xx----x-------------x--x---x---x------- 
+ 1560 -x-x---x------------x---x---x---x------- 
+Pin #17  2565  Pol x  2637  Ac1 - 
+ 1600 ---------------------------------------- 
+ 1640 ----x----x--x----x-----x-------------xx- 
+ 1680 ----x----x--x---x------x-------------x-x 
+ 1720 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 1760 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 1800 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 1840 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 1880 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+Pin #16  2566  Pol x  2638  Ac1 - 
+ 1920 ---------------------------------------- 
+ 1960 -----x---x--x----x-----x-------------xx- 
+ 2000 -----x---x--x---x------x-------------x-x 
+ 2040 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 2080 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 2120 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 2160 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 2200 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+Pin #15  2567  Pol x  2639  Ac1 - 
+ 2240 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 2280 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 2320 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 2360 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 2400 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 2440 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 2480 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+ 2520 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+
+
+LEGEND    X : fuse not blown 
+          - : fuse blown 
+
+===============================================================================
+                                 Chip Diagram
+===============================================================================
+
+                          ***********     ***********     
+                          *           * *           * 
+                       ****                         ****
+                  !SA6 * 1                          24 * VCC                   
+                       ****                         ****
+                          *        JDRPROTO         *
+                       ****                         ****
+                  !SA7 * 2                          23 * !SA8                  
+                       ****                         ****
+                          *                         *
+                       ****                         ****
+                    A2 * 3                          22 * !GATE                 
+                       ****                         ****
+                          *                         *
+                       ****                         ****
+                    A3 * 4                          21 * !SEL0                 
+                       ****                         ****
+                          *                         *
+                       ****                         ****
+                    A4 * 5                          20 * !SEL1                 
+                       ****                         ****
+                          *                         *
+                       ****                         ****
+                    A5 * 6                          19 * !SEL2                 
+                       ****                         ****
+                          *                         *
+                       ****                         ****
+                    A6 * 7                          18 * !SEL3                 
+                       ****                         ****
+                          *                         *
+                       ****                         ****
+                    A7 * 8                          17 * !SEL8253              
+                       ****                         ****
+                          *                         *
+                       ****                         ****
+                    A8 * 9                          16 * !SEL8255              
+                       ****                         ****
+                          *                         *
+                       ****                         ****
+                    A9 * 10                         15 * !SEL4                 
+                       ****                         ****
+                          *                         *
+                       ****                         ****
+                DMAAEN * 11                         14 * !SA4                  
+                       ****                         ****
+                          *                         *
+                       ****                         ****
+                   GND * 12                         13 * !SA5                  
+                       ****                         ****
+                          *                         *
+                          ***************************
+

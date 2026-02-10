@@ -1,0 +1,57 @@
+NMRA SEND.EXE Decoder Test Program Release Notes
+
+Revision Information
+--------------------------------------------------------------------------------------------------------
+File:                 $Workfile: Release_Notes.txt $
+Path:                 $Logfile: /NMRA/SRC/SEND/Release_Notes.txt $
+Project:              NMRA DCC Conformance Tests
+Current version:      $Revision: 2 $
+Last Modified on:     $Modtime: 9/17/14 4:39p $
+              by:     $Author: Kenw $
+Last checkin on:      $Date: 9/17/14 4:43p $
+--------------------------------------------------------------------------------------------------------
+
+General Information:
+The following document lists the added features and bug fixes for each SEND.EXE release.
+
+Each numbered item has a Type Value and a Status Value. These are detailed below:
+
+	Type	Description	Status	Description
+	----------------------------------------------
+	B	Bug		O	Open
+	F	Feature		F	Fixed to QA
+				R	Rejected
+	 	 		P	Passed QA
+	 	 		C	Closed
+	
+X.5.6.1 (09/17/2014) Added Features and Bug Fixes
+--------------------------------------------------------------------------------------------------------
+ ID#    File            Method          Line    Date            Type    Status  Description
+--------------------------------------------------------------------------------------------------------
+0001	SEND.CPP	parse_key_cmd()	 887	11/04/13	F	F	Add Function decoder type to DCC and DCC_S commands
+0002	SEND.CPP	parse_key_cmd()	1148	11/04/13	B	F	Change comment from ‘resets’ to ‘idles’
+0003	SEND.CPP	parse_key_cmd()	1168	11/04/13	F	F	Add Function decoder type to DCC repeat command
+0004	SEND.CPP	parse_key_cmd()	1190	11/04/13	F	F	Add Function decoder type to DCC_S repeat command
+0028	SEND.CPP	Questions[]	61	09/15/14	F	F	Change “Serial number” to “Version number”
+Add “Modified CVs” & “Track Polarity”
+0029	SEND.CPP	send_exit	350	09/16/14	F	F	Print "<SEND_END n>" when program exits
+
+B.5.5.1 (06/28/2014)
+--------------------------------------------------------------------------------------------------------
+x1	Fixed Ambig1 and Ambig2 race condition with fast CPUs
+
+Revision History
+--------------------------------------------------------------------------------------------------------
+$History: Release_Notes.txt $
+ * 
+ * *****************  Version 2  *****************
+ * User: Kenw         Date: 9/17/14    Time: 4:43p
+ * Updated in $/NMRA/SRC/SEND
+ * Added function decoder support for manual mode.
+ * Modified decoder quiestions.
+ * Print <SEND_END n> when program exits.
+ * 
+ * *****************  Version 1  *****************
+ * User: Kenw         Date: 9/11/14    Time: 7:29p
+ * Created in $/NMRA/SRC/SEND
+ * SEND.EXE Release Notes

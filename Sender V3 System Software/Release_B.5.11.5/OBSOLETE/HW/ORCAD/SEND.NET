@@ -1,0 +1,985 @@
+Wire List
+
+DCC Packet Sender Block Diagram ECB           Revised:    August 20, 1994
+                                              Revision: 3
+NMRA
+
+
+
+
+
+<<< Component List >>>
+.1 UFD                        C201
+.1 UFD                        C202
+.1 UFD                        C203
+.1 UFD                        C204
+.1 UFD                        C205
+.1 UFD                        C206
+.1 UFD                        C207
+.1 UFD                        C301
+.1 UFD                        C302
+.1 UFD                        C303
+.1 UFD                        C304
+.1 UFD                        C401
+.1 UFD                        C402
+.1 UFD                        C403
+.1 UFD                        C404
+.1 UFD                        C405
+.1 UFD                        C406
+.1 UFD                        C501
+.1 UFD                        C502
+.1 UFD                        C503
+.1 UFD                        C504
+.1 UFD                        C601
+.1 UFD                        C602
+1 MHZ OSC.                    U402
+100 OHM 1 WATT                R700
+100 UFD                       C101
+100 UFD                       C102
+10K                           R301
+10K                           R302
+10K                           R303
+10K                           R701
+10K                           R702
+10K                           R703
+10K                           R704
+10K                           R705
+10K                           R706
+10K                           R707
+26LS31                        U601
+26LS32                        U602
+74LS00                        U404
+74LS02                        U304
+74LS02                        U406
+74LS04                        U303
+74LS08                        U405
+74LS161                       U502
+74LS166                       U501
+74LS245                       U206
+74LS541                       U201
+74LS541                       U202
+74LS541                       U203
+74LS541                       U204
+74LS541                       U205
+74LS74                        U403
+74LS74                        U503
+74LS74                        U504
+82C54                         U401
+82C55                         U301
+CON PC 62                     J201
+DB25-S                        J601
+JUMPER                        JP301
+JUMPER                        JP302
+JUMPER                        JP303
+JUMPER                        JP304
+JUMPER                        JP305
+JUMPER                        JP306
+PAL20L8                       U302
+SIP10C-4.7K                   RS301
+SW DIP-8                      SW301
+
+<<< Wire List >>>
+
+  NODE  REFERENCE    PIN #   PIN NAME           PIN TYPE       PART VALUE
+
+[00001] -BDACK3 (local to sheet 2)
+        U204            18      Y1              Hi-Z           74LS541
+
+[00002] -CH_CHK (local to sheet 2)
+        J201            1       A1              Passive        CON PC 62
+
+[00003] D7 (local to sheet 2)
+        J201            3       A2              Passive        CON PC 62
+        U206            2       A1              BiDirectional  74LS245
+
+[00004] D6 (local to sheet 2)
+        J201            5       A3              Passive        CON PC 62
+        U206            3       A2              BiDirectional  74LS245
+
+[00005] -BMEMR (local to sheet 2)
+        U204            15      Y4              Hi-Z           74LS541
+
+[00006] D5 (local to sheet 2)
+        J201            7       A4              Passive        CON PC 62
+        U206            4       A3              BiDirectional  74LS245
+
+[00007] -BMEMW (local to sheet 2)
+        U204            14      Y5              Hi-Z           74LS541
+
+[00008] D4 (local to sheet 2)
+        J201            9       A5              Passive        CON PC 62
+        U206            5       A4              BiDirectional  74LS245
+
+[00009] D3 (local to sheet 2)
+        J201            11      A6              Passive        CON PC 62
+        U206            6       A5              BiDirectional  74LS245
+
+[00010] DRQ2 (local to sheet 2)
+        J201            12      B6              Passive        CON PC 62
+
+[00011] -BCH_RDY (local to sheet 2)
+        U204            12      Y7              Hi-Z           74LS541
+
+[00012] D2 (local to sheet 2)
+        J201            13      A7              Passive        CON PC 62
+        U206            7       A6              BiDirectional  74LS245
+
+[00013] RESET (local to sheet 2)
+        U204            9       A8              Input          74LS541
+        J201            4       B2              Passive        CON PC 62
+
+[00014] D1 (local to sheet 2)
+        J201            15      A8              Passive        CON PC 62
+        U206            8       A7              BiDirectional  74LS245
+
+[00015] -0WS (local to sheet 2)
+        J201            16      B8              Passive        CON PC 62
+
+[00016] D0 (local to sheet 2)
+        J201            17      A9              Passive        CON PC 62
+        U206            9       A8              BiDirectional  74LS245
+
+[00017] -CH_RDY (local to sheet 2)
+        J201            19      A10             Passive        CON PC 62
+        U204            8       A7              Input          74LS541
+
+[00018] AEN (local to sheet 2)
+        J201            21      A11             Passive        CON PC 62
+        U204            7       A6              Input          74LS541
+
+[00019] -MEMW (local to sheet 2)
+        J201            22      B11             Passive        CON PC 62
+        U204            6       A5              Input          74LS541
+
+[00020] -MEMR (local to sheet 2)
+        J201            24      B12             Passive        CON PC 62
+        U204            5       A4              Input          74LS541
+
+[00021] -IOW (local to sheet 2)
+        J201            26      B13             Passive        CON PC 62
+        U204            4       A3              Input          74LS541
+
+[00022] A19 (local to sheet 2)
+        U203            2       A1              Input          74LS541
+        J201            23      A12             Passive        CON PC 62
+
+[00023] -IOR (local to sheet 2)
+        J201            28      B14             Passive        CON PC 62
+        U204            3       A2              Input          74LS541
+
+[00024] A18 (local to sheet 2)
+        U203            3       A2              Input          74LS541
+        J201            25      A13             Passive        CON PC 62
+
+[00025] BOSC (local to sheet 2)
+        U205            17      Y2              Hi-Z           74LS541
+
+[00026] -DACK3 (local to sheet 2)
+        J201            30      B15             Passive        CON PC 62
+        U204            2       A1              Input          74LS541
+
+[00027] A17 (local to sheet 2)
+        U203            4       A3              Input          74LS541
+        J201            27      A14             Passive        CON PC 62
+
+[00028] BALE (local to sheet 2)
+        U205            16      Y3              Hi-Z           74LS541
+
+[00029] DRQ3 (local to sheet 2)
+        J201            32      B16             Passive        CON PC 62
+
+[00030] A16 (local to sheet 2)
+        U203            5       A4              Input          74LS541
+        J201            29      A15             Passive        CON PC 62
+
+[00031] BT/C (local to sheet 2)
+        U205            15      Y4              Hi-Z           74LS541
+
+[00032] A15 (local to sheet 2)
+        U203            6       A5              Input          74LS541
+        J201            31      A16             Passive        CON PC 62
+
+[00033] -BDACK2 (local to sheet 2)
+        U205            14      Y5              Hi-Z           74LS541
+
+[00034] DRQ1 (local to sheet 2)
+        J201            36      B18             Passive        CON PC 62
+
+[00035] A14 (local to sheet 2)
+        U203            7       A6              Input          74LS541
+        J201            33      A17             Passive        CON PC 62
+
+[00036] BCLK (local to sheet 2)
+        U205            13      Y6              Hi-Z           74LS541
+
+[00037] A13 (local to sheet 2)
+        U203            8       A7              Input          74LS541
+        J201            35      A18             Passive        CON PC 62
+
+[00038] -DACK0 (local to sheet 2)
+        U205            8       A7              Input          74LS541
+        J201            38      B19             Passive        CON PC 62
+
+[00039] -BDACK0 (local to sheet 2)
+        U205            12      Y7              Hi-Z           74LS541
+
+[00040] CLK (local to sheet 2)
+        J201            40      B20             Passive        CON PC 62
+        U205            7       A6              Input          74LS541
+
+[00041] A12 (local to sheet 2)
+        U203            9       A8              Input          74LS541
+        J201            37      A19             Passive        CON PC 62
+
+[00042] -DACK1 (local to sheet 2)
+        U205            9       A8              Input          74LS541
+        J201            34      B17             Passive        CON PC 62
+
+[00043] -BDACK1 (local to sheet 2)
+        U205            11      Y8              Hi-Z           74LS541
+
+[00044] -DACK2 (local to sheet 2)
+        J201            52      B26             Passive        CON PC 62
+        U205            6       A5              Input          74LS541
+
+[00045] T/C (local to sheet 2)
+        J201            54      B27             Passive        CON PC 62
+        U205            5       A4              Input          74LS541
+
+[00046] A11 (local to sheet 2)
+        U202            2       A1              Input          74LS541
+        J201            39      A20             Passive        CON PC 62
+
+[00047] A3 (local to sheet 2)
+        J201            55      A28             Passive        CON PC 62
+        U201            2       A1              Input          74LS541
+
+[00048] ALE (local to sheet 2)
+        J201            56      B28             Passive        CON PC 62
+        U205            4       A3              Input          74LS541
+
+[00049] A10 (local to sheet 2)
+        U202            3       A2              Input          74LS541
+        J201            41      A21             Passive        CON PC 62
+
+[00050] A2 (local to sheet 2)
+        J201            57      A29             Passive        CON PC 62
+        U201            3       A2              Input          74LS541
+
+[00051] A9 (local to sheet 2)
+        U202            4       A3              Input          74LS541
+        J201            43      A22             Passive        CON PC 62
+
+[00052] A1 (local to sheet 2)
+        J201            59      A30             Passive        CON PC 62
+        U201            4       A3              Input          74LS541
+
+[00053] OSC (local to sheet 2)
+        J201            60      B30             Passive        CON PC 62
+        U205            3       A2              Input          74LS541
+
+[00054] A8 (local to sheet 2)
+        U202            5       A4              Input          74LS541
+        J201            45      A23             Passive        CON PC 62
+
+[00055] A0 (local to sheet 2)
+        J201            61      A31             BiDirectional  CON PC 62
+        U201            5       A4              Input          74LS541
+
+[00056] A7 (local to sheet 2)
+        U202            6       A5              Input          74LS541
+        J201            47      A24             Passive        CON PC 62
+
+[00057] A6 (local to sheet 2)
+        U202            7       A6              Input          74LS541
+        J201            49      A25             Passive        CON PC 62
+
+[00058] A5 (local to sheet 2)
+        U202            8       A7              Input          74LS541
+        J201            51      A26             Passive        CON PC 62
+
+[00059] A4 (local to sheet 2)
+        U202            9       A8              Input          74LS541
+        J201            53      A27             Passive        CON PC 62
+
+[00060] N00060
+        U405            8       O_C             Output         74LS08
+        U406            8       I0_C            Input          74LS02
+
+[00061] -DCCOUTD (local to sheet 5)
+        U503            6       Q_A_BAR         Output         74LS74
+        U405            9       I0_C            Input          74LS08
+
+[00062] N00062
+        U405            12      I0_D            Input          74LS08
+        U504            5       Q_A             Output         74LS74
+
+[00063] -DATARDY (local to sheet 5)
+        U404            9       I0_C            Input          74LS00
+        U503            9       Q_B             Output         74LS74
+
+[00064] N00064
+        U405            11      O_D             Output         74LS08
+        U504            2       D_A             Input          74LS74
+
+[00065] RCO (local to sheet 5)
+        U404            10      I1_C            Input          74LS00
+        U404            12      I0_D            Input          74LS00
+        U502            15      RCO             Output         74LS161
+
+[00066] -DCCOUT (local to sheet 5)
+        U303            10      O_E             Output         74LS04
+        U502            10      ENT             Input          74LS161
+
+[00067] DATARDY (local to sheet 5)
+        U503            8       Q_B_BAR         Output         74LS74
+        U404            13      I1_D            Input          74LS00
+
+[00068] 82CLK0T (local to sheet 4)
+        U401            9       CLK0            Input          82C54
+        U406            1       O_A             Output         74LS02
+
+[00069] 82OUT0T (local to sheet 4)
+        U401            10      OUT0            Output         82C54
+        U403            11      CLK_B           Input          74LS74
+
+[00070] 82OUT0H (local to sheet 4)
+        U401            13      OUT1            Output         82C54
+        U403            13      CL_B            Input          74LS74
+
+[00071] 82CLK1T (local to sheet 4)
+        U401            18      CLK2            Input          82C54
+        U406            4       O_B             Output         74LS02
+
+[00072] DCC1 (local to sheet 4)
+        U401            17      OUT2            Output         82C54
+        U405            5       I1_B            Input          74LS08
+
+[00073] -DCCQH (local to sheet 4)
+        U303            8       O_D             Output         74LS04
+        U406            6       I1_B            Input          74LS02
+
+[00074] N00074
+        U404            3       O_A             Output         74LS00
+        U405            1       I0_A            Input          74LS08
+
+[00075] LCPUEN (local to sheet 4)
+        U403            5       Q_A             Output         74LS74
+        U404            2       I1_A            Input          74LS00
+
+[00076] -OSC1 (local to sheet 4)
+        U303            3       I_B             Input          74LS04
+        U402            8       OUT             Output         1 MHZ OSC.
+        U404            5       I1_B            Input          74LS00
+
+[00077] OSC1 (local to sheet 4)
+        U303            4       O_B             Output         74LS04
+        U403            3       CLK_A           Input          74LS74
+
+[00078] N00078
+        U405            2       I1_A            Input          74LS08
+        U404            6       O_B             Output         74LS00
+
+[00079] -LCPUEN (local to sheet 4)
+        U403            6       Q_A_BAR         Output         74LS74
+        U404            4       I0_B            Input          74LS00
+
+[00080] DCCA (local to sheet 6)
+        U601            2       OA              Hi-Z           26LS31
+        J601            2       P2              Passive        DB25-S
+
+[00081] DCCB (local to sheet 6)
+        U601            3       OA_BAR          Hi-Z           26LS31
+        J601            3       P3              Passive        DB25-S
+
+[00082] SCOPEA (local to sheet 6)
+        U601            6       OB              Hi-Z           26LS31
+        J601            5       P5              Passive        DB25-S
+
+[00083] SCOPEB (local to sheet 6)
+        U601            5       OB_BAR          Hi-Z           26LS31
+        J601            6       P6              Passive        DB25-S
+
+[00084] IN2A (local to sheet 6)
+        J601            15      P15             Passive        DB25-S
+        U602            6       IC              Input          26LS32
+
+[00085] IN3A (local to sheet 6)
+        J601            18      P18             Passive        DB25-S
+        U602            10      ID              Input          26LS32
+
+[00086] HIGH (local to sheet 6)
+        R700            2       2               Passive        100 OHM 1 WATT
+        J601            8       P8              Passive        DB25-S
+
+[00087] IN0A (local to sheet 6)
+        U602            2       IA              Input          26LS32
+        J601            9       P9              Passive        DB25-S
+
+[00088] IN0B (local to sheet 6)
+        U602            1       IA_BAR          Input          26LS32
+        J601            10      P10             Passive        DB25-S
+        R701            1       1               Passive        10K
+
+[00089] IN1A (local to sheet 6)
+        U602            14      IB              Input          26LS32
+        J601            12      P12             Passive        DB25-S
+
+[00090] IN1B (local to sheet 6)
+        U602            15      IB_BAR          Input          26LS32
+        J601            13      P13             Passive        DB25-S
+        R702            1       1               Passive        10K
+
+[00091] IN2B (local to sheet 6)
+        U602            7       IC_BAR          Input          26LS32
+        R703            1       1               Passive        10K
+        J601            16      P16             Passive        DB25-S
+
+[00092] IN3B (local to sheet 6)
+        U602            9       ID_BAR          Input          26LS32
+        R704            1       1               Passive        10K
+        J601            19      P19             Passive        DB25-S
+
+[00093] -SA6 (local to sheet 3)
+        SW301           3       A3              Passive        SW DIP-8
+        U302            1       I0              Input          PAL20L8
+        RS301           8       RC6             Passive        SIP10C-4.7K
+
+[00094] -SA7 (local to sheet 3)
+        SW301           2       A2              Passive        SW DIP-8
+        U302            2       I1              Input          PAL20L8
+        RS301           9       RC7             Passive        SIP10C-4.7K
+
+[00095] -SELHI (local to sheet 3)
+        U302            18      I/O3            BiDirectional  PAL20L8
+
+[00096] -SA5 (local to sheet 3)
+        SW301           4       A4              Passive        SW DIP-8
+        U302            13      I11             Input          PAL20L8
+        RS301           7       RC5             Passive        SIP10C-4.7K
+
+[00097] -SA4 (local to sheet 3)
+        SW301           5       A5              Passive        SW DIP-8
+        U302            14      I12             Input          PAL20L8
+        RS301           6       RC4             Passive        SIP10C-4.7K
+
+[00098] -SA8 (local to sheet 3)
+        SW301           1       A1              Passive        SW DIP-8
+        U302            23      I13             Input          PAL20L8
+        RS301           10      RC8             Passive        SIP10C-4.7K
+
+[00099] N00099
+        U504            10      PR_B            Input          74LS74
+        U504            12      D_B             Input          74LS74
+        R706            2       2               Passive        10K
+        U504            11      CLK_B           Input          74LS74
+        U504            13      CL_B            Input          74LS74
+
+[00100] N00100
+        R705            2       2               Passive        10K
+        U303            13      I_F             Input          74LS04
+
+[00101] N00101
+        U304            5       I0_B            Input          74LS02
+        U304            8       I0_C            Input          74LS02
+        R707            2       2               Passive        10K
+        U304            11      I0_D            Input          74LS02
+        U304            6       I1_B            Input          74LS02
+        U304            9       I1_C            Input          74LS02
+        U304            12      I1_D            Input          74LS02
+
+[00102] PCRST (local to sheet 1)
+        R301            1       1               Passive        10K
+        U301            14      PC0             BiDirectional  82C55
+        U303            1       I_A             Input          74LS04
+
+[00103] -PCRST (local to sheet 1)
+        U503            4       PR_A            Input          74LS74
+        U504            1       CL_A            Input          74LS74
+        U502            1       CLR             Input          74LS161
+        U503            10      PR_B            Input          74LS74
+        U501            9       CLR             Input          74LS166
+        U403            10      PR_B            Input          74LS74
+        U403            4       PR_A            Input          74LS74
+        U303            2       O_A             Output         74LS04
+
+[00104] -GATE (local to sheet 1)
+        U206            19      G               Input          74LS245
+        U302            22      O7              Output         PAL20L8
+
+[00105] BAEN (local to sheet 1)
+        U204            13      Y6              Hi-Z           74LS541
+        U302            11      I10             Input          PAL20L8
+
+[00106] -BIOR (local to sheet 1)
+        U204            17      Y2              Hi-Z           74LS541
+        U206            1       DIR             Input          74LS245
+        U401            22      RD_BAR          Input          82C54
+        U304            3       I1_A            Input          74LS02
+        U301            5       RD_BAR          Input          82C55
+
+[00107] -BIOW (local to sheet 1)
+        U204            16      Y3              Hi-Z           74LS541
+        U401            23      WR_BAR          Input          82C54
+        U301            36      WR_BAR          Input          82C55
+
+[00108] BRESET (local to sheet 1)
+        U204            11      Y8              Hi-Z           74LS541
+        U301            35      RESET           Input          82C55
+
+[00109] RDBAK (local to sheet 1)
+        U602            4       EN              Input          26LS32
+        U304            1       O_A             Output         74LS02
+
+[00110] CLK1 (local to sheet 1)
+        U503            3       CLK_A           Input          74LS74
+        U405            3       O_A             Output         74LS08
+        U303            5       I_C             Input          74LS04
+        U406            3       I1_A            Input          74LS02
+        U406            5       I0_B            Input          74LS02
+
+[00111] -CLK1 (local to sheet 1)
+        U503            11      CLK_B           Input          74LS74
+        U401            15      CLK1            Input          82C54
+        U303            6       O_C             Output         74LS04
+        U301            19      PB1             BiDirectional  82C55
+
+[00112] DCCOUT (local to sheet 1)
+        U503            2       D_A             Input          74LS74
+        U405            10      I1_C            Input          74LS08
+        U303            11      I_E             Input          74LS04
+        U504            3       CLK_A           Input          74LS74
+        U502            2       CLK             Input          74LS161
+        U501            7       CLK             Input          74LS166
+        U405            6       O_B             Output         74LS08
+
+[00113] VCC
+        C101            1       1               Passive        100 UFD
+        C102            1       1               Passive        100 UFD
+        U201            20      VCC             Power          74LS541
+        U202            20      VCC             Power          74LS541
+        U205            20      VCC             Power          74LS541
+        U203            20      VCC             Power          74LS541
+        C201            1       1               Passive        .1 UFD
+        C202            1       1               Passive        .1 UFD
+        C203            1       1               Passive        .1 UFD
+        C204            1       1               Passive        .1 UFD
+        C205            1       1               Passive        .1 UFD
+        C206            1       1               Passive        .1 UFD
+        C207            1       1               Passive        .1 UFD
+        U204            20      VCC             Power          74LS541
+        U206            20      VCC             Power          74LS245
+        J201            58      B29             Passive        CON PC 62
+        J201            6       B3              Passive        CON PC 62
+        U502            6       D               Input          74LS161
+        U503            1       CL_A            Input          74LS74
+        U406            14      VCC             Power          74LS02
+        C501            1       1               Passive        .1 UFD
+        C502            1       1               Passive        .1 UFD
+        C503            1       1               Passive        .1 UFD
+        C504            1       1               Passive        .1 UFD
+        U404            14      VCC             Power          74LS00
+        U503            14      VCC             Power          74LS74
+        U303            14      VCC             Power          74LS04
+        U501            16      VCC             Power          74LS166
+        U502            16      VCC             Power          74LS161
+        U504            14      VCC             Power          74LS74
+        U405            14      VCC             Power          74LS08
+        U403            1       CL_A            Input          74LS74
+        U403            12      D_B             Input          74LS74
+        U401            11      G0              Input          82C54
+        U401            16      G2              Input          82C54
+        C401            1       1               Passive        .1 UFD
+        C402            1       1               Passive        .1 UFD
+        C403            1       1               Passive        .1 UFD
+        C404            1       1               Passive        .1 UFD
+        C405            1       1               Passive        .1 UFD
+        C406            1       1               Passive        .1 UFD
+        U402            14      VCC             Power          1 MHZ OSC.
+        U403            14      VCC             Power          74LS74
+        U401            24      VCC             Power          82C54
+        C602            1       1               Passive        .1 UFD
+        C601            1       1               Passive        .1 UFD
+        U602            12      EN_BAR          Input          26LS32
+        U602            16      VCC             Power          26LS32
+        R700            1       1               Passive        100 OHM 1 WATT
+        U601            9       IC              Input          26LS31
+        U601            15      ID              Input          26LS31
+        U601            16      VCC             Power          26LS31
+        RS301           1       COM             Passive        SIP10C-4.7K
+        R301            2       2               Passive        10K
+        R302            2       2               Passive        10K
+        R303            2       2               Passive        10K
+        U304            14      VCC             Power          74LS02
+        R705            1       1               Passive        10K
+        R706            1       1               Passive        10K
+        R707            1       1               Passive        10K
+        C302            1       1               Passive        .1 UFD
+        C301            1       1               Passive        .1 UFD
+        C303            1       1               Passive        .1 UFD
+        C304            1       1               Passive        .1 UFD
+        U302            24      VCC             Power          PAL20L8
+        U301            26      VCC             Power          82C55
+
+[00114] GND
+        C102            2       2               Passive        100 UFD
+        C101            2       2               Passive        100 UFD
+        U201            10      GND             Power          74LS541
+        U202            10      GND             Power          74LS541
+        U201            1       G1              Input          74LS541
+        U201            19      G2              Input          74LS541
+        U202            1       G1              Input          74LS541
+        U202            19      G2              Input          74LS541
+        J201            62      B31             BiDirectional  CON PC 62
+        C201            2       2               Passive        .1 UFD
+        C202            2       2               Passive        .1 UFD
+        C203            2       2               Passive        .1 UFD
+        C204            2       2               Passive        .1 UFD
+        C205            2       2               Passive        .1 UFD
+        C206            2       2               Passive        .1 UFD
+        C207            2       2               Passive        .1 UFD
+        U205            10      GND             Power          74LS541
+        U203            10      GND             Power          74LS541
+        U205            1       G1              Input          74LS541
+        U205            19      G2              Input          74LS541
+        U203            1       G1              Input          74LS541
+        U203            19      G2              Input          74LS541
+        U204            10      GND             Power          74LS541
+        U206            10      GND             Power          74LS245
+        U204            1       G1              Input          74LS541
+        U204            19      G2              Input          74LS541
+        J201            20      B10             Passive        CON PC 62
+        J201            2       B1              Passive        CON PC 62
+        C501            2       2               Passive        .1 UFD
+        C502            2       2               Passive        .1 UFD
+        C503            2       2               Passive        .1 UFD
+        C504            2       2               Passive        .1 UFD
+        U406            7       GND             Power          74LS02
+        U501            8       GND             Power          74LS166
+        U501            6       INH             Input          74LS166
+        U503            7       GND             Power          74LS74
+        U404            7       GND             Power          74LS00
+        U502            8       GND             Power          74LS161
+        U303            7       GND             Power          74LS04
+        U502            3       A               Input          74LS161
+        U502            4       B               Input          74LS161
+        U502            5       C               Input          74LS161
+        U501            1       SER             Input          74LS166
+        U504            7       GND             Power          74LS74
+        U405            7       GND             Power          74LS08
+        C402            2       2               Passive        .1 UFD
+        C401            2       2               Passive        .1 UFD
+        C403            2       2               Passive        .1 UFD
+        C404            2       2               Passive        .1 UFD
+        C405            2       2               Passive        .1 UFD
+        C406            2       2               Passive        .1 UFD
+        U402            7       GND             Power          1 MHZ OSC.
+        U403            7       GND             Power          74LS74
+        U401            12      GND             Power          82C54
+        C602            2       2               Passive        .1 UFD
+        C601            2       2               Passive        .1 UFD
+        R702            2       2               Passive        10K
+        R701            2       2               Passive        10K
+        R703            2       2               Passive        10K
+        R704            2       2               Passive        10K
+        U602            8       GND             Power          26LS32
+        J601            11      P11             Passive        DB25-S
+        U601            8       GND             Power          26LS31
+        U601            4       EN              Input          26LS31
+        U601            12      EN_BAR          Input          26LS31
+        J601            7       P7              Passive        DB25-S
+        J601            17      P17             Passive        DB25-S
+        J601            4       P4              Passive        DB25-S
+        J601            14      P14             Passive        DB25-S
+        J601            1       P1              Passive        DB25-S
+        U304            7       GND             Power          74LS02
+        SW301           16      B1              Passive        SW DIP-8
+        SW301           15      B2              Passive        SW DIP-8
+        SW301           14      B3              Passive        SW DIP-8
+        SW301           13      B4              Passive        SW DIP-8
+        SW301           12      B5              Passive        SW DIP-8
+        C301            2       2               Passive        .1 UFD
+        C302            2       2               Passive        .1 UFD
+        C303            2       2               Passive        .1 UFD
+        C304            2       2               Passive        .1 UFD
+        U302            12      GND             Power          PAL20L8
+        U301            7       GND             Power          82C55
+
+[00115] BA0 (local to sheet 1)
+        U201            15      Y4              Hi-Z           74LS541
+        U401            19      A0              Input          82C54
+        U301            9       A0              Input          82C55
+
+[00116] BA1 (local to sheet 1)
+        U201            16      Y3              Hi-Z           74LS541
+        U401            20      A1              Input          82C54
+        U301            8       A1              Input          82C55
+
+[00117] BA2 (local to sheet 1)
+        U201            17      Y2              Hi-Z           74LS541
+        U302            3       I2              Input          PAL20L8
+
+[00118] BA3 (local to sheet 1)
+        U201            18      Y1              Hi-Z           74LS541
+        U302            4       I3              Input          PAL20L8
+
+[00119] BA4 (local to sheet 1)
+        U202            11      Y8              Hi-Z           74LS541
+        U302            5       I4              Input          PAL20L8
+
+[00120] BA5 (local to sheet 1)
+        U202            12      Y7              Hi-Z           74LS541
+        U302            6       I5              Input          PAL20L8
+
+[00121] BA6 (local to sheet 1)
+        U202            13      Y6              Hi-Z           74LS541
+        U302            7       I6              Input          PAL20L8
+
+[00122] BA7 (local to sheet 1)
+        U202            14      Y5              Hi-Z           74LS541
+        U302            8       I7              Input          PAL20L8
+
+[00123] BA8 (local to sheet 1)
+        U202            15      Y4              Hi-Z           74LS541
+        U302            9       I8              Input          PAL20L8
+
+[00124] BA9 (local to sheet 1)
+        U202            16      Y3              Hi-Z           74LS541
+        U302            10      I9              Input          PAL20L8
+
+[00125] BA10 (local to sheet 1)
+        U202            17      Y2              Hi-Z           74LS541
+
+[00126] BA11 (local to sheet 1)
+        U202            18      Y1              Hi-Z           74LS541
+
+[00127] BA12 (local to sheet 1)
+        U203            11      Y8              Hi-Z           74LS541
+
+[00128] BA13 (local to sheet 1)
+        U203            12      Y7              Hi-Z           74LS541
+
+[00129] BA14 (local to sheet 1)
+        U203            13      Y6              Hi-Z           74LS541
+
+[00130] BA15 (local to sheet 1)
+        U203            14      Y5              Hi-Z           74LS541
+
+[00131] BA16 (local to sheet 1)
+        U203            15      Y4              Hi-Z           74LS541
+
+[00132] BA17 (local to sheet 1)
+        U203            16      Y3              Hi-Z           74LS541
+
+[00133] BA18 (local to sheet 1)
+        U203            17      Y2              Hi-Z           74LS541
+
+[00134] BA19 (local to sheet 1)
+        U203            18      Y1              Hi-Z           74LS541
+
+[00135] BD0 (local to sheet 1)
+        U206            11      B8              BiDirectional  74LS245
+        U401            8       D0              BiDirectional  82C54
+        U602            3       OA              Hi-Z           26LS32
+        U301            34      D0              BiDirectional  82C55
+
+[00136] BD1 (local to sheet 1)
+        U206            12      B7              BiDirectional  74LS245
+        U401            7       D1              BiDirectional  82C54
+        U602            13      OB              Hi-Z           26LS32
+        U301            33      D1              BiDirectional  82C55
+
+[00137] BD2 (local to sheet 1)
+        U206            13      B6              BiDirectional  74LS245
+        U401            6       D2              BiDirectional  82C54
+        U602            5       OC              Hi-Z           26LS32
+        U301            32      D2              BiDirectional  82C55
+
+[00138] BD3 (local to sheet 1)
+        U206            14      B5              BiDirectional  74LS245
+        U401            5       D3              BiDirectional  82C54
+        U602            11      OD              Hi-Z           26LS32
+        U301            31      D3              BiDirectional  82C55
+
+[00139] BD4 (local to sheet 1)
+        U206            15      B4              BiDirectional  74LS245
+        U401            4       D4              BiDirectional  82C54
+        U301            30      D4              BiDirectional  82C55
+
+[00140] BD5 (local to sheet 1)
+        U206            16      B3              BiDirectional  74LS245
+        U401            3       D5              BiDirectional  82C54
+        U301            29      D5              BiDirectional  82C55
+
+[00141] BD6 (local to sheet 1)
+        U206            17      B2              BiDirectional  74LS245
+        U401            2       D6              BiDirectional  82C54
+        U301            28      D6              BiDirectional  82C55
+
+[00142] BD7 (local to sheet 1)
+        U206            18      B1              BiDirectional  74LS245
+        U401            1       D7              BiDirectional  82C54
+        U301            27      D7              BiDirectional  82C55
+
+[00143] IRQ2 (local to sheet 1)
+        J201            8       B4              Passive        CON PC 62
+        JP301           2       2               Passive        JUMPER
+
+[00144] IRQ3 (local to sheet 1)
+        J201            50      B25             Passive        CON PC 62
+        JP302           2       2               Passive        JUMPER
+
+[00145] IRQ4 (local to sheet 1)
+        J201            48      B24             Passive        CON PC 62
+        JP303           2       2               Passive        JUMPER
+
+[00146] IRQ5 (local to sheet 1)
+        J201            46      B23             Passive        CON PC 62
+        JP304           2       2               Passive        JUMPER
+
+[00147] IRQ6 (local to sheet 1)
+        J201            44      B22             Passive        CON PC 62
+        JP305           2       2               Passive        JUMPER
+
+[00148] IRQ7 (local to sheet 1)
+        J201            42      B21             Passive        CON PC 62
+        JP306           2       2               Passive        JUMPER
+
+[00149] -SEL0 (local to sheet 1)
+        U302            21      I/O6            BiDirectional  PAL20L8
+        U304            2       I0_A            Input          74LS02
+
+[00150] -SEL1 (local to sheet 1)
+        U302            20      I/O5            BiDirectional  PAL20L8
+
+[00151] -SEL2 (local to sheet 1)
+        U302            19      I/O4            BiDirectional  PAL20L8
+
+[00152] -SEL3 (local to sheet 1)
+        U302            15      O0              Output         PAL20L8
+
+[00153] -SEL4 (local to sheet 1)
+        U302            16      I/O1            Output         PAL20L8
+        U301            6       CS_BAR          Input          82C55
+
+[00154] -SEL5 (local to sheet 1)
+        U401            21      CS_BAR          Input          82C54
+        U302            17      I/O2            BiDirectional  PAL20L8
+
+[00155] PC1 (local to sheet 1)
+        U403            2       D_A             Input          74LS74
+        R302            1       1               Passive        10K
+        U301            15      PC1             BiDirectional  82C55
+
+[00156] PC2 (local to sheet 1)
+        U404            1       I0_A            Input          74LS00
+        U301            16      PC2             BiDirectional  82C55
+
+[00157] PC3 (local to sheet 1)
+        U301            17      PC3             BiDirectional  82C55
+        JP301           1       1               Passive        JUMPER
+        JP302           1       1               Passive        JUMPER
+        JP303           1       1               Passive        JUMPER
+        JP304           1       1               Passive        JUMPER
+        JP305           1       1               Passive        JUMPER
+        JP306           1       1               Passive        JUMPER
+
+[00158] PC4 (local to sheet 1)
+        U504            4       PR_A            Input          74LS74
+        R303            1       1               Passive        10K
+        U301            13      PC4             BiDirectional  82C55
+
+[00159] PC5 (local to sheet 1)
+        U406            12      I1_D            Input          74LS02
+        U301            12      PC5             BiDirectional  82C55
+
+[00160] PC6 (local to sheet 1)
+        U503            13      CL_B            Input          74LS74
+        U501            15      SH/LD_BAR       Input          74LS166
+        U502            9       LOAD            Input          74LS161
+        U404            11      O_D             Output         74LS00
+        U406            11      I0_D            Input          74LS02
+        U301            11      PC6             BiDirectional  82C55
+
+[00161] PC7 (local to sheet 1)
+        U503            12      D_B             Input          74LS74
+        U301            10      PC7             BiDirectional  82C55
+
+[00162] PB0 (local to sheet 1)
+        U504            6       Q_A_BAR         Output         74LS74
+        U301            18      PB0             BiDirectional  82C55
+
+[00163] PB2 (local to sheet 1)
+        U403            9       Q_B             Output         74LS74
+        U405            4       I0_B            Input          74LS08
+        U301            20      PB2             BiDirectional  82C55
+
+[00164] PB3 (local to sheet 1)
+        U501            13      QH              Output         74LS166
+        U406            9       I1_C            Input          74LS02
+        U406            2       I0_A            Input          74LS02
+        U303            9       I_D             Input          74LS04
+        U301            21      PB3             BiDirectional  82C55
+
+[00165] PB4 (local to sheet 1)
+        U406            10      O_C             Output         74LS02
+        U401            14      G1              Input          82C54
+        U301            22      PB4             BiDirectional  82C55
+
+[00166] PB5 (local to sheet 1)
+        U404            8       O_C             Output         74LS00
+        U405            13      I1_D            Input          74LS08
+        U502            7       ENP             Input          74LS161
+        U301            23      PB5             BiDirectional  82C55
+
+[00167] PB6 (local to sheet 1)
+        U406            13      O_D             Output         74LS02
+        U601            7       IB              Input          26LS31
+        U301            24      PB6             BiDirectional  82C55
+
+[00168] PB7 (local to sheet 1)
+        U503            5       Q_A             Output         74LS74
+        U601            1       IA              Input          26LS31
+        U301            25      PB7             BiDirectional  82C55
+
+[00169] PA0 (local to sheet 1)
+        U501            2       A               Input          74LS166
+        U301            4       PA0             BiDirectional  82C55
+
+[00170] PA1 (local to sheet 1)
+        U501            3       B               Input          74LS166
+        U301            3       PA1             BiDirectional  82C55
+
+[00171] PA2 (local to sheet 1)
+        U501            4       C               Input          74LS166
+        U301            2       PA2             BiDirectional  82C55
+
+[00172] PA3 (local to sheet 1)
+        U501            5       D               Input          74LS166
+        U301            1       PA3             BiDirectional  82C55
+
+[00173] PA4 (local to sheet 1)
+        U501            10      E               Input          74LS166
+        U301            40      PA4             BiDirectional  82C55
+
+[00174] PA5 (local to sheet 1)
+        U501            11      F               Input          74LS166
+        U301            39      PA5             BiDirectional  82C55
+
+[00175] PA6 (local to sheet 1)
+        U501            12      G               Input          74LS166
+        U301            38      PA6             BiDirectional  82C55
+
+[00176] PA7 (local to sheet 1)
+        U501            14      H               Input          74LS166
+        U301            37      PA7             BiDirectional  82C55
+
+[00177] -5V
+        J201            10      B5              Passive        CON PC 62
+
+[00178] -12V
+        J201            14      B7              Passive        CON PC 62
+
+[00179] +12V
+        J201            18      B9              Passive        CON PC 62
+

@@ -1,0 +1,86 @@
+CUPL  Version 2.10a Serial# 2-00001-120
+Copyright (c) 1983,84,85,86 Personal CAD Systems, Inc.
+CREATED Wed Dec 21 22:38:26 1994
+
+LISTING FOR LOGIC DESCRIPTION FILE: send.pld.pld
+
+  1:Name      JDRPROTO;
+  2:Partno    JDRPROTO;
+  3:Date      08/20/90;
+  4:Revision  02;
+  5:Designer  DERICK;
+  6:Company   JDR;
+  7:Assembly  00000;
+  8:Location  PAL;
+  9:Device    G20V8;
+ 10:/* Device    P20L8; */
+ 11:
+ 12:/****************************************************************/
+ 13:/* THIS IS THE PAL FOR JDR'S PDS-601 & PDS-611                  */
+ 14:/****************************************************************/
+ 15:
+ 16:/**  Inputs  **/
+ 17:
+ 18:pin  1      = !SA6;            /* ADDRESS 6' SWITCH 3            */
+ 19:pin  2      = !SA7;            /* ADDRESS 7' SWITCH 2            */
+ 20:pin  3      = A2;              /* ADDRESS 2                      */
+ 21:pin  4      = A3;              /* ADDRESS 3                      */
+ 22:pin  5      = A4;              /* ADDRESS 4                      */
+ 23:pin  6      = A5;              /* ADDRESS 5                      */
+ 24:pin  7      = A6;              /* ADDRESS 6                      */
+ 25:pin  8      = A7;              /* ADDRESS 7                      */
+ 26:pin  9      = A8;              /* ADDRESS 8                      */
+ 27:pin 10      = A9;              /* ADDRESS 9                      */
+ 28:pin 11      = DMAAEN;          /* DMA ADDRESS ENABLE             */
+ 29:pin 13      = !SA5;            /* ADDRESS 5' SWITCH 4            */
+ 30:pin 14      = !SA4;            /* ADDRESS 4' SWITCH 5, NOT USED  */
+ 31:pin 18      = !SEL3;           /* SELECT OUT 3, COMBINATORIAL IN */
+ 32:pin 23      = !SA8;            /* ADDRESS 8' SWITCH 1            */
+ 33:
+ 34:/**  Outputs  **/
+ 35:
+ 36:pin 15      = !SEL4;            /* SELECT OUT 4                  */
+ 37:pin 16      = !SEL8255;         /* SELECT OUT 8255               */
+ 38:pin 17      = !SEL8253;         /* SELECT OUT 8253               */
+ 39:pin 19      = !SEL2;            /* SELECT OUT 2                  */
+ 40:pin 20      = !SEL1;            /* SELECT OUT 1                  */
+ 41:pin 21      = !SEL0;            /* SELECT OUT 0                  */
+ 42:pin 22      = !GATE;            /* GATE BI-DI BUFFER             */
+ 43:
+ 44:/** Declarations and Intermediate Variable Definitions **/
+ 45:
+ 46:field ADDHI  = [A9..6];         /* HIGH ORDER ADDRESSES         */
+ 47:field ADDLO  = [A4..2];         /* LOW ORDER ADDRESSES          */
+ 48:field SWHI   = [SA8..6];        /* HIGH ORDER SWITCHES          */
+ 49:
+ 50:OK5          = (A5 & SA5 # !A5 & !SA5) & !DMAAEN;
+ 51:
+ 52:/** Logic Equations **/
+ 53:
+ 54:GATE         =  SEL3 & OK5 & ADDLO:[00..17];
+ 55:
+ 56:SEL0         =  SEL3 & OK5 & ADDLO:[00..03];
+ 57:
+ 58:SEL1         =  SEL3 & OK5 & ADDLO:[04..07];
+ 59:
+ 60:SEL2         =  SEL3 & OK5 & ADDLO:[08..0B];
+ 61:
+ 62:/* SEL4         =  SEL3 & OK5 & ADDLO:[0C..0F]; */
+ 63:
+ 64:SEL8255      =  SEL3 & OK5 & ADDLO:[10..13];
+ 65:
+ 66:SEL8253      =  SEL3 & OK5 & ADDLO:[14..17];
+ 67:
+ 68:SEL3         =  SWHI:[040] & ADDHI:[240]
+ 69:              # SWHI:[080] & ADDHI:[280]
+ 70:              # SWHI:[0C0] & ADDHI:[2C0]
+ 71:              # SWHI:[100] & ADDHI:[300]
+ 72:              # SWHI:[140] & ADDHI:[340]
+ 73:              # SWHI:[180] & ADDHI:[380]
+ 74:              # SWHI:[1C0] & ADDHI:[3C0];
+ 75:
+ 76:
+
+
+Jedec Fuse Checksum       (7F9B)
+Jedec Transmit Checksum   (7BD4)
