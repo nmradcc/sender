@@ -11,5 +11,8 @@ You can use the Visual Studio Build Tools 2022 Release - x86 as the build kit bu
 
 The send configuration files (*.INI) have been reworked to accept *.cfg files of the same format.
 
-It will also accept legacy .INI files but is discuraged as using .INI files for parameters is a no-no in todays world.
+It will also accept legacy .INI files but is discuraged as using .INI files for parameter passing is a no-no in todays world.
+
+Much of the documentation may still show .INI
+
 
