@@ -15,4 +15,7 @@ It will also accept legacy .INI files but is discuraged as using .INI files for 
 
 Much of the documentation may still show .INI
 
+Most of old Visual Source Safe (scc stuff) has been remove. See the V3-archive branch for previous history.
+
+
 
