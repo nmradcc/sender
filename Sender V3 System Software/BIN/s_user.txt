@@ -7,7 +7,7 @@ Usage:     send [-?] [-u] [-m] [-a addr] [-d l|f|a|s] [-n pre] [-N trig]
                 [-T] [-F fill] [-R reps] [-P] [-A] [-s] [-S] [-g mask]
                 [-o pair] [-k] [-D] [-e trg]
 
-Cfg file: <C:\GitHub\Sender V3 System refactor\Sender V3 System Software\BIN\SEND.CFG>
+Cfg file: <C:\GitHub\nmradcc\sender\Sender V3 System Software\BIN\SEND.CFG>
 
   -?                    Print usage message and exit
   -u                    Print user information to 's_user.txt' and exit

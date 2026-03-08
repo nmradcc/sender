@@ -1603,7 +1603,7 @@ Send_reg::send_pkt(
 	const char		*info )					// Packet log info.
 {
 	const char		*my_name = "Send_reg::send_pkt(Bits)";
-	register u_int	count;					// Count of BYTES sent.
+	register u_int	count = 0;				// Count of BYTES sent.
 	register u_long	san_cnt;		   		// Sanity timeout.
 	BYTE			pbyte;					// Present BYTE.
 
@@ -1690,6 +1690,7 @@ Send_reg::send_pkt(
 	{
 		DBGLOG( "%s %s.", my_name, info ? info : "" );
 		print_pkt_log( ibits.get_byte_array(), ibits.get_byte_size() );
+		count = ibits.get_byte_size();
 	}
 
 	clr_err_cnt();							// Restart error counter.
