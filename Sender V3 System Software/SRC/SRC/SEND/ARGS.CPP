@@ -858,6 +858,7 @@ Args_obj::cfgscan( void )
 	char		*itmp;						// Temporary input pointer.
 	char		*cmd;						// Command string.
 	char		*tptr;						// Temp pointer.
+	size_t		line_len;				// Current cfg line length.
 	int			targc;						// Argument count.
 	char		*targv[3];					// Argument vector.
 	char		buf[MAX_CFG_LINE];			// Cfg line buffer.
@@ -865,12 +866,14 @@ Args_obj::cfgscan( void )
 	while( fgets( buf, MAX_CFG_LINE, cfg_fp ) )
 	{
 		itmp	=	buf;
+		line_len = strlen( buf );
 
-		if ( *( tptr = buf +  ( strlen( buf ) - 1 ) ) ==  '\n' )
+		if ( line_len > 0 && *( tptr = buf + ( line_len - 1 ) ) == '\n' )
 		{
 			*tptr	=	'\0';
 		}
 
+		if ( buf[0] == '\0' )
 		{
 			continue;
 		}

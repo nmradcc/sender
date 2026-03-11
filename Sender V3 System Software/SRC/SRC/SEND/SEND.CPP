@@ -31,6 +31,7 @@
 #include <cksum.h>
 #include <zlog.h>
 
+#include <windows.h>
 #include <conio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -457,8 +458,21 @@ get_log_file(
     u_long		nLength;					// Sender file length.
     int			rslt;						// Result of checksum method.
     FILE		*fp;						// FILE for command line switches.
+	char			full_path[ MAX_PATH ];		// Full path to executable.
+	const char	*checksum_path;				// Path to use for checksum.
+	DWORD			path_len;
 
-	rslt = nCheckSumFile(NULL, cmd_name, &nCRC, &nLength );
+	path_len = GetModuleFileNameA( NULL, full_path, MAX_PATH );
+	if ( path_len == 0 || path_len >= MAX_PATH )
+	{
+		checksum_path = cmd_name;
+	}
+	else
+	{
+		checksum_path = full_path;
+	}
+
+	rslt = nCheckSumFile( NULL, checksum_path, &nCRC, &nLength );
 
     if ( rslt != 0 )
     {

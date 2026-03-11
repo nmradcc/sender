@@ -1,13 +1,22 @@
 {
   "version": "0.2.0",
   "configurations": [
-
+      {
+      "name": "Debug cfg send.exe (CMake)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${command:cmake.launchTargetPath}",
+      "args": [],
+      "cwd": "${command:cmake.launchTargetDirectory}",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    },
     {
       "name": "Debug send.exe (CMake)",
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${command:cmake.launchTargetPath}",
-      "args": ["-P", "-t", "0x00000001"],
+      "args": ["-P", "-t", "0x00000003"],
       "cwd": "${command:cmake.launchTargetDirectory}",
       "console": "integratedTerminal",
       "stopAtEntry": false
