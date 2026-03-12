@@ -732,7 +732,7 @@ Dec_tst::decoder_test(
 		Dcc_reg.set_do_crit( true );
 	}
 
-	STATPRINT(  "Deginning booster warm up." );
+	STATPRINT(  "Beginning booster warm up." );
 	printf(		"Beginning booster warm up.\n" );
 	if ( !Dcc_reg.get_running() )
 	{
