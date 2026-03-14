@@ -29,7 +29,7 @@
       "args": ["-P", "-t", "0x00000003"],
       "cwd": "${command:cmake.launchTargetDirectory}",
       "console": "integratedTerminal",
-      "stopAtEntry": false
+      "stopAtEntry": true
     }
   ]
 }
