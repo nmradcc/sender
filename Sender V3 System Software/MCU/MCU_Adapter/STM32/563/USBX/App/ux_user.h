@@ -185,7 +185,7 @@
 
 /* Defined, this value is the maximum number of interfaces in the device framework.  */
 
-/* #define UX_MAX_SLAVE_INTERFACES    16 */
+#define UX_MAX_SLAVE_INTERFACES       2
 
 /* Defined, this value represents the current number of SCSI logical units represented in the device
    storage class driver.  */
@@ -597,7 +597,7 @@
 
 /* it define USBX device max number of endpoints (1~n). */
 
-/* #define UX_MAX_DEVICE_ENDPOINTS           6 */
+#define UX_MAX_DEVICE_ENDPOINTS              4
 
 /* it define USBX device max number of interfacess (1~n). */
 

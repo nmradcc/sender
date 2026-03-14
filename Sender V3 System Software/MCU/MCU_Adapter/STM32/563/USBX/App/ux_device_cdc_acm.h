@@ -28,11 +28,10 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "ux_api.h"
 #include "ux_device_class_cdc_acm.h"
-#include <stdbool.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
