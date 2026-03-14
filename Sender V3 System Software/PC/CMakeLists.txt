@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
-set(SRC_DIR ${ROOT_DIR}/SRC)
+set(SRC_DIR ${ROOT_DIR})
 set(SEND_DIR ${SRC_DIR}/SRC/SEND)
 set(INC_DIR ${SRC_DIR}/INCLUDE)
 set(LIB_DIR ${SRC_DIR}/LIB)
@@ -43,7 +43,7 @@ if (MSVC)
   target_compile_definitions(send PRIVATE _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_WARNINGS)
 endif()
 
-option(BUILD_TEST_TOOLS "Build test utilities in SRC/LIB" OFF)
+option(BUILD_TEST_TOOLS "Build test utilities in PC/LIB" OFF)
 
 if (BUILD_TEST_TOOLS)
   add_executable(cktest ${LIB_DIR}/cktest.cpp)

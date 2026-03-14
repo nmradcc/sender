@@ -1,4 +1,5 @@
 {
+  "cmake.sourceDirectory": "${workspaceFolder}/PC",
   "cmake.configurePreset": "windows-msvc",
   "cmake.buildPreset": "windows-msvc",
   "chat.tools.terminal.autoApprove": {
