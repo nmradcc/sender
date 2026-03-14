@@ -1,30 +1,36 @@
-# STM32 MCU Adapter Scaffold
+# STM32 MCU Adapter
 
-This folder contains an STM32-oriented split of the firmware stub:
+This folder contains the STM32H563 Sender MCU project.
 
-- `Core/Inc/sender_protocol.h` + `Core/Src/sender_protocol.c`
-  - Protocol constants and CRC16.
-- `Core/Inc/sender_parser.h` + `Core/Src/sender_parser.c`
-  - Request frame parsing and response frame building.
-- `Core/Inc/sender_engine.h` + `Core/Src/sender_engine.c`
-  - Waveform engine abstraction/state (stub behavior).
-- `Core/Inc/sender_transport.h` + `Core/Src/sender_transport_stm32_stub.c`
-  - Transport contract and stub hooks.
-- `Core/Inc/sender_app.h` + `Core/Src/sender_app.c`
-  - Dispatcher that ties transport/parser/engine together.
+- `563/Core/Inc/sender_*.h` + `563/Core/Src/sender_*.c`
+  - Protocol, parser, engine, app, and transport files used by the H563 build.
+- `563/Core/Src/sender_transport_usbx.c`
+  - STM32H563 USBX CDC ACM transport implementation.
 
-## CubeIDE integration
+## H563 integration
 
-1. Add all files in `Core/Inc` and `Core/Src` to your STM32CubeIDE project.
-2. Replace `sender_transport_stm32_stub.c` with your USB CDC implementation.
-3. In `main.c`:
+The H563 project in `563/` contains the sender core directly and runs `sender_app_poll()` from the generated USBX device thread.
+
+Key wiring:
+
+1. `563/CMakeLists.txt` builds the local sender sources from `563/Core/Src`.
+2. `563/USBX/App/app_usbx_device.c` initializes the sender app and polls it from the USBX thread.
+3. `563/Core/Src/sender_transport_usbx.c` handles framed SHP traffic over USB CDC ACM.
+
+## Porting to another STM32 target
+
+1. Reuse the sender files from `563/Core/Inc` and `563/Core/Src`.
+2. Provide a target-specific transport implementation alongside your CubeMX project.
+3. Call `sender_app_init()` once and then service `sender_app_poll()` from your scheduler loop or RTOS thread.
+
+Example:
 
 ```c
 #include "sender_app.h"
 
 int main(void)
 {
-    // HAL init, clock, peripherals, USB CDC init...
+    // HAL init, clock, peripherals, transport init via sender_app_init...
     sender_app_init();
 
     while (1)
@@ -37,4 +43,4 @@ int main(void)
 ## Notes
 
 - The engine module is currently a deterministic stub for protocol bring-up.
-- Once transport is live, move DCC timing generation into timer/DMA logic in `sender_engine.c`.
+- Remaining hardware work is in `sender_engine.c`: move DCC timing generation into timer/DMA logic.
