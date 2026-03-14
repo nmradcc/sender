@@ -203,6 +203,13 @@ static VOID app_ux_device_thread_entry(ULONG thread_input)
   /* USER CODE BEGIN app_ux_device_thread_entry */
   TX_PARAMETER_NOT_USED(thread_input);
 
+  if (MX_USBX_Device_Stack_Init() != UX_SUCCESS)
+  {
+    while (1)
+    {
+    }
+  }
+
   sender_app_init();
   for (;;)
   {
