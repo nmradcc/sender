@@ -41,6 +41,8 @@ const int		MAX_CFG_LINE  	= 80; 					// Max cfg line.
 const u_int		MAX_FILL_MSEC 	= 20000; 				// Max fill time.
 const u_int		MIN_TEST_REPS	= 1;					// Min test repeats.
 const u_int		MAX_TEST_REPS	= 1000;					// Max test repeats.
+const u_int		MIN_MCU_BAUD	= 9600;					// Min MCU baud rate.
+const u_int		MAX_MCU_BAUD	= 3000000;				// Max MCU baud rate.
 
 const BYTE		DEF_FUNC_MASK	=	0x1f;				// Function Mask.
 
@@ -107,6 +109,9 @@ Args_obj::Args_obj( void )
     acc_pre				= 1;				// Default accessory out preset.
     m_kick_start		= false;			// Kick start motor.
 	extra_trg			= 0;				// Extra Ames tst trig packets.
+	m_use_mcu_backend	= false;			// Use legacy backend by default.
+	strcpy( m_mcu_port, "COM3" );			// Default MCU COM port.
+	m_mcu_baud			= 115200;			// Default MCU baud.
 	key_help			=					// Keyboard commands help msg.
 		"ESC - Return to command line       h - Print header\n"
 		"  c - Send single clock phase      C - Send series of clock phases\n"
@@ -175,7 +180,8 @@ Args_obj::usage(
 		cmd_name );			
     fprintf( ofp,
 		"                [-T] [-F fill] [-R reps] [-P] [-A] [-s] [-S] [-g mask]\n"
-        "                [-o pair] [-k] [-D] [-e trg]\n\n" );
+		"                [-o pair] [-k] [-D] [-e trg] [-H legacy|mcu] [-J port]\n"
+		"                [-Y baud]\n\n" );
 
 	if ( cfg_path[0] != '\0' )
 	{
@@ -300,6 +306,18 @@ Args_obj::usage(
 		"  -D        DEBUG_ON    "
 		"Log debug messages                   <value %s>\n",
 		Deflog.get_dbg_on() ? "true" : "false" );
+	fprintf( ofp,
+		"  -H legacy|mcu BACKEND "
+		"Hardware backend selector            <value %s>\n",
+		m_use_mcu_backend ? "mcu" : "legacy" );
+	fprintf( ofp,
+		"  -J <port>  MCU_PORT   "
+		"MCU serial port name                <value %s>\n",
+		m_mcu_port );
+	fprintf( ofp,
+		"  -Y <baud>  MCU_BAUD   "
+		"MCU serial baud rate               <value %u>\n",
+		m_mcu_baud );
 				
 	fprintf( ofp, "\nManual keyboard commands >\n\n%s\n", key_help);
 }
@@ -742,6 +760,73 @@ Args_obj::argscan(
 			else
 			{
 				fprintf( stderr, "ERROR: -e must have an extra trigger packets argument\n\n" );
+				return ( FAIL );
+			}
+		}
+		else if ( strcmp( argv[i], "-H" ) == 0 )	// Hardware backend.
+		{
+			if ( ++i < argc )
+			{
+				if ( strcmp( argv[i], "legacy" ) == 0
+					|| strcmp( argv[i], "LEGACY" ) == 0 )
+				{
+					m_use_mcu_backend = false;
+				}
+				else if ( strcmp( argv[i], "mcu" ) == 0
+						|| strcmp( argv[i], "MCU" ) == 0 )
+				{
+					m_use_mcu_backend = true;
+				}
+				else
+				{
+					fprintf( stderr,
+						"ERROR: -H must be 'legacy' or 'mcu', got <%s>\n\n",
+						argv[i] );
+					return ( FAIL );
+				}
+			}
+			else
+			{
+				fprintf( stderr, "ERROR: -H must have a backend argument\n\n" );
+				return ( FAIL );
+			}
+		}
+		else if ( strcmp( argv[i], "-J" ) == 0 )	// MCU serial port.
+		{
+			if ( ++i < argc )
+			{
+				if ( strlen( argv[i] ) >= MAX_MCU_PORT )
+				{
+					fprintf( stderr,
+						"ERROR: -J port argument too long (max %d chars)\n\n",
+						MAX_MCU_PORT - 1 );
+					return ( FAIL );
+				}
+				strcpy( m_mcu_port, argv[i] );
+			}
+			else
+			{
+				fprintf( stderr, "ERROR: -J must have a serial port argument\n\n" );
+				return ( FAIL );
+			}
+		}
+		else if ( strcmp( argv[i], "-Y" ) == 0 )	// MCU serial baud.
+		{
+			if ( ++i < argc )
+			{
+				t_u_int = (u_int)strtoul( argv[i], NULL, 0 );
+				if ( t_u_int < MIN_MCU_BAUD || t_u_int > MAX_MCU_BAUD )
+				{
+					fprintf( stderr,
+						"ERROR: -Y %u invalid, must be between %u and %u\n\n",
+						t_u_int, MIN_MCU_BAUD, MAX_MCU_BAUD );
+					return ( FAIL );
+				}
+				m_mcu_baud = t_u_int;
+			}
+			else
+			{
+				fprintf( stderr, "ERROR: -Y must have a baud rate argument\n\n" );
 				return ( FAIL );
 			}
 		}

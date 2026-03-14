@@ -52,6 +52,7 @@
 #include <stdio.h>
 
 const int	MAXROOT				= MAXFILE + MAXEXT - 1;	// Max command size.
+const int	MAX_MCU_PORT		= 64;					// Max MCU port name size.
 const u_int	MAX_EXTRA_PREAMBLE	=  8;					// Max extra preamble bits.
 const u_int MAX_EXTRA_TRG       = 50;                   // Max extra trig pkts.
 
@@ -131,6 +132,12 @@ class Args_obj : public Z_core
 				{ return ( m_kick_start ); }
 	u_int	   	get_extra_trg( void ) const
 				{ return ( extra_trg ); }
+	bool		get_use_mcu_backend( void ) const
+				{ return ( m_use_mcu_backend ); }
+	const char	*get_mcu_port( void ) const
+				{ return ( m_mcu_port ); }
+	u_int		get_mcu_baud( void ) const
+				{ return ( m_mcu_baud ); }
 
 
 	void		usage( FILE *ofp = stderr );
@@ -169,6 +176,9 @@ class Args_obj : public Z_core
     BYTE                    acc_pre;			// Acc. out preset (1,3,5,7);
     bool					m_kick_start;		// Briefly start loco.
 	u_int					extra_trg;		    // Extra Ames tst trig packets.	
+	bool					m_use_mcu_backend;	// Use MCU backend when true.
+	char					m_mcu_port[MAX_MCU_PORT]; // MCU COM port name.
+	u_int					m_mcu_baud;		// MCU serial baud rate.
 	const char 				*key_help;			// Keyboard commands help msg.
 
 	/* Method section */

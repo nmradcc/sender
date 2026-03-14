@@ -27,6 +27,7 @@
 #include "st_vect.h"
 #include "self_tst.h"
 #include "dec_tst.h"
+#include "SENDER_HW_MCU_USB.H"
 
 #include <cksum.h>
 #include <zlog.h>
@@ -35,6 +36,7 @@
 #include <conio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <vector>
 
 #define CMD_MSG		( printf( "Command mode (h for help, q to quit) >>" ) )
 
@@ -139,6 +141,23 @@ static Rslt_t	do_self_tests( Self_tst	&self_tst );
 static void		get_log_file( const char *cmd_name );
 static void		print_user_docs();
 static void		exit_send( int status );
+static bool		init_hw_backend();
+static void		close_hw_backend();
+static bool		hw_is_mcu();
+static bool		hw_is_running();
+static Rslt_t	hw_set_clk( u_short clk0t, u_short clk0h, u_short clk1t );
+static Rslt_t	hw_start_clk();
+static Rslt_t	hw_stop_clk();
+static void		hw_clr_under();
+static void		hw_set_scope( bool on );
+static Rslt_t	hw_send_bytes( u_int count, BYTE val, const char *info );
+static Rslt_t	hw_send_stretched_byte(
+								u_short clk0t,
+								u_short clk0h,
+								BYTE val,
+								const char *info );
+static Rslt_t	hw_send_special( BYTE special_id );
+static Rslt_t	hw_send_bits_pkt( Bits &bits, const char *info );
 
 /*
  *	Global copy of Send board registers.
@@ -154,6 +173,10 @@ static Self_tst		Lself_tst( Dcc_reg, St_vect, St_vect_size );
  *	Decoder test object.
  */
 static Dec_tst		Ldec_tst;
+
+static Sender_hw_mcu_usb *Lmcu_hw = NULL;
+static Sender_hw_if		 *Lhw_if = NULL;
+static bool				  Lhw_running = false;
 
 /*
  *	Scratchpad bits.
@@ -196,6 +219,222 @@ enum Ramp_state
 	RAMP_E_STOP,								// Emergency stop.
 	RAMP_END									// End of test.
 };
+
+static bool
+hw_is_mcu( void )
+{
+	return ( Lhw_if != NULL );
+}
+
+static bool
+init_hw_backend( void )
+{
+	if ( !Args.get_use_mcu_backend() )
+	{
+		return ( true );
+	}
+
+	Lmcu_hw = new Sender_hw_mcu_usb( Args.get_mcu_port(), Args.get_mcu_baud() );
+	if ( Lmcu_hw == NULL )
+	{
+		return ( false );
+	}
+
+	if ( !Lmcu_hw->init() )
+	{
+		delete Lmcu_hw;
+		Lmcu_hw	= NULL;
+		return ( false );
+	}
+
+	Lhw_if = Lmcu_hw;
+	Lhw_running = false;
+
+	printf( "Using MCU backend on port <%s> at %u baud\n",
+		Args.get_mcu_port(), Args.get_mcu_baud() );
+	return ( true );
+}
+
+static void
+close_hw_backend( void )
+{
+	if ( Lhw_if != NULL )
+	{
+		Lhw_if->close();
+	}
+
+	if ( Lmcu_hw != NULL )
+	{
+		delete Lmcu_hw;
+		Lmcu_hw = NULL;
+	}
+
+	Lhw_if = NULL;
+	Lhw_running = false;
+}
+
+static bool
+hw_is_running( void )
+{
+	if ( !hw_is_mcu() )
+	{
+		return ( Dcc_reg.get_running() );
+	}
+
+	Sender_hw_status status;
+	if ( Lhw_if->get_status( status ) )
+	{
+		Lhw_running = status.running;
+	}
+
+	return ( Lhw_running );
+}
+
+static Rslt_t
+hw_set_clk(
+	u_short		clk0t,
+	u_short		clk0h,
+	u_short		clk1t )
+{
+	if ( !hw_is_mcu() )
+	{
+		return ( Dcc_reg.set_clk( clk0t, clk0h, clk1t ) );
+	}
+
+	return ( Lhw_if->set_timing( clk0t, clk0h, clk1t ) ? OK : FAIL );
+}
+
+static Rslt_t
+hw_start_clk( void )
+{
+	if ( !hw_is_mcu() )
+	{
+		return ( Dcc_reg.start_clk() );
+	}
+
+	if ( Lhw_if->start_clock() )
+	{
+		Lhw_running = true;
+		return ( OK );
+	}
+
+	return ( FAIL );
+}
+
+static Rslt_t
+hw_stop_clk( void )
+{
+	if ( !hw_is_mcu() )
+	{
+		return ( Dcc_reg.stop_clk() );
+	}
+
+	if ( Lhw_if->stop_clock() )
+	{
+		Lhw_running = false;
+		return ( OK );
+	}
+
+	return ( FAIL );
+}
+
+static void
+hw_clr_under( void )
+{
+	if ( !hw_is_mcu() )
+	{
+		Dcc_reg.clr_under();
+		return;
+	}
+
+	Lhw_if->clear_underflow();
+}
+
+static void
+hw_set_scope(
+	bool		on )
+{
+	if ( !hw_is_mcu() )
+	{
+		Dcc_reg.set_scope( on );
+		return;
+	}
+
+	Lhw_if->set_scope( on );
+}
+
+static Rslt_t
+hw_send_bytes(
+	u_int		count,
+	BYTE		val,
+	const char	*info )
+{
+	if ( !hw_is_mcu() )
+	{
+		return ( Dcc_reg.send_bytes( count, val, info ) );
+	}
+
+	if ( count > 0xFFFF )
+	{
+		return ( FAIL );
+	}
+
+	return ( Lhw_if->send_bytes( (u_short)count, val, info ) ? OK : FAIL );
+}
+
+static Rslt_t
+hw_send_stretched_byte(
+	u_short		clk0t,
+	u_short		clk0h,
+	BYTE		val,
+	const char	*info )
+{
+	if ( !hw_is_mcu() )
+	{
+		return ( Dcc_reg.send_stretched_byte( clk0t, clk0h, val, info ) );
+	}
+
+	return ( Lhw_if->send_stretched_byte( clk0t, clk0h, val, info ) ? OK : FAIL );
+}
+
+static Rslt_t
+hw_send_special(
+	BYTE		special_id )
+{
+	if ( !hw_is_mcu() )
+	{
+		return ( FAIL );
+	}
+
+	return ( Lhw_if->send_special( special_id ) ? OK : FAIL );
+}
+
+static Rslt_t
+hw_send_bits_pkt(
+	Bits		&bits,
+	const char	*info )
+{
+	BYTE			pbyte;
+	std::vector<BYTE>	buf;
+
+	if ( !hw_is_mcu() )
+	{
+		return ( Dcc_reg.send_pkt( bits, info ) );
+	}
+
+	bits.rst_out();
+	while ( bits.get_byte( pbyte ) == OK )
+	{
+		buf.push_back( pbyte );
+	}
+
+	if ( buf.empty() )
+	{
+		return ( FAIL );
+	}
+
+	return ( Lhw_if->send_packet( &buf[0], buf.size(), info ) ? OK : FAIL );
+}
 
  
 /*--------------------------------------------------------------------------*/
@@ -255,6 +494,14 @@ main(
 	 */
 	Dcc_reg.set_log_pkts( Args.get_log_pkts() );
 
+	if ( !init_hw_backend() )
+	{
+		fprintf( stderr,
+			"ERROR: MCU backend init failed on <%s> at %u baud\n",
+			Args.get_mcu_port(), Args.get_mcu_baud() );
+		exit_send( 1 );
+	}
+
 	/*
 	 *	Set the global I/O port base address.
 	 */
@@ -289,21 +536,29 @@ main(
 			STATPRINT(	"Critical interrupt flag set"  );
 		}
 
-		STATPRINT(	"Beginning self tests" );
-		printf(		"Beginning self tests, this will take a few seconds\n" );
-
-		if ( do_self_tests( Lself_tst ) == OK )
+		if ( !hw_is_mcu() )
 		{
-			STATPRINT(	"Self tests passed" );
-			printf(		"Self tests passed\n" );
-			Lself_tst.print_stats();
-			Dcc_reg.print();
+			STATPRINT(	"Beginning self tests" );
+			printf(		"Beginning self tests, this will take a few seconds\n" );
+
+			if ( do_self_tests( Lself_tst ) == OK )
+			{
+				STATPRINT(	"Self tests passed" );
+				printf(		"Self tests passed\n" );
+				Lself_tst.print_stats();
+				Dcc_reg.print();
+			}
+			else
+			{
+				printf(	                "%s: Self tests failed\n", my_name );
+				ERRPRINT( my_name, LOG_ERR, "Self tests failed" );
+				init_key	=	KEY_NULL;			// Don't start tests on fail.
+			}
 		}
 		else
 		{
-			printf(	                "%s: Self tests failed\n", my_name );
-			ERRPRINT( my_name, LOG_ERR, "Self tests failed" );
-			init_key	=	KEY_NULL;			// Don't start tests on fail.
+			STATPRINT( "Skipping legacy self tests for MCU backend" );
+			printf( "Skipping legacy self tests for MCU backend\n" );
 		}
 	}
 	else
@@ -316,7 +571,7 @@ main(
      *  Note: set_clk() is called to set nominal clock values
      *        when set_pc_delay_1usec is called below.
 	 */
-	if ( Dcc_reg.set_pc_delay_1usec() != OK )
+	if ( !hw_is_mcu() && Dcc_reg.set_pc_delay_1usec() != OK )
 	{
 		STATPRINT(	"set_pc_delay_1usec() FAILED" );
 		printf(		"set_pc_delay_1usec() FAILED\n" );
@@ -325,12 +580,17 @@ main(
 
 	parse_key_cmd( Lself_tst, init_key );
 
-	if ( Dcc_reg.get_running() == true )
+	if ( hw_is_running() == true )
 	{
-		Dcc_reg.stop_clk();
+		hw_stop_clk();
 	}
 
-	Dcc_reg.rst_8255();
+	if ( !hw_is_mcu() )
+	{
+		Dcc_reg.rst_8255();
+	}
+
+	close_hw_backend();
 
 	exit_send( 0 );
 	return ( 0 );
@@ -360,12 +620,15 @@ exit_send(
 {
 	const char		*my_name = "exit_send";
 
-	if ( Dcc_reg.get_running() == true )
+	if ( hw_is_running() == true )
 	{
 		ERRPRINT( my_name, LOG_WARNING,
 			"exit_send() called with clock running." );
-		Dcc_reg.stop_clk();
-		Dcc_reg.rst_8255();
+		hw_stop_clk();
+		if ( !hw_is_mcu() )
+		{
+			Dcc_reg.rst_8255();
+		}
 	}
 
     printf( "{SEND_END %d}\n", status );
@@ -373,6 +636,7 @@ exit_send(
 
 	Deflog.close_stat();
 	Deflog.close_log();
+	close_hw_backend();
 
 	exit( status );
 }
@@ -761,18 +1025,18 @@ Key_val			init_key )					// Initial key value.
 			&&	(	key_val != KEY_SCOPE_O
 				 &&	key_val != KEY_HEADER ) )
 		{
-			Dcc_reg.set_clk(	DECODER_0T_NOM,
-								DECODER_0H_NOM,
-								DECODER_1T_NOM );
+			hw_set_clk(	DECODER_0T_NOM,
+						DECODER_0H_NOM,
+						DECODER_1T_NOM );
 		}
 
 		switch ( key_val )					// Parse the key command.
 		{
 		case KEY_ESC:						// Stop anything in progress.
 			rep_type	=	SEND_NONE;
-			if ( Dcc_reg.get_running() == true )
+			if ( hw_is_running() == true )
 			{
-				Dcc_reg.stop_clk();
+				hw_stop_clk();
 			}
 			printf( "Returning to command line\n" );
 			break;
@@ -780,9 +1044,9 @@ Key_val			init_key )					// Initial key value.
 		case KEY_HEADER:					// Print the help message header.
 			printf( "%s", Args.get_key_help() );
 			Dcc_reg.up_print( true );  		// Print out hardware state.
-			if ( Dcc_reg.get_running() == true )
+			if ( hw_is_running() == true )
 			{
-				Dcc_reg.clr_under();
+				hw_clr_under();
 			}
 			break;
 
@@ -792,9 +1056,9 @@ Key_val			init_key )					// Initial key value.
 		 */
 		case KEY_CLOCK:						// Change static clock phase.
 			rep_type	=	SEND_NONE;
-			if ( Dcc_reg.get_running() == true )
+			if ( hw_is_running() == true )
 			{
-				Dcc_reg.stop_clk();
+				hw_stop_clk();
 			}
 			clk_state	=	inportb( PC ) & PC_MSK_CPUCLKL ? true : false;
 			clk_state	=	!( clk_state );
@@ -805,9 +1069,9 @@ Key_val			init_key )					// Initial key value.
 
 		case KEY_MCLK:						// Send a series of static clocks.
 			rep_type	=	SEND_MCLK;
-			if ( Dcc_reg.get_running() == true )
+			if ( hw_is_running() == true )
 			{
-				Dcc_reg.stop_clk();
+				hw_stop_clk();
 			}
 			OUT_PC( PC_POS_CPUCLKL, 0 );
 			printf( "Sending SW clocks\n" );
@@ -816,9 +1080,9 @@ Key_val			init_key )					// Initial key value.
 
 		case KEY_UNDER:						// Clear the underflow flag.
 			rep_type	=	SEND_NONE;
-			if ( Dcc_reg.get_running() == true )
+			if ( hw_is_running() == true )
 			{
-				Dcc_reg.stop_clk();
+				hw_stop_clk();
 			}
 
 		    if ( !Args.get_log_pkts() )
@@ -829,7 +1093,7 @@ Key_val			init_key )					// Initial key value.
 			}
 			else
 			{
-				Dcc_reg.clr_under();
+				hw_clr_under();
 			}
 			printf( "Underflow reset\n" );
 			Dcc_reg.up_print();
@@ -840,9 +1104,9 @@ Key_val			init_key )					// Initial key value.
 			printf( "Gen Out 0x%02x - Gen 1 0x%02x, Gen 2 0x%02x\n",
             	byGen, inportb( GEN ), inportb( GEN_2 ) );
             byGen	=	(~byGen) &  GEN_OUT_MASK;
-			if ( Dcc_reg.get_running() == true )
+			if ( hw_is_running() == true )
 			{
-				Dcc_reg.clr_under();
+				hw_clr_under();
 			}
 			break;
 
@@ -852,42 +1116,42 @@ Key_val			init_key )					// Initial key value.
 		 */
 		case KEY_ZERO:						// Send zero bytes.
 			rep_type	=	SEND_ZERO;
-			if ( Dcc_reg.get_running() != true )
+			if ( hw_is_running() != true )
 			{
-				Dcc_reg.start_clk();
+				hw_start_clk();
 			}
 			printf( "Sending Zeros\n" );
-			Dcc_reg.clr_under();
+			hw_clr_under();
 			break;
 
 		case KEY_ONE:						// Send one bytes.
 			rep_type	=	SEND_ONE;
-			if ( Dcc_reg.get_running() != true )
+			if ( hw_is_running() != true )
 			{
-				Dcc_reg.start_clk();
+				hw_start_clk();
 			}
 			printf( "Sending Ones\n" );
-			Dcc_reg.clr_under();
+			hw_clr_under();
 			break;
 
 		case KEY_SCOPE_A:					// Send the scope A test.
 			rep_type	=	SEND_SCOPE_A;
-			if ( Dcc_reg.get_running() != true )
+			if ( hw_is_running() != true )
 			{
-				Dcc_reg.start_clk();
+				hw_start_clk();
 			}
 			printf( "Sending scope test A (0 then 1)\n" );
-			Dcc_reg.clr_under();
+			hw_clr_under();
 			break;
 
 		case KEY_SCOPE_B:					// Send the scope B test.
 			rep_type	=	SEND_SCOPE_B;
-			if ( Dcc_reg.get_running() != true )
+			if ( hw_is_running() != true )
 			{
-				Dcc_reg.start_clk();
+				hw_start_clk();
 			}
 			printf( "Sending scope test B (1 then 0)\n" );
-			Dcc_reg.clr_under();
+			hw_clr_under();
 			break;
 
 		case KEY_SCOPE_O:					// Send the scope timing test.
@@ -904,36 +1168,36 @@ Key_val			init_key )					// Initial key value.
 				}
 			}
 
-			if ( Dcc_reg.get_running() != true )
+			if ( hw_is_running() != true )
 			{
-				Dcc_reg.start_clk();
+				hw_start_clk();
 			}
 			printf( "Sending scope timing test with period %5d\n",
 					Scope_time_tbl[ o_time_index ] );
-			Dcc_reg.set_clk(	Scope_time_tbl[ o_time_index ],
-								Scope_time_tbl[ o_time_index ] / 2,
-								DECODER_1T_NOM );
-			Dcc_reg.clr_under();
+			hw_set_clk(	Scope_time_tbl[ o_time_index ],
+						Scope_time_tbl[ o_time_index ] / 2,
+						DECODER_1T_NOM );
+			hw_clr_under();
 			break;
 
 		case KEY_WARBLE:				  	// Send warble packets.
 			rep_type	=	SEND_WARBLE;
-			if ( Dcc_reg.get_running() != true )
+			if ( hw_is_running() != true )
 			{
-				Dcc_reg.start_clk();
+				hw_start_clk();
 			}
 			printf( "Sending warble packets\n" );
-			Dcc_reg.clr_under();
+			hw_clr_under();
 			break;
 
 		case KEY_STRETCHED:					// Send the stretched 0 test.
 			rep_type	=	SEND_STRETCHED;
-			if ( Dcc_reg.get_running() != true )
+			if ( hw_is_running() != true )
 			{
-				Dcc_reg.start_clk();
+				hw_start_clk();
 			}
 			printf( "Sending stretched 0s (0xff then 0x02)\n" );
-			Dcc_reg.clr_under();
+			hw_clr_under();
 			break;
 
 		/*
@@ -941,32 +1205,32 @@ Key_val			init_key )					// Initial key value.
 		 */
 		case KEY_RESET:						// Send reset packets.
 			rep_type	=	SEND_RESET;
-			if ( Dcc_reg.get_running() != true )
+			if ( hw_is_running() != true )
 			{
-				Dcc_reg.start_clk();
+				hw_start_clk();
 			}
 			printf( "Sending Reset packets\n" );
-			Dcc_reg.clr_under();
+			hw_clr_under();
 			break;
 
 		case KEY_HARD:						// Send hard reset packets.
 			rep_type	=	SEND_HARD;
-			if ( Dcc_reg.get_running() != true )
+			if ( hw_is_running() != true )
 			{
-				Dcc_reg.start_clk();
+				hw_start_clk();
 			}
 			printf( "Sending HARD Reset packets\n" );
-			Dcc_reg.clr_under();
+			hw_clr_under();
 			break;
 
 		case KEY_IDLE:						// Send idle packets.
 			rep_type	=	SEND_IDLE;
-			if ( Dcc_reg.get_running() != true )
+			if ( hw_is_running() != true )
 			{
-				Dcc_reg.start_clk();
+				hw_start_clk();
 			}
 			printf( "Sending Idle packets\n" );
-			Dcc_reg.clr_under();
+			hw_clr_under();
 			break;
 
 		/*
@@ -976,9 +1240,9 @@ Key_val			init_key )					// Initial key value.
 		case KEY_DCC:
 		case KEY_DCC_S:
 			rep_type	=	(key_val == KEY_DCC) ? SEND_DCC : SEND_DCC_S;
-			if ( Dcc_reg.get_running() != true )
+			if ( hw_is_running() != true )
 			{
-				Dcc_reg.start_clk();
+				hw_start_clk();
 			}
 			fw 			=	true;
 			ramp		=	true;
@@ -1008,7 +1272,7 @@ Key_val			init_key )					// Initial key value.
 			}
 			Dcc_reg.gen_print();
 			putchar( '\n' );
-			Dcc_reg.clr_under();
+			hw_clr_under();
 			break;
 
 		case KEY_SPEED:						// Change loco speed, acc. output.
@@ -1062,7 +1326,7 @@ Key_val			init_key )					// Initial key value.
 				printf(
 					"Press 'd' or 'D' key first to use this command\n" );
 			}
-			Dcc_reg.clr_under();
+			hw_clr_under();
 			break;
 
 		case KEY_E_STOP:					// Send DCC emergency stop.
@@ -1086,7 +1350,7 @@ Key_val			init_key )					// Initial key value.
 				printf(
 					"Press 'd' key first to use this command\n" );
 			}
-			Dcc_reg.clr_under();
+			hw_clr_under();
 			break;
 
 		case KEY_E_STOP_I:					// Send DCC emergency stop I.
@@ -1110,7 +1374,7 @@ Key_val			init_key )					// Initial key value.
 				printf(
 					"Press 'd' key first to use this command\n" );
 			}
-			Dcc_reg.clr_under();
+			hw_clr_under();
 			break;
 
 		case KEY_FW:						// Change DCC packet direction.
@@ -1149,7 +1413,7 @@ Key_val			init_key )					// Initial key value.
 				printf(
 					"Press 'd' key first to use this command\n" );
 			}
-			Dcc_reg.clr_under();
+			hw_clr_under();
 			break;
 
 		/*
@@ -1159,9 +1423,9 @@ Key_val			init_key )					// Initial key value.
 		 */
 		case KEY_SELF_TST:				// Run repeated self tests.
 			rep_type	=	SEND_SELF_TST;
-			if ( Dcc_reg.get_running() == true )
+			if ( hw_is_running() == true )
 			{
-				Dcc_reg.stop_clk();
+				hw_stop_clk();
 			}
 			self_tst.rst_stats();
 			printf(
@@ -1170,13 +1434,13 @@ Key_val			init_key )					// Initial key value.
 
 		case KEY_DEC_TST:				// Run one or more decoder test cycles.
 			rep_type	=	SEND_DEC_TST;
-			if ( Dcc_reg.get_running() != true )
+			if ( hw_is_running() != true )
 			{
-				Dcc_reg.start_clk();
+				hw_start_clk();
 			}
 			printf(
 				"Starting Decoder tests, type '<ESC> q' to stop tests\n" );
-			Dcc_reg.clr_under();
+			hw_clr_under();
 			break;
 
 		case KEY_KICK:					// Run kickstart followed by idles.
@@ -1185,12 +1449,12 @@ Key_val			init_key )					// Initial key value.
 				printf( "Starting loco kickstart to enable functions\n" );
 				
 				rep_type	=	SEND_IDLE;
-				if ( Dcc_reg.get_running() != true )
+				if ( hw_is_running() != true )
 				{
-					Dcc_reg.start_clk();
+					hw_start_clk();
 				}
 				Dcc_reg.kick_start( Dcc_bits, Args );
-				Dcc_reg.clr_under();
+				hw_clr_under();
             }
 			else
 			{
@@ -1210,9 +1474,9 @@ Key_val			init_key )					// Initial key value.
 
 		default:
 			rep_type	=	SEND_NONE;
-			if ( Dcc_reg.get_running() == true )
+			if ( hw_is_running() == true )
 			{
-				Dcc_reg.stop_clk();
+				hw_stop_clk();
 			}
 			printf( "Unknown key <%c>\n", (char)key_val );
 			break;
@@ -1257,33 +1521,40 @@ Key_val			init_key )					// Initial key value.
 					break;
 
 				case SEND_ZERO:				// Repeat zero bytes.
-					Dcc_reg.set_scope( true );
-					Dcc_reg.send_bytes( 2, 0x00, "SEND_ZERO." );
+					hw_set_scope( true );
+					hw_send_bytes( 2, 0x00, "SEND_ZERO." );
 					break;
 
 				case SEND_ONE:				// Repeat one bytes.
-					Dcc_reg.set_scope( true );
-					Dcc_reg.send_bytes( 2, 0xff, "SEND_ONE." );
+					hw_set_scope( true );
+					hw_send_bytes( 2, 0xff, "SEND_ONE." );
 					break;
 
 				case SEND_SCOPE_A:			// Repeat scope A (0-1) test.
 					Dcc_bits.clr_in();
 					Dcc_bits.put_byte( 0x00 ).put_byte( 0xff ).done();
-					Dcc_reg.set_scope( true );
-					Dcc_reg.send_pkt( Dcc_bits, "SEND_SCOPE_A." );
+					hw_set_scope( true );
+					hw_send_bits_pkt( Dcc_bits, "SEND_SCOPE_A." );
 					break;
 
 				case SEND_SCOPE_B:			// Repeat scope B (1-0) test.
 					Dcc_bits.clr_in();
 					Dcc_bits.put_byte( 0xff ).put_byte( 0x00 ).done();
- 					Dcc_reg.set_scope( true );
-					Dcc_reg.send_pkt( Dcc_bits, "SEND_SCOPE_B." );
+				 	hw_set_scope( true );
+					hw_send_bits_pkt( Dcc_bits, "SEND_SCOPE_B." );
 					break;
 
 				case SEND_WARBLE:	 		// Repeat the warble packet.
-					Dcc_reg.set_scope( true );
-					Dcc_reg.send_bytes( 3072, 0xff, "SEND_WARBLE 0xff." );
-					Dcc_reg.send_bytes( 1024, 0x00, "SEND_WARBLE 0x00." );
+					hw_set_scope( true );
+					if ( hw_is_mcu() )
+					{
+						hw_send_special( SHP_SPECIAL_WARBLE );
+					}
+					else
+					{
+						hw_send_bytes( 3072, 0xff, "SEND_WARBLE 0xff." );
+						hw_send_bytes( 1024, 0x00, "SEND_WARBLE 0x00." );
+					}
 					break;
 
 				case SEND_STRETCHED:   		// Repeat stretched 0 test.
@@ -1291,32 +1562,60 @@ Key_val			init_key )					// Initial key value.
 					Dcc_bits.put_byte( 0xff ).put_byte( 0x02 ).done();
 					Dcc_bits.rst_out();
 					Dcc_bits.get_byte( pbyte );
-					Dcc_reg.set_scope( true );
-					Dcc_reg.send_bytes( 1, pbyte, "SEND_STRETCHED preamble." );
+					hw_set_scope( true );
+					hw_send_bytes( 1, pbyte, "SEND_STRETCHED preamble." );
 					Dcc_bits.get_byte( pbyte );
-					Dcc_reg.send_stretched_byte(	DECODER_0T_NOM * 4,
-													DECODER_0H_NOM * 2,
-													pbyte,
-													"SEND_STRETCHED 0 bit." );
+					hw_send_stretched_byte(	DECODER_0T_NOM * 4,
+												DECODER_0H_NOM * 2,
+												pbyte,
+												"SEND_STRETCHED 0 bit." );
 					break;
 
 				case SEND_RESET:			// Repeat the reset packet.
-					Dcc_reg.send_bytes( 1, 0x00, "SEND_RESET." );
-					Dcc_reg.set_scope( true );
-					Dcc_reg.send_rst();
+					hw_send_bytes( 1, 0x00, "SEND_RESET." );
+					hw_set_scope( true );
+					if ( hw_is_mcu() )
+					{
+						hw_send_special( SHP_SPECIAL_RESET );
+					}
+					else
+					{
+						Dcc_reg.send_rst();
+					}
 					for ( i = 0; i < 15; i++ )	// Send 15 normal idles.
 					{
-						Dcc_reg.send_idle();
+						if ( hw_is_mcu() )
+						{
+							hw_send_special( SHP_SPECIAL_IDLE );
+						}
+						else
+						{
+							Dcc_reg.send_idle();
+						}
 					}
 					break;
 
 				case SEND_HARD:			// Repeat the hard reset packet.
-					Dcc_reg.send_bytes( 1, 0x00, "SEND_HARD." );
-					Dcc_reg.set_scope( true );
-					Dcc_reg.send_hard_rst();	// Send the hard reset.
+					hw_send_bytes( 1, 0x00, "SEND_HARD." );
+					hw_set_scope( true );
+					if ( hw_is_mcu() )
+					{
+						hw_send_special( SHP_SPECIAL_HARD_RESET );
+					}
+					else
+					{
+						Dcc_reg.send_hard_rst();	// Send the hard reset.
+					}
 					for ( i = 0; i < 15; i++ )	// Send 15 normal idles.
 					{
-						Dcc_reg.send_idle();
+						if ( hw_is_mcu() )
+						{
+							hw_send_special( SHP_SPECIAL_IDLE );
+						}
+						else
+						{
+							Dcc_reg.send_idle();
+						}
 					}
 					break;
 
@@ -1325,9 +1624,9 @@ Key_val			init_key )					// Initial key value.
                     Dcc_bits.put_idle_pkt( 4 );
                     Dcc_bits.put_1s( 1 ).done();
 
-					Dcc_reg.send_bytes( 1, 0x00, "SEND_IDLE." );
-					Dcc_reg.set_scope( true );
-					Dcc_reg.send_pkt( Dcc_bits, "SEND_IDLE." );
+					hw_send_bytes( 1, 0x00, "SEND_IDLE." );
+					hw_set_scope( true );
+					hw_send_bits_pkt( Dcc_bits, "SEND_IDLE." );
 					break;
 
 				case SEND_DCC:				// Repeat the DCC packet.
@@ -1359,9 +1658,9 @@ Key_val			init_key )					// Initial key value.
                     Dcc_bits.put_idle_pkt( 1 );
 					Dcc_bits.put_1s( 1 ).done();
 
-					Dcc_reg.send_bytes( 1, 0x00, "SEND_DCC Send 0." );
-					Dcc_reg.set_scope( true );
-					Dcc_reg.send_pkt( Dcc_bits, "SEND_DCC Send pkt." );
+					hw_send_bytes( 1, 0x00, "SEND_DCC Send 0." );
+					hw_set_scope( true );
+					hw_send_bits_pkt( Dcc_bits, "SEND_DCC Send pkt." );
 					break;
 
 				case SEND_DCC_S:   			// Repeat stretched 0 test.
@@ -1402,24 +1701,24 @@ Key_val			init_key )					// Initial key value.
 					 */
 					Dcc_bits.rst_out();
 					Dcc_bits.get_byte( pbyte );
-					Dcc_reg.send_bytes( 1, pbyte, "SEND_DCC_S preamble 1." );
+					hw_send_bytes( 1, pbyte, "SEND_DCC_S preamble 1." );
 					Dcc_bits.get_byte( pbyte );
-					Dcc_reg.send_bytes( 1, pbyte, "SEND_DCC_S preamble 2." );
+					hw_send_bytes( 1, pbyte, "SEND_DCC_S preamble 2." );
                     /*
                      * Send single stretched 0 just after preamble.
                      */
-					Dcc_reg.set_scope( true );
+					hw_set_scope( true );
 					Dcc_bits.get_byte( pbyte );
-					Dcc_reg.send_stretched_byte( DECODER_0T_MAX,
-                                                 DECODER_0T_MAX-DECODER_0H_MAX,
-                                                 pbyte,
-                                                 "SEND_DCC_S stretched 0." );
+					hw_send_stretched_byte( DECODER_0T_MAX,
+												DECODER_0T_MAX-DECODER_0H_MAX,
+												pbyte,
+												"SEND_DCC_S stretched 0." );
 					/*
 					 * Send remaining part of packet.
                      */
 					while ( Dcc_bits.get_byte( pbyte ) == OK )
 					{
-						Dcc_reg.send_bytes( 1, pbyte, "SEND_DCC_S end." );
+						hw_send_bytes( 1, pbyte, "SEND_DCC_S end." );
 					}
 					break;
 
@@ -1456,13 +1755,13 @@ Key_val			init_key )					// Initial key value.
 						 * Stop the clock and reset it to nominal values
 						 * if the decoder tests are interrupted.
 						 */
-						if ( Dcc_reg.get_running() == true )
+						if ( hw_is_running() == true )
 						{
-							Dcc_reg.stop_clk();
+							hw_stop_clk();
 						}
-						Dcc_reg.set_clk(	DECODER_0T_NOM,
-											DECODER_0H_NOM,
-											DECODER_1T_NOM );
+						hw_set_clk(	DECODER_0T_NOM,
+									DECODER_0H_NOM,
+									DECODER_1T_NOM );
 					}
 					else
 					{
@@ -1505,7 +1804,7 @@ Key_val			init_key )					// Initial key value.
 				 */
 				if ( rep_type != SEND_DEC_TST )
 				{
-					if ( Dcc_reg.get_obj_errs() || kbhit())
+					if ( ( !hw_is_mcu() && Dcc_reg.get_obj_errs() ) || kbhit())
 					{
 						c_flag	=	false;
 					}
