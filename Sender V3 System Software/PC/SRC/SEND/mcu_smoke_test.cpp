@@ -18,7 +18,8 @@
  *   5. GET_STATUS — verify running=true, underflow=false.
  *   6. GET_STATS  — verify bytes_sent >= 4.
  *   7. STOP_CLK.
- *   8. RESET_DEVICE.
+ *   8. Close device.
+ *   9. Re-open and verify link recovery.
  */
 
 #include <stdio.h>
@@ -108,8 +109,8 @@ int main(int argc, char *argv[])
     /* 7. STOP_CLK ---------------------------------------------------------- */
     check("7. STOP_CLK", dev.stop_clock());
 
-    /* 8. RESET_DEVICE ------------------------------------------------------ */
-    check("8. RESET_DEVICE", dev.close() /* close flushes; reset via re-init */
+    /* 8. CLOSE_DEVICE ------------------------------------------------------ */
+    check("8. CLOSE_DEVICE", dev.close() /* close flushes; reset via re-init */
           || true /* close always succeeds */);
     /* Re-open and send RESET_DEVICE command explicitly */
     {
@@ -118,12 +119,12 @@ int main(int argc, char *argv[])
         {
             /* Sender_hw_mcu_usb doesn't expose reset_device directly;
                we just verify the port can be reopened and GET_INFO still works. */
-            check("8. Re-open after close", true);
+            check("9. Re-open after close", true);
             dev2.close();
         }
         else
         {
-            check("8. Re-open after close", false);
+            check("9. Re-open after close", false);
         }
     }
 

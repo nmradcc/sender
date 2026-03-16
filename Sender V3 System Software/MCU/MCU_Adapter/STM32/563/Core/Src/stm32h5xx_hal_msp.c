@@ -57,7 +57,9 @@ extern DMA_HandleTypeDef handle_GPDMA1_Channel0;
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
-/**
+
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+                    /**
   * Initializes the Global MSP.
   */
 void HAL_MspInit(void)
@@ -75,6 +77,83 @@ void HAL_MspInit(void)
   /* USER CODE BEGIN MspInit 1 */
 
   /* USER CODE END MspInit 1 */
+}
+
+/**
+  * @brief TIM_OC MSP Initialization
+  * This function configures the hardware resources used in this example
+  * @param htim_oc: TIM_OC handle pointer
+  * @retval None
+  */
+void HAL_TIM_OC_MspInit(TIM_HandleTypeDef* htim_oc)
+{
+  if(htim_oc->Instance==TIM5)
+  {
+    /* USER CODE BEGIN TIM5_MspInit 0 */
+
+    /* USER CODE END TIM5_MspInit 0 */
+    /* Peripheral clock enable */
+    __HAL_RCC_TIM5_CLK_ENABLE();
+    /* TIM5 interrupt Init */
+    HAL_NVIC_SetPriority(TIM5_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(TIM5_IRQn);
+    /* USER CODE BEGIN TIM5_MspInit 1 */
+
+    /* USER CODE END TIM5_MspInit 1 */
+
+  }
+
+}
+
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef* htim)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  if(htim->Instance==TIM5)
+  {
+    /* USER CODE BEGIN TIM5_MspPostInit 0 */
+
+    /* USER CODE END TIM5_MspPostInit 0 */
+
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    /**TIM5 GPIO Configuration
+    PA0     ------> TIM5_CH1
+    */
+    GPIO_InitStruct.Pin = GPIO_PIN_0;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Alternate = GPIO_AF2_TIM5;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    /* USER CODE BEGIN TIM5_MspPostInit 1 */
+
+    /* USER CODE END TIM5_MspPostInit 1 */
+  }
+
+}
+/**
+  * @brief TIM_OC MSP De-Initialization
+  * This function freeze the hardware resources used in this example
+  * @param htim_oc: TIM_OC handle pointer
+  * @retval None
+  */
+void HAL_TIM_OC_MspDeInit(TIM_HandleTypeDef* htim_oc)
+{
+  if(htim_oc->Instance==TIM5)
+  {
+    /* USER CODE BEGIN TIM5_MspDeInit 0 */
+
+    /* USER CODE END TIM5_MspDeInit 0 */
+    /* Peripheral clock disable */
+    __HAL_RCC_TIM5_CLK_DISABLE();
+
+    /* TIM5 interrupt DeInit */
+    HAL_NVIC_DisableIRQ(TIM5_IRQn);
+    /* USER CODE BEGIN TIM5_MspDeInit 1 */
+
+    /* USER CODE END TIM5_MspDeInit 1 */
+  }
+
 }
 
 /**

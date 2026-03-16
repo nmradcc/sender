@@ -56,6 +56,7 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern TIM_HandleTypeDef htim5;
 extern DMA_HandleTypeDef handle_GPDMA1_Channel0;
 extern PCD_HandleTypeDef hpcd_USB_DRD_FS;
 extern TIM_HandleTypeDef htim6;
@@ -191,6 +192,19 @@ void GPDMA1_Channel0_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles TIM5 global interrupt.
+  */
+void TIM5_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM5_IRQn 0 */
+    sender_engine_tim_irq_handler();
+  /* USER CODE END TIM5_IRQn 0 */
+  /* USER CODE BEGIN TIM5_IRQn 1 */
+
+  /* USER CODE END TIM5_IRQn 1 */
+}
+
+/**
   * @brief This function handles TIM6 global interrupt.
   */
 void TIM6_IRQHandler(void)
@@ -219,11 +233,4 @@ void USB_DRD_FS_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
-/**
-  * @brief This function handles TIM5 global interrupt.
-  */
-void TIM5_IRQHandler(void)
-{
-    sender_engine_tim_irq_handler();
-}
 /* USER CODE END 1 */

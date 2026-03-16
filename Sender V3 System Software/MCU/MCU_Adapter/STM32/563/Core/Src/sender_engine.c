@@ -36,7 +36,7 @@ static volatile uint16_t g_hp_fifo[DCC_FIFO_SIZE];
 static volatile uint32_t g_hp_head;     /* ISR consumer  */
 static volatile uint32_t g_hp_tail;     /* thread producer */
 
-static TIM_HandleTypeDef g_htim;
+extern TIM_HandleTypeDef htim5;
 
 /* DCC packet/special constants. */
 #define DCC_PREAMBLE_BITS   14u
@@ -105,57 +105,31 @@ static bool dcc_push_bits(const sender_engine_t *eng, uint32_t count, bool one)
 }
 
 /* ======================================================================= */
-/* Hardware init / deinit                                                  */
+/* Hardware start / stop (TIM5 init owned by CubeMX)                       */
 /* ======================================================================= */
 
-static void dcc_hw_init(void)
+static void dcc_hw_start(void)
 {
-    TIM_OC_InitTypeDef oc   = {0};
-    GPIO_InitTypeDef   gpio = {0};
+    /* Ensure PA0 is back on TIM5_CH1 even after a prior STOP set it as GPIO. */
+    HAL_TIM_MspPostInit(&htim5);
 
-    __HAL_RCC_TIM5_CLK_ENABLE();
-    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_TIM_SET_COUNTER(&htim5, 0u);
+    __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1, DCC_IDLE_HP_US + 10u);
+    __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_CC1);
 
-    /* PA0 -> TIM5_CH1 alternate function */
-    gpio.Pin       = DCC_GPIO_PIN;
-    gpio.Mode      = GPIO_MODE_AF_PP;
-    gpio.Pull      = GPIO_NOPULL;
-    gpio.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
-    gpio.Alternate = DCC_GPIO_AF;
-    HAL_GPIO_Init(DCC_GPIO_PORT, &gpio);
-
-    /* TIM5: free-running 32-bit counter at 1 us/tick */
-    g_htim.Instance               = DCC_TIM_INSTANCE;
-    g_htim.Init.Prescaler         = DCC_TIM_PSC;
-    g_htim.Init.CounterMode       = TIM_COUNTERMODE_UP;
-    g_htim.Init.Period            = 0xFFFFFFFFu;
-    g_htim.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
-    g_htim.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-    HAL_TIM_OC_Init(&g_htim);
-
-    __HAL_TIM_SET_COUNTER(&g_htim, 0u);
-
-    /* CH1: output compare toggle */
-    oc.OCMode     = TIM_OCMODE_TOGGLE;
-    oc.Pulse      = DCC_IDLE_HP_US + 10u;   /* first event ~68 us after start */
-    oc.OCPolarity = TIM_OCPOLARITY_HIGH;
-    oc.OCFastMode = TIM_OCFAST_DISABLE;
-    HAL_TIM_OC_ConfigChannel(&g_htim, &oc, TIM_CHANNEL_1);
-
-    /* Enable CC1 interrupt and start output */
-    __HAL_TIM_ENABLE_IT(&g_htim, TIM_IT_CC1);
+    __HAL_TIM_ENABLE_IT(&htim5, TIM_IT_CC1);
     HAL_NVIC_SetPriority(DCC_TIM_IRQn, DCC_TIM_IRQ_PRIO, 0u);
     HAL_NVIC_EnableIRQ(DCC_TIM_IRQn);
-    HAL_TIM_OC_Start(&g_htim, TIM_CHANNEL_1);
+    HAL_TIM_OC_Start(&htim5, TIM_CHANNEL_1);
 }
 
 static void dcc_hw_stop(void)
 {
     GPIO_InitTypeDef gpio = {0};
 
-    __HAL_TIM_DISABLE_IT(&g_htim, TIM_IT_CC1);
+    __HAL_TIM_DISABLE_IT(&htim5, TIM_IT_CC1);
     HAL_NVIC_DisableIRQ(DCC_TIM_IRQn);
-    HAL_TIM_OC_Stop(&g_htim, TIM_CHANNEL_1);
+    HAL_TIM_OC_Stop(&htim5, TIM_CHANNEL_1);
 
     /* Reconfigure PA0 as GPIO and drive it low */
     gpio.Pin   = DCC_GPIO_PIN;
@@ -177,11 +151,11 @@ void sender_engine_tim_irq_handler(void)
     uint32_t tail;
     uint16_t hp;
 
-    if (__HAL_TIM_GET_FLAG(&g_htim, TIM_FLAG_CC1) == 0)
+    if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_CC1) == 0)
     {
         return;
     }
-    __HAL_TIM_CLEAR_FLAG(&g_htim, TIM_FLAG_CC1);
+    __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_CC1);
 
     head = g_hp_head;
     tail = g_hp_tail;
@@ -199,7 +173,7 @@ void sender_engine_tim_irq_handler(void)
     }
 
     /* Advance the compare value; the timer toggles the output at the match. */
-    TIM2->CCR1 = TIM2->CCR1 + (uint32_t)hp;
+    TIM5->CCR1 = TIM5->CCR1 + (uint32_t)hp;
 }
 
 /* ======================================================================= */
@@ -245,7 +219,7 @@ void sender_engine_reset(sender_engine_t *eng)
 
     if (was_running)
     {
-        dcc_hw_init();
+        dcc_hw_start();
         eng->running = true;
     }
 }
@@ -278,7 +252,7 @@ uint8_t sender_engine_start(sender_engine_t *eng)
     g_hp_head     = 0u;
     g_hp_tail     = 0u;
     eng->underflow = false;
-    dcc_hw_init();
+    dcc_hw_start();
     eng->running  = true;
     return SHP_STATUS_OK;
 }
