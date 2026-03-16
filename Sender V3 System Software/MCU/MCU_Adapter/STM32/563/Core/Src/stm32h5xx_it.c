@@ -220,9 +220,9 @@ void USB_DRD_FS_IRQHandler(void)
 
 /* USER CODE BEGIN 1 */
 /**
-  * @brief This function handles TIM2 global interrupt.
+  * @brief This function handles TIM5 global interrupt.
   */
-void TIM2_IRQHandler(void)
+void TIM5_IRQHandler(void)
 {
     sender_engine_tim_irq_handler();
 }

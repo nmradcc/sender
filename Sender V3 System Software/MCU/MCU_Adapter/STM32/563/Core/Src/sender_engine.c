@@ -2,30 +2,31 @@
 
 #include <string.h>
 
+#include "main.h"
 #include "stm32h5xx_hal.h"
 
 /* ----------------------------------------------------------------------- *
  * DCC output hardware assignment                                           *
  *                                                                          *
- * TIM2 (32-bit GP timer, APB1).  PCLK1 = 250 MHz.                        *
+ * TIM5 (32-bit GP timer, APB1).  PCLK1 = 250 MHz.                        *
  * PSC = 249 -> timer tick = 1 us.                                         *
- * CH1 in Output Compare Toggle mode drives PA5 (Arduino D13 / TIM2_CH1). *
+ * CH1 in Output Compare Toggle mode drives PA0 (TIM5_CH1 / AF2).         *
  *                                                                          *
  * The DCC waveform is produced by an interrupt-driven half-period FIFO:   *
  *  - Thread pushes half-period values (in us) into g_hp_fifo.             *
- *  - TIM2 CC1 ISR pops one value per event and advances CCR1 by that      *
+ *  - TIM5 CC1 ISR pops one value per event and advances CCR1 by that      *
  *    amount; the output toggles automatically in hardware at the match.   *
  *  - When the FIFO is empty the ISR inserts DCC_IDLE_HP_US (58 us) so     *
  *    the output remains alive as a stream of one-bits.                    *
  * ----------------------------------------------------------------------- */
 
-#define DCC_TIM_INSTANCE    TIM2
-#define DCC_TIM_IRQn        TIM2_IRQn
+#define DCC_TIM_INSTANCE    TIM5
+#define DCC_TIM_IRQn        TIM5_IRQn
 #define DCC_TIM_IRQ_PRIO    5u          /* below USB (0), above HAL tick (15) */
 #define DCC_TIM_PSC         249u        /* 250 MHz / 250 = 1 MHz -> 1 us/tick */
 #define DCC_GPIO_PORT       GPIOA
-#define DCC_GPIO_PIN        GPIO_PIN_5  /* PA5 = TIM2_CH1 (AF1) */
-#define DCC_GPIO_AF         GPIO_AF1_TIM2
+#define DCC_GPIO_PIN        GPIO_PIN_0  /* PA0 = TIM5_CH1 (AF2) */
+#define DCC_GPIO_AF         GPIO_AF2_TIM5
 
 /* Half-period FIFO (single-producer / single-consumer, power-of-2 size). */
 #define DCC_FIFO_SIZE       512u
@@ -112,10 +113,10 @@ static void dcc_hw_init(void)
     TIM_OC_InitTypeDef oc   = {0};
     GPIO_InitTypeDef   gpio = {0};
 
-    __HAL_RCC_TIM2_CLK_ENABLE();
+    __HAL_RCC_TIM5_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
 
-    /* PA5 -> TIM2_CH1 alternate function */
+    /* PA0 -> TIM5_CH1 alternate function */
     gpio.Pin       = DCC_GPIO_PIN;
     gpio.Mode      = GPIO_MODE_AF_PP;
     gpio.Pull      = GPIO_NOPULL;
@@ -123,7 +124,7 @@ static void dcc_hw_init(void)
     gpio.Alternate = DCC_GPIO_AF;
     HAL_GPIO_Init(DCC_GPIO_PORT, &gpio);
 
-    /* TIM2: free-running 32-bit counter at 1 us/tick */
+    /* TIM5: free-running 32-bit counter at 1 us/tick */
     g_htim.Instance               = DCC_TIM_INSTANCE;
     g_htim.Init.Prescaler         = DCC_TIM_PSC;
     g_htim.Init.CounterMode       = TIM_COUNTERMODE_UP;
@@ -156,7 +157,7 @@ static void dcc_hw_stop(void)
     HAL_NVIC_DisableIRQ(DCC_TIM_IRQn);
     HAL_TIM_OC_Stop(&g_htim, TIM_CHANNEL_1);
 
-    /* Reconfigure PA5 as GPIO and drive it low */
+    /* Reconfigure PA0 as GPIO and drive it low */
     gpio.Pin   = DCC_GPIO_PIN;
     gpio.Mode  = GPIO_MODE_OUTPUT_PP;
     gpio.Pull  = GPIO_NOPULL;
@@ -166,8 +167,8 @@ static void dcc_hw_stop(void)
 }
 
 /* ======================================================================= */
-/* TIM2 CC1 interrupt handler                                              */
-/* Called from TIM2_IRQHandler in stm32h5xx_it.c.                         */
+/* TIM5 CC1 interrupt handler                                              */
+/* Called from TIM5_IRQHandler in stm32h5xx_it.c.                         */
 /* ======================================================================= */
 
 void sender_engine_tim_irq_handler(void)
@@ -216,9 +217,13 @@ void sender_engine_init(sender_engine_t *eng)
     eng->clk0t_us = 200u;
     eng->clk0h_us = 100u;
     eng->clk1t_us = 116u;
+    eng->scope_on = false;
 
     g_hp_head = 0u;
     g_hp_tail = 0u;
+
+    /* Ensure the external scope trigger GPIO is in the OFF state. */
+    HAL_GPIO_WritePin(SCOPE_GPIO_Port, SCOPE_Pin, GPIO_PIN_RESET);
 }
 
 void sender_engine_reset(sender_engine_t *eng)
@@ -313,6 +318,8 @@ uint8_t sender_engine_set_scope(sender_engine_t *eng, bool scope_on)
     }
 
     eng->scope_on = scope_on;
+    HAL_GPIO_WritePin(SCOPE_GPIO_Port, SCOPE_Pin,
+                      scope_on ? GPIO_PIN_SET : GPIO_PIN_RESET);
     return SHP_STATUS_OK;
 }
 

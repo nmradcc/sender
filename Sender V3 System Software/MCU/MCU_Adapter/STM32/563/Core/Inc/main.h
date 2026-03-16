@@ -63,6 +63,8 @@ void MX_USB_PCD_Init(void);
 /* Private defines -----------------------------------------------------------*/
 #define STLK_MCO_Pin GPIO_PIN_0
 #define STLK_MCO_GPIO_Port GPIOH
+#define SCOPE_Pin GPIO_PIN_7
+#define SCOPE_GPIO_Port GPIOE
 
 /* USER CODE BEGIN Private defines */
 
