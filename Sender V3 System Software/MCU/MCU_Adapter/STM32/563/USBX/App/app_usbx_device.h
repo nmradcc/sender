@@ -61,6 +61,7 @@ UINT MX_USBX_Device_Stack_Init(void);
 UINT MX_USBX_Device_Stack_DeInit(void);
 
 /* USER CODE BEGIN EFP */
+VOID USBX_APP_Device_Init(VOID);
 
 /* USER CODE END EFP */
 
@@ -86,7 +87,11 @@ UINT MX_USBX_Device_Stack_DeInit(void);
 #endif
 
 /* USER CODE BEGIN 1 */
-
+typedef enum
+{
+  STOP_USB_DEVICE = 1,
+  START_USB_DEVICE,
+} USB_MODE_STATE;
 /* USER CODE END 1 */
 
 #ifdef __cplusplus

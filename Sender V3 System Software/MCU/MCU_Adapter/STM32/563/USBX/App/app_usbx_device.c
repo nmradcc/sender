@@ -50,6 +50,11 @@ static TX_THREAD ux_device_app_thread;
 extern PCD_HandleTypeDef           hpcd_USB_DRD_FS;
 
 /* USER CODE BEGIN PV */
+#if defined ( __ICCARM__ ) /* IAR Compiler */
+  #pragma data_alignment=4
+#endif /* defined ( __ICCARM__ ) */
+__ALIGN_BEGIN USB_MODE_STATE USB_Device_State_Msg __ALIGN_END;
+extern PCD_HandleTypeDef hpcd_USB_DRD_FS;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -202,6 +207,8 @@ static VOID app_ux_device_thread_entry(ULONG thread_input)
 {
   /* USER CODE BEGIN app_ux_device_thread_entry */
   TX_PARAMETER_NOT_USED(thread_input);
+  /* initialize the device controller HAL driver */
+  MX_USB_PCD_Init();
 
   if (MX_USBX_Device_Stack_Init() != UX_SUCCESS)
   {
@@ -209,6 +216,8 @@ static VOID app_ux_device_thread_entry(ULONG thread_input)
     {
     }
   }
+
+  HAL_PCD_Start(&hpcd_USB_DRD_FS);
 
   sender_app_init();
   for (;;)
