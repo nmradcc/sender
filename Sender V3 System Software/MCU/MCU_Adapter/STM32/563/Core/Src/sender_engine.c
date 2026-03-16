@@ -2,7 +2,210 @@
 
 #include <string.h>
 
-void sender_engine_init(sender_engine_t* eng)
+#include "stm32h5xx_hal.h"
+
+/* ----------------------------------------------------------------------- *
+ * DCC output hardware assignment                                           *
+ *                                                                          *
+ * TIM2 (32-bit GP timer, APB1).  PCLK1 = 250 MHz.                        *
+ * PSC = 249 -> timer tick = 1 us.                                         *
+ * CH1 in Output Compare Toggle mode drives PA5 (Arduino D13 / TIM2_CH1). *
+ *                                                                          *
+ * The DCC waveform is produced by an interrupt-driven half-period FIFO:   *
+ *  - Thread pushes half-period values (in us) into g_hp_fifo.             *
+ *  - TIM2 CC1 ISR pops one value per event and advances CCR1 by that      *
+ *    amount; the output toggles automatically in hardware at the match.   *
+ *  - When the FIFO is empty the ISR inserts DCC_IDLE_HP_US (58 us) so     *
+ *    the output remains alive as a stream of one-bits.                    *
+ * ----------------------------------------------------------------------- */
+
+#define DCC_TIM_INSTANCE    TIM2
+#define DCC_TIM_IRQn        TIM2_IRQn
+#define DCC_TIM_IRQ_PRIO    5u          /* below USB (0), above HAL tick (15) */
+#define DCC_TIM_PSC         249u        /* 250 MHz / 250 = 1 MHz -> 1 us/tick */
+#define DCC_GPIO_PORT       GPIOA
+#define DCC_GPIO_PIN        GPIO_PIN_5  /* PA5 = TIM2_CH1 (AF1) */
+#define DCC_GPIO_AF         GPIO_AF1_TIM2
+
+/* Half-period FIFO (single-producer / single-consumer, power-of-2 size). */
+#define DCC_FIFO_SIZE       512u
+#define DCC_FIFO_MASK       (DCC_FIFO_SIZE - 1u)
+
+static volatile uint16_t g_hp_fifo[DCC_FIFO_SIZE];
+static volatile uint32_t g_hp_head;     /* ISR consumer  */
+static volatile uint32_t g_hp_tail;     /* thread producer */
+
+static TIM_HandleTypeDef g_htim;
+
+/* DCC packet/special constants. */
+#define DCC_PREAMBLE_BITS   14u
+#define DCC_RESET_BITS      25u
+#define DCC_HARD_RESET_BITS 50u
+#define DCC_IDLE_HP_US      58u         /* half-period for a DCC "1" bit */
+
+/* ======================================================================= */
+/* FIFO helpers (SPSC, lock-free)                                          */
+/* ======================================================================= */
+
+/* Number of free slots available for the thread to write. */
+static uint32_t dcc_fifo_free(void)
+{
+    uint32_t used = (g_hp_tail - g_hp_head) & DCC_FIFO_MASK;
+    return DCC_FIFO_MASK - used;    /* max usable capacity = FIFO_SIZE - 1 */
+}
+
+/* Push one half-period value.  Caller must have verified sufficient space. */
+static void dcc_push_unchecked(uint16_t hp)
+{
+    g_hp_fifo[g_hp_tail] = hp;
+    __DMB();                            /* store to fifo before updating tail */
+    g_hp_tail = (g_hp_tail + 1u) & DCC_FIFO_MASK;
+}
+
+/* Push both half-periods of one DCC bit.  Caller ensures >= 2 free slots. */
+static void dcc_push_bit_unchecked(const sender_engine_t *eng, bool one)
+{
+    if (one)
+    {
+        uint16_t hp = (uint16_t)(eng->clk1t_us / 2u);
+        dcc_push_unchecked(hp);
+        dcc_push_unchecked(hp);
+    }
+    else
+    {
+        dcc_push_unchecked(eng->clk0h_us);
+        dcc_push_unchecked((uint16_t)(eng->clk0t_us - eng->clk0h_us));
+    }
+}
+
+/* Push 8 data bits of byte_val MSB-first.  Caller ensures >= 16 free slots. */
+static void dcc_push_byte_unchecked(const sender_engine_t *eng, uint8_t byte_val)
+{
+    uint8_t mask;
+    for (mask = 0x80u; mask != 0u; mask = (uint8_t)(mask >> 1u))
+    {
+        dcc_push_bit_unchecked(eng, (byte_val & mask) != 0u);
+    }
+}
+
+/* Push `count` identical bits.  Returns false (no partial update) if no space. */
+static bool dcc_push_bits(const sender_engine_t *eng, uint32_t count, bool one)
+{
+    uint32_t i;
+    if (dcc_fifo_free() < count * 2u)
+    {
+        return false;
+    }
+    for (i = 0u; i < count; i++)
+    {
+        dcc_push_bit_unchecked(eng, one);
+    }
+    return true;
+}
+
+/* ======================================================================= */
+/* Hardware init / deinit                                                  */
+/* ======================================================================= */
+
+static void dcc_hw_init(void)
+{
+    TIM_OC_InitTypeDef oc   = {0};
+    GPIO_InitTypeDef   gpio = {0};
+
+    __HAL_RCC_TIM2_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+
+    /* PA5 -> TIM2_CH1 alternate function */
+    gpio.Pin       = DCC_GPIO_PIN;
+    gpio.Mode      = GPIO_MODE_AF_PP;
+    gpio.Pull      = GPIO_NOPULL;
+    gpio.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
+    gpio.Alternate = DCC_GPIO_AF;
+    HAL_GPIO_Init(DCC_GPIO_PORT, &gpio);
+
+    /* TIM2: free-running 32-bit counter at 1 us/tick */
+    g_htim.Instance               = DCC_TIM_INSTANCE;
+    g_htim.Init.Prescaler         = DCC_TIM_PSC;
+    g_htim.Init.CounterMode       = TIM_COUNTERMODE_UP;
+    g_htim.Init.Period            = 0xFFFFFFFFu;
+    g_htim.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
+    g_htim.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+    HAL_TIM_OC_Init(&g_htim);
+
+    __HAL_TIM_SET_COUNTER(&g_htim, 0u);
+
+    /* CH1: output compare toggle */
+    oc.OCMode     = TIM_OCMODE_TOGGLE;
+    oc.Pulse      = DCC_IDLE_HP_US + 10u;   /* first event ~68 us after start */
+    oc.OCPolarity = TIM_OCPOLARITY_HIGH;
+    oc.OCFastMode = TIM_OCFAST_DISABLE;
+    HAL_TIM_OC_ConfigChannel(&g_htim, &oc, TIM_CHANNEL_1);
+
+    /* Enable CC1 interrupt and start output */
+    __HAL_TIM_ENABLE_IT(&g_htim, TIM_IT_CC1);
+    HAL_NVIC_SetPriority(DCC_TIM_IRQn, DCC_TIM_IRQ_PRIO, 0u);
+    HAL_NVIC_EnableIRQ(DCC_TIM_IRQn);
+    HAL_TIM_OC_Start(&g_htim, TIM_CHANNEL_1);
+}
+
+static void dcc_hw_stop(void)
+{
+    GPIO_InitTypeDef gpio = {0};
+
+    __HAL_TIM_DISABLE_IT(&g_htim, TIM_IT_CC1);
+    HAL_NVIC_DisableIRQ(DCC_TIM_IRQn);
+    HAL_TIM_OC_Stop(&g_htim, TIM_CHANNEL_1);
+
+    /* Reconfigure PA5 as GPIO and drive it low */
+    gpio.Pin   = DCC_GPIO_PIN;
+    gpio.Mode  = GPIO_MODE_OUTPUT_PP;
+    gpio.Pull  = GPIO_NOPULL;
+    gpio.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(DCC_GPIO_PORT, &gpio);
+    HAL_GPIO_WritePin(DCC_GPIO_PORT, DCC_GPIO_PIN, GPIO_PIN_RESET);
+}
+
+/* ======================================================================= */
+/* TIM2 CC1 interrupt handler                                              */
+/* Called from TIM2_IRQHandler in stm32h5xx_it.c.                         */
+/* ======================================================================= */
+
+void sender_engine_tim_irq_handler(void)
+{
+    uint32_t head;
+    uint32_t tail;
+    uint16_t hp;
+
+    if (__HAL_TIM_GET_FLAG(&g_htim, TIM_FLAG_CC1) == 0)
+    {
+        return;
+    }
+    __HAL_TIM_CLEAR_FLAG(&g_htim, TIM_FLAG_CC1);
+
+    head = g_hp_head;
+    tail = g_hp_tail;
+
+    if (head != tail)
+    {
+        hp = g_hp_fifo[head];
+        __DMB();                        /* read fifo slot before advancing head */
+        g_hp_head = (head + 1u) & DCC_FIFO_MASK;
+    }
+    else
+    {
+        /* FIFO empty: insert a "ones" half-period to keep output alive */
+        hp = DCC_IDLE_HP_US;
+    }
+
+    /* Advance the compare value; the timer toggles the output at the match. */
+    TIM2->CCR1 = TIM2->CCR1 + (uint32_t)hp;
+}
+
+/* ======================================================================= */
+/* Public engine API                                                       */
+/* ======================================================================= */
+
+void sender_engine_init(sender_engine_t *eng)
 {
     if (eng == 0)
     {
@@ -10,17 +213,39 @@ void sender_engine_init(sender_engine_t* eng)
     }
 
     memset(eng, 0, sizeof(*eng));
-    eng->clk0t_us = 200;
-    eng->clk0h_us = 100;
-    eng->clk1t_us = 116;
+    eng->clk0t_us = 200u;
+    eng->clk0h_us = 100u;
+    eng->clk1t_us = 116u;
+
+    g_hp_head = 0u;
+    g_hp_tail = 0u;
 }
 
-void sender_engine_reset(sender_engine_t* eng)
+void sender_engine_reset(sender_engine_t *eng)
 {
+    bool was_running;
+
+    if (eng == 0)
+    {
+        return;
+    }
+
+    was_running = eng->running;
+    if (was_running)
+    {
+        dcc_hw_stop();
+    }
+
     sender_engine_init(eng);
+
+    if (was_running)
+    {
+        dcc_hw_init();
+        eng->running = true;
+    }
 }
 
-uint8_t sender_engine_set_timing(sender_engine_t* eng, uint16_t clk0t_us,
+uint8_t sender_engine_set_timing(sender_engine_t *eng, uint16_t clk0t_us,
                                  uint16_t clk0h_us, uint16_t clk1t_us)
 {
     if (eng == 0)
@@ -34,29 +259,42 @@ uint8_t sender_engine_set_timing(sender_engine_t* eng, uint16_t clk0t_us,
     return SHP_STATUS_OK;
 }
 
-uint8_t sender_engine_start(sender_engine_t* eng)
+uint8_t sender_engine_start(sender_engine_t *eng)
 {
     if (eng == 0)
     {
         return SHP_STATUS_INTERNAL_ERROR;
     }
+    if (eng->running)
+    {
+        return SHP_STATUS_OK;
+    }
 
-    eng->running = true;
+    g_hp_head     = 0u;
+    g_hp_tail     = 0u;
+    eng->underflow = false;
+    dcc_hw_init();
+    eng->running  = true;
     return SHP_STATUS_OK;
 }
 
-uint8_t sender_engine_stop(sender_engine_t* eng)
+uint8_t sender_engine_stop(sender_engine_t *eng)
 {
     if (eng == 0)
     {
         return SHP_STATUS_INTERNAL_ERROR;
     }
+    if (!eng->running)
+    {
+        return SHP_STATUS_OK;
+    }
 
+    dcc_hw_stop();
     eng->running = false;
     return SHP_STATUS_OK;
 }
 
-uint8_t sender_engine_clear_underflow(sender_engine_t* eng)
+uint8_t sender_engine_clear_underflow(sender_engine_t *eng)
 {
     if (eng == 0)
     {
@@ -67,7 +305,7 @@ uint8_t sender_engine_clear_underflow(sender_engine_t* eng)
     return SHP_STATUS_OK;
 }
 
-uint8_t sender_engine_set_scope(sender_engine_t* eng, bool scope_on)
+uint8_t sender_engine_set_scope(sender_engine_t *eng, bool scope_on)
 {
     if (eng == 0)
     {
@@ -78,10 +316,10 @@ uint8_t sender_engine_set_scope(sender_engine_t* eng, bool scope_on)
     return SHP_STATUS_OK;
 }
 
-uint8_t sender_engine_send_bytes(sender_engine_t* eng, uint16_t repeat_count,
+uint8_t sender_engine_send_bytes(sender_engine_t *eng, uint16_t repeat_count,
                                  uint8_t byte_value)
 {
-    (void)byte_value;
+    uint16_t i;
 
     if (eng == 0)
     {
@@ -91,19 +329,36 @@ uint8_t sender_engine_send_bytes(sender_engine_t* eng, uint16_t repeat_count,
     {
         return SHP_STATUS_BUSY;
     }
-
-    eng->bytes_sent += repeat_count;
-    if (repeat_count > 0)
+    if (repeat_count == 0u)
     {
-        eng->packets_sent += 1;
+        return SHP_STATUS_OK;
     }
+    /* 8 bits per byte -> 16 half-periods per byte */
+    if (dcc_fifo_free() < (uint32_t)repeat_count * 16u)
+    {
+        return SHP_STATUS_BUSY;
+    }
+
+    for (i = 0u; i < repeat_count; i++)
+    {
+        dcc_push_byte_unchecked(eng, byte_value);
+    }
+
+    eng->bytes_sent   += repeat_count;
+    eng->packets_sent += 1u;
     return SHP_STATUS_OK;
 }
 
-uint8_t sender_engine_send_packet(sender_engine_t* eng, const uint8_t* data,
+uint8_t sender_engine_send_packet(sender_engine_t *eng, const uint8_t *data,
                                   uint16_t size)
 {
-    (void)data;
+    /*
+     * DCC packet framing:
+     *   preamble (>=14 ones) | start(0) | byte1 | sep(0) | byte2 | ... | end(1)
+     * Half-periods needed = (14 + 1 + size*9) * 2
+     */
+    uint32_t hps_needed;
+    uint16_t i;
 
     if (eng == 0)
     {
@@ -113,31 +368,80 @@ uint8_t sender_engine_send_packet(sender_engine_t* eng, const uint8_t* data,
     {
         return SHP_STATUS_BUSY;
     }
-
-    eng->bytes_sent += size;
-    if (size > 0)
+    if (data == 0 || size == 0u)
     {
-        eng->packets_sent += 1;
+        return SHP_STATUS_OK;
     }
+
+    hps_needed = (DCC_PREAMBLE_BITS + 1u + (uint32_t)size * 9u) * 2u;
+    if (dcc_fifo_free() < hps_needed)
+    {
+        return SHP_STATUS_BUSY;
+    }
+
+    /* Preamble */
+    for (i = 0u; i < DCC_PREAMBLE_BITS; i++)
+    {
+        dcc_push_bit_unchecked(eng, true);
+    }
+
+    /* start(0) + byte + sep(0) + byte + ... */
+    for (i = 0u; i < size; i++)
+    {
+        dcc_push_bit_unchecked(eng, false);     /* start / inter-byte separator */
+        dcc_push_byte_unchecked(eng, data[i]);
+    }
+
+    /* End bit */
+    dcc_push_bit_unchecked(eng, true);
+
+    eng->bytes_sent   += size;
+    eng->packets_sent += 1u;
     return SHP_STATUS_OK;
 }
 
-uint8_t sender_engine_send_stretched_byte(sender_engine_t* eng,
+uint8_t sender_engine_send_stretched_byte(sender_engine_t *eng,
                                           uint16_t clk0t_us,
                                           uint16_t clk0h_us,
                                           uint8_t byte_value)
 {
+    uint16_t save_t;
+    uint16_t save_h;
+
     if (eng == 0)
     {
         return SHP_STATUS_INTERNAL_ERROR;
     }
+    if (!eng->running)
+    {
+        return SHP_STATUS_BUSY;
+    }
+    if (dcc_fifo_free() < 16u)
+    {
+        return SHP_STATUS_BUSY;
+    }
 
-    (void)sender_engine_set_timing(eng, clk0t_us, clk0h_us, eng->clk1t_us);
-    return sender_engine_send_bytes(eng, 1, byte_value);
+    /* Temporarily substitute the caller's zero-bit timing for this byte. */
+    save_t = eng->clk0t_us;
+    save_h = eng->clk0h_us;
+    eng->clk0t_us = clk0t_us;
+    eng->clk0h_us = clk0h_us;
+
+    dcc_push_byte_unchecked(eng, byte_value);
+
+    eng->clk0t_us = save_t;
+    eng->clk0h_us = save_h;
+
+    eng->bytes_sent += 1u;
+    return SHP_STATUS_OK;
 }
 
-uint8_t sender_engine_send_special(sender_engine_t* eng, uint8_t special_id)
+uint8_t sender_engine_send_special(sender_engine_t *eng, uint8_t special_id)
 {
+    static const uint8_t idle_pkt[3]   = { 0xFFu, 0x00u, 0xFFu };
+    static const uint8_t warble_pkt[3] = { 0x55u, 0xAAu, 0xFFu };
+    uint32_t hps_needed;
+
     if (eng == 0)
     {
         return SHP_STATUS_INTERNAL_ERROR;
@@ -150,23 +454,43 @@ uint8_t sender_engine_send_special(sender_engine_t* eng, uint8_t special_id)
     switch (special_id)
     {
         case SHP_SPECIAL_RESET:
-        case SHP_SPECIAL_HARD_RESET:
-        case SHP_SPECIAL_IDLE:
-            eng->packets_sent += 1;
-            eng->bytes_sent += 5;
+            hps_needed = (DCC_PREAMBLE_BITS + DCC_RESET_BITS) * 2u;
+            if (dcc_fifo_free() < hps_needed)
+            {
+                return SHP_STATUS_BUSY;
+            }
+            dcc_push_bits(eng, DCC_PREAMBLE_BITS, true);
+            dcc_push_bits(eng, DCC_RESET_BITS, false);
+            eng->packets_sent += 1u;
+            eng->bytes_sent   += 4u;
             return SHP_STATUS_OK;
 
-        case SHP_SPECIAL_WARBLE:
-            eng->packets_sent += 2;
-            eng->bytes_sent += 4096;
+        case SHP_SPECIAL_HARD_RESET:
+            hps_needed = (DCC_PREAMBLE_BITS + DCC_HARD_RESET_BITS) * 2u;
+            if (dcc_fifo_free() < hps_needed)
+            {
+                return SHP_STATUS_BUSY;
+            }
+            dcc_push_bits(eng, DCC_PREAMBLE_BITS, true);
+            dcc_push_bits(eng, DCC_HARD_RESET_BITS, false);
+            eng->packets_sent += 1u;
+            eng->bytes_sent   += 8u;
             return SHP_STATUS_OK;
+
+        case SHP_SPECIAL_IDLE:
+            /* DCC idle packet: address=0xFF, data=0x00, error=0xFF */
+            return sender_engine_send_packet(eng, idle_pkt, 3u);
+
+        case SHP_SPECIAL_WARBLE:
+            /* Service-mode entry: alternating pattern */
+            return sender_engine_send_packet(eng, warble_pkt, 3u);
 
         default:
             return SHP_STATUS_BAD_LENGTH;
     }
 }
 
-uint8_t sender_engine_set_gen_out(sender_engine_t* eng, uint8_t value)
+uint8_t sender_engine_set_gen_out(sender_engine_t *eng, uint8_t value)
 {
     if (eng == 0)
     {
@@ -177,8 +501,8 @@ uint8_t sender_engine_set_gen_out(sender_engine_t* eng, uint8_t value)
     return SHP_STATUS_OK;
 }
 
-void sender_engine_get_gen_in(const sender_engine_t* eng, uint8_t* gen1,
-                              uint8_t* gen2)
+void sender_engine_get_gen_in(const sender_engine_t *eng, uint8_t *gen1,
+                              uint8_t *gen2)
 {
     if (eng == 0 || gen1 == 0 || gen2 == 0)
     {
@@ -189,24 +513,24 @@ void sender_engine_get_gen_in(const sender_engine_t* eng, uint8_t* gen1,
     *gen2 = eng->gen_in2;
 }
 
-void sender_engine_get_status(const sender_engine_t* eng,
-                              sender_status_payload_t* out)
+void sender_engine_get_status(const sender_engine_t *eng,
+                              sender_status_payload_t *out)
 {
     if (eng == 0 || out == 0)
     {
         return;
     }
 
-    out->running = eng->running;
-    out->underflow = eng->underflow;
-    out->err_flags = eng->err_flags;
-    out->queue_depth = 0;
+    out->running    = eng->running;
+    out->underflow  = eng->underflow;
+    out->err_flags  = eng->err_flags;
+    out->queue_depth = (uint16_t)((g_hp_tail - g_hp_head) & DCC_FIFO_MASK);
     out->gen1 = eng->gen_in1;
     out->gen2 = eng->gen_in2;
 }
 
-void sender_engine_get_stats(const sender_engine_t* eng,
-                             sender_stats_payload_t* out)
+void sender_engine_get_stats(const sender_engine_t *eng,
+                             sender_stats_payload_t *out)
 {
     if (eng == 0 || out == 0)
     {
@@ -214,6 +538,6 @@ void sender_engine_get_stats(const sender_engine_t* eng,
     }
 
     out->packets_sent = eng->packets_sent;
-    out->bytes_sent = eng->bytes_sent;
-    out->underruns = eng->underruns;
+    out->bytes_sent   = eng->bytes_sent;
+    out->underruns    = eng->underruns;
 }

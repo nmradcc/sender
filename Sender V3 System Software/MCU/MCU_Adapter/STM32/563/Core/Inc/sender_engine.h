@@ -60,6 +60,9 @@ void sender_engine_get_status(const sender_engine_t* eng,
 void sender_engine_get_stats(const sender_engine_t* eng,
                              sender_stats_payload_t* out);
 
+/* Called from TIM2_IRQHandler — do not call directly. */
+void sender_engine_tim_irq_handler(void);
+
 #ifdef __cplusplus
 }
 #endif

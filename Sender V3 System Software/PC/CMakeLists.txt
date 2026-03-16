@@ -43,6 +43,16 @@ if (MSVC)
   target_compile_definitions(send PRIVATE _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_WARNINGS)
 endif()
 
+add_executable(mcu_smoke_test
+  ${SEND_DIR}/mcu_smoke_test.cpp
+  ${SEND_DIR}/SENDER_HW_MCU_USB.CPP
+)
+target_include_directories(mcu_smoke_test PRIVATE ${INC_DIR} ${SEND_DIR})
+target_link_libraries(mcu_smoke_test PRIVATE nmra_lib)
+if (MSVC)
+  target_compile_definitions(mcu_smoke_test PRIVATE _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_WARNINGS)
+endif()
+
 option(BUILD_TEST_TOOLS "Build test utilities in PC/LIB" OFF)
 
 if (BUILD_TEST_TOOLS)
