@@ -24,8 +24,6 @@
 
 #include "args.h"							// Includes send.h
 #include "send_reg.h"
-#include "st_vect.h"
-#include "self_tst.h"
 #include "dec_tst.h"
 #include "SENDER_HW_MCU_USB.H"
 
@@ -136,8 +134,8 @@ const char *Key_help	=
 "  z - Run decoder tests            q - Quit program\n";
 
 static Key_val	get_key_cmd();
-static void		parse_key_cmd( Self_tst &self_tst, Key_val init_key );
-static Rslt_t	do_self_tests( Self_tst	&self_tst );
+static void		parse_key_cmd( Key_val init_key );
+static Rslt_t	do_mcu_self_tests( void );
 static void		get_log_file( const char *cmd_name );
 static void		print_user_docs();
 static void		exit_send( int status );
@@ -163,11 +161,6 @@ static Rslt_t	hw_send_bits_pkt( Bits &bits, const char *info );
  *	Global copy of Send board registers.
  */
 Send_reg 			Dcc_reg;
-
-/*
- *	Self test object.
- */
-static Self_tst		Lself_tst( Dcc_reg, St_vect, St_vect_size );
 
 /*
  *	Decoder test object.
@@ -536,29 +529,19 @@ main(
 			STATPRINT(	"Critical interrupt flag set"  );
 		}
 
-		if ( !hw_is_mcu() )
-		{
-			STATPRINT(	"Beginning self tests" );
-			printf(		"Beginning self tests, this will take a few seconds\n" );
+		STATPRINT( "Beginning MCU selftests" );
+		printf(    "Beginning MCU selftests\n" );
 
-			if ( do_self_tests( Lself_tst ) == OK )
-			{
-				STATPRINT(	"Self tests passed" );
-				printf(		"Self tests passed\n" );
-				Lself_tst.print_stats();
-				Dcc_reg.print();
-			}
-			else
-			{
-				printf(	                "%s: Self tests failed\n", my_name );
-				ERRPRINT( my_name, LOG_ERR, "Self tests failed" );
-				init_key	=	KEY_NULL;			// Don't start tests on fail.
-			}
+		if ( do_mcu_self_tests() == OK )
+		{
+			STATPRINT( "MCU selftests passed" );
+			printf(    "MCU selftests passed\n" );
 		}
 		else
 		{
-			STATPRINT( "Skipping legacy self tests for MCU backend" );
-			printf( "Skipping legacy self tests for MCU backend\n" );
+			printf(	                "%s: MCU selftests failed\n", my_name );
+			ERRPRINT( my_name, LOG_ERR, "MCU selftests failed" );
+			init_key	=	KEY_NULL;			// Don't start tests on fail.
 		}
 	}
 	else
@@ -578,7 +561,7 @@ main(
 		init_key	=	KEY_NULL;			// Don't start tests automatically.
 	}
 
-	parse_key_cmd( Lself_tst, init_key );
+	parse_key_cmd( init_key );
 
 	if ( hw_is_running() == true )
 	{
@@ -815,6 +798,10 @@ get_log_file(
 	{
 		if ( !fgets( buf, MAXLINE, stdin ) )
 		{
+			if ( feof( stdin ) )
+			{
+				break;
+			}
 			ERRPRINT( my_name, LOG_CRIT,
 				"fgets() failed" );
 			exit_send( 1 );
@@ -867,49 +854,123 @@ get_log_file(
 /*
  *	NAME
  *
- *		do_self_tests()						-	 Run multiple self tests.
+ *		do_mcu_self_tests()					-	 Run MCU self tests.
  *
  *	RETURN VALUE
  *
  *		OK		-	All tests passed.
- *		FAIL	-	Error in test.
+ *		FAIL	-	One or more tests failed.
  *
  *	DESCRIPTION
  *
- *		do_self_tests() runs the board self tests.
+ *		do_mcu_self_tests() exercises the MCU sender hardware via the
+ *		Sender_hw_if interface: timing, clock start/stop, packet send,
+ *		status and stats queries.  When no MCU backend is active the
+ *		function returns OK immediately.
  */
 /*--------------------------------------------------------------------------*/
 
+/*
+ *	SELF_CHECK logs PASS/FAIL for each individual test to the stat log
+ *	and prints to stdout.  Failures are additionally logged at LOG_ERR.
+ */
+#define SELF_CHECK( name_, expr_ ) \
+	do { \
+		bool _ok = (expr_); \
+		printf( "  %-40s %s\n", (name_), _ok ? "PASS" : "FAIL" ); \
+		STATPRINT( "  %-40s %s", (name_), _ok ? "PASS" : "FAIL" ); \
+		if ( !_ok ) \
+		{ \
+			ERRPRINT( my_name, LOG_ERR, "FAILED: %s", (name_) ); \
+			++failures; \
+		} \
+	} while ( 0 )
+
 static Rslt_t
-do_self_tests(
-	Self_tst	&self_tst )					// Self test object.
+do_mcu_self_tests( void )
 {
-	const char	*my_name = "do_self_tests";
-	bool		tstderr_too;				// Present stderr_too flag.
-	Rslt_t		retval = OK;				// Return value.
+	const char	*my_name = "do_mcu_self_tests";
+	int			 failures = 0;
 
-	tstderr_too	=	Deflog.get_stderr_too();
-	Deflog.set_stderr_too( true );
-
-	if ( self_tst.test_send() != OK )
+	if ( !hw_is_mcu() )
 	{
-		ERRPRINT( my_name, LOG_ERR, "Self test FAILED" );
-		retval	=	FAIL;
+		return ( OK );
 	}
 
-	Deflog.set_stderr_too( tstderr_too );
+	STATPRINT( "MCU self test" );
+	STATPRINT( "----------------------------------------" );
+	printf( "MCU self test\n" );
+	printf( "----------------------------------------\n" );
 
-	CLR_LINE;
-	ERRPRINT( my_name, LOG_INFO,
-		"%10ld Cycles passed, %10ld Cycles failed",
-		self_tst.get_tst_pass(), self_tst.get_tst_fail() );
-	printf(
-		"%10ld Cycles passed, %10ld Cycles failed\r",
-		self_tst.get_tst_pass(), self_tst.get_tst_fail() );
+	/* 1. SET_TIMING */
+	SELF_CHECK( "1. SET_TIMING (200/100/116 us)",
+		Lhw_if->set_timing( 200, 100, 116 ) );
 
-	Dcc_reg.clear_warn();
+	/* 2. START_CLK */
+	{
+		bool started = Lhw_if->start_clock();
+		SELF_CHECK( "2. START_CLK", started );
+		if ( started )
+		{
+			Lhw_running = true;
+		}
+	}
 
-	return ( retval );
+	/* 3. SEND_BYTES (4 x 0xFF idle bytes) */
+	SELF_CHECK( "3. SEND_BYTES (4 x 0xFF)",
+		Lhw_if->send_bytes( 4, 0xFF, "selftest" ) );
+
+	/* 4. GET_STATUS */
+	{
+		Sender_hw_status st;
+		bool ok = Lhw_if->get_status( st );
+		SELF_CHECK( "4. GET_STATUS succeeds", ok );
+		if ( ok )
+		{
+			SELF_CHECK( "4a. running == true",    st.running );
+			SELF_CHECK( "4b. underflow == false", !st.underflow );
+		}
+	}
+
+	/* 5. GET_STATS */
+	{
+		Sender_hw_stats stats;
+		bool ok = Lhw_if->get_stats( stats );
+		SELF_CHECK( "5. GET_STATS succeeds", ok );
+		if ( ok )
+		{
+			SELF_CHECK( "5a. bytes_sent >= 4",    stats.bytes_sent   >= 4 );
+			SELF_CHECK( "5b. packets_sent >= 1",  stats.packets_sent >= 1 );
+		}
+	}
+
+	/* 6. STOP_CLK */
+	{
+		bool stopped = Lhw_if->stop_clock();
+		SELF_CHECK( "6. STOP_CLK", stopped );
+		if ( stopped )
+		{
+			Lhw_running = false;
+		}
+	}
+
+#undef SELF_CHECK
+
+	STATPRINT( "----------------------------------------" );
+	printf( "----------------------------------------\n" );
+
+	if ( failures == 0 )
+	{
+		STATPRINT( "MCU selftests: ALL TESTS PASSED" );
+		printf(    "MCU selftests: ALL TESTS PASSED\n" );
+		return ( OK );
+	}
+
+	ERRPRINT( my_name, LOG_ERR,
+		"MCU selftests FAILED: %d failure(s)", failures );
+	STATPRINT( "MCU selftests: %d TEST(S) FAILED", failures );
+	printf(    "MCU selftests: %d TEST(S) FAILED\n", failures );
+	return ( FAIL );
 }
 
  
@@ -960,7 +1021,6 @@ get_key_cmd( void )
 
 static void
 parse_key_cmd(
-Self_tst		&self_tst,					// Self test object.
 Key_val			init_key )					// Initial key value.
 {
 	const char	*my_name = "parse_key_cmd";
@@ -1427,9 +1487,8 @@ Key_val			init_key )					// Initial key value.
 			{
 				hw_stop_clk();
 			}
-			self_tst.rst_stats();
 			printf(
-				"Starting self test cycles, type '<ESC>' to stop tests\n" );
+				"Starting MCU selftest cycles, type '<ESC>' to stop tests\n" );
 			break;
 
 		case KEY_DEC_TST:				// Run one or more decoder test cycles.
@@ -1722,9 +1781,9 @@ Key_val			init_key )					// Initial key value.
 					}
 					break;
 
-				case SEND_SELF_TST:		  	// Run board self tests.
-					do_self_tests( self_tst );
-					break;
+				case SEND_SELF_TST:		  	// Run MCU selftests.
+								do_mcu_self_tests();
+									break;
 
 				case SEND_DEC_TST:			// Run decoder tests.
 					tst_rslt	=	OK;
@@ -1818,7 +1877,7 @@ Key_val			init_key )					// Initial key value.
 			CLR_LINE;
 			if ( rep_type == SEND_SELF_TST )
 			{
-				self_tst.print_stats();
+				// test summary already printed inside do_mcu_self_tests()
 			}
 			else
 			{
