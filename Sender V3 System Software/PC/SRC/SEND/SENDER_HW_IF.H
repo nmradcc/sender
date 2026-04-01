@@ -60,6 +60,7 @@ class Sender_hw_if
 
     virtual bool get_status(Sender_hw_status& status) = 0;
     virtual bool get_stats(Sender_hw_stats& stats) = 0;
+    virtual bool reset_stats() = 0;
 };
 
 #endif /* SENDER_HW_IF_H_DECLARED */

@@ -12,14 +12,17 @@
  *
  * Tests performed in order:
  *   1. Open CDC port and issue GET_INFO — verify protocol version.
- *   2. SET_TIMING with default DCC values.
- *   3. START_CLK.
- *   4. SEND_BYTES (4 x 0xFF idle bytes).
- *   5. GET_STATUS — verify running=true, underflow=false.
- *   6. GET_STATS  — verify bytes_sent >= 4.
- *   7. STOP_CLK.
- *   8. Close device.
- *   9. Re-open and verify link recovery.
+ *   2. RESET_STATS.
+ *   3. SET_TIMING with default DCC values.
+ *   4. START_CLK.
+ *   5. SEND_BYTES (4 x 0xFF idle bytes).
+ *   6. GET_STATUS, then GET_STATS — verify exact counts 4 bytes, 1 packet.
+ *   7. RESET_STATS again.
+ *   8. SEND_PACKET (DCC idle packet: FF 00 FF).
+ *   9. GET_STATS  — verify exact counts 3 bytes, 1 packet.
+ *  10. STOP_CLK.
+ *  11. Close device.
+ *  12. Re-open and verify link recovery.
  */
 
 #include <stdio.h>
@@ -71,46 +74,74 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    /* 2. SET_TIMING -------------------------------------------------------- */
+    /* 2. RESET_STATS + verify zero ----------------------------------------- */
+    check("2. RESET_STATS", dev.reset_stats());
+
+    /* 3. SET_TIMING -------------------------------------------------------- */
     /* Defaults: 0T=200 us, 0H=100 us, 1T=116 us */
-    check("2. SET_TIMING (200/100/116 us)",
+    check("3. SET_TIMING (200/100/116 us)",
           dev.set_timing(200, 100, 116));
 
-    /* 3. START_CLK --------------------------------------------------------- */
-    check("3. START_CLK", dev.start_clock());
+    /* 4. START_CLK --------------------------------------------------------- */
+    check("4. START_CLK", dev.start_clock());
 
-    /* 4. SEND_BYTES -------------------------------------------------------- */
-    check("4. SEND_BYTES (4 x 0xFF)", dev.send_bytes(4, 0xFF, "smoke"));
+    /* 5. SEND_BYTES -------------------------------------------------------- */
+    check("5. SEND_BYTES (4 x 0xFF)", dev.send_bytes(4, 0xFF, "smoke"));
 
-    /* 5. GET_STATUS -------------------------------------------------------- */
+    /* 6. GET_STATUS -------------------------------------------------------- */
     {
         Sender_hw_status st;
         bool ok = dev.get_status(st);
-        check("5. GET_STATUS succeeds", ok);
+        check("6. GET_STATUS succeeds", ok);
         if (ok)
         {
-            check("5a. running == true",  st.running);
-            check("5b. underflow == false", !st.underflow);
+            check("6a. running == true",  st.running);
+            check("6b. underflow == false", !st.underflow);
         }
     }
 
-    /* 6. GET_STATS --------------------------------------------------------- */
+    /* 6c. GET_STATS after GET_STATUS (SEND_BYTES phase) ------------------- */
     {
         Sender_hw_stats stats;
         bool ok = dev.get_stats(stats);
-        check("6. GET_STATS succeeds", ok);
+        check("6c. GET_STATS succeeds", ok);
         if (ok)
         {
-            check("6a. bytes_sent >= 4", stats.bytes_sent >= 4);
-            check("6b. packets_sent >= 1", stats.packets_sent >= 1);
+            check("6d. bytes_sent == 4", stats.bytes_sent == 4);
+            check("6e. packets_sent == 1", stats.packets_sent == 1);
+            check("6f. underruns == 0", stats.underruns == 0);
         }
     }
 
-    /* 7. STOP_CLK ---------------------------------------------------------- */
-    check("7. STOP_CLK", dev.stop_clock());
+    /* 7. RESET_STATS again + verify zero ----------------------------------- */
+    check("7. RESET_STATS (before SEND_PACKET)", dev.reset_stats());
 
-    /* 8. CLOSE_DEVICE ------------------------------------------------------ */
-    check("8. CLOSE_DEVICE", dev.close() /* close flushes; reset via re-init */
+    /* 8. SEND_PACKET ------------------------------------------------------- */
+    /* DCC idle packet: address=0xFF, data=0x00, checksum=0xFF */
+    {
+        static const uint8_t idle_pkt[] = { 0xFF, 0x00, 0xFF };
+        check("8. SEND_PACKET (DCC idle FF 00 FF)",
+              dev.send_packet(idle_pkt, sizeof(idle_pkt), "smoke"));
+    }
+
+    /* 9. GET_STATS --------------------------------------------------------- */
+    {
+        Sender_hw_stats stats;
+        bool ok = dev.get_stats(stats);
+        check("9. GET_STATS succeeds", ok);
+        if (ok)
+        {
+            check("9a. bytes_sent == 3", stats.bytes_sent == 3);
+            check("9b. packets_sent == 1", stats.packets_sent == 1);
+            check("9c. underruns == 0", stats.underruns == 0);
+        }
+    }
+
+    /* 10. STOP_CLK --------------------------------------------------------- */
+    check("10. STOP_CLK", dev.stop_clock());
+
+    /* 11. CLOSE_DEVICE ----------------------------------------------------- */
+    check("11. CLOSE_DEVICE", dev.close() /* close flushes; reset via re-init */
           || true /* close always succeeds */);
     /* Re-open and send RESET_DEVICE command explicitly */
     {
@@ -119,12 +150,12 @@ int main(int argc, char *argv[])
         {
             /* Sender_hw_mcu_usb doesn't expose reset_device directly;
                we just verify the port can be reopened and GET_INFO still works. */
-            check("9. Re-open after close", true);
+            check("12. Re-open after close", true);
             dev2.close();
         }
         else
         {
-            check("9. Re-open after close", false);
+            check("12. Re-open after close", false);
         }
     }
 

@@ -905,52 +905,79 @@ do_mcu_self_tests( void )
 	printf( "MCU self test\n" );
 	printf( "----------------------------------------\n" );
 
-	/* 1. SET_TIMING */
-	SELF_CHECK( "1. SET_TIMING (200/100/116 us)",
+	/* 1. RESET_STATS */
+	SELF_CHECK( "1. RESET_STATS", Lhw_if->reset_stats() );
+
+	/* 2. SET_TIMING */
+	SELF_CHECK( "2. SET_TIMING (200/100/116 us)",
 		Lhw_if->set_timing( 200, 100, 116 ) );
 
-	/* 2. START_CLK */
+	/* 3. START_CLK */
 	{
 		bool started = Lhw_if->start_clock();
-		SELF_CHECK( "2. START_CLK", started );
+		SELF_CHECK( "3. START_CLK", started );
 		if ( started )
 		{
 			Lhw_running = true;
 		}
 	}
 
-	/* 3. SEND_BYTES (4 x 0xFF idle bytes) */
-	SELF_CHECK( "3. SEND_BYTES (4 x 0xFF)",
+	/* 4. SEND_BYTES (4 x 0xFF idle bytes) */
+	SELF_CHECK( "4. SEND_BYTES (4 x 0xFF)",
 		Lhw_if->send_bytes( 4, 0xFF, "selftest" ) );
 
-	/* 4. GET_STATUS */
+	/* 5. GET_STATUS */
 	{
 		Sender_hw_status st;
 		bool ok = Lhw_if->get_status( st );
-		SELF_CHECK( "4. GET_STATUS succeeds", ok );
+		SELF_CHECK( "5. GET_STATUS succeeds", ok );
 		if ( ok )
 		{
-			SELF_CHECK( "4a. running == true",    st.running );
-			SELF_CHECK( "4b. underflow == false", !st.underflow );
+			SELF_CHECK( "5a. running == true",    st.running );
+			SELF_CHECK( "5b. underflow == false", !st.underflow );
 		}
 	}
 
-	/* 5. GET_STATS */
+	/* 5c. GET_STATS after GET_STATUS (SEND_BYTES phase) */
 	{
 		Sender_hw_stats stats;
 		bool ok = Lhw_if->get_stats( stats );
-		SELF_CHECK( "5. GET_STATS succeeds", ok );
+		SELF_CHECK( "5c. GET_STATS succeeds", ok );
 		if ( ok )
 		{
-			SELF_CHECK( "5a. bytes_sent >= 4",    stats.bytes_sent   >= 4 );
-			SELF_CHECK( "5b. packets_sent >= 1",  stats.packets_sent >= 1 );
+			SELF_CHECK( "5d. bytes_sent == 4",   stats.bytes_sent   == 4 );
+			SELF_CHECK( "5e. packets_sent == 1", stats.packets_sent == 1 );
+			SELF_CHECK( "5f. underruns == 0",    stats.underruns    == 0 );
 		}
 	}
 
-	/* 6. STOP_CLK */
+	/* 6. RESET_STATS again */
+	SELF_CHECK( "6. RESET_STATS (before SEND_PACKET)", Lhw_if->reset_stats() );
+
+	/* 7. SEND_PACKET (DCC idle FF 00 FF) */
+	{
+		static const uint8_t idle_pkt[] = { 0xFF, 0x00, 0xFF };
+		SELF_CHECK( "7. SEND_PACKET (DCC idle FF 00 FF)",
+			Lhw_if->send_packet( idle_pkt, sizeof( idle_pkt ), "selftest" ) );
+	}
+
+	/* 8. GET_STATS */
+	{
+		Sender_hw_stats stats;
+		bool ok = Lhw_if->get_stats( stats );
+		SELF_CHECK( "8. GET_STATS succeeds", ok );
+		if ( ok )
+		{
+			SELF_CHECK( "8a. bytes_sent == 3",    stats.bytes_sent   == 3 );
+			SELF_CHECK( "8b. packets_sent == 1",  stats.packets_sent == 1 );
+			SELF_CHECK( "8c. underruns == 0",     stats.underruns    == 0 );
+		}
+	}
+
+	/* 9. STOP_CLK */
 	{
 		bool stopped = Lhw_if->stop_clock();
-		SELF_CHECK( "6. STOP_CLK", stopped );
+		SELF_CHECK( "9. STOP_CLK", stopped );
 		if ( stopped )
 		{
 			Lhw_running = false;

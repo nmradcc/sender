@@ -55,6 +55,7 @@ uint8_t sender_engine_set_gen_out(sender_engine_t* eng, uint8_t value);
 void sender_engine_get_gen_in(const sender_engine_t* eng, uint8_t* gen1,
                               uint8_t* gen2);
 
+void sender_engine_reset_stats(sender_engine_t* eng);
 void sender_engine_get_status(const sender_engine_t* eng,
                               sender_status_payload_t* out);
 void sender_engine_get_stats(const sender_engine_t* eng,

@@ -395,6 +395,14 @@ bool Sender_hw_mcu_usb::get_stats(Sender_hw_stats& stats)
     return true;
 }
 
+bool Sender_hw_mcu_usb::reset_stats()
+{
+    std::vector<uint8_t> out;
+    uint8_t rsp_status = SHP_STATUS_INTERNAL_ERROR;
+    return send_command_wait_response(SHP_CMD_RESET_STATS, NULL, 0, out,
+                                      rsp_status);
+}
+
 uint16_t Sender_hw_mcu_usb::crc16_ccitt(const uint8_t* data, size_t size)
 {
     uint16_t crc = 0xFFFF;

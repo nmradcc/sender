@@ -153,6 +153,15 @@ static void sender_app_handle_request(const sender_request_t* req,
             rsp->payload_len = 12;
             break;
 
+        case SHP_CMD_RESET_STATS:
+            if (req->payload_len != 0u)
+            {
+                rsp->status = SHP_STATUS_BAD_LENGTH;
+                break;
+            }
+            sender_engine_reset_stats(&g_engine);
+            break;
+
         case SHP_CMD_RESET_DEVICE:
             sender_engine_reset(&g_engine);
             break;

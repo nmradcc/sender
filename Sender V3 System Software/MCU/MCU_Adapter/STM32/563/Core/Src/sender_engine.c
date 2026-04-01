@@ -494,6 +494,18 @@ void sender_engine_get_gen_in(const sender_engine_t *eng, uint8_t *gen1,
     *gen2 = eng->gen_in2;
 }
 
+void sender_engine_reset_stats(sender_engine_t *eng)
+{
+    if (eng == 0)
+    {
+        return;
+    }
+
+    eng->packets_sent = 0u;
+    eng->bytes_sent = 0u;
+    eng->underruns = 0u;
+}
+
 void sender_engine_get_status(const sender_engine_t *eng,
                               sender_status_payload_t *out)
 {

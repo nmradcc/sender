@@ -39,6 +39,7 @@ class Sender_hw_mcu_usb : public Sender_hw_if
 
     virtual bool get_status(Sender_hw_status& status);
     virtual bool get_stats(Sender_hw_stats& stats);
+    virtual bool reset_stats();
 
     /* Helpers used by host and test code for frame handling. */
     static uint16_t crc16_ccitt(const uint8_t* data, size_t size);

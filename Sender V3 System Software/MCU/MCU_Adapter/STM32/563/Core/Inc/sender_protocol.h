@@ -31,6 +31,7 @@ enum shp_cmd
 
     SHP_CMD_GET_STATUS = 0x30,
     SHP_CMD_GET_STATS = 0x31,
+    SHP_CMD_RESET_STATS = 0x32,
 
     SHP_CMD_RESET_DEVICE = 0x7F
 };
