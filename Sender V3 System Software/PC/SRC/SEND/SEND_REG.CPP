@@ -25,6 +25,7 @@
 
 #include <bits.h>
 #include "args.h"
+#include "sender_hw_if.h"
 
 /*
  * Baseline packet arrays.
@@ -42,6 +43,66 @@ const u_long	SAN_CNT			= 0xFFFFFFUL; 	// Sanity timeout value.
 const u_int		SHORT_SAN_CNT 	= 0xFFFF; 		// Short sanity timeout value.
 const u_int		ERR_MAX			= 4;	  		// Max contig. errors to print.
 const int		MAX_PKT_LINE	= 24;			// Max packet bytes per line.
+
+BYTE
+Send_reg::get_gen( void ) const
+{
+	if ( m_log_pkts )
+	{
+		return ( 0 );
+	}
+
+	if ( m_hw_if != NULL )
+	{
+		BYTE gen1 = 0;
+		BYTE gen2 = 0;
+		if ( m_hw_if->get_gen_in( gen1, gen2 ) )
+		{
+			return ( gen1 );
+		}
+	}
+
+	return ( inportb( GEN ) );
+}
+
+void
+Send_reg::set_scope(
+	bool		scope_on )
+{
+	if ( scope_on )
+	{
+		scope	=	SCOPE_START;
+	}
+	else
+	{
+		if ( m_hw_if != NULL )
+		{
+			m_hw_if->set_scope( false );
+		}
+		else if ( !m_log_pkts )
+		{
+			OUT_PC( PC_POS_SCOPENL, 1 );
+		}
+		scope	=	SCOPE_IDLE;
+	}
+}
+
+void
+Send_reg::clr_under( void )
+{
+	if ( m_hw_if != NULL )
+	{
+		m_hw_if->clear_underflow();
+	}
+	else if ( !m_log_pkts )
+	{
+		OUT_PC( PC_POS_UNDERCLRL, 0 );
+	}
+	else
+	{
+		DBGLOG( "Skipping hw underclr." );
+	}
+}
 
  
 /*--------------------------------------------------------------------------*/
@@ -281,6 +342,69 @@ Send_reg::set_clk(
 		stop_clk();
 	}
 
+	if ( m_hw_if != NULL )
+	{
+		if ( iclk0t != DCC_CLK_HOLD )
+		{
+			if ( iclk0t < DCC_CLK_MIN )
+			{
+				ERRPRINT( my_name, LOG_ERR,
+					"iclk0t value %u invalid", iclk0t );
+			}
+			else
+			{
+				clk0t = iclk0t;
+			}
+		}
+
+		if ( iclk0h != DCC_CLK_HOLD )
+		{
+			if ( iclk0h < ( DCC_CLK_MIN / 2 ) )
+			{
+				ERRPRINT( my_name, LOG_ERR,
+					"iclk0h value %u invalid", iclk0h );
+			}
+			else
+			{
+				clk0h = iclk0h;
+			}
+		}
+
+		if ( iclk1t != DCC_CLK_HOLD )
+		{
+			if ( iclk1t < DCC_CLK_MIN )
+			{
+				ERRPRINT( my_name, LOG_ERR,
+					"iclk1t value %u invalid", iclk1t );
+			}
+			else
+			{
+				clk1t = iclk1t;
+			}
+		}
+
+		if ( !m_hw_if->set_timing( clk0t, clk0h, clk1t ) )
+		{
+			ERRPRINT( my_name, LOG_ERR,
+				"set_timing() FAILED" );
+			clk0t = clk0h = clk1t = DCC_CLK_ERR;
+			return ( FAIL );
+		}
+
+		if ( trunning )
+		{
+			if ( start_clk() != OK )
+			{
+				return ( FAIL );
+			}
+		}
+		else
+		{
+			running = false;
+		}
+		return ( OK );
+	}
+
 	/*
 	 *	Set 8254 CNT0T.
 	 */
@@ -409,7 +533,16 @@ Send_reg::start_clk( void )
 		return ( FAIL );
 	}
 
-	if ( !m_log_pkts )
+	if ( m_hw_if != NULL )
+	{
+		if ( !m_hw_if->start_clock() )
+		{
+			ERRPRINT( my_name, LOG_ERR,
+				"start_clock() FAILED" );
+			return ( FAIL );
+		}
+	}
+	else if ( !m_log_pkts )
 	{
 		OUT_PC( PC_POS_CPUCLKL, 0 );	 	// Set SW clock to 0.
 		OUT_PC( PC_POS_CPUEN, true );	 	// Stop the HW clock.
@@ -462,7 +595,16 @@ Send_reg::stop_clk( void )
 		return ( FAIL );
 	}
 
-	if ( !m_log_pkts )
+	if ( m_hw_if != NULL )
+	{
+		if ( !m_hw_if->stop_clock() )
+		{
+			ERRPRINT( my_name, LOG_ERR,
+				"stop_clock() FAILED" );
+			return ( FAIL );
+		}
+	}
+	else if ( !m_log_pkts )
 	{
 		OUT_PC( PC_POS_CPUCLKL, 0 );	  	// Set SW clock to 0.
 		OUT_PC( PC_POS_CPUEN, true );	  	// Stop the HW clock w/o glitch.
@@ -515,6 +657,36 @@ Send_reg::send_bytes(
 		ERRPRINT( my_name, LOG_ERR,
 			"0 icnt, b_cnt %lu, p_cnt %lu", b_cnt, p_cnt );
 		return ( FAIL );
+	}
+
+	if ( m_hw_if != NULL )
+	{
+		switch ( scope )
+		{
+		case SCOPE_END:
+			m_hw_if->set_scope( false );
+			scope = SCOPE_IDLE;
+			break;
+		case SCOPE_START:
+			m_hw_if->set_scope( true );
+			scope = SCOPE_END;
+			break;
+		default:
+			break;
+		}
+
+		BYTE out_byte = m_swap_0_1 ? (BYTE)~ibyte : ibyte;
+		if ( !m_hw_if->send_bytes( (u_short)icnt, out_byte, info ) )
+		{
+			ERRPRINT( my_name, LOG_ERR,
+				"send_bytes() FAILED, b_cnt %lu, p_cnt %lu", b_cnt, p_cnt );
+			return ( FAIL );
+		}
+
+		clr_err_cnt();
+		b_cnt	+= icnt;
+		++p_cnt;
+		return ( OK );
 	}
 
 	if ( !m_log_pkts )	// Skip hardware interaction if just logging.
@@ -653,6 +825,36 @@ Send_reg::send_stretched_byte(
 		ERRPRINT( my_name, LOG_ERR,
 			"iclk0h value %u invalid, must be >= %u", iclk0h, clk0h );
 		return ( FAIL );
+	}
+
+	if ( m_hw_if != NULL )
+	{
+		switch ( scope )
+		{
+		case SCOPE_END:
+			m_hw_if->set_scope( false );
+			scope = SCOPE_IDLE;
+			break;
+		case SCOPE_START:
+			m_hw_if->set_scope( true );
+			scope = SCOPE_END;
+			break;
+		default:
+			break;
+		}
+
+		BYTE out_byte = m_swap_0_1 ? (BYTE)~ibyte : ibyte;
+		if ( !m_hw_if->send_stretched_byte( iclk0t, iclk0h, out_byte, info ) )
+		{
+			ERRPRINT( my_name, LOG_ERR,
+				"send_stretched_byte() FAILED, b_cnt %lu, p_cnt %lu",
+				b_cnt, p_cnt );
+			return ( FAIL );
+		}
+
+		clr_err_cnt();
+		++b_cnt;
+		return ( OK );
 	}
 
 	if ( !m_log_pkts )	// Skip hardware interraction if just logging.
@@ -1502,6 +1704,50 @@ Send_reg::send_pkt(
 		return ( FAIL );
 	}
 
+	if ( m_hw_if != NULL )
+	{
+		switch ( scope )
+		{
+		case SCOPE_END:
+			m_hw_if->set_scope( false );
+			scope = SCOPE_IDLE;
+			break;
+		case SCOPE_START:
+			m_hw_if->set_scope( true );
+			scope = SCOPE_END;
+			break;
+		default:
+			break;
+		}
+
+		if ( !m_swap_0_1 )
+		{
+			if ( !m_hw_if->send_packet( ibytes, isize, info ) )
+			{
+				ERRPRINT( my_name, LOG_ERR,
+					"send_packet() FAILED, b_cnt %lu, p_cnt %lu", b_cnt, p_cnt );
+				return ( FAIL );
+			}
+		}
+		else
+		{
+			for ( count = 0; count < isize; ++count )
+			{
+				if ( !m_hw_if->send_bytes( 1, (BYTE)~ibytes[count], info ) )
+				{
+					ERRPRINT( my_name, LOG_ERR,
+						"send_bytes() FAILED, sent %u, b_cnt %lu, p_cnt %lu",
+						count, b_cnt, p_cnt );
+					return ( FAIL );
+				}
+			}
+		}
+
+		clr_err_cnt();
+		b_cnt	+= isize;
+		++p_cnt;
+		return ( OK );
+	}
 
 	if ( !m_log_pkts )	// Skip hardware interraction if just logging.
 	{
@@ -1617,6 +1863,62 @@ Send_reg::send_pkt(
 		}
 
 		return ( FAIL );
+	}
+
+	if ( m_hw_if != NULL )
+	{
+		switch ( scope )
+		{
+		case SCOPE_END:
+			m_hw_if->set_scope( false );
+			scope = SCOPE_IDLE;
+			break;
+		case SCOPE_START:
+			m_hw_if->set_scope( true );
+			scope = SCOPE_END;
+			break;
+		default:
+			break;
+		}
+
+		const BYTE *pkt_bytes = ibits.get_byte_array();
+		u_int pkt_size = ibits.get_byte_size();
+
+		if ( pkt_size == 0 )
+		{
+			ERRPRINT( my_name, LOG_ERR,
+				"0 Bytes sent, b_cnt %lu, p_cnt %lu", b_cnt, p_cnt );
+			return ( FAIL );
+		}
+
+		if ( !m_swap_0_1 )
+		{
+			if ( !m_hw_if->send_packet( pkt_bytes, pkt_size, info ) )
+			{
+				ERRPRINT( my_name, LOG_ERR,
+					"send_packet() FAILED, b_cnt %lu, p_cnt %lu", b_cnt, p_cnt );
+				return ( FAIL );
+			}
+		}
+		else
+		{
+			for ( count = 0, ibits.rst_out();
+					ibits.get_byte( pbyte ) == OK; ++count )
+			{
+				if ( !m_hw_if->send_bytes( 1, (BYTE)~pbyte, info ) )
+				{
+					ERRPRINT( my_name, LOG_ERR,
+						"send_bytes() FAILED, sent %u, b_cnt %lu, p_cnt %lu",
+						count, b_cnt, p_cnt );
+					return ( FAIL );
+				}
+			}
+		}
+
+		clr_err_cnt();
+		b_cnt	+= pkt_size;
+		++p_cnt;
+		return ( OK );
 	}
 
 	if ( !m_log_pkts )	// Skip hardware interraction if just logging.

@@ -82,6 +82,7 @@ enum Scope_states
 
 class Bits;									// Defined in bits.h
 class Args_obj;								// Defined in args.h
+class Sender_hw_if;
 
 class Send_reg : public Sr_core
 {
@@ -118,7 +119,7 @@ class Send_reg : public Sr_core
 	:	running( false ), scope( SCOPE_IDLE ),
 		clk0t( DCC_CLK_ERR ), clk0h( DCC_CLK_ERR ), clk1t( DCC_CLK_ERR ),
 		do_crit( false ), err_cnt( 0 ), m_pc_delay_1usec( PC_DELAY_INIT ),
-		m_swap_0_1( false ), m_log_pkts( false )
+		m_swap_0_1( false ), m_log_pkts( false ), m_hw_if( NULL )
 	{
 		rst_stats();
 	}
@@ -135,12 +136,13 @@ class Send_reg : public Sr_core
 	bool	get_swap_0_1( void ) const { return ( m_swap_0_1 ); }
 	bool	get_log_pkts( void ) const { return ( m_log_pkts ); }
 
-	BYTE	get_gen( void ) const { return m_log_pkts ? 0 : inportb( GEN ); }
+	BYTE	get_gen( void ) const;
 
 	/* Simple set methods */
 	void	set_do_crit( bool ido_crit ) { do_crit = ido_crit; }
 	void	set_swap_0_1( bool iswap ) { m_swap_0_1 =  iswap; }
 	void	set_log_pkts( bool ilog_pkts ) { m_log_pkts =  ilog_pkts; }
+	void	set_hw_if( Sender_hw_if *ihw_if ) { m_hw_if = ihw_if; }
 
 	/* Board initialization and reset routines */
 	Rslt_t	init_8254( void );
@@ -150,36 +152,10 @@ class Send_reg : public Sr_core
 	Rslt_t	set_clk( u_short iclk0t, u_short iclk0h, u_short iclk1t );
 	Rslt_t	set_pc_delay_1usec( void );
 
-	void
-	set_scope(
-		bool	scope_on )
-	{
-		if ( scope_on )
-		{
-			scope	=	SCOPE_START;
-		}
-		else
-		{
-			if ( !m_log_pkts )
-			{
-				OUT_PC( PC_POS_SCOPENL, 1 );
-			}
-			scope	=	SCOPE_IDLE;
-		}
-	}
+	void	set_scope( bool scope_on );
 
 	/* Packet sending routines */
-	void	clr_under( void )
-	{
-		if ( !m_log_pkts )
-		{
-			OUT_PC( PC_POS_UNDERCLRL, 0 );
-		}
-		else
-		{
-			DBGLOG( "Skipping hw underclr." );
-		}	
-	}
+	void	clr_under( void );
 	void	clr_err_cnt( void ) { err_cnt = 0; }
 	Rslt_t	start_clk( void );
 	Rslt_t	stop_clk( void );
@@ -227,7 +203,7 @@ class Send_reg : public Sr_core
 	void
 	gen_print( void ) const
 	{
-		print_nibble( !m_log_pkts ? inportb( GEN ) : 0 );
+		print_nibble( get_gen() );
 	}
 
   protected:
@@ -250,6 +226,7 @@ class Send_reg : public Sr_core
 	u_int				m_pc_delay_1usec;	   	// Loop count for 1 usec. delay.
 	bool				m_swap_0_1;				// Swap 0 & 1 if true.
 	bool				m_log_pkts;				// true to log pkts.
+	Sender_hw_if		*m_hw_if;			// Optional MCU backend interface.
 
 	/* Method section */
 	

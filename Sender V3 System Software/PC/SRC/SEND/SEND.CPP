@@ -495,6 +495,8 @@ main(
 		exit_send( 1 );
 	}
 
+	Dcc_reg.set_hw_if( Lhw_if );
+
 	/*
 	 *	Set the global I/O port base address.
 	 */
@@ -573,6 +575,7 @@ main(
 		Dcc_reg.rst_8255();
 	}
 
+	Dcc_reg.set_hw_if( NULL );
 	close_hw_backend();
 
 	exit_send( 0 );
