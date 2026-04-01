@@ -1181,6 +1181,39 @@ Args_obj::cfgscan( void )
 			targv[1]	=	"-e";
 			targc		=	3;
 		}
+		else if (	!strcmpi( cmd,	"BACKEND" ) )
+		{
+			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+			{
+				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
+				return ( FAIL );
+			}
+
+			targv[1]	=	"-H";
+			targc		=	3;
+		}
+		else if (	!strcmpi( cmd,	"MCU_PORT" ) )
+		{
+			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+			{
+				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
+				return ( FAIL );
+			}
+
+			targv[1]	=	"-J";
+			targc		=	3;
+		}
+		else if (	!strcmpi( cmd,	"MCU_BAUD" ) )
+		{
+			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+			{
+				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
+				return ( FAIL );
+			}
+
+			targv[1]	=	"-Y";
+			targc		=	3;
+		}
 		else
 		{
 		 	fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
