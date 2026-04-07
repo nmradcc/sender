@@ -984,6 +984,9 @@ do_mcu_self_tests( void )
 		}
 	}
 
+	/* 10. RESET_STATS */
+	SELF_CHECK( "10. RESET_STATS", Lhw_if->reset_stats() );
+
 #undef SELF_CHECK
 
 	STATPRINT( "----------------------------------------" );
