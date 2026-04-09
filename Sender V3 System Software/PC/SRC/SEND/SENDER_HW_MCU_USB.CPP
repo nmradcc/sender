@@ -273,6 +273,8 @@ bool Sender_hw_mcu_usb::send_bytes(uint16_t repeat_count, uint8_t byte_value,
 bool Sender_hw_mcu_usb::send_packet(const uint8_t* data, size_t size,
                                     const char* info_tag)
 {
+    const uint32_t busy_status_poll_count = 25;
+
     (void)info_tag;
 
     if (data == NULL || size == 0 || size > 0xFFFF)
@@ -282,8 +284,52 @@ bool Sender_hw_mcu_usb::send_packet(const uint8_t* data, size_t size,
 
     std::vector<uint8_t> out;
     uint8_t status = SHP_STATUS_INTERNAL_ERROR;
-    return send_command_wait_response(SHP_CMD_SEND_PACKET, data,
-                                      (uint16_t)size, out, status);
+    size_t off = 0;
+
+    while (off < size)
+    {
+        uint16_t chunk_len = (uint16_t)((size - off) > SHP_PACKET_CHUNK_MAX
+                                            ? SHP_PACKET_CHUNK_MAX
+                                            : (size - off));
+        status = SHP_STATUS_INTERNAL_ERROR;
+        if (!send_command_wait_response(SHP_CMD_APPEND_PACKET_CHUNK,
+                                        data + off,
+                                        chunk_len,
+                                        out,
+                                        status))
+        {
+            return false;
+        }
+
+        off += chunk_len;
+    }
+
+    status = SHP_STATUS_INTERNAL_ERROR;
+    if (send_command_wait_response(SHP_CMD_COMMIT_PACKET,
+                                   NULL,
+                                   0,
+                                   out,
+                                   status))
+    {
+        return true;
+    }
+
+    if (status == SHP_STATUS_BUSY)
+    {
+        for (uint32_t i = 0; i < busy_status_poll_count; ++i)
+        {
+            Sender_hw_status hw_status;
+            if (get_status(hw_status) && hw_status.queue_depth == 0)
+            {
+                return true;
+            }
+#if defined(_WIN32)
+            Sleep(1);
+#endif
+        }
+    }
+
+    return false;
 }
 
 bool Sender_hw_mcu_usb::send_stretched_byte(uint16_t clk0t_us,

@@ -11,6 +11,8 @@ static uint8_t g_rx_frame[1024];
 static uint8_t g_tx_frame[1024];
 static sender_request_t g_request;
 static sender_response_t g_response;
+static uint8_t g_packet_stage[1024];
+static uint16_t g_packet_stage_len;
 
 static void sender_app_handle_request(const sender_request_t* req,
                                       sender_response_t* rsp)
@@ -22,6 +24,12 @@ static void sender_app_handle_request(const sender_request_t* req,
     rsp->seq = req->seq;
     rsp->status = SHP_STATUS_OK;
     rsp->payload_len = 0;
+
+    if (req->cmd != SHP_CMD_APPEND_PACKET_CHUNK &&
+        req->cmd != SHP_CMD_COMMIT_PACKET)
+    {
+        g_packet_stage_len = 0u;
+    }
 
     switch (req->cmd)
     {
@@ -83,6 +91,40 @@ static void sender_app_handle_request(const sender_request_t* req,
         case SHP_CMD_SEND_PACKET:
             rsp->status = sender_engine_send_packet(
                 &g_engine, req->payload, req->payload_len);
+            break;
+
+        case SHP_CMD_APPEND_PACKET_CHUNK:
+            if (req->payload_len == 0u || req->payload_len > SHP_PACKET_CHUNK_MAX)
+            {
+                g_packet_stage_len = 0u;
+                rsp->status = SHP_STATUS_BAD_LENGTH;
+                break;
+            }
+
+            if ((uint32_t)g_packet_stage_len + (uint32_t)req->payload_len >
+                (uint32_t)sizeof(g_packet_stage))
+            {
+                g_packet_stage_len = 0u;
+                rsp->status = SHP_STATUS_BAD_LENGTH;
+                break;
+            }
+
+            memcpy(&g_packet_stage[g_packet_stage_len], req->payload, req->payload_len);
+            g_packet_stage_len = (uint16_t)(g_packet_stage_len + req->payload_len);
+            rsp->status = SHP_STATUS_OK;
+            break;
+
+        case SHP_CMD_COMMIT_PACKET:
+            if (req->payload_len != 0u || g_packet_stage_len == 0u)
+            {
+                g_packet_stage_len = 0u;
+                rsp->status = SHP_STATUS_BAD_LENGTH;
+                break;
+            }
+
+            rsp->status = sender_engine_send_packet(&g_engine, g_packet_stage,
+                                                    g_packet_stage_len);
+            g_packet_stage_len = 0u;
             break;
 
         case SHP_CMD_SEND_STRETCHED_BYTE:
@@ -176,6 +218,7 @@ void sender_app_init(void)
 {
     sender_transport_init();
     sender_engine_init(&g_engine);
+    g_packet_stage_len = 0u;
 }
 
 void sender_app_poll(void)

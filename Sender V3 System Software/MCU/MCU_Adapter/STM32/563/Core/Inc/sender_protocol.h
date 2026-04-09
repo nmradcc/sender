@@ -25,6 +25,8 @@ enum shp_cmd
     SHP_CMD_SEND_PACKET = 0x11,
     SHP_CMD_SEND_STRETCHED_BYTE = 0x12,
     SHP_CMD_SEND_SPECIAL = 0x13,
+    SHP_CMD_APPEND_PACKET_CHUNK = 0x14,
+    SHP_CMD_COMMIT_PACKET = 0x15,
 
     SHP_CMD_SET_GEN_OUT = 0x20,
     SHP_CMD_GET_GEN_IN = 0x21,
@@ -54,6 +56,8 @@ enum shp_status
     SHP_STATUS_BUSY = 5,
     SHP_STATUS_INTERNAL_ERROR = 6
 };
+
+#define SHP_PACKET_CHUNK_MAX 26u
 
 typedef struct sender_status_payload
 {
