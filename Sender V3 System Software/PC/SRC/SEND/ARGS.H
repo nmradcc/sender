@@ -78,12 +78,8 @@ class Args_obj : public Z_core
 				{ return ( cfg_fp ); }
 	u_short		get_decoder_address( void ) const
 				{ return ( decoder_address ); }
-	u_short		get_port( void ) const
-				{ return ( port ); }
 	Dec_types  	get_decoder_type( void ) const
 				{ return ( decoder_type ); }
-	bool	  	get_crit_flag( void ) const
-				{ return ( crit_flag ); }
 	bool	   	get_fragment_flag( void ) const
 				{ return ( fragment_flag ); }
 	bool	   	get_rep_flag( void ) const
@@ -132,8 +128,6 @@ class Args_obj : public Z_core
 				{ return ( m_kick_start ); }
 	u_int	   	get_extra_trg( void ) const
 				{ return ( extra_trg ); }
-	bool		get_use_mcu_backend( void ) const
-				{ return ( m_use_mcu_backend ); }
 	const char	*get_mcu_port( void ) const
 				{ return ( m_mcu_port ); }
 	u_int		get_mcu_baud( void ) const
@@ -151,9 +145,7 @@ class Args_obj : public Z_core
 	FILE					*cfg_fp;			// cfg file pointer.
 	u_short	  				decoder_address;   	// Decoder address.
 	bool					address_set;		// Address was set by user.
-	u_short					port;			 	// Base I/O port.
 	Dec_types				decoder_type;	  	// Decoder type.
-	bool					crit_flag;		  	// Protect critical regions.
 	bool					fragment_flag;	 	// Test all fragments.
 	bool					rep_flag;		 	// Repeat decoder tests.
 	Bits_t					run_mask;	 		// Tests to run.
@@ -176,7 +168,6 @@ class Args_obj : public Z_core
     BYTE                    acc_pre;			// Acc. out preset (1,3,5,7);
     bool					m_kick_start;		// Briefly start loco.
 	u_int					extra_trg;		    // Extra Ames tst trig packets.	
-	bool					m_use_mcu_backend;	// Use MCU backend when true.
 	char					m_mcu_port[MAX_MCU_PORT]; // MCU COM port name.
 	u_int					m_mcu_baud;		// MCU serial baud rate.
 	const char 				*key_help;			// Keyboard commands help msg.

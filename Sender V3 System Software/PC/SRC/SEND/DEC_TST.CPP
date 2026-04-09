@@ -726,12 +726,6 @@ Dec_tst::decoder_test(
     	STATPRINT(	"   Added packet acceptance test with 0 idles."   );
         printf(     "   Added packet acceptance test with 0 idles.\n" );
     }
-
-	if ( Args.get_crit_flag() )
-	{
-		Dcc_reg.set_do_crit( true );
-	}
-
 	STATPRINT(  "Beginning booster warm up." );
 	printf(		"Beginning booster warm up.\n" );
 	if ( !Dcc_reg.get_running() )
@@ -846,7 +840,6 @@ Dec_tst::decoder_test(
 	{
 		if ( decoder_margin_1() != OK )
 		{
-			Dcc_reg.set_do_crit( false );
 			return ( FAIL );
 		}
 	}
@@ -859,7 +852,6 @@ Dec_tst::decoder_test(
 	{
 		if ( decoder_duty_1() != OK )
 		{
-			Dcc_reg.set_do_crit( false );
 			return ( FAIL );
 		}
 	}
@@ -908,7 +900,6 @@ Dec_tst::decoder_test(
 			{
 				if ( decoder_ramp( tst_rslt ) != OK )
 				{
-					Dcc_reg.set_do_crit( false );
 					return ( FAIL );
 				}
 			}
@@ -916,7 +907,6 @@ Dec_tst::decoder_test(
 			{
 				if ( func_ramp( tst_rslt ) != OK )
 				{
-					Dcc_reg.set_do_crit( false );
 					return ( FAIL );
 				}
 			}
@@ -924,7 +914,6 @@ Dec_tst::decoder_test(
 			{
 				if ( sig_ramp( tst_rslt ) != OK )
 				{
-					Dcc_reg.set_do_crit( false );
 					return ( FAIL );
 				}
 			}
@@ -932,7 +921,6 @@ Dec_tst::decoder_test(
 			{
 				if ( acc_ramp( tst_rslt ) != OK )
 				{
-					Dcc_reg.set_do_crit( false );
 					return ( FAIL );
 				}
 			}
@@ -947,7 +935,6 @@ Dec_tst::decoder_test(
 									ames_tbl[i].pre_cnt,
 									ames_tbl[i].idle_cnt ) != OK )
 				{
-					Dcc_reg.set_do_crit( false );
 					return ( FAIL );
 				}
 			}
@@ -958,7 +945,6 @@ Dec_tst::decoder_test(
 		{
 			if ( decoder_bad_addr( tst_rslt ) != OK )
 			{
-				Dcc_reg.set_do_crit( false );
 				return ( FAIL );
 			}
 		}
@@ -968,7 +954,6 @@ Dec_tst::decoder_test(
 		{
 			if ( decoder_bad_bit( tst_rslt ) != OK )
 			{
-				Dcc_reg.set_do_crit( false );
 				return ( FAIL );
 			}
 		}
@@ -1008,7 +993,6 @@ Dec_tst::decoder_test(
 										sclk0t,
 										sclk0h ) != OK )
 				{
-					Dcc_reg.set_do_crit( false );
 					return ( FAIL );
 				}
 			}
@@ -1028,7 +1012,6 @@ Dec_tst::decoder_test(
 	{
 		if ( decoder_truncate( tst_rslt ) != OK )
 		{
-			Dcc_reg.set_do_crit( false );
 			return ( FAIL );
 		}
 	}
@@ -1041,7 +1024,6 @@ Dec_tst::decoder_test(
 	{
 		if ( decoder_prior( tst_rslt ) != OK )
 		{
-			Dcc_reg.set_do_crit( false );
 			return ( FAIL );
 		}
 	}
@@ -1054,7 +1036,6 @@ Dec_tst::decoder_test(
 	{
 		if ( decoder_6_byte( tst_rslt ) != OK )
 		{
-			Dcc_reg.set_do_crit( false );
 			return ( FAIL );
 		}
 	}
@@ -1067,7 +1048,6 @@ Dec_tst::decoder_test(
 	{
 		if ( decoder_ambig1( tst_rslt ) != OK )
 		{
-			Dcc_reg.set_do_crit( false );
 			return ( FAIL );
 		}
 	}
@@ -1080,14 +1060,11 @@ Dec_tst::decoder_test(
 	{
 		if ( decoder_ambig2( tst_rslt ) != OK )
 		{
-			Dcc_reg.set_do_crit( false );
 			return ( FAIL );
 		}
 	}
 
 	l_run_msk <<=  1;
-
-	Dcc_reg.set_do_crit( false );
 	return ( OK );
 }
 

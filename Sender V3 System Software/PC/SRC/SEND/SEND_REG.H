@@ -26,33 +26,8 @@
 #define SEND_REG_H_DECLARED	"@(#) $Workfile: SEND_REG.H $$ $Revision: 13 $$"
 
 #include <zlog.h>
-#if defined(_MSC_VER)
-#include <intrin.h>
-#pragma intrinsic(__inbyte)
-#pragma intrinsic(__outbyte)
-#pragma intrinsic(_enable)
-#pragma intrinsic(_disable)
-#ifndef _inp
-#define _inp(_port) __inbyte((unsigned short)(_port))
-#endif
-#ifndef _outp
-#define _outp(_port, _value) __outbyte((unsigned short)(_port), (unsigned char)(_value))
-#endif
-#ifndef inportb
-#define inportb(_port) _inp(_port)
-#endif
-#ifndef outportb
-#define outportb(_port, _value) _outp(_port, _value)
-#endif
-#ifndef enable
-#define enable() _enable()
-#endif
-#ifndef disable
-#define disable() _disable()
-#endif
-#endif
+#include <dcc.h>
 #include "sr_core.h"
-#include "pds601.h"
 
 const u_short	DCC_CLK_HOLD	= 0;		// Hold present clock value.
 const u_short	DCC_CLK_ERR		= 1;		// Clock has an error.
@@ -118,7 +93,7 @@ class Send_reg : public Sr_core
 	Send_reg( void )
 	:	running( false ), scope( SCOPE_IDLE ),
 		clk0t( DCC_CLK_ERR ), clk0h( DCC_CLK_ERR ), clk1t( DCC_CLK_ERR ),
-		do_crit( false ), err_cnt( 0 ), m_pc_delay_1usec( PC_DELAY_INIT ),
+		err_cnt( 0 ), m_pc_delay_1usec( PC_DELAY_INIT ),
 		m_swap_0_1( false ), m_log_pkts( false ), m_hw_if( NULL )
 	{
 		rst_stats();
@@ -132,14 +107,12 @@ class Send_reg : public Sr_core
 	u_short	get_clk0t( void ) const { return ( clk0t ); }
 	u_short	get_clk0h( void ) const { return ( clk0h ); }
 	u_short	get_clk1t( void ) const { return ( clk1t ); }
-	bool	get_do_crit( void ) const { return ( do_crit ); }
 	bool	get_swap_0_1( void ) const { return ( m_swap_0_1 ); }
 	bool	get_log_pkts( void ) const { return ( m_log_pkts ); }
 
 	BYTE	get_gen( void ) const;
 
 	/* Simple set methods */
-	void	set_do_crit( bool ido_crit ) { do_crit = ido_crit; }
 	void	set_swap_0_1( bool iswap ) { m_swap_0_1 =  iswap; }
 	void	set_log_pkts( bool ilog_pkts ) { m_log_pkts =  ilog_pkts; }
 	void	set_hw_if( Sender_hw_if *ihw_if ) { m_hw_if = ihw_if; }
@@ -221,7 +194,6 @@ class Send_reg : public Sr_core
 	u_short				clk0t;					// 0T duration in usec.
 	u_short				clk0h;					// 0H duration in usec.
 	u_short				clk1t;					// 1T duration in usec.
-	bool				do_crit;				// true to do crit regions.
 	u_int				err_cnt;				// Count of contiguous errors.
 	u_int				m_pc_delay_1usec;	   	// Loop count for 1 usec. delay.
 	bool				m_swap_0_1;				// Swap 0 & 1 if true.
@@ -233,14 +205,7 @@ class Send_reg : public Sr_core
 	void
 	start_crit( void )
 	{
-		if ( do_crit )
-		{
-			if ( !m_log_pkts )
-			{
-				disable();
-				OUT_PC( PC_POS_UNDERCLRL, 0 );
-			}
-		}
+		return;
 	}
 
 	u_int	pc_delay_high( register u_int idelay );

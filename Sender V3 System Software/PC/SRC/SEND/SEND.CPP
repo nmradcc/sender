@@ -42,11 +42,6 @@ const char * const	DOCS_FILE	= "s_user.txt";	// User docs file.
 const int			MAXLINE		= 256;			// Maximum input line.
 
 /*
- *	Base I/O port number.
- */
-u_short			Port_base = PORT_DEF;
-
-/*
  *	Initial boilerplate questions.
  */
 struct Snd_question
@@ -141,7 +136,6 @@ static void		print_user_docs();
 static void		exit_send( int status );
 static bool		init_hw_backend();
 static void		close_hw_backend();
-static bool		hw_is_mcu();
 static bool		hw_is_running();
 static Rslt_t	hw_set_clk( u_short clk0t, u_short clk0h, u_short clk1t );
 static Rslt_t	hw_start_clk();
@@ -214,19 +208,8 @@ enum Ramp_state
 };
 
 static bool
-hw_is_mcu( void )
-{
-	return ( Lhw_if != NULL );
-}
-
-static bool
 init_hw_backend( void )
 {
-	if ( !Args.get_use_mcu_backend() )
-	{
-		return ( true );
-	}
-
 	Lmcu_hw = new Sender_hw_mcu_usb( Args.get_mcu_port(), Args.get_mcu_baud() );
 	if ( Lmcu_hw == NULL )
 	{
@@ -269,9 +252,9 @@ close_hw_backend( void )
 static bool
 hw_is_running( void )
 {
-	if ( !hw_is_mcu() )
+	if ( Lhw_if == NULL )
 	{
-		return ( Dcc_reg.get_running() );
+		return ( false );
 	}
 
 	Sender_hw_status status;
@@ -289,20 +272,19 @@ hw_set_clk(
 	u_short		clk0h,
 	u_short		clk1t )
 {
-	if ( !hw_is_mcu() )
+	if ( Lhw_if == NULL )
 	{
-		return ( Dcc_reg.set_clk( clk0t, clk0h, clk1t ) );
+		return ( FAIL );
 	}
-
 	return ( Lhw_if->set_timing( clk0t, clk0h, clk1t ) ? OK : FAIL );
 }
 
 static Rslt_t
 hw_start_clk( void )
 {
-	if ( !hw_is_mcu() )
+	if ( Lhw_if == NULL )
 	{
-		return ( Dcc_reg.start_clk() );
+		return ( FAIL );
 	}
 
 	if ( Lhw_if->start_clock() )
@@ -317,9 +299,9 @@ hw_start_clk( void )
 static Rslt_t
 hw_stop_clk( void )
 {
-	if ( !hw_is_mcu() )
+	if ( Lhw_if == NULL )
 	{
-		return ( Dcc_reg.stop_clk() );
+		return ( FAIL );
 	}
 
 	if ( Lhw_if->stop_clock() )
@@ -334,26 +316,20 @@ hw_stop_clk( void )
 static void
 hw_clr_under( void )
 {
-	if ( !hw_is_mcu() )
+	if ( Lhw_if != NULL )
 	{
-		Dcc_reg.clr_under();
-		return;
+		Lhw_if->clear_underflow();
 	}
-
-	Lhw_if->clear_underflow();
 }
 
 static void
 hw_set_scope(
 	bool		on )
 {
-	if ( !hw_is_mcu() )
+	if ( Lhw_if != NULL )
 	{
-		Dcc_reg.set_scope( on );
-		return;
+		Lhw_if->set_scope( on );
 	}
-
-	Lhw_if->set_scope( on );
 }
 
 static Rslt_t
@@ -362,11 +338,10 @@ hw_send_bytes(
 	BYTE		val,
 	const char	*info )
 {
-	if ( !hw_is_mcu() )
+	if ( Lhw_if == NULL )
 	{
-		return ( Dcc_reg.send_bytes( count, val, info ) );
+		return ( FAIL );
 	}
-
 	if ( count > 0xFFFF )
 	{
 		return ( FAIL );
@@ -382,11 +357,10 @@ hw_send_stretched_byte(
 	BYTE		val,
 	const char	*info )
 {
-	if ( !hw_is_mcu() )
+	if ( Lhw_if == NULL )
 	{
-		return ( Dcc_reg.send_stretched_byte( clk0t, clk0h, val, info ) );
+		return ( FAIL );
 	}
-
 	return ( Lhw_if->send_stretched_byte( clk0t, clk0h, val, info ) ? OK : FAIL );
 }
 
@@ -394,7 +368,7 @@ static Rslt_t
 hw_send_special(
 	BYTE		special_id )
 {
-	if ( !hw_is_mcu() )
+	if ( Lhw_if == NULL )
 	{
 		return ( FAIL );
 	}
@@ -409,10 +383,9 @@ hw_send_bits_pkt(
 {
 	BYTE			pbyte;
 	std::vector<BYTE>	buf;
-
-	if ( !hw_is_mcu() )
+	if ( Lhw_if == NULL )
 	{
-		return ( Dcc_reg.send_pkt( bits, info ) );
+		return ( FAIL );
 	}
 
 	bits.rst_out();
@@ -497,11 +470,6 @@ main(
 
 	Dcc_reg.set_hw_if( Lhw_if );
 
-	/*
-	 *	Set the global I/O port base address.
-	 */
-	Port_base	=	Args.get_port();
-
 	if ( Args.get_manual_flag() == true )	// Manual mode.
 	{
 		init_key	=	KEY_NULL;
@@ -525,12 +493,6 @@ main(
 		printf(		"Starting decoder tests, address %u, type %c\n",
 			Args.get_decoder_address(), Args.get_decoder_type() );
 
-		if ( Args.get_crit_flag() )
-		{
-			printf(		"Critical interrupt flag set\n" );
-			STATPRINT(	"Critical interrupt flag set"  );
-		}
-
 		STATPRINT( "Beginning MCU selftests" );
 		printf(    "Beginning MCU selftests\n" );
 
@@ -551,28 +513,11 @@ main(
 		DBGLOG( "%s: Skipping self tests.", my_name );
 	}
 
-	/*
-	 *	Set time for PC driven 1 usec delay for later use.
-     *  Note: set_clk() is called to set nominal clock values
-     *        when set_pc_delay_1usec is called below.
-	 */
-	if ( !hw_is_mcu() && Dcc_reg.set_pc_delay_1usec() != OK )
-	{
-		STATPRINT(	"set_pc_delay_1usec() FAILED" );
-		printf(		"set_pc_delay_1usec() FAILED\n" );
-		init_key	=	KEY_NULL;			// Don't start tests automatically.
-	}
-
 	parse_key_cmd( init_key );
 
 	if ( hw_is_running() == true )
 	{
 		hw_stop_clk();
-	}
-
-	if ( !hw_is_mcu() )
-	{
-		Dcc_reg.rst_8255();
 	}
 
 	Dcc_reg.set_hw_if( NULL );
@@ -611,10 +556,6 @@ exit_send(
 		ERRPRINT( my_name, LOG_WARNING,
 			"exit_send() called with clock running." );
 		hw_stop_clk();
-		if ( !hw_is_mcu() )
-		{
-			Dcc_reg.rst_8255();
-		}
 	}
 
     printf( "{SEND_END %d}\n", status );
@@ -868,8 +809,7 @@ get_log_file(
  *
  *		do_mcu_self_tests() exercises the MCU sender hardware via the
  *		Sender_hw_if interface: timing, clock start/stop, packet send,
- *		status and stats queries.  When no MCU backend is active the
- *		function returns OK immediately.
+ *		status and stats queries.
  */
 /*--------------------------------------------------------------------------*/
 
@@ -894,11 +834,6 @@ do_mcu_self_tests( void )
 {
 	const char	*my_name = "do_mcu_self_tests";
 	int			 failures = 0;
-
-	if ( !hw_is_mcu() )
-	{
-		return ( OK );
-	}
 
 	STATPRINT( "MCU self test" );
 	STATPRINT( "----------------------------------------" );
@@ -1059,7 +994,6 @@ Key_val			init_key )					// Initial key value.
 	const char	*my_name = "parse_key_cmd";
 	int			i;							// Index value.
 	Key_val		key_val;					// Present key value.
-	bool		clk_state;					// Present SW clock value.
 	Send_type	rep_type;					// Type of packet to repeat.
 	bool		c_flag;						// Continue if true.
 	bool		fw;							// Go forward if true.
@@ -1070,7 +1004,6 @@ Key_val			init_key )					// Initial key value.
 	int			sp_max;						// Maximum speed or output id.
 	BYTE		pbyte;						// Present byte to send.
 	u_int		o_time_index;				// Scope timing test index.
-    static BYTE	byGen = 0x15;				// Generic output BYTE.
 
 	rep_type	=	SEND_NONE;
 
@@ -1153,10 +1086,7 @@ Key_val			init_key )					// Initial key value.
 			{
 				hw_stop_clk();
 			}
-			clk_state	=	inportb( PC ) & PC_MSK_CPUCLKL ? true : false;
-			clk_state	=	!( clk_state );
-			OUT_PC( PC_POS_CPUCLKL, clk_state );
-			printf( "Toggled SW clock to %d\n", clk_state );
+			printf( "Single SW clock toggle is not supported in MCU mode\n" );
 			Dcc_reg.up_print();
 			break;
 
@@ -1166,8 +1096,7 @@ Key_val			init_key )					// Initial key value.
 			{
 				hw_stop_clk();
 			}
-			OUT_PC( PC_POS_CPUCLKL, 0 );
-			printf( "Sending SW clocks\n" );
+			printf( "SW clock burst is not supported in MCU mode\n" );
 			Dcc_reg.up_print();
 			break;
 
@@ -1177,26 +1106,13 @@ Key_val			init_key )					// Initial key value.
 			{
 				hw_stop_clk();
 			}
-
-		    if ( !Args.get_log_pkts() )
-			{
-				OUT_PC( PC_POS_UNDERCLRL, 1 );
-				OUT_PC( PC_POS_UNDERCLRL, 0 );
-				OUT_PC( PC_POS_UNDERCLRL, 1 );
-			}
-			else
-			{
-				hw_clr_under();
-			}
+			hw_clr_under();
 			printf( "Underflow reset\n" );
 			Dcc_reg.up_print();
 			break;
 
 		case KEY_GEN	:					// Toggle GEN_2, read inputs.
-        	outportb( GEN_OUT, byGen );
-			printf( "Gen Out 0x%02x - Gen 1 0x%02x, Gen 2 0x%02x\n",
-            	byGen, inportb( GEN ), inportb( GEN_2 ) );
-            byGen	=	(~byGen) &  GEN_OUT_MASK;
+			printf( "Generic port test is not supported in MCU mode\n" );
 			if ( hw_is_running() == true )
 			{
 				hw_clr_under();
@@ -1605,11 +1521,8 @@ Key_val			init_key )					// Initial key value.
 						"Unexpected SEND_NONE in repeat loop\n" );
 					exit_send( 1 );
 				case SEND_MCLK:				// Send a string of CPU clocks.
-					for ( i = 10000;  i > 0; i-- )
-					{
-						OUT_PC( PC_POS_CPUCLKL, 1 );
-						OUT_PC( PC_POS_CPUCLKL, 0 );
-					}
+					printf( "SW clock burst is not supported in MCU mode\n" );
+					c_flag	=	false;
 					break;
 
 				case SEND_ZERO:				// Repeat zero bytes.
@@ -1638,15 +1551,7 @@ Key_val			init_key )					// Initial key value.
 
 				case SEND_WARBLE:	 		// Repeat the warble packet.
 					hw_set_scope( true );
-					if ( hw_is_mcu() )
-					{
-						hw_send_special( SHP_SPECIAL_WARBLE );
-					}
-					else
-					{
-						hw_send_bytes( 3072, 0xff, "SEND_WARBLE 0xff." );
-						hw_send_bytes( 1024, 0x00, "SEND_WARBLE 0x00." );
-					}
+					hw_send_special( SHP_SPECIAL_WARBLE );
 					break;
 
 				case SEND_STRETCHED:   		// Repeat stretched 0 test.
@@ -1666,48 +1571,20 @@ Key_val			init_key )					// Initial key value.
 				case SEND_RESET:			// Repeat the reset packet.
 					hw_send_bytes( 1, 0x00, "SEND_RESET." );
 					hw_set_scope( true );
-					if ( hw_is_mcu() )
-					{
-						hw_send_special( SHP_SPECIAL_RESET );
-					}
-					else
-					{
-						Dcc_reg.send_rst();
-					}
+					hw_send_special( SHP_SPECIAL_RESET );
 					for ( i = 0; i < 15; i++ )	// Send 15 normal idles.
 					{
-						if ( hw_is_mcu() )
-						{
-							hw_send_special( SHP_SPECIAL_IDLE );
-						}
-						else
-						{
-							Dcc_reg.send_idle();
-						}
+						hw_send_special( SHP_SPECIAL_IDLE );
 					}
 					break;
 
 				case SEND_HARD:			// Repeat the hard reset packet.
 					hw_send_bytes( 1, 0x00, "SEND_HARD." );
 					hw_set_scope( true );
-					if ( hw_is_mcu() )
-					{
-						hw_send_special( SHP_SPECIAL_HARD_RESET );
-					}
-					else
-					{
-						Dcc_reg.send_hard_rst();	// Send the hard reset.
-					}
+					hw_send_special( SHP_SPECIAL_HARD_RESET );
 					for ( i = 0; i < 15; i++ )	// Send 15 normal idles.
 					{
-						if ( hw_is_mcu() )
-						{
-							hw_send_special( SHP_SPECIAL_IDLE );
-						}
-						else
-						{
-							Dcc_reg.send_idle();
-						}
+						hw_send_special( SHP_SPECIAL_IDLE );
 					}
 					break;
 
@@ -1896,7 +1773,7 @@ Key_val			init_key )					// Initial key value.
 				 */
 				if ( rep_type != SEND_DEC_TST )
 				{
-					if ( ( !hw_is_mcu() && Dcc_reg.get_obj_errs() ) || kbhit())
+					if ( Dcc_reg.get_obj_errs() || kbhit())
 					{
 						c_flag	=	false;
 					}

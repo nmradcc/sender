@@ -23,9 +23,9 @@
  *****************************************************************************/
 
 #include <zlog.h>
+#include <dcc.h>
  
 #include "args.h"
-#include "pds601.h"
 
 #include <ctype.h>
 #include <string.h>
@@ -84,9 +84,7 @@ Args_obj::Args_obj( void )
 	cfg_fp				= NULL;				// cfg file pointer.
 	decoder_address		= 0;				// Decoder address.
 	address_set			= false;			// Address was set by user.
-	port				= PORT_DEF;			// Base I/O port.
 	decoder_type		= DEC_LOCO;	 		// Decoder type.
-	crit_flag			= false;			// Protect critical regions.
 	fragment_flag  		= false;			// Send all fragment sizes.
 	rep_flag			= false;	  		// Repeat decoder tests.
 	run_mask			= DEF_RUN_MASK;		// Tests to run.
@@ -109,7 +107,6 @@ Args_obj::Args_obj( void )
     acc_pre				= 1;				// Default accessory out preset.
     m_kick_start		= false;			// Kick start motor.
 	extra_trg			= 0;				// Extra Ames tst trig packets.
-	m_use_mcu_backend	= false;			// Use legacy backend by default.
 	strcpy( m_mcu_port, "COM3" );			// Default MCU COM port.
 	m_mcu_baud			= 115200;			// Default MCU baud.
 	key_help			=					// Keyboard commands help msg.
@@ -176,11 +173,11 @@ Args_obj::usage(
 {
 	fprintf( ofp,
 		"Usage: %8s [-?] [-u] [-m] [-a addr] [-d l|f|a|s] [-n pre] [-N trig]\n"
-		"                [-l] [-p port] [-f] [-x] [-r] [-t mask] [-c mask] [-E pre]\n",
+		"                [-l] [-f] [-r] [-t mask] [-c mask] [-E pre]\n",
 		cmd_name );			
     fprintf( ofp,
 		"                [-T] [-F fill] [-R reps] [-P] [-A] [-s] [-S] [-g mask]\n"
-		"                [-o pair] [-k] [-D] [-e trg] [-H legacy|mcu] [-J port]\n"
+		"                [-o pair] [-k] [-D] [-e trg] [-J port]\n"
 		"                [-Y baud]\n\n" );
 
 	if ( cfg_path[0] != '\0' )
@@ -225,17 +222,9 @@ Args_obj::usage(
 		"Signal decoder trigger aspect        <value %u>\n",
 		aspect_trigger );
 	fprintf( ofp,
-		"  -p <port>  PORT       "
-		"I/O Port                             <value 0x%04x>\n",
-		port );
-	fprintf( ofp,
 		"  -f         FRAGMENT   "
 		"Test all fragments                   <value %s>\n",
 		fragment_flag		? "true" : "false" );
-	fprintf( ofp,
-		"  -x         CRITICAL   "
-		"Protect critical regions             <value %s>\n",
-		crit_flag		? "true" : "false" );
 	fprintf( ofp,
 		"  -r         REPEAT     "
 		"Repeat decoder tests                 <value %s>\n",
@@ -306,10 +295,6 @@ Args_obj::usage(
 		"  -D        DEBUG_ON    "
 		"Log debug messages                   <value %s>\n",
 		Deflog.get_dbg_on() ? "true" : "false" );
-	fprintf( ofp,
-		"  -H legacy|mcu BACKEND "
-		"Hardware backend selector            <value %s>\n",
-		m_use_mcu_backend ? "mcu" : "legacy" );
 	fprintf( ofp,
 		"  -J <port>  MCU_PORT   "
 		"MCU serial port name                <value %s>\n",
@@ -457,19 +442,6 @@ Args_obj::argscan(
 				return ( FAIL );
 			}
 		}
-		else if ( strcmp( argv[i], "-p" ) == 0 )	// I/O port.
-		{
-			if ( ++i < argc )
-			{
-				port			=	(u_short)strtoul( argv[i], NULL, 0 );
-			}
-			else
-			{
-				fprintf( stderr, "ERROR: -p must have an address argument\n\n" );
-				return ( FAIL );
-			}
-
-		}
 		else if ( strcmp( argv[i], "-d" ) == 0 )	// Decoder type.
 		{
 			if ( ++i < argc )
@@ -611,10 +583,6 @@ Args_obj::argscan(
 				fprintf( stderr, "ERROR: -g must have a function mask argument\n\n" );
 				return ( FAIL );
 			}
-		}
-		else if ( strcmp( argv[i], "-x" ) == 0 )	// Protect crit. regions.
-		{
-			crit_flag	=	crit_flag ? false : true;
 		}
 		else if ( strcmp( argv[i], "-f" ) == 0 )	// Send all fragment sizes.
 		{
@@ -760,34 +728,6 @@ Args_obj::argscan(
 			else
 			{
 				fprintf( stderr, "ERROR: -e must have an extra trigger packets argument\n\n" );
-				return ( FAIL );
-			}
-		}
-		else if ( strcmp( argv[i], "-H" ) == 0 )	// Hardware backend.
-		{
-			if ( ++i < argc )
-			{
-				if ( strcmp( argv[i], "legacy" ) == 0
-					|| strcmp( argv[i], "LEGACY" ) == 0 )
-				{
-					m_use_mcu_backend = false;
-				}
-				else if ( strcmp( argv[i], "mcu" ) == 0
-						|| strcmp( argv[i], "MCU" ) == 0 )
-				{
-					m_use_mcu_backend = true;
-				}
-				else
-				{
-					fprintf( stderr,
-						"ERROR: -H must be 'legacy' or 'mcu', got <%s>\n\n",
-						argv[i] );
-					return ( FAIL );
-				}
-			}
-			else
-			{
-				fprintf( stderr, "ERROR: -H must have a backend argument\n\n" );
 				return ( FAIL );
 			}
 		}
@@ -989,18 +929,7 @@ Args_obj::cfgscan( void )
 			targv[1]	=	"-a";
 			targc		=	3;
 		}
-		else if (	!strcmpi( cmd,	"PORT" ) )
-		{
-			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
-			{
-				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
-				return ( FAIL );
-			}
-
-			targv[1]	=	"-p";
-			targc		=	3;
-		}
-		else if (	!strcmpi( cmd,	"TYPE" ) )
+		else if ( 	!strcmpi( cmd,	"TYPE" ) )
 		{
 			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
 			{
@@ -1070,11 +999,6 @@ Args_obj::cfgscan( void )
 
 			targv[1]	=	"-g";
 			targc		=	3;
-		}
-		else if (  	!strcmpi( cmd,	"CRITICAL" ) )
-		{
-			targv[1]	=	"-x";
-			targc		=	2;
 		}
 		else if ( 	!strcmpi( cmd,	"FRAGMENT" ) )
 		{
@@ -1179,17 +1103,6 @@ Args_obj::cfgscan( void )
 			}
 
 			targv[1]	=	"-e";
-			targc		=	3;
-		}
-		else if (	!strcmpi( cmd,	"BACKEND" ) )
-		{
-			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
-			{
-				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
-				return ( FAIL );
-			}
-
-			targv[1]	=	"-H";
 			targc		=	3;
 		}
 		else if (	!strcmpi( cmd,	"MCU_PORT" ) )

@@ -47,11 +47,6 @@ const int		MAX_PKT_LINE	= 24;			// Max packet bytes per line.
 BYTE
 Send_reg::get_gen( void ) const
 {
-	if ( m_log_pkts )
-	{
-		return ( 0 );
-	}
-
 	if ( m_hw_if != NULL )
 	{
 		BYTE gen1 = 0;
@@ -62,7 +57,7 @@ Send_reg::get_gen( void ) const
 		}
 	}
 
-	return ( inportb( GEN ) );
+	return ( 0 );
 }
 
 void
@@ -79,10 +74,6 @@ Send_reg::set_scope(
 		{
 			m_hw_if->set_scope( false );
 		}
-		else if ( !m_log_pkts )
-		{
-			OUT_PC( PC_POS_SCOPENL, 1 );
-		}
 		scope	=	SCOPE_IDLE;
 	}
 }
@@ -93,10 +84,6 @@ Send_reg::clr_under( void )
 	if ( m_hw_if != NULL )
 	{
 		m_hw_if->clear_underflow();
-	}
-	else if ( !m_log_pkts )
-	{
-		OUT_PC( PC_POS_UNDERCLRL, 0 );
 	}
 	else
 	{
@@ -127,45 +114,14 @@ Send_reg::clr_under( void )
 Rslt_t
 Send_reg::init_8254( void )
 {
-
-	if ( !m_log_pkts )
-	{
-		/*
-		 *	Set 8254 CNT0H to mode 0 to force DCC output low.
-		 */
-		outportb( CNT_CNTRL, CNTRL_0H_RST );
-		outportb( CNT_0H, CNT_LOWER( CNT_0H_INIT ) );
-		outportb( CNT_0H, CNT_UPPER( CNT_0H_INIT ) );
-
-		/*
-		 *	Set 8254 CNT0T to normal mode and initialize count.
-		 */
-		outportb( CNT_CNTRL, CNTRL_0T_NORM );
-		outportb( CNT_0T, CNT_LOWER( CNT_0T_INIT ) );
-		outportb( CNT_0T, CNT_UPPER( CNT_0T_INIT ) );
-
-		/*
-		 *	Set 8254 CNT0H to normal mode and initialize count.
-		 */
-		outportb( CNT_CNTRL, CNTRL_0H_NORM );
-		outportb( CNT_0H, CNT_LOWER( CNT_0H_INIT ) );
-		outportb( CNT_0H, CNT_UPPER( CNT_0H_INIT ) );
-
-		/*
-		 *	Set 8254 CNT1T to normal mode and initialize count.
-		 */
-		outportb( CNT_CNTRL, CNTRL_1T_NORM );
-		outportb( CNT_1T, CNT_LOWER( CNT_1T_INIT ) );
-		outportb( CNT_1T, CNT_UPPER( CNT_1T_INIT ) );
-	}
-	else
+	if ( m_log_pkts )
 	{
 		DBGLOG( "Send_reg::init_8254() Done initializing 8254." );
 	}
 
-	clk0t	=	CNT_0T_INIT;
-	clk0h	=	CNT_0H_INIT + 2;
-	clk1t	=	CNT_1T_INIT;
+	clk0t	=	DECODER_0T_NOM;
+	clk0h	=	DECODER_0H_NOM;
+	clk1t	=	DECODER_1T_NOM;
 	
 	return ( OK );
 }
@@ -194,30 +150,7 @@ Send_reg::init_8254( void )
 Rslt_t
 Send_reg::init_8255( void )
 {
-	/*
-	 *	Set 8255 to power up condition, all ports as inputs
-	 */
-	rst_8255();
-
-	if ( !m_log_pkts )
-	{
-		/*
-		 *	Set 8255 to normal mode.
-		 */
-		outportb( P_CNTRL, P_CNTRL_NORM );
-
-		OUT_PC( PC_POS_BDRST, 1 );		   	// Reset board.
-		OUT_PC( PC_POS_CPUEN, 1 );		   	// Enable software clock.
-		OUT_PC( PC_POS_CPUCLKL, 0 );	   	// Set SW -CLK to 0.
-		OUT_PC( PC_POS_INTRA, 1 );		   	// Set interrupt active.
-		OUT_PC( PC_POS_UNDERCLRL, 1 );	   	// Set under clear inactive.
-		OUT_PC( PC_POS_SCOPENL, 1 );	   	// Turn off scope signal.
-		OUT_PC( PC_POS_ACKAL, 1 );		   	// Enable interrupt line.
-		OUT_PC( PC_POS_OBFAL, 1 );		   	// Set -OBF to 1.
-
-		OUT_PC( PC_POS_BDRST, 0 );		   	// Turn off board reset.
-	}
-	else
+	if ( m_log_pkts )
 	{
 		DBGLOG( "Send_reg::init_8255() Done initializing 8255." );
 	}
@@ -247,14 +180,7 @@ Send_reg::init_8255( void )
 Rslt_t
 Send_reg::rst_8255( void )
 {
-	if ( !m_log_pkts )
-	{
-		/*
-		 *	Set 8255 to power up condition, all ports as inputs
-		 */
-		outportb( P_CNTRL, P_CNTRL_RST );
-	}
-	else
+	if ( m_log_pkts )
 	{
 		DBGLOG( "Send_reg::rst_8255() Done resetting 8255." );
 	}
@@ -287,13 +213,7 @@ Send_reg::init_send( void )
 {
 	init_8255();							// Init 8255.
 	init_8254();							// Init 8254.
-
-	if ( !m_log_pkts )
-	{
-		OUT_PC( PC_POS_CPUCLKL, 1 );		// Toggle clock to load 0T.
-		OUT_PC( PC_POS_CPUCLKL, 0 );
-	}
-	else
+	if ( m_log_pkts )
 	{
 		DBGLOG(
 			"Send_reg::init_send() Done initializing sender." );
@@ -342,72 +262,14 @@ Send_reg::set_clk(
 		stop_clk();
 	}
 
-	if ( m_hw_if != NULL )
+	if ( m_hw_if == NULL )
 	{
-		if ( iclk0t != DCC_CLK_HOLD )
-		{
-			if ( iclk0t < DCC_CLK_MIN )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-					"iclk0t value %u invalid", iclk0t );
-			}
-			else
-			{
-				clk0t = iclk0t;
-			}
-		}
-
-		if ( iclk0h != DCC_CLK_HOLD )
-		{
-			if ( iclk0h < ( DCC_CLK_MIN / 2 ) )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-					"iclk0h value %u invalid", iclk0h );
-			}
-			else
-			{
-				clk0h = iclk0h;
-			}
-		}
-
-		if ( iclk1t != DCC_CLK_HOLD )
-		{
-			if ( iclk1t < DCC_CLK_MIN )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-					"iclk1t value %u invalid", iclk1t );
-			}
-			else
-			{
-				clk1t = iclk1t;
-			}
-		}
-
-		if ( !m_hw_if->set_timing( clk0t, clk0h, clk1t ) )
-		{
-			ERRPRINT( my_name, LOG_ERR,
-				"set_timing() FAILED" );
-			clk0t = clk0h = clk1t = DCC_CLK_ERR;
-			return ( FAIL );
-		}
-
-		if ( trunning )
-		{
-			if ( start_clk() != OK )
-			{
-				return ( FAIL );
-			}
-		}
-		else
-		{
-			running = false;
-		}
-		return ( OK );
+		ERRPRINT( my_name, LOG_ERR,
+			"MCU hardware interface not initialized" );
+		clk0t = clk0h = clk1t = DCC_CLK_ERR;
+		return ( FAIL );
 	}
 
-	/*
-	 *	Set 8254 CNT0T.
-	 */
 	if ( iclk0t != DCC_CLK_HOLD )
 	{
 		if ( iclk0t < DCC_CLK_MIN )
@@ -417,18 +279,10 @@ Send_reg::set_clk(
 		}
 		else
 		{
-			clk0t	=	iclk0t;
-			if ( !m_log_pkts )
-			{
-				outportb( CNT_0T, CNT_LOWER( clk0t ) );
-				outportb( CNT_0T, CNT_UPPER( clk0t ) );
-			}
+			clk0t = iclk0t;
 		}
-	}
+ 	}
 
-	/*
-	 *	Set 8254 CNT0H.  Note - Correct for 2 count delay starting 0H.
-	 */
 	if ( iclk0h != DCC_CLK_HOLD )
 	{
 		if ( iclk0h < ( DCC_CLK_MIN / 2 ) )
@@ -438,18 +292,10 @@ Send_reg::set_clk(
 		}
 		else
 		{
-			clk0h	=	iclk0h;
-			if ( !m_log_pkts )
-			{
-				outportb( CNT_0H, CNT_LOWER( clk0h - 2 ) );
-				outportb( CNT_0H, CNT_UPPER( clk0h - 2 ) );
-			}
+			clk0h = iclk0h;
 		}
-	}
+ 	}
 
-	/*
-	 *	Set 8254 CNT1T.
-	 */
 	if ( iclk1t != DCC_CLK_HOLD )
 	{
 		if ( iclk1t < DCC_CLK_MIN )
@@ -459,35 +305,28 @@ Send_reg::set_clk(
 		}
 		else
 		{
-			clk1t	=	iclk1t;
-			if ( !m_log_pkts )
-			{
-				outportb( CNT_1T, CNT_LOWER( clk1t ) );
-				outportb( CNT_1T, CNT_UPPER( clk1t ) );
-			}
+			clk1t = iclk1t;
 		}
 	}
 
-	/*
-	 *	Start clock to flush change through.
-	 */
-	clr_under();
-	start_clk();
-	if ( send_bytes( 2, 0x55, "Flush clock change through hardware." ) != OK )
+	if ( !m_hw_if->set_timing( clk0t, clk0h, clk1t ) )
 	{
 		ERRPRINT( my_name, LOG_ERR,
-			"send_bytes() FAILED" );
-		stop_clk();
+			"set_timing() FAILED" );
 		clk0t = clk0h = clk1t = DCC_CLK_ERR;
 		return ( FAIL );
 	}
 
-	/*
-	 *	Reset to the initial run state.
-	 */
-	if ( !trunning )
+	if ( trunning )
 	{
-		stop_clk();
+		if ( start_clk() != OK )
+		{
+			return ( FAIL );
+		}
+	}
+	else
+	{
+		running = false;
 	}
 
 	if ( m_log_pkts )
@@ -542,17 +381,11 @@ Send_reg::start_clk( void )
 			return ( FAIL );
 		}
 	}
-	else if ( !m_log_pkts )
-	{
-		OUT_PC( PC_POS_CPUCLKL, 0 );	 	// Set SW clock to 0.
-		OUT_PC( PC_POS_CPUEN, true );	 	// Stop the HW clock.
-		OUT_PC( PC_POS_CPUEN, true );	 	// Delay so HW clock stops.
-		OUT_PC( PC_POS_SCOPENL, 1 );	 	// Disable scope trigger.
-		OUT_PC( PC_POS_CPUEN, false );	 	// Start glitch free HW clock.
-	}
 	else
 	{
-		DBGLOG( "%s() Clock started.", my_name );
+		ERRPRINT( my_name, LOG_ERR,
+			"MCU hardware interface not initialized" );
+		return ( FAIL );
 	}
 
 	scope	=	SCOPE_IDLE;
@@ -604,16 +437,11 @@ Send_reg::stop_clk( void )
 			return ( FAIL );
 		}
 	}
-	else if ( !m_log_pkts )
-	{
-		OUT_PC( PC_POS_CPUCLKL, 0 );	  	// Set SW clock to 0.
-		OUT_PC( PC_POS_CPUEN, true );	  	// Stop the HW clock w/o glitch.
-		OUT_PC( PC_POS_CPUEN, true );	  	// Delay so HW clock stops.
-		OUT_PC( PC_POS_SCOPENL, 1 );	  	// Disable scope trigger.
-	}
 	else
 	{
-		DBGLOG( "%s() Clock stopped.", my_name );
+		ERRPRINT( my_name, LOG_ERR,
+			"MCU hardware interface not initialized" );
+		return ( FAIL );
 	}
 
 	scope	=	SCOPE_IDLE;
@@ -649,8 +477,6 @@ Send_reg::send_bytes(
 	const char		*info )					// Packet log info.
 {
 	const char		*my_name = "Send_reg::send_bytes";
-	register		u_int	count;			// Count of BYTES sent.
-	register		u_long	san_cnt;		// Sanity timeout.
 
 	if ( icnt < 1 )
 	{
@@ -689,77 +515,19 @@ Send_reg::send_bytes(
 		return ( OK );
 	}
 
-	if ( !m_log_pkts )	// Skip hardware interaction if just logging.
-	{
-		start_crit();
-		for ( count = 0; count < icnt; ++count )
-		{
-			for ( san_cnt =  SAN_CNT;
-				san_cnt > 0 && !(inportb( PC ) & PC_MSK_INTRA);
-				--san_cnt )
-			{
-				;
-			}
-
-			if ( san_cnt ==  0 )
-			{
-				enable();
-				if ( errprint_ok() )
-				{
-					ERRPRINT( my_name, LOG_ERR,
-						"Sanity timeout, sent %u, b_cnt %lu, p_cnt %lu",
-						count, b_cnt, p_cnt );
-				}
-				SET_ERROR( NOT_READY_OBJ_WARN  );
-				return ( FAIL );
-			}
-
-			switch ( scope )
-			{
-			case SCOPE_IDLE:					// Do nothing.
-				break;
-
-			case SCOPE_END:						// End scope trigger.
-				OUT_PC( PC_POS_SCOPENL, 1 );
-				scope	=	SCOPE_IDLE;
-				break;
-
-			case SCOPE_START:					// Start scope trigger.
-				OUT_PC( PC_POS_SCOPENL, 0 );
-				scope	=	SCOPE_END;
-				break;
-			}
-
-			if ( inportb( PB ) & PB_MSK_UNDER )
-			{
-				enable();
-				if ( errprint_ok() )
-				{
-					ERRPRINT( my_name, LOG_ERR,
-						"Underflow, sent %u, b_cnt %lu, p_cnt %lu",
-						count, b_cnt, p_cnt );
-				}
-				SET_ERROR( NOT_READY_OBJ_WARN  );
-				return ( FAIL );
-			}
-
-			outportb( PA, m_swap_0_1 ? ~ibyte : ibyte );
-			OUT_PC( PC_POS_UNDERCLRL, 1 );
-		}
-
-		enable();
-	} // End of hardware interaction.
-	else
+	if ( m_log_pkts )
 	{
 		DBGLOG( "%s() %s.", my_name, info ? info : "" );
 		DBGPKT( "%02x %4d %s", ibyte, icnt, icnt > 1 ? "times" : "time" );
+		clr_err_cnt();
+		b_cnt	+= icnt;
+		++p_cnt;
+		return ( OK );
 	}
 
-	clr_err_cnt();							// Restart error counter.
-	b_cnt	+= icnt;
-	++p_cnt;
-
-	return ( OK );
+	ERRPRINT( my_name, LOG_ERR,
+		"MCU hardware interface not initialized" );
+	return ( FAIL );
 }
 
  
@@ -857,179 +625,19 @@ Send_reg::send_stretched_byte(
 		return ( OK );
 	}
 
-	if ( !m_log_pkts )	// Skip hardware interraction if just logging.
-	{
-		if ( inportb( PA ) != 0xff )
-		{
-			ERRPRINT( my_name, LOG_ERR,
-				"PA must be sending preamble bits, it is set to <%02x>",
-				inportb( PA ) );
-			return ( FAIL );
-		}
-
-		/*
-		 *	Calculate the CLK0T value to use for the stretched 0.  The
-		 *	hardware will use this value for the first half of the total
-		 *	period and the original value for the second half.  The CLK0T
-         *	counter is reloaded half way through the square wave period.
-		 */
-		tclk0t	=	(2 * iclk0t) - clk0t;
-
-		start_crit();
-
-		// Step 1: Wait to load 'ibyte' until board is ready.
-		for (	san_cnt =  SAN_CNT;
-				san_cnt > 0 && !(inportb( PC ) & PC_MSK_INTRA);
-				--san_cnt )
-		{
-			;
-		}
-
-		if ( san_cnt ==  0 )
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-				"Sanity timeout before loading ibyte, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-		switch ( scope )
-		{
-		case SCOPE_IDLE:			 		// Do nothing.
-			break;
-
-		case SCOPE_END:					 	// End scope trigger.
-			OUT_PC( PC_POS_SCOPENL, 1 );
-			scope	=	SCOPE_IDLE;
-			break;
-
-		case SCOPE_START:				 	// Start scope trigger.
-			OUT_PC( PC_POS_SCOPENL, 0 );
-			scope	=	SCOPE_END;
-			break;
-		}
-
-		if ( inportb( PB ) & PB_MSK_UNDER )
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-					"Underflow, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-		outportb( PA, m_swap_0_1 ? ~ibyte : ibyte );
-		OUT_PC( PC_POS_UNDERCLRL, 1 );
-
-		// Step 2: Disable interrupts and set temporary new 0T and 0H times.
-		disable();
-
-		/*
-		 *	Set stretched 8254 CNT0T.
-         *	Bug ALERT: OKI 82C54-2 counters must have the control word
-         *	set so that the temporary values load.  82C54-10 doesn't need
-         *	this.  This is set shortly before the beginning of the beginning
-         *	of the first 0 bit of the stretched packet.  This fix is needed
-         *	only if the set occurs while a 1 is being sent.
-		 */
-		if ( inportb( PB ) & PB_MSK_DCCQH )
-        {
-			outportb( CNT_CNTRL, CNTRL_0T_NORM );
-        }
-        
-		outportb( CNT_0T, CNT_LOWER( tclk0t ) );
-		outportb( CNT_0T, CNT_UPPER( tclk0t ) );
-
-		/*
-		 *	Set stretched 8254 CNT0H.  Note - Correct for 2 count 0H delay.
-		 */
-		outportb( CNT_0H, CNT_LOWER( iclk0h - 2 ) );
-		outportb( CNT_0H, CNT_UPPER( iclk0h - 2 ) );
-
-		// Step 3: Wait for board to load 'ibyte'by monitoring INTRA.
-		for (	san_cnt =  SAN_CNT;
-				san_cnt > 0 && !(inportb( PC ) & PC_MSK_INTRA);
-				--san_cnt )
-		{
-			;
-		}
-
-		if ( san_cnt ==  0 )
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-				"Sanity timeout waiting to load ibyte, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-		/*
-         *	Step 4: Wait for board to start sending 0 bit by monitoring DCCOUTD.
-         *	This load will occur shortly after the start of the stretched 0
-         *	bit.  Clk0T will be loaded half way through the stretched period.
-         */
-		for (	san_cnt =  SAN_CNT;
-				san_cnt > 0 && !(inportb( PB ) & PB_MSK_DCCOUTD);
-				--san_cnt )
-		{
-			;
-		}
-
-		if ( san_cnt ==  0 )
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-				"Sanity timeout before sending first 0, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-		// Step 5: Kill at least 1 usec. while CNT0H gets loaded.
-		pc_delay_high( m_pc_delay_1usec );
-
-		// Step 6: Reload original CNT0T and CNT0H values.
-		/*
-		 *	Reset original 8254 CNT0T.
-		 */
-		outportb( CNT_0T, CNT_LOWER( clk0t ) );
-		outportb( CNT_0T, CNT_UPPER( clk0t ) );
-
-		/*
-		 *	Reset original 8254 CNT0H.  Note - Correct for 2 count 0H delay.
-		 */
-		outportb( CNT_0H, CNT_LOWER( clk0h - 2 ) );
-		outportb( CNT_0H, CNT_UPPER( clk0h - 2 ) );
-
-		enable();
-	} // End of hardware interaction.
-	else
+	if ( m_log_pkts )
 	{
 		DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
 				 my_name, iclk0t, iclk0h, info ? info : "" );
 		DBGPKT( "%02x", ibyte );
+		clr_err_cnt();
+		++b_cnt;
+		return ( OK );
 	}
 
-	clr_err_cnt();							// Restart error counter.
-	++b_cnt;
-
-	return ( OK );
+	ERRPRINT( my_name, LOG_ERR,
+		"MCU hardware interface not initialized" );
+	return ( FAIL );
 }
 
  
@@ -1061,251 +669,7 @@ Send_reg::send_1_ambig_bit(
 	BYTE			ibyte,					// Byte to send.
 	const char		*info )					// Packet log info.
 {
-	const char		*my_name = "Send_reg::send_1_ambig_bit";
-	register		u_long	san_cnt;		// Sanity timeout.
-
-	if ( ibyte & 0x80 )
-	{
-		ERRPRINT( my_name, LOG_ERR,
-			"ibyte must have bit 7 set to 0, its value is 0x%02x", ibyte );
-		return ( FAIL );
-	}
-
-	if ( iclk0t ==  DCC_CLK_HOLD )
-	{
-		iclk0t	=	clk0t;
-	}
-
-	if ( iclk0h == DCC_CLK_HOLD )
-	{
-		iclk0h	=	clk0h;
-	}
-
-	if ( iclk0t < AMBIG_0T_MIN )
-	{
-		ERRPRINT( my_name, LOG_ERR,
-			"iclk0t value %u invalid, must be >= %u", iclk0t, AMBIG_0T_MIN );
-		return ( FAIL );
-	}
-
-	if ( iclk0h < AMBIG_0H_MIN )
-	{
-		ERRPRINT( my_name, LOG_ERR,
-			"iclk0h value %u invalid, must be >= %u", iclk0h, AMBIG_0H_MIN );
-		return ( FAIL );
-	}
-
-	/*
-	 *	Test that the scope trigger is set.
-     *	This signal is used to synchronize the initial 0T and 0H clock load.
-     */
-	if ( scope != SCOPE_START )
-	{
-		ERRPRINT( my_name, LOG_ERR,
-			"Scope trigger must be set for this command" );
-		return ( FAIL );
-	}
-
-	if ( !m_log_pkts )	// Skip hardware interraction if just logging.
-	{
-		start_crit();
-
-		// Step 1: Wait to load 'ibyte' until board is ready.
-		for (	san_cnt =  SAN_CNT;
-				san_cnt > 0 && !(inportb( PC ) & PC_MSK_INTRA);
-				--san_cnt )
-		{
-			;
-		}
-
-		if ( san_cnt ==  0 )
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-				"Sanity timeout before loading ibyte, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-		switch ( scope )
-		{
-		case SCOPE_IDLE:			 		// Do nothing.
-			break;
-
-		case SCOPE_END:					 	// End scope trigger.
-			OUT_PC( PC_POS_SCOPENL, 1 );
-			scope	=	SCOPE_IDLE;
-			break;
-
-		case SCOPE_START:				 	// Start scope trigger.
-			OUT_PC( PC_POS_SCOPENL, 0 );
-			scope	=	SCOPE_END;
-			break;
-		}
-
-		if ( inportb( PB ) & PB_MSK_UNDER )
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-					"Underflow, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-		outportb( PA, m_swap_0_1 ? ~ibyte : ibyte );
-		OUT_PC( PC_POS_UNDERCLRL, 1 );
-
-		// Step 2: Disable interrupts and set temporary new 0T and 0H times.
-		disable();
-
-        /*
-		*	Step 3: Wait for board to get past half way point of last bit
-        *	by monitoring 'SCOPE'.  This will go low high way through last
-        *	bit.  It is safe to load new 0T and 0H times at this point.
-        */
-		for (	san_cnt =  SAN_CNT;
-				(san_cnt > 0) && !(inportb( PB ) & PB_MSK_SCOPE);
-				--san_cnt )
-		{
-			;
-		}
-
-		if ( san_cnt ==  0)
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-				"Sanity timeout waiting to load 0 times, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-		/*
-		 *	Set ambiguous 8254 CNT0T.
-         *	Bug ALERT: OKI 82C54-2 counters must have the control word
-         *	set so that the temporary values load.  82C54-10 doesn't need
-         *	this.  This is set shortly before the beginning of the beginning
-         *	of the first 0 bit of the stretched packet.  This fix is needed
-         *	only if the set occurs while a 1 is being sent.
-		 */
-		if ( inportb( PB ) & PB_MSK_DCCQH )
-        {
-			outportb( CNT_CNTRL, CNTRL_0T_NORM );
-        }
-
-		outportb( CNT_0T, CNT_LOWER( iclk0t ) );
-		outportb( CNT_0T, CNT_UPPER( iclk0t ) );
-
-		/*
-		 *	Set ambiguous 8254 CNT0H.  Note - Correct for 2 count 0H delay.
-		 */
-		outportb( CNT_0H, CNT_LOWER( iclk0h - 2 ) );
-		outportb( CNT_0H, CNT_UPPER( iclk0h - 2 ) );
-
-		// Step 4: Wait for board to load 'ibyte'by monitoring INTRA.
-		for (	san_cnt =  SAN_CNT;
-				san_cnt > 0 && !(inportb( PC ) & PC_MSK_INTRA);
-				--san_cnt )
-		{
-			;
-		}
-
-		if ( san_cnt ==  0 )
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-				"Sanity timeout waiting to load ibyte, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-		/*
-         *	Step 5: Wait for board to start sending 0 bit by monitoring DCCOUTD.
-         *	This load will occur shortly after the start of the stretched 0
-         *	bit.  Clk0T will be loaded half way through the stretched period.
-         */
-		for (	san_cnt =  SAN_CNT;
-				san_cnt > 0 && !(inportb( PB ) & PB_MSK_DCCOUTD);
-				--san_cnt )
-		{
-			;
-		}
-
-		if ( san_cnt ==  0 )
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-				"Sanity timeout before sending first 0, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-		// Step 6: Wait for board to reach middle of 0T by monitoring OUT0.
-		for (	san_cnt =  SAN_CNT, outportb( CNT_CNTRL, CNTRL_0T_STATUS );
-				san_cnt > 0 && (inportb( CNT_0T ) & CNT_STATUS_OUTPUT );
-				--san_cnt )
-		{
-			outportb( CNT_CNTRL, CNTRL_0T_STATUS );
-		}
-
-		if ( san_cnt ==  0 )
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-				"Sanity timeout reaching middle of 1st 0, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-		// Step 7: Reload original CNT0T and CNT0H values.
-		/*
-		 *	Reset original 8254 CNT0T.
-		 */
-		outportb( CNT_0T, CNT_LOWER( clk0t ) );
-		outportb( CNT_0T, CNT_UPPER( clk0t ) );
-
-		/*
-		 *	Reset original 8254 CNT0H.  Note - Correct for 2 count 0H delay.
-		 */
-		outportb( CNT_0H, CNT_LOWER( clk0h - 2 ) );
-		outportb( CNT_0H, CNT_UPPER( clk0h - 2 ) );
-
-		enable();
-	} // End of hardware interaction.
-	else
-	{
-		DBGLOG( "%s() Clk 0T %hu, 0H %hu: %s.",
-				 my_name, iclk0t, iclk0h, info ? info : "" );
-		DBGPKT( "%02x", ibyte );
-	}
-
-	clr_err_cnt();							// Restart error counter.
-	++b_cnt;
-
-	return ( OK );
+	return ( send_stretched_byte( iclk0t, iclk0h, ibyte, info ) );
 }
 
  
@@ -1343,328 +707,14 @@ Send_reg::send_2_ambig_bits(
 	const char		*info )					// Packet log info.
 {
 	const char		*my_name = "Send_reg::send_2_ambig_bits";
-	register		u_long	san_cnt;	 	// Sanity timeout.
-
-	if ( ibyte & 0xC0 )
+	if ( m_log_pkts )
 	{
-		ERRPRINT( my_name, LOG_ERR,
-			"ibyte must have bit 6 & 7 set to 0, its value is 0x%02x", ibyte );
-		return ( FAIL );
+		DBGLOG( "%s() not supported in MCU mode: %s",
+			my_name, info ? info : "" );
 	}
-
-	if ( iclk0t1 ==  DCC_CLK_HOLD )
-	{
-		iclk0t1	=	clk0t;
-	}
-
-	if ( iclk0h1 == DCC_CLK_HOLD )
-	{
-		iclk0h1	=	clk0h;
-	}
-
-	if ( iclk0t2 ==  DCC_CLK_HOLD )
-	{
-		iclk0t1	=	clk0t;
-	}
-
-	if ( iclk0h2 == DCC_CLK_HOLD )
-	{
-		iclk0h1	=	clk0h;
-	}
-
-	if ( iclk0t1 < AMBIG_0T_MIN )
-	{
-		ERRPRINT( my_name, LOG_ERR,
-			"iclk0t1 value %u invalid, must be >= %u", iclk0t1, AMBIG_0T_MIN );
-		return ( FAIL );
-	}
-
-	if ( iclk0h1 < AMBIG_0H_MIN )
-	{
-		ERRPRINT( my_name, LOG_ERR,
-			"iclk0h1 value %u invalid, must be >= %u", iclk0h1, AMBIG_0H_MIN );
-		return ( FAIL );
-	}
-
-	if ( iclk0t2 < AMBIG_0T_MIN )
-	{
-		ERRPRINT( my_name, LOG_ERR,
-			"iclk0t2 value %u invalid, must be >= %u", iclk0t2, AMBIG_0T_MIN );
-		return ( FAIL );
-	}
-
-	if ( iclk0h2 < AMBIG_0H_MIN )
-	{
-		ERRPRINT( my_name, LOG_ERR,
-			"iclk0h2 value %u invalid, must be >= %u", iclk0h2, AMBIG_0H_MIN );
-		return ( FAIL );
-	}
-
-	/*
-	 *	Test that the scope trigger is set.
-     *	This signal is used to synchronize the initial 0T and 0H clock load.
-     */
-	if ( scope != SCOPE_START )
-	{
-		ERRPRINT( my_name, LOG_ERR,
-			"Scope trigger must be set for this command" );
-		return ( FAIL );
-	}
-
-	if ( !m_log_pkts )	// Skip hardware interraction if just logging.
-	{
-		start_crit();
-
-		// Step 1: Wait to load 'ibyte' until board is ready.
-		for (	san_cnt =  SAN_CNT;
-				san_cnt > 0 && !(inportb( PC ) & PC_MSK_INTRA);
-				--san_cnt )
-		{
-			;
-		}
-
-		if ( san_cnt ==  0 )
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-				"Sanity timeout before loading ibyte, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-		switch ( scope )
-		{
-		case SCOPE_IDLE:			 		// Do nothing.
-			break;
-
-		case SCOPE_END:					 	// End scope trigger.
-			OUT_PC( PC_POS_SCOPENL, 1 );
-			scope	=	SCOPE_IDLE;
-			break;
-
-		case SCOPE_START:				 	// Start scope trigger.
-			OUT_PC( PC_POS_SCOPENL, 0 );
-			scope	=	SCOPE_END;
-			break;
-		}
-
-		if ( inportb( PB ) & PB_MSK_UNDER )
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-					"Underflow, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-		outportb( PA, m_swap_0_1 ? ~ibyte : ibyte );
-		OUT_PC( PC_POS_UNDERCLRL, 1 );
-
-		// Step 2: Disable interrupts and set temporary new 0T1 and 0H1 times.
-		disable();
-
-
-        /*
-		*	Step 3: Wait for board to get past half way point of last bit
-        *	by monitoring 'ACKAL'.  This will go low half way through last
-        *	bit.  It is safe to load new 0T and 0H times at this point.
-        */
-		for (	san_cnt =  SAN_CNT;
-				(san_cnt > 0) && !(inportb( PB ) & PB_MSK_SCOPE);
-				--san_cnt )
-		{
-			;
-		}
-
-		if ( san_cnt ==  0 )
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-				"Sanity timeout waiting to load 0 times, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-		/*
-		 *	Set first ambiguous 8254 CNT0T.
-         *	Bug ALERT: OKI 82C54-2 counters must have the control word
-         *	set so that the temporary values load.  82C54-10 doesn't need
-         *	this.  This is set shortly before the beginning of the beginning
-         *	of the first 0 bit of the stretched packet.  This fix is needed
-         *	only if the set occurs while a 1 is being sent.
-		 */
-		if ( inportb( PB ) & PB_MSK_DCCQH )
-        {
-			outportb( CNT_CNTRL, CNTRL_0T_NORM );
-        }
-
-		outportb( CNT_0T, CNT_LOWER( iclk0t1 ) );
-		outportb( CNT_0T, CNT_UPPER( iclk0t1 ) );
-
-		/*
-		 *	Set first ambiguous 8254 CNT0H.  Note - Correct for 2 count 0H delay.
-		 */
-		outportb( CNT_0H, CNT_LOWER( iclk0h1 - 2 ) );
-		outportb( CNT_0H, CNT_UPPER( iclk0h1 - 2 ) );
-
-		// Step 4: Wait for board to load 'ibyte'by monitoring INTRA.
-		for (	san_cnt =  SAN_CNT;
-				san_cnt > 0 && !(inportb( PC ) & PC_MSK_INTRA);
-				--san_cnt )
-		{
-			;
-		}
-
-		if ( san_cnt ==  0 )
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-				"Sanity timeout waiting to load ibyte, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-		// Step 5: Wait for board to start 1st 0 bit by monitoring DCCOUTD.
-		for (	san_cnt =  SAN_CNT;
-				san_cnt > 0 && !(inportb( PB ) & PB_MSK_DCCOUTD);
-				--san_cnt )
-		{
-			;
-		}
-
-		if ( san_cnt ==  0 )
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-				"Sanity timeout before sending 1st 0, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-		// Step 6: Wait for board to reach middle of 0T by monitoring OUT0.
-		for (	san_cnt =  SAN_CNT, outportb( CNT_CNTRL, CNTRL_0T_STATUS );
-				san_cnt > 0 && (inportb( CNT_0T ) & CNT_STATUS_OUTPUT );
-				--san_cnt )
-		{
-			outportb( CNT_CNTRL, CNTRL_0T_STATUS );
-		}
-
-		if ( san_cnt ==  0 )
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-				"Sanity timeout reaching middle of 1st 0, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-		// Step 7: Load 2nd ambiguous CNT0T and CNT0H values.
-		/*
-		 *	Set 2nd ambiguous 8254 CNT0T.
-		 */
-		outportb( CNT_0T, CNT_LOWER( iclk0t2 ) );
-		outportb( CNT_0T, CNT_UPPER( iclk0t2 ) );
-
-		/*
-		 *	Set 2nd ambiguous 8254 CNT0H.  Note - Correct for 2 count 0H delay.
-		 */
-		outportb( CNT_0H, CNT_LOWER( iclk0h2 - 2 ) );
-		outportb( CNT_0H, CNT_UPPER( iclk0h2 - 2 ) );
-
-		// Step 8: Wait for board to start 2nd 0 bit by monitoring OUT0.
-      for (	san_cnt =  SAN_CNT, outportb( CNT_CNTRL, CNTRL_0T_STATUS );
-				san_cnt > 0 && !(inportb( CNT_0T ) & CNT_STATUS_OUTPUT );
-				--san_cnt )
-		{
-			outportb( CNT_CNTRL, CNTRL_0T_STATUS );
-		}
-
-		if ( san_cnt ==  0 )
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-				"Sanity timeout before sending 2nd 0, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-
-		// Step 9: Wait for board to reach middle of 0T by monitoring OUT0.
-		for (	san_cnt =  SAN_CNT, outportb( CNT_CNTRL, CNTRL_0T_STATUS );
-				san_cnt > 0 && (inportb( CNT_0T ) & CNT_STATUS_OUTPUT );
-				--san_cnt )
-		{
-			outportb( CNT_CNTRL, CNTRL_0T_STATUS );
-		}
-
-		if ( san_cnt ==  0 )
-		{
-			enable();
-			if ( errprint_ok() )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-				"Sanity timeout reaching middle of 2nd 0, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
-			}
-			SET_ERROR( NOT_READY_OBJ_WARN  );
-			return ( FAIL );
-		}
-
-		// Step 10: Reload original CNT0T and CNT0H values.
-		/*
-		 *	Reset original 8254 CNT0T.
-		 */
-		outportb( CNT_0T, CNT_LOWER( clk0t ) );
-		outportb( CNT_0T, CNT_UPPER( clk0t ) );
-
-		/*
-		 *	Reset original 8254 CNT0H.  Note - Correct for 2 count 0H delay.
-		 */
-		outportb( CNT_0H, CNT_LOWER( clk0h - 2 ) );
-		outportb( CNT_0H, CNT_UPPER( clk0h - 2 ) );
-
-		enable();
-	} // End of hardware interaction.
-	else
-	{
-		DBGLOG( "%s() Clk 0T1 %hu, 0H1 %hu, 0T2 %hu, 0H2 %hu: %s.",
-				my_name, iclk0t1, iclk0h1, iclk0t2, iclk0h2,
-				info ? info : "", ibyte );
-		DBGPKT( "%02x", ibyte );
-	}
-
-	clr_err_cnt();							// Restart error counter.
-	++b_cnt;
-
-	return ( OK );
+	ERRPRINT( my_name, LOG_ERR,
+		"send_2_ambig_bits() is not supported in MCU mode" );
+	return ( FAIL );
 }
 
  
@@ -1695,7 +745,6 @@ Send_reg::send_pkt(
 {
 	const char		*my_name = "Send_reg::send_pkt(BYTE)";
 	register u_int	count;					// Count of BYTES sent.
-	register u_long	san_cnt;		   		// Sanity timeout.
 
 	if ( isize < 1 )
 	{
@@ -1749,78 +798,19 @@ Send_reg::send_pkt(
 		return ( OK );
 	}
 
-	if ( !m_log_pkts )	// Skip hardware interraction if just logging.
-	{
-		/* Send first BYTE, then activate underflow warning */
-		start_crit();
-		for ( count = 0; count < isize; ++ibytes, ++count )
-		{
-			for ( san_cnt =  SAN_CNT;
-				san_cnt > 0 && !(inportb( PC ) & PC_MSK_INTRA);
-				--san_cnt )
-			{
-				;
-			}
-
-			if ( san_cnt ==  0 )
-			{
-				enable();
-				if ( errprint_ok() )
-				{
-					ERRPRINT( my_name, LOG_ERR,
-					"Sanity timeout, sent %u, b_cnt %lu, p_cnt %lu",
-						count, b_cnt, p_cnt );
-				}
-				SET_ERROR( NOT_READY_OBJ_WARN  );
-				return ( FAIL );
-			}
-
-			switch ( scope )
-			{
-			case SCOPE_IDLE:		  			// Do nothing.
-				break;
-
-			case SCOPE_END:						// End scope trigger.
-				OUT_PC( PC_POS_SCOPENL, 1 );
-				scope	=	SCOPE_IDLE;
-				break;
-
-			case SCOPE_START:					// Start scope trigger.
-				OUT_PC( PC_POS_SCOPENL, 0 );
-				scope	=	SCOPE_END;
-				break;
-			}
-
-			if ( inportb( PB ) & PB_MSK_UNDER )
-			{
-				enable();
-				if ( errprint_ok()  )
-				{
-					ERRPRINT( my_name, LOG_ERR,
-					"Underflow, sent %u, b_cnt %lu, p_cnt %lu",
-						count, b_cnt, p_cnt );
-				}
-				SET_ERROR( NOT_READY_OBJ_WARN  );
-				return ( FAIL );
-			}
-
-			outportb( PA, m_swap_0_1 ? ~*ibytes : *ibytes );
-			OUT_PC( PC_POS_UNDERCLRL, 1 );
-		}
-
-		enable();
-	} // End of hardware interaction.
-	else
+	if ( m_log_pkts )
 	{
 		DBGLOG( "%s %s.", my_name, info ? info : "" );
 		print_pkt_log( ibytes, isize );
+		clr_err_cnt();
+		b_cnt	+= isize;
+		++p_cnt;
+		return ( OK );
 	}
 
-	clr_err_cnt();							// Restart error counter.
-	b_cnt	+= isize;
-	++p_cnt;
-
-	return ( OK );
+	ERRPRINT( my_name, LOG_ERR,
+		"MCU hardware interface not initialized" );
+	return ( FAIL );
 }
 
  
@@ -1850,7 +840,6 @@ Send_reg::send_pkt(
 {
 	const char		*my_name = "Send_reg::send_pkt(Bits)";
 	register u_int	count = 0;				// Count of BYTES sent.
-	register u_long	san_cnt;		   		// Sanity timeout.
 	BYTE			pbyte;					// Present BYTE.
 
 	if ( ibits.get_obj_errs() )
@@ -1921,85 +910,20 @@ Send_reg::send_pkt(
 		return ( OK );
 	}
 
-	if ( !m_log_pkts )	// Skip hardware interraction if just logging.
-	{
-		start_crit();
-		for (	count = 0, ibits.rst_out();
-				ibits.get_byte( pbyte ) == OK; count++ )
-		{
-			for ( san_cnt =  SAN_CNT;
-				san_cnt > 0 && !(inportb( PC ) & PC_MSK_INTRA);
-				--san_cnt )
-			{
-				;
-			}
-
-			if ( san_cnt ==  0 )
-			{
-				enable();
-				if ( errprint_ok() )
-				{
-					ERRPRINT( my_name, LOG_ERR,
-					"Sanity timeout, sent %u, b_cnt %lu, p_cnt %lu",
-						count, b_cnt, p_cnt );
-				}
-				SET_ERROR( NOT_READY_OBJ_WARN  );
-				return ( FAIL );
-			}
-
-			switch ( scope )
-			{
-			case SCOPE_IDLE:		  			// Do nothing.
-				break;
-
-			case SCOPE_END:						// End scope trigger.
-				OUT_PC( PC_POS_SCOPENL, 1 );
-				scope	=	SCOPE_IDLE;
-				break;
-
-			case SCOPE_START:					// Start scope trigger.
-				OUT_PC( PC_POS_SCOPENL, 0 );
-				scope	=	SCOPE_END;
-				break;
-			}
-
-			if ( inportb( PB ) & PB_MSK_UNDER )
-			{
-				enable();
-				if ( errprint_ok() )
-				{
-					ERRPRINT( my_name, LOG_ERR,
-					"Underflow, sent %u, b_cnt %lu, p_cnt %lu",
-						count, b_cnt, p_cnt );
-				}
-				SET_ERROR( NOT_READY_OBJ_WARN  );
-				return ( FAIL );
-			}
-
-			outportb( PA, m_swap_0_1 ? ~pbyte : pbyte );
-			OUT_PC( PC_POS_UNDERCLRL, 1 );
-		}
-
-		enable();
-		if ( count == 0 )
-		{
-			ERRPRINT( my_name, LOG_ERR,
-				"0 Bytes sent, b_cnt %lu, p_cnt %lu", b_cnt, p_cnt );
-			return ( FAIL );
-		}
-	} // End of hardware interaction.
-	else
+	if ( m_log_pkts )
 	{
 		DBGLOG( "%s %s.", my_name, info ? info : "" );
 		print_pkt_log( ibits.get_byte_array(), ibits.get_byte_size() );
 		count = ibits.get_byte_size();
+		clr_err_cnt();
+		b_cnt	+= count;
+		++p_cnt;
+		return ( OK );
 	}
 
-	clr_err_cnt();							// Restart error counter.
-	b_cnt	+= count;
-	++p_cnt;
-
-	return ( OK );
+	ERRPRINT( my_name, LOG_ERR,
+		"MCU hardware interface not initialized" );
+	return ( FAIL );
 }
 
  
@@ -2087,33 +1011,36 @@ Send_reg::print_stats( void )
 void
 Send_reg::update( void )
 {
-
-	/*
-	 *	Skip this check if we are just logging packets.
-	 */
-	if ( m_log_pkts )
+	if ( m_log_pkts || m_hw_if == NULL )
 	{
 		DBGLOG( "Send_reg::update() Skipping update." );
 		m_pc_delay_1usec	=	1;
 		return;
 	}
 
-	v.gen		=	inportb( GEN );			// Read generic inputs.
+	BYTE gen1 = 0;
+	BYTE gen2 = 0;
+	Sender_hw_status status;
 
-	v.pa 		=	inportb( PA );			// Read 8255 ports.
-	v.pb 		=	inportb( PB );
-	v.pc 		=	inportb( PC );
+	if ( m_hw_if->get_gen_in( gen1, gen2 ) )
+	{
+		v.gen = gen1;
+	}
 
-	outportb( CNT_CNTRL, (BYTE)0xCE );		// Latch counter data.
-	v.s0t		=	inportb( CNT_0T );
-	v.cnt0t		=	inportb( CNT_0T );
-	v.cnt0t		+=	inportb( CNT_0T ) << 8;
-	v.s0h		=	inportb( CNT_0H );
-	v.cnt0h		=	inportb( CNT_0H );
-	v.cnt0h		+=	inportb( CNT_0H ) << 8;
-	v.s1t		=	inportb( CNT_1T );
-	v.cnt1t		=	inportb( CNT_1T );
-	v.cnt1t		+=	inportb( CNT_1T ) << 8;
+	if ( m_hw_if->get_status( status ) )
+	{
+		running = status.running;
+		v.pb = status.underflow ? 0x01 : 0x00;
+	}
+
+	v.pa = 0;
+	v.pc = 0;
+	v.s0t = 0;
+	v.s0h = 0;
+	v.s1t = 0;
+	v.cnt0t = clk0t;
+	v.cnt0h = clk0h;
+	v.cnt1t = clk1t;
 }
 
  
@@ -2167,106 +1094,7 @@ Send_reg::up_print(
 Rslt_t
 Send_reg::set_pc_delay_1usec( void )
 {
-	const char		*my_name = "Send_reg::set_pc_delay_1usec";
-	register u_int	short_san_cnt;	   		// Short sanity timeout.
-	register u_int	tmp_delay_high;	 		// pc_delay_high() return value.
-	register u_int	tmp_delay_low;	 		// pc_delay_low() return value.
-
-	/*
-	 *	Skip this check if we are just logging packets.
-	 */
-	if ( m_log_pkts )
-	{
-		DBGLOG( "%s() Skipping hardware test, setting delay to 1.",
-			my_name );
-		m_pc_delay_1usec	=	1;
-		return ( OK );
-	}
-
-	/*
-	 *	Initialize the hardware and start the clock at nominal values.
-	 */
-	init_send();
-	if ( set_clk(	DECODER_0T_NOM,
-					DECODER_0H_NOM,
-					DECODER_1T_NOM ) != OK )
-	{
-		ERRPRINT( my_name, LOG_ERR, "set_clk() FAILED" );
-		return ( FAIL );
-	}
-	start_clk();
-
-	if ( send_bytes( 1, 0x00, "Send single 0." ) != OK )
-	{
-		ERRPRINT( my_name, LOG_ERR, "send_bytes() FAILED" );
-		stop_clk();
-		return ( FAIL );
-	}
-
-	// Step 1: Disable interrupts.
-	disable();
-
-	// Step 2: Wait for board to load 'ibyte'by monitoring INTRA.
-	for (	short_san_cnt =  SHORT_SAN_CNT;
-			short_san_cnt > 0 && !(inportb( PC ) & PC_MSK_INTRA);
-			--short_san_cnt )
-	{
-		;
-	}
-
-	if ( short_san_cnt ==  0 )
-	{
-		enable();
-		if ( errprint_ok() )
-		{
-			ERRPRINT( my_name, LOG_ERR,
-				"Sanity timeout waiting to load ibyte" );
-		}
-		SET_ERROR( NOT_READY_OBJ_WARN  );
-		return ( FAIL );
-	}
-
-	// Step 3: Wait for board to start sending 0 bit by monitoring DCCOUTD.
-	for (	short_san_cnt =  SHORT_SAN_CNT;
-			short_san_cnt > 0 && !(inportb( PB ) & PB_MSK_DCCOUTD);
-			--short_san_cnt )
-	{
-		;
-	}
-
-	if ( short_san_cnt ==  0 )
-	{
-		enable();
-		if ( errprint_ok() )
-		{
-			ERRPRINT( my_name, LOG_ERR,
-				"Sanity timeout before sending first 0" );
-		}
-		SET_ERROR( NOT_READY_OBJ_WARN  );
-		return ( FAIL );
-	}
-
-	// Step 4: Time the high period of DCCOUTD.
-	tmp_delay_high	=	pc_delay_high( SHORT_SAN_CNT );
-
-	// Step 5: Time the low period of DCCOUTD.
-	tmp_delay_low	=	pc_delay_low( SHORT_SAN_CNT );
-
-	// Step 6: enable interrupts, stop the hardware, and evaluate the results.
-	enable();
-	stop_clk();
-
-	STATPRINT(	"PC high %4u(%4u), low %4u(%4u)",
-		clk0h, SHORT_SAN_CNT - tmp_delay_high,
-		clk0t - clk0h, SHORT_SAN_CNT - tmp_delay_low );
-	printf(		"PC high %4u(%4u), low %4u(%4u)\n",
-		clk0h, SHORT_SAN_CNT - tmp_delay_high,
-		clk0t - clk0h, SHORT_SAN_CNT - tmp_delay_low );
-
-	m_pc_delay_1usec = ((SHORT_SAN_CNT - tmp_delay_high)/DECODER_0H_NOM) + 1;
-	STATPRINT(	"PC 1 usec delay %u", m_pc_delay_1usec );
-	printf(		"PC 1 usec delay %u\n", m_pc_delay_1usec );
-
+	m_pc_delay_1usec	=	1;
 	return ( OK );
 }
 
@@ -2296,7 +1124,7 @@ u_int
 Send_reg::pc_delay_high(
 	register u_int	idelay )			// Delay count.
 {
-	while ( idelay > 0 && (inportb( PB ) & PB_MSK_DCCOUTD) )
+	while ( idelay > 0 )
 	{
 		idelay--;
 	}
@@ -2329,7 +1157,7 @@ u_int
 Send_reg::pc_delay_low(
 	register u_int	idelay )			// Delay count.
 {
-	while ( idelay > 0 && !(inportb( PB ) & PB_MSK_DCCOUTD) )
+	while ( idelay > 0 )
 	{
 		idelay--;
 	}
