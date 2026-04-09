@@ -118,10 +118,6 @@ class Send_reg : public Sr_core
 	void	set_hw_if( Sender_hw_if *ihw_if ) { m_hw_if = ihw_if; }
 
 	/* Board initialization and reset routines */
-	Rslt_t	init_8254( void );
-	Rslt_t	init_8255( void );
-	Rslt_t	rst_8255( void );
-	Rslt_t	init_send( void );
 	Rslt_t	set_clk( u_short iclk0t, u_short iclk0h, u_short iclk1t );
 	Rslt_t	set_pc_delay_1usec( void );
 
