@@ -22,7 +22,6 @@
  *****************************************************************************/
 
 #include <zlog.h>
-#include <torf.h>
 
 #include <stdlib.h>
 
@@ -104,7 +103,7 @@ main(
 	DBGPKT(             "dbgpkt() Should print with DBG_PKT header regardless of printing state, step %3d.", ++cnt );
 	
 	STATPRINT( "torf\( true \) = \"%s\", torf\( false \) = \"%s\", step %3d.",
-	           torf( true ), torf( false ), ++cnt );
+	           "true", "false", ++cnt );
 	
 	Deflog.close_log();
 

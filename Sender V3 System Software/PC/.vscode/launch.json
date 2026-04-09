@@ -47,7 +47,7 @@
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${command:cmake.launchTargetPath}",
-      "args": ["-H mcu","-J COM4", "-t", "0x00000007"],
+      "args": ["-J COM4", "-t", "0x00000007"],
       "cwd": "${command:cmake.launchTargetDirectory}",
       "console": "integratedTerminal",
       "stopAtEntry": true

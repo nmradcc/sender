@@ -25,8 +25,6 @@
 #include "args.h"
 #include "send_reg.h"
 
-#include <torf.h>
-
 #include <conio.h>
 #include <string.h>
 
