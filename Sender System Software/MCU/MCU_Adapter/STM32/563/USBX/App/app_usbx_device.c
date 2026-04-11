@@ -22,6 +22,7 @@
 #include "app_usbx_device.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "main.h"
 #include "sender_app.h"
 
 /* USER CODE END Includes */
