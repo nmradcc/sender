@@ -52,7 +52,7 @@ enum Dec_types
  *	Version information.
  */
 const Rel_levels	Ver_rel		= VER_BETA;		// Release level.
-const u_int			Ver_maj		=  6;			// Major version.
+const u_int			Ver_maj		=  7;			// Major version.
 const u_int			Ver_min		=  0;			// Minor version.
 const u_int			Ver_bld		=  0;			// Build version.
 

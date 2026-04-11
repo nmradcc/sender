@@ -23,6 +23,16 @@
       "stopAtEntry": false
     },
       {
+      "name": "Debug -m send.exe (CMake)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${command:cmake.launchTargetPath}",
+      "args": ["-m"],
+      "cwd": "${command:cmake.launchTargetDirectory}",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    },
+      {
       "name": "Debug cfg send.exe (CMake)",
       "type": "cppvsdbg",
       "request": "launch",
@@ -47,7 +57,7 @@
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${command:cmake.launchTargetPath}",
-      "args": ["-J COM4", "-t", "0x00000007"],
+      "args": ["-J", "COM4", "-t", "0x00000007"],
       "cwd": "${command:cmake.launchTargetDirectory}",
       "console": "integratedTerminal",
       "stopAtEntry": true
