@@ -1754,6 +1754,14 @@ Key_val			init_key )					// Initial key value.
 						}
 						else
 						{
+							DBGLOG( "%s: Decoder tests completed; stopping clock and restoring nominal timing.", my_name );
+							if ( hw_is_running() == true )
+							{
+								hw_stop_clk();
+							}
+							hw_set_clk(	DECODER_0T_NOM,
+											DECODER_0H_NOM,
+											DECODER_1T_NOM );
 							return;
 						}
 					}
