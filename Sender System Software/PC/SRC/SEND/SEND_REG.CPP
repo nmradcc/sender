@@ -247,6 +247,11 @@ Send_reg::start_clk( void )
 				"start_clock() FAILED" );
 			return ( FAIL );
 		}
+
+		if ( m_log_pkts )
+		{
+			DBGLOG( "%s() Clock started.", my_name );
+		}
 	}
 	else
 	{
@@ -302,6 +307,11 @@ Send_reg::stop_clk( void )
 			ERRPRINT( my_name, LOG_ERR,
 				"stop_clock() FAILED" );
 			return ( FAIL );
+		}
+
+		if ( m_log_pkts )
+		{
+			DBGLOG( "%s() Clock stopped.", my_name );
 		}
 	}
 	else
@@ -374,6 +384,12 @@ Send_reg::send_bytes(
 			ERRPRINT( my_name, LOG_ERR,
 				"send_bytes() FAILED, b_cnt %lu, p_cnt %lu", b_cnt, p_cnt );
 			return ( FAIL );
+		}
+
+		if ( m_log_pkts )
+		{
+			DBGLOG( "%s() %s.", my_name, info ? info : "" );
+			DBGPKT( "%02x %4d %s", ibyte, icnt, icnt > 1 ? "times" : "time" );
 		}
 
 		clr_err_cnt();
@@ -485,6 +501,13 @@ Send_reg::send_stretched_byte(
 				"send_stretched_byte() FAILED, b_cnt %lu, p_cnt %lu",
 				b_cnt, p_cnt );
 			return ( FAIL );
+		}
+
+		if ( m_log_pkts )
+		{
+			DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
+				 my_name, iclk0t, iclk0h, info ? info : "" );
+			DBGPKT( "%02x", ibyte );
 		}
 
 		clr_err_cnt();
@@ -659,6 +682,12 @@ Send_reg::send_pkt(
 			}
 		}
 
+		if ( m_log_pkts )
+		{
+			DBGLOG( "%s %s.", my_name, info ? info : "" );
+			print_pkt_log( ibytes, isize );
+		}
+
 		clr_err_cnt();
 		b_cnt	+= isize;
 		++p_cnt;
@@ -769,6 +798,12 @@ Send_reg::send_pkt(
 					return ( FAIL );
 				}
 			}
+		}
+
+		if ( m_log_pkts )
+		{
+			DBGLOG( "%s %s.", my_name, info ? info : "" );
+			print_pkt_log( ibits.get_byte_array(), ibits.get_byte_size() );
 		}
 
 		clr_err_cnt();
@@ -961,6 +996,11 @@ Send_reg::up_print(
 Rslt_t
 Send_reg::set_pc_delay_1usec( void )
 {
+	if ( m_log_pkts )
+	{
+		DBGLOG( "Send_reg::set_pc_delay_1usec() Skipping hardware test, setting delay to 1." );
+	}
+
 	m_pc_delay_1usec	=	1;
 	return ( OK );
 }
