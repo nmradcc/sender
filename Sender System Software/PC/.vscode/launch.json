@@ -1,0 +1,66 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+      {
+      "name": "Debug mcu_smoke_test.exe (CMake)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${command:cmake.launchTargetPath}",
+      "args": ["COM4"],
+      "cwd": "${command:cmake.launchTargetDirectory}",
+      "console": "integratedTerminal",
+      "stopAtEntry": true
+    },
+
+      {
+      "name": "Debug -u send.exe (CMake)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${command:cmake.launchTargetPath}",
+      "args": ["-u"],
+      "cwd": "${command:cmake.launchTargetDirectory}",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    },
+      {
+      "name": "Debug -m send.exe (CMake)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${command:cmake.launchTargetPath}",
+      "args": ["-m"],
+      "cwd": "${command:cmake.launchTargetDirectory}",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    },
+      {
+      "name": "Debug cfg send.exe (CMake)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${command:cmake.launchTargetPath}",
+      "args": [],
+      "cwd": "${command:cmake.launchTargetDirectory}",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Debug cmdline para send.exe (CMake)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${command:cmake.launchTargetPath}",
+      "args": ["-P", "-t", "0x00000001"],
+      "cwd": "${command:cmake.launchTargetDirectory}",
+      "console": "integratedTerminal",
+      "stopAtEntry": true
+    },
+    {
+      "name": "Debug my cfg send.exe (CMake)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${command:cmake.launchTargetPath}",
+      "args": ["-J", "COM4", "-t", "0x00000007"],
+      "cwd": "${command:cmake.launchTargetDirectory}",
+      "console": "integratedTerminal",
+      "stopAtEntry": true
+    }
+  ]
+}

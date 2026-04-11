@@ -1,0 +1,3 @@
+questions:
+
+1. What is the purpose of the FSOC? is it only for special purpose boosters. Is it needed if we have driver on board?
