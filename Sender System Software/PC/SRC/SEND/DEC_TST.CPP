@@ -1619,8 +1619,8 @@ Dec_tst::decoder_ames(
 	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
 	BYTE			tgen;					// Generic input BYTE.
-	bool			pre_fail;	  			// Preset failed.
-	bool			trig_fail;	  			// Trigger failed.
+	bool			pre_fail = false;	  	// Preset failed.
+	bool			trig_fail = false;	  	// Trigger failed.
 	int				t_pkt_cnt;				// Temp repeat count.
 	u_int			extra_trg =				// Extra trg pkt count.
 					Args.get_extra_trg();
