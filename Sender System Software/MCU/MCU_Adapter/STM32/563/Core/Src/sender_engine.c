@@ -110,6 +110,9 @@ static bool dcc_push_bits(const sender_engine_t *eng, uint32_t count, bool one)
 
 static void dcc_hw_start(void)
 {
+    /* Ensure BR_ENABLE is high before starting DCC output */
+    HAL_GPIO_WritePin(BR_ENABLE_GPIO_Port, BR_ENABLE_Pin, GPIO_PIN_SET);
+
     /* Ensure PA0 is back on TIM5_CH1 even after a prior STOP set it as GPIO. */
     HAL_TIM_MspPostInit(&htim5);
 
@@ -138,6 +141,8 @@ static void dcc_hw_stop(void)
     gpio.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(DCC_GPIO_PORT, &gpio);
     HAL_GPIO_WritePin(DCC_GPIO_PORT, DCC_GPIO_PIN, GPIO_PIN_RESET);
+    /* Ensure BR_ENABLE is low after stopping DCC output */
+    HAL_GPIO_WritePin(BR_ENABLE_GPIO_Port, BR_ENABLE_Pin, GPIO_PIN_RESET);
 }
 
 /* ======================================================================= */
@@ -482,13 +487,23 @@ uint8_t sender_engine_set_gen_out(sender_engine_t *eng, uint8_t value)
     return SHP_STATUS_OK;
 }
 
-void sender_engine_get_gen_in(const sender_engine_t *eng, uint8_t *gen1,
+void sender_engine_get_gen_in(sender_engine_t *eng, uint8_t *gen1,
                               uint8_t *gen2)
 {
+    bool in0_status;
+    bool in1_status;
+
     if (eng == 0 || gen1 == 0 || gen2 == 0)
     {
         return;
     }
+ 
+    in0_status = (HAL_GPIO_ReadPin(IN0_GPIO_Port, IN0_Pin) == GPIO_PIN_SET);
+    in1_status = (HAL_GPIO_ReadPin(IN1_GPIO_Port, IN1_Pin) == GPIO_PIN_SET);
+    eng->gen_in1 = (uint8_t)((eng->gen_in1 & (uint8_t)~0x01u) |
+                             (in0_status ? 0x01u : 0x00u));
+    eng->gen_in2 = (uint8_t)((eng->gen_in2 & (uint8_t)~0x01u) |
+                             (in1_status ? 0x01u : 0x00u));
 
     *gen1 = eng->gen_in1;
     *gen2 = eng->gen_in2;

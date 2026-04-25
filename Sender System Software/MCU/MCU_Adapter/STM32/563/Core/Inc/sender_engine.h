@@ -52,7 +52,7 @@ uint8_t sender_engine_send_stretched_byte(sender_engine_t* eng,
 uint8_t sender_engine_send_special(sender_engine_t* eng, uint8_t special_id);
 
 uint8_t sender_engine_set_gen_out(sender_engine_t* eng, uint8_t value);
-void sender_engine_get_gen_in(const sender_engine_t* eng, uint8_t* gen1,
+void sender_engine_get_gen_in(sender_engine_t* eng, uint8_t* gen1,
                               uint8_t* gen2);
 
 void sender_engine_reset_stats(sender_engine_t* eng);

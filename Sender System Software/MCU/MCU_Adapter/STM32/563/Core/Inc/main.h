@@ -63,10 +63,20 @@ void MX_USB_PCD_Init(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define IN2_Pin GPIO_PIN_6
+#define IN2_GPIO_Port GPIOE
 #define STLK_MCO_Pin GPIO_PIN_0
 #define STLK_MCO_GPIO_Port GPIOH
 #define SCOPE_Pin GPIO_PIN_7
 #define SCOPE_GPIO_Port GPIOE
+#define IN0_Pin GPIO_PIN_10
+#define IN0_GPIO_Port GPIOE
+#define IN1_Pin GPIO_PIN_12
+#define IN1_GPIO_Port GPIOE
+#define IN3_Pin GPIO_PIN_15
+#define IN3_GPIO_Port GPIOE
+#define BR_ENABLE_Pin GPIO_PIN_6
+#define BR_ENABLE_GPIO_Port GPIOG
 
 /* USER CODE BEGIN Private defines */
 
