@@ -385,6 +385,10 @@ bool Sender_hw_mcu_usb::get_gen_in(uint8_t& gen1, uint8_t& gen2)
 
     gen1 = out[0];
     gen2 = out[1];
+
+    gen1 ^= 0x01; /* Invert gen1 bit 0 to match legacy hardware behavior. */
+    gen2 ^= 0x01; /* Invert gen2 bit 0 to match legacy hardware behavior. */
+    
     return true;
 }
 
