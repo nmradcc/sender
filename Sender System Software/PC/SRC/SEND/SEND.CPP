@@ -892,8 +892,10 @@ do_mcu_self_tests( void )
 	/* 7. SEND_PACKET (DCC idle FF 00 FF) */
 	{
 		static const uint8_t idle_pkt[] = { 0xFF, 0x00, 0xFF };
+		hw_set_scope( true );
 		SELF_CHECK( "7. SEND_PACKET (DCC idle FF 00 FF)",
 			Lhw_if->send_packet( idle_pkt, sizeof( idle_pkt ), "selftest" ) );
+		hw_set_scope( false );
 	}
 
 	/* 8. GET_STATS */
@@ -1572,6 +1574,7 @@ Key_val			init_key )					// Initial key value.
 					hw_send_bytes( 1, 0x00, "SEND_RESET." );
 					hw_set_scope( true );
 					hw_send_special( SHP_SPECIAL_RESET );
+					hw_set_scope( false );
 					for ( i = 0; i < 15; i++ )	// Send 15 normal idles.
 					{
 						hw_send_special( SHP_SPECIAL_IDLE );
@@ -1582,6 +1585,7 @@ Key_val			init_key )					// Initial key value.
 					hw_send_bytes( 1, 0x00, "SEND_HARD." );
 					hw_set_scope( true );
 					hw_send_special( SHP_SPECIAL_HARD_RESET );
+					hw_set_scope( false );
 					for ( i = 0; i < 15; i++ )	// Send 15 normal idles.
 					{
 						hw_send_special( SHP_SPECIAL_IDLE );
