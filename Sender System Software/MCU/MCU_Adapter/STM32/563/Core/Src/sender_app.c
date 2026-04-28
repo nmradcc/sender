@@ -13,6 +13,11 @@ static sender_request_t g_request;
 static sender_response_t g_response;
 static uint8_t g_packet_stage[1024];
 static uint16_t g_packet_stage_len;
+static uint8_t g_packet_stage_mode;
+
+#define PACKET_STAGE_NONE 0u
+#define PACKET_STAGE_DCC_PACKET 1u
+#define PACKET_STAGE_RAW_BYTES 2u
 
 static void sender_app_handle_request(const sender_request_t* req,
                                       sender_response_t* rsp)
@@ -26,9 +31,12 @@ static void sender_app_handle_request(const sender_request_t* req,
     rsp->payload_len = 0;
 
     if (req->cmd != SHP_CMD_APPEND_PACKET_CHUNK &&
-        req->cmd != SHP_CMD_COMMIT_PACKET)
+        req->cmd != SHP_CMD_COMMIT_PACKET &&
+        req->cmd != SHP_CMD_APPEND_RAW_CHUNK &&
+        req->cmd != SHP_CMD_COMMIT_RAW_BYTES)
     {
         g_packet_stage_len = 0u;
+        g_packet_stage_mode = PACKET_STAGE_NONE;
     }
 
     switch (req->cmd)
@@ -94,9 +102,29 @@ static void sender_app_handle_request(const sender_request_t* req,
             break;
 
         case SHP_CMD_APPEND_PACKET_CHUNK:
+        case SHP_CMD_APPEND_RAW_CHUNK:
             if (req->payload_len == 0u || req->payload_len > SHP_PACKET_CHUNK_MAX)
             {
                 g_packet_stage_len = 0u;
+                g_packet_stage_mode = PACKET_STAGE_NONE;
+                rsp->status = SHP_STATUS_BAD_LENGTH;
+                break;
+            }
+
+            if (g_packet_stage_len == 0u)
+            {
+                g_packet_stage_mode =
+                    (req->cmd == SHP_CMD_APPEND_PACKET_CHUNK)
+                        ? PACKET_STAGE_DCC_PACKET
+                        : PACKET_STAGE_RAW_BYTES;
+            }
+            else if (((req->cmd == SHP_CMD_APPEND_PACKET_CHUNK) &&
+                      (g_packet_stage_mode != PACKET_STAGE_DCC_PACKET)) ||
+                     ((req->cmd == SHP_CMD_APPEND_RAW_CHUNK) &&
+                      (g_packet_stage_mode != PACKET_STAGE_RAW_BYTES)))
+            {
+                g_packet_stage_len = 0u;
+                g_packet_stage_mode = PACKET_STAGE_NONE;
                 rsp->status = SHP_STATUS_BAD_LENGTH;
                 break;
             }
@@ -105,6 +133,7 @@ static void sender_app_handle_request(const sender_request_t* req,
                 (uint32_t)sizeof(g_packet_stage))
             {
                 g_packet_stage_len = 0u;
+                g_packet_stage_mode = PACKET_STAGE_NONE;
                 rsp->status = SHP_STATUS_BAD_LENGTH;
                 break;
             }
@@ -115,9 +144,11 @@ static void sender_app_handle_request(const sender_request_t* req,
             break;
 
         case SHP_CMD_COMMIT_PACKET:
-            if (req->payload_len != 0u || g_packet_stage_len == 0u)
+            if (req->payload_len != 0u || g_packet_stage_len == 0u ||
+                g_packet_stage_mode != PACKET_STAGE_DCC_PACKET)
             {
                 g_packet_stage_len = 0u;
+                g_packet_stage_mode = PACKET_STAGE_NONE;
                 rsp->status = SHP_STATUS_BAD_LENGTH;
                 break;
             }
@@ -125,6 +156,24 @@ static void sender_app_handle_request(const sender_request_t* req,
             rsp->status = sender_engine_send_packet(&g_engine, g_packet_stage,
                                                     g_packet_stage_len);
             g_packet_stage_len = 0u;
+            g_packet_stage_mode = PACKET_STAGE_NONE;
+            break;
+
+        case SHP_CMD_COMMIT_RAW_BYTES:
+            if (req->payload_len != 0u || g_packet_stage_len == 0u ||
+                g_packet_stage_mode != PACKET_STAGE_RAW_BYTES)
+            {
+                g_packet_stage_len = 0u;
+                g_packet_stage_mode = PACKET_STAGE_NONE;
+                rsp->status = SHP_STATUS_BAD_LENGTH;
+                break;
+            }
+
+            rsp->status = sender_engine_send_raw_bytes(&g_engine,
+                                                       g_packet_stage,
+                                                       g_packet_stage_len);
+            g_packet_stage_len = 0u;
+            g_packet_stage_mode = PACKET_STAGE_NONE;
             break;
 
         case SHP_CMD_SEND_STRETCHED_BYTE:
@@ -219,6 +268,7 @@ void sender_app_init(void)
     sender_transport_init();
     sender_engine_init(&g_engine);
     g_packet_stage_len = 0u;
+    g_packet_stage_mode = PACKET_STAGE_NONE;
 }
 
 void sender_app_poll(void)

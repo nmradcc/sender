@@ -198,15 +198,6 @@ class Send_reg : public Sr_core
 
 	/* Method section */
 	
-	void
-	start_crit( void )
-	{
-		return;
-	}
-
-	u_int	pc_delay_high( register u_int idelay );
-	u_int	pc_delay_low( register u_int idelay );
-
 	void	print_pkt_log( const BYTE *ibytes, u_int isize );
 };
 

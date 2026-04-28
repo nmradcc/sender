@@ -29,6 +29,8 @@ class Sender_hw_mcu_usb : public Sender_hw_if
                             const char* info_tag);
     virtual bool send_packet(const uint8_t* data, size_t size,
                              const char* info_tag);
+    virtual bool send_raw_bytes(const uint8_t* data, size_t size,
+                  const char* info_tag);
     virtual bool send_stretched_byte(uint16_t clk0t_us, uint16_t clk0h_us,
                                      uint8_t byte_value,
                                      const char* info_tag);
@@ -55,6 +57,8 @@ class Sender_hw_mcu_usb : public Sender_hw_if
                                     uint16_t payload_len,
                                     std::vector<uint8_t>& out_payload,
                                     uint8_t& out_status);
+    bool send_chunked_commit(const uint8_t* data, size_t size,
+                 uint8_t append_cmd, uint8_t commit_cmd);
 
   private:
     std::string m_port_name;

@@ -45,6 +45,8 @@ uint8_t sender_engine_send_bytes(sender_engine_t* eng, uint16_t repeat_count,
                                  uint8_t byte_value);
 uint8_t sender_engine_send_packet(sender_engine_t* eng, const uint8_t* data,
                                   uint16_t size);
+uint8_t sender_engine_send_raw_bytes(sender_engine_t* eng, const uint8_t* data,
+                                     uint16_t size);
 uint8_t sender_engine_send_stretched_byte(sender_engine_t* eng,
                                           uint16_t clk0t_us,
                                           uint16_t clk0h_us,

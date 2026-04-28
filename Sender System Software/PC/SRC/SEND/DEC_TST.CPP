@@ -94,6 +94,53 @@ enum Ramp_state
 	RAMP_END									// End of test.
 };
 
+static BYTE
+build_cmd_28_byte(
+	bool			forward,
+	int			speed )
+{
+	BYTE			cmd = 0;
+
+	if ( speed == SP_E_STOP )
+	{
+		cmd	=	0x01;
+	}
+	else if ( speed == SP_E_STOP_I )
+	{
+		cmd	=	0x11;
+	}
+	else if ( speed == SP_MIN )
+	{
+		cmd	=	0x00;
+	}
+	else if ( speed == SP_STOP_I )
+	{
+		cmd	=	0x10;
+	}
+	else if ( speed < SP_MIN || speed > SP_28_MAX )
+	{
+		cmd	=	0x00;
+	}
+	else
+	{
+		cmd	=	(BYTE)((speed + 3) >> 1);
+
+		if ( !(speed & 0x01) )
+		{
+			cmd	|=	0x10;
+		}
+	}
+
+	if ( forward )
+	{
+		cmd	|=	0x20;
+	}
+
+	cmd	|=	0x40;
+
+	return ( cmd );
+}
+
 
 /*
  *	Array of clock value to use for decoder tests.
@@ -1625,6 +1672,14 @@ Dec_tst::decoder_ames(
 	u_int			extra_trg =				// Extra trg pkt count.
 					Args.get_extra_trg();
 	u_int			k;						// Index variable.
+	char			trig_info[128];				// Trigger packet debug info.
+	BYTE			trig_b1 = 0;				// Trigger packet byte 1.
+	BYTE			trig_b2 = 0;				// Trigger packet byte 2.
+	BYTE			trig_b3 = 0;				// Trigger packet byte 3.
+	BYTE			trig_chk = 0;				// Trigger packet checksum.
+	bool			trig_has_b3 = false;		// True if trigger has 3 data bytes.
+	bool			trig_has_decode = false;	// True if trigger decode is valid.
+	const char		*trig_pkt_type = "unknown";// Trigger packet type string.
 
 	sprintf( m_tst_name, "pre %d idle %d:", pre_cnt, idle_cnt );
 	Dcc_reg.clr_err_cnt();					// Restart error counter.
@@ -1696,6 +1751,107 @@ Dec_tst::decoder_ames(
 	}
 	dcc_bits2.put_idle_pkt( idle_cnt );
 	dcc_bits2.put_1s(1).done();
+
+	/*
+	 *	Log decoded trigger packet fields so packet payload bytes are
+	 *	explicit even when scope/UART decode alignment differs.
+	 */
+	if ( Args.get_decoder_type() == DEC_LOCO )
+	{
+		trig_b1			=	(BYTE)Args.get_decoder_address();
+		trig_b2			=	build_cmd_28_byte( true, trig_cmd_speed );
+		trig_chk		=	(BYTE)( trig_b1 ^ trig_b2 );
+		trig_pkt_type	=	"loco";
+		trig_has_decode	=	true;
+	}
+	else if ( Args.get_decoder_type() == DEC_FUNC )
+	{
+		trig_b1	=	(BYTE)Args.get_decoder_address();
+
+		if ( Bits::get_trig_rev() == true )
+		{
+			trig_b2			=	build_cmd_28_byte( Bits::get_lamp_rear(), 0 );
+			trig_pkt_type	=	"func->loco trigger";
+		}
+		else if ( Bits::get_loco_first() == true )
+		{
+			trig_b2			=	build_cmd_28_byte( !Bits::get_lamp_rear(), 0 );
+			trig_pkt_type	=	"func->loco first";
+		}
+		else
+		{
+			trig_b2			=	0x80;
+			trig_pkt_type	=	"func grp1";
+		}
+
+		trig_chk		=	(BYTE)( trig_b1 ^ trig_b2 );
+		trig_has_decode	=	true;
+	}
+	else if ( Args.get_decoder_type() == DEC_ACC )
+	{
+		u_short			a;
+
+		a			=	Args.get_decoder_address();
+		trig_b1			=	(BYTE)( 0x80 | (BYTE)( 0x3f & a ) );
+		trig_b2			=	(BYTE)0x80
+						|	(BYTE)( 0x70 & ~( a >> 2 ) )
+						|	(BYTE)0x08
+						|	(BYTE)( 0x07 & ACC_TRG );
+		trig_chk		=	(BYTE)( trig_b1 ^ trig_b2 );
+		trig_pkt_type	=	"accessory";
+		trig_has_decode	=	true;
+	}
+	else if ( Args.get_decoder_type() == DEC_SIG )
+	{
+		u_short			a;
+
+		a			=	Args.get_decoder_address();
+		if ( a < SIG_ADDR_MIN || a > SIG_ADDR_MAX )
+		{
+			a	=	SIG_ADDR_MIN;
+		}
+		a	+=	3;
+
+		trig_b1			=	(BYTE)( 0x80 | (BYTE)( 0x3f & ( a >> 2 ) ) );
+		trig_b2			=	(BYTE)0x01
+						|	(BYTE)( 0x70 & ~( a >> 4 ) )
+						|	(BYTE)( 0x06 &  ( a << 1 ) );
+		trig_b3			=	(BYTE)( Args.get_aspect_trigger() & 0x1f );
+		trig_chk		=	(BYTE)( trig_b1 ^ trig_b2 ^ trig_b3 );
+		trig_pkt_type	=	"signal";
+		trig_has_b3		=	true;
+		trig_has_decode	=	true;
+	}
+
+	if ( trig_has_decode )
+	{
+		if ( trig_has_b3 )
+		{
+			sprintf( trig_info,
+				"Send packet acceptance trigger packet. (%s b1=%02x b2=%02x b3=%02x chk=%02x)",
+				trig_pkt_type, trig_b1, trig_b2, trig_b3, trig_chk );
+
+			STATPRINT( "Ames trigger decode (%s): b1=%02x b2=%02x b3=%02x chk=%02x",
+				trig_pkt_type, trig_b1, trig_b2, trig_b3, trig_chk );
+			printf(    "Ames trigger decode (%s): b1=%02x b2=%02x b3=%02x chk=%02x\n",
+				trig_pkt_type, trig_b1, trig_b2, trig_b3, trig_chk );
+		}
+		else
+		{
+			sprintf( trig_info,
+				"Send packet acceptance trigger packet. (%s b1=%02x b2=%02x chk=%02x)",
+				trig_pkt_type, trig_b1, trig_b2, trig_chk );
+
+			STATPRINT( "Ames trigger decode (%s): b1=%02x b2=%02x chk=%02x",
+				trig_pkt_type, trig_b1, trig_b2, trig_chk );
+			printf(    "Ames trigger decode (%s): b1=%02x b2=%02x chk=%02x\n",
+				trig_pkt_type, trig_b1, trig_b2, trig_chk );
+		}
+	}
+	else
+	{
+		strcpy( trig_info, "Send packet acceptance trigger packet." );
+	}
 
 
 	/*

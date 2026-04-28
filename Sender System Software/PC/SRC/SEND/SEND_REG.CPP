@@ -686,10 +686,11 @@ Send_reg::send_pkt(
 
 		if ( !m_swap_0_1 )
 		{
-			if ( !m_hw_if->send_packet( ibytes, isize, info ) )
+			if ( !m_hw_if->send_raw_bytes( ibytes, isize, info ) )
 			{
 				ERRPRINT( my_name, LOG_ERR,
-					"send_packet() FAILED, b_cnt %lu, p_cnt %lu", b_cnt, p_cnt );
+					"send_raw_bytes() FAILED, b_cnt %lu, p_cnt %lu",
+					b_cnt, p_cnt );
 				return ( FAIL );
 			}
 		}
@@ -798,10 +799,11 @@ Send_reg::send_pkt(
 
 		if ( !m_swap_0_1 )
 		{
-			if ( !m_hw_if->send_packet( pkt_bytes, pkt_size, info ) )
+			if ( !m_hw_if->send_raw_bytes( pkt_bytes, pkt_size, info ) )
 			{
 				ERRPRINT( my_name, LOG_ERR,
-					"send_packet() FAILED, b_cnt %lu, p_cnt %lu", b_cnt, p_cnt );
+					"send_raw_bytes() FAILED, b_cnt %lu, p_cnt %lu",
+					b_cnt, p_cnt );
 				return ( FAIL );
 			}
 		}
@@ -972,106 +974,6 @@ Send_reg::up_print(
 {
 	update();
 	print( pr_hdr_flag );
-}
-
- 
-/*--------------------------------------------------------------------------*/
-/*
- *	NAME
- *
- *		set_pc_delay_1usec()	   	 	-	 Set PC 1 usec delay value.
- *
- *	RETURN VALUE
- *
- *		OK		-	Sucess.
- *		FAIL	-	Problem setting m_pc_delay_1usec.
- *
- *	DESCRIPTION
- *
- *		set_pc_delay_1usec tests the PC 1 usec delay time and sets
- *		'm_pc_delay_1usec' accordingly.  It returns FAIL if a problem
- *		occurs.
- *      Note: set_clk() is called to set nominal clock values
- *            when this method is called.
- */
-/*--------------------------------------------------------------------------*/
-
-Rslt_t
-Send_reg::set_pc_delay_1usec( void )
-{
-	if ( m_log_pkts )
-	{
-		DBGLOG( "Send_reg::set_pc_delay_1usec() Skipping hardware test, setting delay to 1." );
-	}
-
-	m_pc_delay_1usec	=	1;
-	return ( OK );
-}
-
- 
-/*--------------------------------------------------------------------------*/
-/*
- *	NAME
- *
- *		pc_delay_high()	   		 		-	 PC driven delay for DCCOUT high.
- *
- *	RETURN VALUE
- *
- *		idelay	-	Time remaining, if any.
- *
- *	DESCRIPTION
- *
- *		pc_delay_high() can test or generate a PC driven delay.
- *		This method assumes that interrupts are disabled
- *		and that DCCOUTD is high prior to the call.  This allows the same
- *		method to be called from set_pc_delay_1usec() to find the correct
- *		'idelay' value and then to be called from other methods to
- *		generate the delay.
- */
-/*--------------------------------------------------------------------------*/
-
-u_int
-Send_reg::pc_delay_high(
-	register u_int	idelay )			// Delay count.
-{
-	while ( idelay > 0 )
-	{
-		idelay--;
-	}
-	return ( idelay );
-}
-
- 
-/*--------------------------------------------------------------------------*/
-/*
- *	NAME
- *
- *		pc_delay_low()	   		 		-	 PC driven delay for DCCOUT low.
- *
- *	RETURN VALUE
- *
- *		idelay	-	Time remaining, if any.
- *
- *	DESCRIPTION
- *
- *		pc_delay_low() can test or generate a PC driven delay.
- *		This method assumes that interrupts are disabled
- *		and that DCCOUTD is low prior to the call.  This allows the same
- *		method to be called from set_pc_delay_1usec() to find the correct
- *		'idelay' value and then to be called from other methods to
- *		generate the delay.
- */
-/*--------------------------------------------------------------------------*/
-
-u_int
-Send_reg::pc_delay_low(
-	register u_int	idelay )			// Delay count.
-{
-	while ( idelay > 0 )
-	{
-		idelay--;
-	}
-	return ( idelay );
 }
 
  

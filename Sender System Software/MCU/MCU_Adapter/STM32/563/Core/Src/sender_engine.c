@@ -386,6 +386,42 @@ uint8_t sender_engine_send_packet(sender_engine_t *eng, const uint8_t *data,
     return SHP_STATUS_OK;
 }
 
+uint8_t sender_engine_send_raw_bytes(sender_engine_t *eng, const uint8_t *data,
+                                     uint16_t size)
+{
+    uint32_t hps_needed;
+    uint16_t i;
+
+    if (eng == 0)
+    {
+        return SHP_STATUS_INTERNAL_ERROR;
+    }
+    if (!eng->running)
+    {
+        return SHP_STATUS_BUSY;
+    }
+    if (data == 0 || size == 0u)
+    {
+        return SHP_STATUS_OK;
+    }
+
+    /* Raw path pushes bytes exactly as provided: 16 half-periods per byte. */
+    hps_needed = (uint32_t)size * 16u;
+    if (dcc_fifo_free() < hps_needed)
+    {
+        return SHP_STATUS_BUSY;
+    }
+
+    for (i = 0u; i < size; ++i)
+    {
+        dcc_push_byte_unchecked(eng, data[i]);
+    }
+
+    eng->bytes_sent   += size;
+    eng->packets_sent += 1u;
+    return SHP_STATUS_OK;
+}
+
 uint8_t sender_engine_send_stretched_byte(sender_engine_t *eng,
                                           uint16_t clk0t_us,
                                           uint16_t clk0h_us,

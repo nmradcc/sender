@@ -50,6 +50,8 @@ class Sender_hw_if
                             const char* info_tag) = 0;
     virtual bool send_packet(const uint8_t* data, size_t size,
                              const char* info_tag) = 0;
+    virtual bool send_raw_bytes(const uint8_t* data, size_t size,
+                  const char* info_tag) = 0;
     virtual bool send_stretched_byte(uint16_t clk0t_us, uint16_t clk0h_us,
                                      uint8_t byte_value,
                                      const char* info_tag) = 0;

@@ -273,9 +273,26 @@ bool Sender_hw_mcu_usb::send_bytes(uint16_t repeat_count, uint8_t byte_value,
 bool Sender_hw_mcu_usb::send_packet(const uint8_t* data, size_t size,
                                     const char* info_tag)
 {
-    const uint32_t busy_status_poll_count = 25;
-
     (void)info_tag;
+
+    return send_chunked_commit(data, size, SHP_CMD_APPEND_PACKET_CHUNK,
+                               SHP_CMD_COMMIT_PACKET);
+}
+
+bool Sender_hw_mcu_usb::send_raw_bytes(const uint8_t* data, size_t size,
+                                       const char* info_tag)
+{
+    (void)info_tag;
+
+    return send_chunked_commit(data, size, SHP_CMD_APPEND_RAW_CHUNK,
+                               SHP_CMD_COMMIT_RAW_BYTES);
+}
+
+bool Sender_hw_mcu_usb::send_chunked_commit(const uint8_t* data, size_t size,
+                                            uint8_t append_cmd,
+                                            uint8_t commit_cmd)
+{
+    const uint32_t busy_status_poll_count = 25;
 
     if (data == NULL || size == 0 || size > 0xFFFF)
     {
@@ -292,7 +309,7 @@ bool Sender_hw_mcu_usb::send_packet(const uint8_t* data, size_t size,
                                             ? SHP_PACKET_CHUNK_MAX
                                             : (size - off));
         status = SHP_STATUS_INTERNAL_ERROR;
-        if (!send_command_wait_response(SHP_CMD_APPEND_PACKET_CHUNK,
+        if (!send_command_wait_response(append_cmd,
                                         data + off,
                                         chunk_len,
                                         out,
@@ -305,7 +322,7 @@ bool Sender_hw_mcu_usb::send_packet(const uint8_t* data, size_t size,
     }
 
     status = SHP_STATUS_INTERNAL_ERROR;
-    if (send_command_wait_response(SHP_CMD_COMMIT_PACKET,
+    if (send_command_wait_response(commit_cmd,
                                    NULL,
                                    0,
                                    out,
@@ -386,8 +403,8 @@ bool Sender_hw_mcu_usb::get_gen_in(uint8_t& gen1, uint8_t& gen2)
     gen1 = out[0];
     gen2 = out[1];
 
-    gen1 ^= 0x01; /* Invert gen1 bit 0 to match legacy hardware behavior. */
-    gen2 ^= 0x01; /* Invert gen2 bit 0 to match legacy hardware behavior. */
+//    gen1 ^= 0x01; /* Invert gen1 bit 0 to match legacy hardware behavior. */
+//    gen2 ^= 0x01; /* Invert gen2 bit 0 to match legacy hardware behavior. */
     
     return true;
 }
