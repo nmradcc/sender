@@ -213,11 +213,8 @@ Send_reg::set_clk(
 		running = false;
 	}
 
-	if ( m_log_pkts )
-	{
-		DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu.",
-			my_name, clk0t, clk0h, clk1t );
-	}
+	DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu.",
+		my_name, clk0t, clk0h, clk1t );
 
 	return ( OK );
 }
@@ -280,6 +277,7 @@ Send_reg::start_clk( void )
 		return ( FAIL );
 	}
 
+	DBGLOG( "%s() Clock started.", my_name );
 	scope	=	SCOPE_IDLE;
 	running	=	true;						// We're off and running.
 
@@ -344,6 +342,7 @@ Send_reg::stop_clk( void )
 		return ( FAIL );
 	}
 
+	DBGLOG( "%s() Clock stopped.", my_name );
 	scope	=	SCOPE_IDLE;
 	running	=	false;						// We're stopped.
 
@@ -397,6 +396,9 @@ Send_reg::send_bytes(
 
 	if ( m_hw_if != NULL )
 	{
+		DBGLOG( "%s() %s.", my_name, info ? info : "" );
+		DBGPKT( "%02x %4d %s", ibyte, icnt, icnt > 1 ? "times" : "time" );
+
 		switch ( scope )
 		{
 		case SCOPE_END:
@@ -507,6 +509,10 @@ Send_reg::send_stretched_byte(
 
 	if ( m_hw_if != NULL )
 	{
+		DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
+				 my_name, iclk0t, iclk0h, info ? info : "" );
+		DBGPKT( "%02x", ibyte );
+
 		switch ( scope )
 		{
 		case SCOPE_END:
@@ -670,6 +676,9 @@ Send_reg::send_pkt(
 
 	if ( m_hw_if != NULL )
 	{
+		DBGLOG( "%s %s.", my_name, info ? info : "" );
+		print_pkt_log( ibytes, isize );
+
 		switch ( scope )
 		{
 		case SCOPE_END:
@@ -773,6 +782,9 @@ Send_reg::send_pkt(
 
 	if ( m_hw_if != NULL )
 	{
+		DBGLOG( "%s %s.", my_name, info ? info : "" );
+		print_pkt_log( ibits.get_byte_array(), ibits.get_byte_size() );
+
 		switch ( scope )
 		{
 		case SCOPE_END:
