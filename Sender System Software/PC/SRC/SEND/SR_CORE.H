@@ -28,13 +28,6 @@
 
 #include <z_core.h>
 
-#if SEND_VERSION >= 4
-extern "C"
-{
-	unsigned int GetInputs(void);
-};
-#endif
-
 struct Sr_core_vals
 {
 	BYTE				pa;					// 8255 port A.
@@ -56,11 +49,7 @@ class Sr_core : public Z_core
 	Sr_core( void ) { init(); }
 
 	/* Simple get methods */
-	#if SEND_VERSION < 4
-		BYTE get_gen( void ) const { return ( v.gen ); }
-	#else
-		BYTE get_gen( void ) const { return (BYTE)GetInputs(); }
-	#endif
+	BYTE get_gen( void ) const { return ( v.gen ); }
 	BYTE get_pa( void ) const { return ( v.pa ); }
 	BYTE get_pb( void ) const { return ( v.pb ); }
 	BYTE get_pc( void ) const { return ( v.pc ); }
