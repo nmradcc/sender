@@ -1,0 +1,3 @@
+../Shell/GetLine.c:28:9:f_getc	2
+../Shell/GetLine.c:58:5:getLine	5
+../Shell/GetLine.c:101:5:getLine2	5

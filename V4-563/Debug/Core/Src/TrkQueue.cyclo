@@ -1,0 +1,6 @@
+../Core/Src/TrkQueue.c:61:14:AcquirePacket	4
+../Core/Src/TrkQueue.c:99:6:ReadyPacket	2
+../Core/Src/TrkQueue.c:121:14:GetPacket	3
+../Core/Src/TrkQueue.c:150:6:ReleasePacket	3
+../Core/Src/TrkQueue.c:177:5:IsPacketAvailable	3
+../Core/Src/TrkQueue.c:203:6:InitTrackQueue	2

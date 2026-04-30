@@ -1,0 +1,5 @@
+../CS/Accessory.c:120:14:NewAccessory	24	static
+../CS/Accessory.c:149:14:FindAccessory	24	static
+../CS/Accessory.c:177:15:GetAccessoryState	16	static
+../CS/Accessory.c:196:6:SetAccessoryState	16	static
+../CS/Accessory.c:225:14:GetAccessoryAddress	16	static

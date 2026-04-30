@@ -1,0 +1,5 @@
+../CS/Accessory.c:120:14:NewAccessory	3
+../CS/Accessory.c:149:14:FindAccessory	3
+../CS/Accessory.c:177:15:GetAccessoryState	1
+../CS/Accessory.c:196:6:SetAccessoryState	1
+../CS/Accessory.c:225:14:GetAccessoryAddress	1

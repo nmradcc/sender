@@ -1,0 +1,376 @@
+Begin Bits test. Bits version 2.1.1
+Check of constants
+  USEC_PER_SEC 1000000
+  DECODER_0T_MIN 180, DECODER_0T_NOM 200, DECODER_0T_MAX 12000
+  DECODER_0H_MIN 90, DECODER_0H_NOM 100, DECODER_0H_MAX 10000
+  DECODER_1T_MIN 104, DECODER_1T_NOM 116, DECODER_1T_MAX 128
+  DECODER_AVG_MIN 142, DECODER_AVG_NOM 158, DECODER_AVG_MAX 6064
+  ZERO_SEC_MIN 694, ZERO_SEC_NOM 625, ZERO_SEC_MAX 10
+  ONE_SEC_MIN 1201, ONE_SEC_NOM 1077, ONE_SEC_MAX 976
+  AVG_SEC_MIN 880, AVG_SEC_NOM 791, AVG_SEC_MAX 20
+  BASE_SEC_MIN 180, BASE_SEC_NOM 162, BASE_SEC_MAX 4
+  RESET_SEC_MIN 163, RESET_SEC_NOM 147, RESET_SEC_MAX 3
+  IDLE_SEC_MIN 204, IDLE_SEC_NOM 183, IDLE_SEC_MAX 7
+  THREE_BITS 39, FOUR_BITS 48, FIVE_BITS 57 SIX_BITS 66
+  PRE_BITS 12, BASE_BITS 39, SIG_BITS 48
+Fsoc: size 147 Bytes, 1176 bits, array -
+ff f0 00 00 01 ff e0 00 00 03 ff c0 00 00 07 ff 80 00 00 0f ff 00 00 00 1f fe 00 00 00 3f fc 00 00 00 7f f8 00 00 00 ff f0 00 00 01 ff e0 00 00 03 ff c0 00 00 07 ff 80 00 00 0f ff 00 00 00 1f fe 00 00 00 3f fc 00 00 00 7f f8 00 00 00 ff f0 00 00 01 ff e0 00 00 03 ff c0 00 00 07 ff 80 00 00 0f ff 7f 80 1f ff fe ff 00 3f ff fd fe 00 7f ff fb fc 00 ff ff f7 f8 01 ff ff ef f0 03 ff ff df e0 07 ff ff bf c0 0f ff ff 7f 80 1f ff fe ff 00 3f e0
+Idle: size 10 Bytes, 80 bits, array -
+ff f7 f8 01 ff ff ef f0 03 fe
+my_bits: size 256 Bytes, 0 bits
+flip_tst: size 2
+Test put_0s()
+Test put_1s()
+Begin test vectors
+Test   0: Bytes - ff f0 00 00 01
+Test   1: Bytes - ff f7 f8 01 ff
+Test   2: Bytes - ff f0 19 9c c9
+Test   3: Bytes - ff f0 19 9c c9
+Test   4: Bytes - ff f0 00 00 01
+Test   5: Bytes - ff f7 f8 01 ff
+Test   6: Bytes - ff f0 19 9c c9
+Test   7: Bytes - ff f0 19 dc e9
+Test   8: Bytes - ff f0 19 80 c7
+Test   9: Bytes - ff f0 19 bc d9
+Test  10: Bytes - ff f0 19 84 c5
+Test  11: Bytes - ff f0 19 d0 ef
+Test  12: Bytes - ff f0 19 80 c7
+Test  13: Bytes - ff f0 19 fc f9
+Test  14: Bytes - ff f0 19 84 c5
+Test  15: Bytes - ff f0 19 c4 e5
+Test  16: Bytes - ff f0 19 88 c3
+Test  17: Bytes - ff f0 19 a4 d5
+Test  18: Bytes - ff fe 03 3a 1d e0
+Test  19: Bytes - ff f4 13 e4 f7
+Test  20: Bytes - ff f5 fa 3c 61
+Test  21: Bytes - ff f4 12 24 17
+Test  22: Bytes - ff f4 12 04 07
+Test  23: Bytes - ff f0 1a 7d 39
+Test  24: Bytes - ff f0 1a fd 79
+Test  25: Bytes - ff f4 09 c4 00 f0 80
+Test  26: Bytes - ff f4 09 cc 14 f8 80
+Test  27: Bytes - ff f4 09 dc 3e e9 80
+Test  28: Bytes - ff f4 11 c4 3e ec 80
+Test  29: Bytes - ff f5 f8 14 2a af 80
+Test  30: Ignoring expected obj error 0x00040000
+Test  30: Bytes - ff f4 09 c4 3e ef 80
+Test  31: Ignoring expected obj error 0x00040000
+Test  31: Bytes - ff f4 09 c4 3e ef 80
+Completed all 32 test vectors
+Begin flipped 0 bit tests
+0 flip test, bit length  1, shift  0 - 80
+0 flip test, bit length  2, shift  0 - 80
+0 flip test, bit length  2, shift  1 - 40
+0 flip test, bit length  3, shift  0 - 80
+0 flip test, bit length  3, shift  1 - 40
+0 flip test, bit length  3, shift  2 - 20
+0 flip test, bit length  4, shift  0 - 80
+0 flip test, bit length  4, shift  1 - 40
+0 flip test, bit length  4, shift  2 - 20
+0 flip test, bit length  4, shift  3 - 10
+0 flip test, bit length  5, shift  0 - 80
+0 flip test, bit length  5, shift  1 - 40
+0 flip test, bit length  5, shift  2 - 20
+0 flip test, bit length  5, shift  3 - 10
+0 flip test, bit length  5, shift  4 - 08
+0 flip test, bit length  6, shift  0 - 80
+0 flip test, bit length  6, shift  1 - 40
+0 flip test, bit length  6, shift  2 - 20
+0 flip test, bit length  6, shift  3 - 10
+0 flip test, bit length  6, shift  4 - 08
+0 flip test, bit length  6, shift  5 - 04
+0 flip test, bit length  7, shift  0 - 80
+0 flip test, bit length  7, shift  1 - 40
+0 flip test, bit length  7, shift  2 - 20
+0 flip test, bit length  7, shift  3 - 10
+0 flip test, bit length  7, shift  4 - 08
+0 flip test, bit length  7, shift  5 - 04
+0 flip test, bit length  7, shift  6 - 02
+0 flip test, bit length  8, shift  0 - 80
+0 flip test, bit length  8, shift  1 - 40
+0 flip test, bit length  8, shift  2 - 20
+0 flip test, bit length  8, shift  3 - 10
+0 flip test, bit length  8, shift  4 - 08
+0 flip test, bit length  8, shift  5 - 04
+0 flip test, bit length  8, shift  6 - 02
+0 flip test, bit length  8, shift  7 - 01
+0 flip test, bit length  9, shift  0 - 80.00
+0 flip test, bit length  9, shift  1 - 40.00
+0 flip test, bit length  9, shift  2 - 20.00
+0 flip test, bit length  9, shift  3 - 10.00
+0 flip test, bit length  9, shift  4 - 08.00
+0 flip test, bit length  9, shift  5 - 04.00
+0 flip test, bit length  9, shift  6 - 02.00
+0 flip test, bit length  9, shift  7 - 01.00
+0 flip test, bit length  9, shift  8 - 00.80
+0 flip test, bit length 10, shift  0 - 80.00
+0 flip test, bit length 10, shift  1 - 40.00
+0 flip test, bit length 10, shift  2 - 20.00
+0 flip test, bit length 10, shift  3 - 10.00
+0 flip test, bit length 10, shift  4 - 08.00
+0 flip test, bit length 10, shift  5 - 04.00
+0 flip test, bit length 10, shift  6 - 02.00
+0 flip test, bit length 10, shift  7 - 01.00
+0 flip test, bit length 10, shift  8 - 00.80
+0 flip test, bit length 10, shift  9 - 00.40
+0 flip test, bit length 11, shift  0 - 80.00
+0 flip test, bit length 11, shift  1 - 40.00
+0 flip test, bit length 11, shift  2 - 20.00
+0 flip test, bit length 11, shift  3 - 10.00
+0 flip test, bit length 11, shift  4 - 08.00
+0 flip test, bit length 11, shift  5 - 04.00
+0 flip test, bit length 11, shift  6 - 02.00
+0 flip test, bit length 11, shift  7 - 01.00
+0 flip test, bit length 11, shift  8 - 00.80
+0 flip test, bit length 11, shift  9 - 00.40
+0 flip test, bit length 11, shift 10 - 00.20
+0 flip test, bit length 12, shift  0 - 80.00
+0 flip test, bit length 12, shift  1 - 40.00
+0 flip test, bit length 12, shift  2 - 20.00
+0 flip test, bit length 12, shift  3 - 10.00
+0 flip test, bit length 12, shift  4 - 08.00
+0 flip test, bit length 12, shift  5 - 04.00
+0 flip test, bit length 12, shift  6 - 02.00
+0 flip test, bit length 12, shift  7 - 01.00
+0 flip test, bit length 12, shift  8 - 00.80
+0 flip test, bit length 12, shift  9 - 00.40
+0 flip test, bit length 12, shift 10 - 00.20
+0 flip test, bit length 12, shift 11 - 00.10
+0 flip test, bit length 13, shift  0 - 80.00
+0 flip test, bit length 13, shift  1 - 40.00
+0 flip test, bit length 13, shift  2 - 20.00
+0 flip test, bit length 13, shift  3 - 10.00
+0 flip test, bit length 13, shift  4 - 08.00
+0 flip test, bit length 13, shift  5 - 04.00
+0 flip test, bit length 13, shift  6 - 02.00
+0 flip test, bit length 13, shift  7 - 01.00
+0 flip test, bit length 13, shift  8 - 00.80
+0 flip test, bit length 13, shift  9 - 00.40
+0 flip test, bit length 13, shift 10 - 00.20
+0 flip test, bit length 13, shift 11 - 00.10
+0 flip test, bit length 13, shift 12 - 00.08
+0 flip test, bit length 14, shift  0 - 80.00
+0 flip test, bit length 14, shift  1 - 40.00
+0 flip test, bit length 14, shift  2 - 20.00
+0 flip test, bit length 14, shift  3 - 10.00
+0 flip test, bit length 14, shift  4 - 08.00
+0 flip test, bit length 14, shift  5 - 04.00
+0 flip test, bit length 14, shift  6 - 02.00
+0 flip test, bit length 14, shift  7 - 01.00
+0 flip test, bit length 14, shift  8 - 00.80
+0 flip test, bit length 14, shift  9 - 00.40
+0 flip test, bit length 14, shift 10 - 00.20
+0 flip test, bit length 14, shift 11 - 00.10
+0 flip test, bit length 14, shift 12 - 00.08
+0 flip test, bit length 14, shift 13 - 00.04
+0 flip test, bit length 15, shift  0 - 80.00
+0 flip test, bit length 15, shift  1 - 40.00
+0 flip test, bit length 15, shift  2 - 20.00
+0 flip test, bit length 15, shift  3 - 10.00
+0 flip test, bit length 15, shift  4 - 08.00
+0 flip test, bit length 15, shift  5 - 04.00
+0 flip test, bit length 15, shift  6 - 02.00
+0 flip test, bit length 15, shift  7 - 01.00
+0 flip test, bit length 15, shift  8 - 00.80
+0 flip test, bit length 15, shift  9 - 00.40
+0 flip test, bit length 15, shift 10 - 00.20
+0 flip test, bit length 15, shift 11 - 00.10
+0 flip test, bit length 15, shift 12 - 00.08
+0 flip test, bit length 15, shift 13 - 00.04
+0 flip test, bit length 15, shift 14 - 00.02
+0 flip test, bit length 16, shift  0 - 80 00
+0 flip test, bit length 16, shift  1 - 40 00
+0 flip test, bit length 16, shift  2 - 20 00
+0 flip test, bit length 16, shift  3 - 10 00
+0 flip test, bit length 16, shift  4 - 08 00
+0 flip test, bit length 16, shift  5 - 04 00
+0 flip test, bit length 16, shift  6 - 02 00
+0 flip test, bit length 16, shift  7 - 01 00
+0 flip test, bit length 16, shift  8 - 00 80
+0 flip test, bit length 16, shift  9 - 00 40
+0 flip test, bit length 16, shift 10 - 00 20
+0 flip test, bit length 16, shift 11 - 00 10
+0 flip test, bit length 16, shift 12 - 00 08
+0 flip test, bit length 16, shift 13 - 00 04
+0 flip test, bit length 16, shift 14 - 00 02
+0 flip test, bit length 16, shift 15 - 00 01
+Begin flipped 1 bit tests
+1 flip test, bit length  1, shift  0 - 7f
+1 flip test, bit length  2, shift  0 - 7f
+1 flip test, bit length  2, shift  1 - bf
+1 flip test, bit length  3, shift  0 - 7f
+1 flip test, bit length  3, shift  1 - bf
+1 flip test, bit length  3, shift  2 - df
+1 flip test, bit length  4, shift  0 - 7f
+1 flip test, bit length  4, shift  1 - bf
+1 flip test, bit length  4, shift  2 - df
+1 flip test, bit length  4, shift  3 - ef
+1 flip test, bit length  5, shift  0 - 7f
+1 flip test, bit length  5, shift  1 - bf
+1 flip test, bit length  5, shift  2 - df
+1 flip test, bit length  5, shift  3 - ef
+1 flip test, bit length  5, shift  4 - f7
+1 flip test, bit length  6, shift  0 - 7f
+1 flip test, bit length  6, shift  1 - bf
+1 flip test, bit length  6, shift  2 - df
+1 flip test, bit length  6, shift  3 - ef
+1 flip test, bit length  6, shift  4 - f7
+1 flip test, bit length  6, shift  5 - fb
+1 flip test, bit length  7, shift  0 - 7f
+1 flip test, bit length  7, shift  1 - bf
+1 flip test, bit length  7, shift  2 - df
+1 flip test, bit length  7, shift  3 - ef
+1 flip test, bit length  7, shift  4 - f7
+1 flip test, bit length  7, shift  5 - fb
+1 flip test, bit length  7, shift  6 - fd
+1 flip test, bit length  8, shift  0 - 7f
+1 flip test, bit length  8, shift  1 - bf
+1 flip test, bit length  8, shift  2 - df
+1 flip test, bit length  8, shift  3 - ef
+1 flip test, bit length  8, shift  4 - f7
+1 flip test, bit length  8, shift  5 - fb
+1 flip test, bit length  8, shift  6 - fd
+1 flip test, bit length  8, shift  7 - fe
+1 flip test, bit length  9, shift  0 - 7f.ff
+1 flip test, bit length  9, shift  1 - bf.ff
+1 flip test, bit length  9, shift  2 - df.ff
+1 flip test, bit length  9, shift  3 - ef.ff
+1 flip test, bit length  9, shift  4 - f7.ff
+1 flip test, bit length  9, shift  5 - fb.ff
+1 flip test, bit length  9, shift  6 - fd.ff
+1 flip test, bit length  9, shift  7 - fe.ff
+1 flip test, bit length  9, shift  8 - ff.7f
+1 flip test, bit length 10, shift  0 - 7f.ff
+1 flip test, bit length 10, shift  1 - bf.ff
+1 flip test, bit length 10, shift  2 - df.ff
+1 flip test, bit length 10, shift  3 - ef.ff
+1 flip test, bit length 10, shift  4 - f7.ff
+1 flip test, bit length 10, shift  5 - fb.ff
+1 flip test, bit length 10, shift  6 - fd.ff
+1 flip test, bit length 10, shift  7 - fe.ff
+1 flip test, bit length 10, shift  8 - ff.7f
+1 flip test, bit length 10, shift  9 - ff.bf
+1 flip test, bit length 11, shift  0 - 7f.ff
+1 flip test, bit length 11, shift  1 - bf.ff
+1 flip test, bit length 11, shift  2 - df.ff
+1 flip test, bit length 11, shift  3 - ef.ff
+1 flip test, bit length 11, shift  4 - f7.ff
+1 flip test, bit length 11, shift  5 - fb.ff
+1 flip test, bit length 11, shift  6 - fd.ff
+1 flip test, bit length 11, shift  7 - fe.ff
+1 flip test, bit length 11, shift  8 - ff.7f
+1 flip test, bit length 11, shift  9 - ff.bf
+1 flip test, bit length 11, shift 10 - ff.df
+1 flip test, bit length 12, shift  0 - 7f.ff
+1 flip test, bit length 12, shift  1 - bf.ff
+1 flip test, bit length 12, shift  2 - df.ff
+1 flip test, bit length 12, shift  3 - ef.ff
+1 flip test, bit length 12, shift  4 - f7.ff
+1 flip test, bit length 12, shift  5 - fb.ff
+1 flip test, bit length 12, shift  6 - fd.ff
+1 flip test, bit length 12, shift  7 - fe.ff
+1 flip test, bit length 12, shift  8 - ff.7f
+1 flip test, bit length 12, shift  9 - ff.bf
+1 flip test, bit length 12, shift 10 - ff.df
+1 flip test, bit length 12, shift 11 - ff.ef
+1 flip test, bit length 13, shift  0 - 7f.ff
+1 flip test, bit length 13, shift  1 - bf.ff
+1 flip test, bit length 13, shift  2 - df.ff
+1 flip test, bit length 13, shift  3 - ef.ff
+1 flip test, bit length 13, shift  4 - f7.ff
+1 flip test, bit length 13, shift  5 - fb.ff
+1 flip test, bit length 13, shift  6 - fd.ff
+1 flip test, bit length 13, shift  7 - fe.ff
+1 flip test, bit length 13, shift  8 - ff.7f
+1 flip test, bit length 13, shift  9 - ff.bf
+1 flip test, bit length 13, shift 10 - ff.df
+1 flip test, bit length 13, shift 11 - ff.ef
+1 flip test, bit length 13, shift 12 - ff.f7
+1 flip test, bit length 14, shift  0 - 7f.ff
+1 flip test, bit length 14, shift  1 - bf.ff
+1 flip test, bit length 14, shift  2 - df.ff
+1 flip test, bit length 14, shift  3 - ef.ff
+1 flip test, bit length 14, shift  4 - f7.ff
+1 flip test, bit length 14, shift  5 - fb.ff
+1 flip test, bit length 14, shift  6 - fd.ff
+1 flip test, bit length 14, shift  7 - fe.ff
+1 flip test, bit length 14, shift  8 - ff.7f
+1 flip test, bit length 14, shift  9 - ff.bf
+1 flip test, bit length 14, shift 10 - ff.df
+1 flip test, bit length 14, shift 11 - ff.ef
+1 flip test, bit length 14, shift 12 - ff.f7
+1 flip test, bit length 14, shift 13 - ff.fb
+1 flip test, bit length 15, shift  0 - 7f.ff
+1 flip test, bit length 15, shift  1 - bf.ff
+1 flip test, bit length 15, shift  2 - df.ff
+1 flip test, bit length 15, shift  3 - ef.ff
+1 flip test, bit length 15, shift  4 - f7.ff
+1 flip test, bit length 15, shift  5 - fb.ff
+1 flip test, bit length 15, shift  6 - fd.ff
+1 flip test, bit length 15, shift  7 - fe.ff
+1 flip test, bit length 15, shift  8 - ff.7f
+1 flip test, bit length 15, shift  9 - ff.bf
+1 flip test, bit length 15, shift 10 - ff.df
+1 flip test, bit length 15, shift 11 - ff.ef
+1 flip test, bit length 15, shift 12 - ff.f7
+1 flip test, bit length 15, shift 13 - ff.fb
+1 flip test, bit length 15, shift 14 - ff.fd
+1 flip test, bit length 16, shift  0 - 7f ff
+1 flip test, bit length 16, shift  1 - bf ff
+1 flip test, bit length 16, shift  2 - df ff
+1 flip test, bit length 16, shift  3 - ef ff
+1 flip test, bit length 16, shift  4 - f7 ff
+1 flip test, bit length 16, shift  5 - fb ff
+1 flip test, bit length 16, shift  6 - fd ff
+1 flip test, bit length 16, shift  7 - fe ff
+1 flip test, bit length 16, shift  8 - ff 7f
+1 flip test, bit length 16, shift  9 - ff bf
+1 flip test, bit length 16, shift 10 - ff df
+1 flip test, bit length 16, shift 11 - ff ef
+1 flip test, bit length 16, shift 12 - ff f7
+1 flip test, bit length 16, shift 13 - ff fb
+1 flip test, bit length 16, shift 14 - ff fd
+1 flip test, bit length 16, shift 15 - ff fe
+Starting truncated packet tests.
+my_bits: size 256 Bytes, 39 bits, array -
+ff ff ff ff fe
+ 39 bits - ff ff ff ff fe
+ 38 bits - ff ff ff ff fc
+ 37 bits - ff ff ff ff f8
+ 36 bits - ff ff ff ff f0
+ 35 bits - ff ff ff ff e0
+ 34 bits - ff ff ff ff c0
+ 33 bits - ff ff ff ff 80
+ 32 bits - ff ff ff ff
+ 31 bits - ff ff ff fe
+ 30 bits - ff ff ff fc
+ 29 bits - ff ff ff f8
+ 28 bits - ff ff ff f0
+ 27 bits - ff ff ff e0
+ 26 bits - ff ff ff c0
+ 25 bits - ff ff ff 80
+ 24 bits - ff ff ff
+ 23 bits - ff ff fe
+ 22 bits - ff ff fc
+ 21 bits - ff ff f8
+ 20 bits - ff ff f0
+ 19 bits - ff ff e0
+ 18 bits - ff ff c0
+ 17 bits - ff ff 80
+ 16 bits - ff ff
+ 15 bits - ff fe
+ 14 bits - ff fc
+ 13 bits - ff f8
+ 12 bits - ff f0
+ 11 bits - ff e0
+ 10 bits - ff c0
+  9 bits - ff 80
+  8 bits - ff
+  7 bits - fe
+  6 bits - fc
+  5 bits - f8
+  4 bits - f0
+  3 bits - e0
+  2 bits - c0
+  1 bits - 80
+  0 bits - <EMPTY>

@@ -26,6 +26,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <stdlib.h>		// Needed for abort()
+#include <stdarg.h>
 
 /*
  *	Declare DBH_ON to set dbgon true in the constructor.

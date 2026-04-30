@@ -1,0 +1,15 @@
+../Arch/port.c:67:9:kbhit	4	static
+../Arch/port.c:103:9:getch	16	static
+../Arch/port.c:130:5:get_key_cmd	8	static
+../Arch/port.c:137:6:putch	16	static
+C:\ST\STM32CubeIDE_1.12.0\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.12.3.rel1.win32_1.0.100.202403111256\tools\bin/../lib/gcc/arm-none-eabi/12.3.1/../../../../arm-none-eabi/include/stdio.h:227:5:puts	16	static
+../Arch/port.c:155:7:getstr	24	static
+../Arch/port.c:177:5:__io_putchar	16	static
+../Arch/port.c:196:6:OUT_PC	16	static
+../Arch/port.c:260:9:inportb	16	static
+../Arch/port.c:280:6:outportb	16	static
+../Arch/port.c:299:6:enable	4	static
+../Arch/port.c:304:6:disable	4	static
+C:\ST\STM32CubeIDE_1.12.0\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.12.3.rel1.win32_1.0.100.202403111256\tools\bin/../lib/gcc/arm-none-eabi/12.3.1/../../../../arm-none-eabi/include/stdio.h:206:5:printf	136	static
+../Arch/port.c:326:5:_gettimeofday	16	static
+../Arch/port.c:333:6:GetCTime	80	static

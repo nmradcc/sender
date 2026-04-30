@@ -1,0 +1,4 @@
+../CS/Wangrow/M_Track.c:96:6:StateTrack	16	static
+../CS/Wangrow/M_Track.c:126:6:DisplayTrackStatus	16	static
+../CS/Wangrow/M_Track.c:167:6:TrackStatus	16	static
+../CS/Wangrow/M_Track.c:186:6:ExitTrackDisplay	16	static

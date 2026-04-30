@@ -1,0 +1,13 @@
+../Shell/ShellFile.c:94:16:GetExtension	24	static
+../Shell/ShellFile.c:135:9:scan_files	96	static
+../Shell/ShellFile.c:299:12:ShDir	320	static
+../Shell/ShellFile.c:419:12:ShCWD	24	static
+../Shell/ShellFile.c:521:12:ShType	680	static
+../Shell/ShellFile.c:593:12:ShDelete	48	static
+../Shell/ShellFile.c:634:12:ShRename	32	static
+../Shell/ShellFile.c:663:12:ShMkdir	24	static
+../Shell/ShellFile.c:695:12:ShRmdir	48	static
+../Shell/ShellFile.c:734:12:ShChdir	24	static
+../Shell/ShellFile.c:764:9:GetAtribMask	24	static
+../Shell/ShellFile.c:806:12:ShAtrib	80	static
+../Shell/ShellFile.c:884:12:ShCopy	1160	static

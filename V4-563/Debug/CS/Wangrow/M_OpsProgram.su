@@ -1,0 +1,5 @@
+../CS/Wangrow/M_OpsProgram.c:170:6:StateProgramOnMain	24	static
+../CS/Wangrow/M_OpsProgram.c:218:6:DoOpsMenu	24	static
+../CS/Wangrow/M_OpsProgram.c:256:6:ExitOpsProgram	16	static
+../CS/Wangrow/M_OpsProgram.c:382:6:EditOpsChoice	16	static
+../CS/Wangrow/M_OpsProgram.c:429:6:ProgramOpsCV	16	static

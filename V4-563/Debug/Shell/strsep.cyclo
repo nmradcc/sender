@@ -1,0 +1,3 @@
+../Shell/strsep.c:51:8:strsepold	5
+C:\ST\STM32CubeIDE_1.12.0\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.12.3.rel1.win32_1.0.100.202403111256\tools\bin/../lib/gcc/arm-none-eabi/12.3.1/../../../../arm-none-eabi/include/string.h:122:8:strsep	7
+../Shell/strsep.c:130:7:strsepAtt	12

@@ -1,0 +1,13 @@
+SCC = This is a Source Code Control file
+
+[BIT_TEST.DSW]
+SCC_Aux_Path = "C:\VSTUDIO\Common\VSS"
+SCC_Project_Name = "$/NMRA/LIB", DAAAAAAA
+
+[cktest.DSW]
+SCC_Aux_Path = "C:\VSTUDIO\Common\VSS"
+SCC_Project_Name = "$/NMRA/LIB", DAAAAAAA
+
+[ZL_TST.DSW]
+SCC_Aux_Path = "C:\VSTUDIO\Common\VSS"
+SCC_Project_Name = "$/NMRA/LIB", DAAAAAAA

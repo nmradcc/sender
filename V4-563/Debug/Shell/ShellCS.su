@@ -1,0 +1,11 @@
+../Shell/ShellCS.c:63:12:ShCabStat	104	static
+../Shell/ShellCS.c:164:12:ShLocoStat	96	static
+../Shell/ShellCS.c:307:12:ShAssign	56	static
+../Shell/ShellCS.c:374:12:ShSystemStatus	24	static
+../Shell/ShellCS.c:549:12:ShSendPacketOrig	712	static
+../Shell/ShellCS.c:687:12:ShSendPacket	712	static
+../Shell/ShellCS.c:937:12:ShSetLoco	40	static
+../Shell/ShellCS.c:1000:12:ShCabDisplay	32	static
+../Shell/ShellCS.c:1023:6:ServiceModeCallback	16	static
+../Shell/ShellCS.c:1039:12:ShProgTrackWriteCV	24	static
+../Shell/ShellCS.c:1060:12:ShProgTrackReadCV	24	static

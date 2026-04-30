@@ -1,0 +1,67 @@
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/z_core.h:122:2:Z_core::Z_core()	1
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/z_core.h:140:2:const Z_obj_err_t Z_core::get_obj_errs() const	1
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/z_core.h:152:2:void Z_core::clear_warn()	1
+../Send/SRC/SEND/args.h:66:11:u_short Args_obj::get_decoder_address() const	1
+../Send/SRC/SEND/args.h:70:14:Dec_types Args_obj::get_decoder_type() const	1
+../Send/SRC/SEND/args.h:72:10:bool Args_obj::get_crit_flag() const	1
+../Send/SRC/SEND/args.h:76:11:bool Args_obj::get_rep_flag() const	1
+../Send/SRC/SEND/args.h:82:11:bool Args_obj::get_manual_flag() const	1
+../Send/SRC/SEND/args.h:86:10:bool Args_obj::get_trig_rev() const	1
+../Send/SRC/SEND/args.h:88:10:bool Args_obj::get_loco_first() const	1
+../Send/SRC/SEND/args.h:90:12:u_int Args_obj::get_fill_msec() const	1
+../Send/SRC/SEND/args.h:94:10:bool Args_obj::get_print_user() const	1
+../Send/SRC/SEND/args.h:96:10:bool Args_obj::get_log_pkts() const	1
+../Send/SRC/SEND/args.h:98:10:bool Args_obj::get_no_abort() const	1
+../Send/SRC/SEND/args.h:108:10:bool Args_obj::get_lamp_rear() const	1
+../Send/SRC/SEND/args.h:110:11:BYTE Args_obj::get_func_mask() const	1
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/zlog.h:106:8:bool Zlog::get_stderr_too() const	1
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/zlog.h:113:8:FILE* Zlog::get_fp_log() const	1
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/zlog.h:114:8:FILE* Zlog::get_fp_stat() const	1
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/zlog.h:118:7:void Zlog::set_stderr_too(bool)	1
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/zlog.h:121:7:void Zlog::set_no_abort_flag(bool)	1
+../Send/SRC/SEND/sr_core.h:49:2:Sr_core::Sr_core()	1
+../Send/SRC/SEND/send_reg.h:96:2:Send_reg::Send_reg()	1
+../Send/SRC/SEND/send_reg.h:106:7:bool Send_reg::get_running() const	1
+../Send/SRC/SEND/send_reg.h:107:9:u_long Send_reg::get_b_cnt() const	1
+../Send/SRC/SEND/send_reg.h:108:9:u_long Send_reg::get_p_cnt() const	1
+../Send/SRC/SEND/send_reg.h:115:7:bool Send_reg::get_log_pkts() const	1
+../Send/SRC/SEND/send_reg.h:124:7:void Send_reg::set_log_pkts(bool)	1
+../Send/SRC/SEND/send_reg.h:135:2:void Send_reg::set_scope(bool)	2
+../Send/SRC/SEND/send_reg.h:156:7:void Send_reg::clr_under()	1
+../Send/SRC/SEND/send_reg.h:172:9:Rslt_t Send_reg::send_rst()	1
+../Send/SRC/SEND/send_reg.h:174:9:Rslt_t Send_reg::send_hard_rst()	1
+../Send/SRC/SEND/send_reg.h:176:9:Rslt_t Send_reg::send_idle()	1
+../Send/SRC/SEND/send_reg.h:203:2:void Send_reg::rst_stats()	1
+../Send/SRC/SEND/send_reg.h:214:2:void Send_reg::gen_print() const	1
+../Send/SRC/SEND/test_reg.h:61:2:Test_reg::Test_reg(const Test_reg_vm*, int)	1
+../Send/SRC/SEND/self_tst.h:67:2:Self_tst::Self_tst(Send_reg&, Test_reg_vm*, int)	1
+../Send/SRC/SEND/self_tst.h:78:2:Self_tst::~Self_tst()	1
+../Send/SRC/SEND/self_tst.h:103:7:void Self_tst::rst_stats()	1
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/bits.h:94:2:static void Bits::set_static_variables(bool, bool, bool, BYTE)	1
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/bits.h:151:2:void Bits::rst_out()	1
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/bits.h:175:2:Bits& Bits::put_check()	1
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/bits.h:183:2:Bits& Bits::clr_check()	1
+C:/Users/konem/nmradcc/sender/V4-563/Send/INCLUDE/bits.h:225:2:Bits& Bits::put_cmd_pkt_28(BYTE, bool, int, u_int)	1
+../Send/SRC/SEND/dec_tst.h:100:7:void Dec_tst::set_decoder_type(Dec_types)	1
+../Send/SRC/SEND/dec_tst.h:104:7:void Dec_tst::set_fill_msec(u_long)	1
+../Send/SRC/SEND/SEND.cpp:72:13:void dummy(const char*, const char*)	1
+../Send/SRC/SEND/SEND.cpp:283:1:int send_main(int, char**)	9
+../Send/SRC/SEND/SEND.cpp:458:1:void exit_send(int)	2
+../Send/SRC/SEND/SEND.cpp:506:1:void print_user_docs()	2
+../Send/SRC/SEND/SEND.cpp:557:1:void get_log_file(const char*)	12
+../Send/SRC/SEND/SEND.cpp:779:1:Rslt_t do_self_tests(Self_tst&)	1
+../Send/SRC/SEND/SEND.cpp:833:1:Key_val get_key_cmd()	1
+../Send/SRC/SEND/SEND.cpp:861:2:void parse_key_cmd(Key_val)	131
+../Send/SRC/SEND/SEND.cpp:1753:6:void SetDccTiming()	1
+../Send/SRC/SEND/SEND.cpp:1759:6:void SendZero()	1
+../Send/SRC/SEND/SEND.cpp:1766:6:void SendOne()	1
+../Send/SRC/SEND/SEND.cpp:1772:6:void SendScopeA()	2
+../Send/SRC/SEND/SEND.cpp:1787:6:void SendScopeB()	2
+../Send/SRC/SEND/SEND.cpp:1801:6:void SendWarble()	1
+../Send/SRC/SEND/SEND.cpp:1808:6:void SendStretched()	1
+../Send/SRC/SEND/SEND.cpp:1822:6:void SendReset()	1
+../Send/SRC/SEND/SEND.cpp:1833:6:void SendHard()	1
+../Send/SRC/SEND/SEND.cpp:1844:6:void SendIdle()	1
+../Send/SRC/SEND/SEND.cpp:1858:1:void __static_initialization_and_destruction_0(int, int)	5
+../Send/SRC/SEND/SEND.cpp:1858:1:cpp)	1
+../Send/SRC/SEND/SEND.cpp:1858:1:cpp)	1

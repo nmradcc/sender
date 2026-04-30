@@ -1,0 +1,3 @@
+rem linux style wide directoy - now in color
+dir -c -w %1
+prompt

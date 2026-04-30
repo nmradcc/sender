@@ -1,0 +1,16 @@
+../CS/Packet.c:79:16:BuildAddress	32	static
+../CS/Packet.c:149:5:BuildLocoPacket	32	static
+../CS/Packet.c:244:5:BuildLocoEStopPacket	32	static
+../CS/Packet.c:305:5:BuildFunction1Packet	32	static
+../CS/Packet.c:346:5:BuildFunction2Packet	32	static
+../CS/Packet.c:385:5:BuildFunction3Packet	32	static
+../CS/Packet.c:426:5:BuildFunction4Packet	32	static
+../CS/Packet.c:467:5:BuildAccessoryPacket	32	static
+../CS/Packet.c:521:5:BuildOpsWriteCVPacket	32	static
+../CS/Packet.c:567:5:BuildPresetPagePacket	16	static
+../CS/Packet.c:577:5:BuildSetPagePacket	16	static
+../CS/Packet.c:597:5:BuildWriteCVPacket	24	static
+../CS/Packet.c:667:5:BuildVerifyCVPacket	24	static
+../CS/Packet.c:737:5:BuildWriteBitPacket	24	static
+../CS/Packet.c:789:5:BuildVerifyBitPacket	24	static
+../CS/Packet.c:851:5:BuildResetPacket	16	static

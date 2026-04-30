@@ -1,0 +1,7 @@
+../CS/Wangrow/M_Function.c:144:6:SetFunctionCursor	16	static
+../CS/Wangrow/M_Function.c:176:6:StateFunction	24	static
+../CS/Wangrow/M_Function.c:234:6:ExitFunction	16	static
+../CS/Wangrow/M_Function.c:261:6:DisplayFunctions	56	static
+../CS/Wangrow/M_Function.c:360:6:EditFunction	32	static
+../CS/Wangrow/M_Function.c:489:6:DoFunctionRefresh	32	static
+../CS/Wangrow/M_Function.c:520:6:DoNormalFunction	32	static

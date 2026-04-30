@@ -1,0 +1,3 @@
+rem linux style list directoy - now in color
+dir -c %1
+prompt

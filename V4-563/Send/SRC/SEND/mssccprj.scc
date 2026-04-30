@@ -1,0 +1,5 @@
+SCC = This is a Source Code Control file
+
+[SEND.DSW]
+SCC_Aux_Path = "C:\VSTUDIO\Common\VSS"
+SCC_Project_Name = "$/NMRA/SRC/SEND", FAAAAAAA

@@ -1,0 +1,2 @@
+../CS/Clock.c:357:6:RegisterClockUpdate	24	static
+../CS/Clock.c:385:6:CheckClockUpdate	40	static

@@ -1,0 +1,6 @@
+../Core/Src/Acknowledge.c:90:6:InitAcknowledge	8	static
+../Core/Src/Acknowledge.c:177:7:E_AverageFloat	48	static
+../Core/Src/Acknowledge.c:200:6:HAL_ADC_ConvCpltCallback	16	static
+../Core/Src/Acknowledge.c:226:6:Acknowledge	24	static
+../Core/Src/Acknowledge.c:318:9:IsAck	4	static
+../Core/Src/Acknowledge.c:338:12:GetAck	4	static

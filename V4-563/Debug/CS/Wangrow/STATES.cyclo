@@ -1,0 +1,4 @@
+../CS/Wangrow/STATES.c:73:6:RunState	15
+../CS/Wangrow/STATES.c:207:6:InitState	1
+../CS/Wangrow/STATES.c:227:6:ChangeState	1
+../CS/Wangrow/STATES.c:274:15:DispatchEvent	4

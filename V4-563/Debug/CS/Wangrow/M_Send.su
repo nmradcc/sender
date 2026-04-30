@@ -1,0 +1,3 @@
+../CS/Wangrow/M_Send.c:90:6:StateSend	16	static
+../CS/Wangrow/M_Send.c:123:6:ExitSendDisplay	16	static
+../CS/Wangrow/M_Send.c:135:6:SendCabMessage	16	static

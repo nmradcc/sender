@@ -1,0 +1,6 @@
+../CS/Wangrow/M_SelectAccessory.c:159:6:StateSelectAccessory	6
+../CS/Wangrow/M_SelectAccessory.c:201:6:DoSelectAccessory	2
+../CS/Wangrow/M_SelectAccessory.c:235:6:DoControlAccessory	1
+../CS/Wangrow/M_SelectAccessory.c:264:6:ExitAccessory	1
+../CS/Wangrow/M_SelectAccessory.c:289:6:ExitAccessory2	2
+../CS/Wangrow/M_SelectAccessory.c:325:6:EditAccessory	17
