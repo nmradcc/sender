@@ -1,0 +1,40 @@
+# Build outputs
+build/
+Debug/
+Release/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+*.ipch
+*.pdb
+*.ilk
+*.obj
+*.idb
+*.tlog
+*.pch
+*.res
+*.exp
+*.lib
+*.dll
+
+
+# Windows
+Thumbs.db
+ehsthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Logs
+*.log
