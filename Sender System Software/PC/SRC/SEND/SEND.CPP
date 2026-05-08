@@ -429,6 +429,7 @@ main(
 {
 	const char	*my_name = "main";
 	Key_val		init_key = KEY_DEC_TST;		// Initial key value.
+	bool		use_hw_backend;
 
 	if ( Args.get_args( argc, argv ) != OK )
 	{
@@ -459,8 +460,9 @@ main(
 	 *	hardware.
 	 */
 	Dcc_reg.set_log_pkts( Args.get_log_pkts() );
+	use_hw_backend = !Args.get_log_pkts();
 
-	if ( !init_hw_backend() )
+	if ( use_hw_backend && !init_hw_backend() )
 	{
 		fprintf( stderr,
 			"ERROR: MCU backend init failed on <%s> at %u baud\n",
@@ -468,7 +470,7 @@ main(
 		exit_send( 1 );
 	}
 
-	Dcc_reg.set_hw_if( Lhw_if );
+	Dcc_reg.set_hw_if( use_hw_backend ? Lhw_if : NULL );
 
 	if ( Args.get_manual_flag() == true )	// Manual mode.
 	{
