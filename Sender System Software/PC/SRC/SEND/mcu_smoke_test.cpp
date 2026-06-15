@@ -28,18 +28,89 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
 
+#include "SEND.H"
 #include "SENDER_HW_MCU_USB.H"
 #include "SENDER_HW_PROTOCOL.H"
 
-static const char *PASS = "PASS";
-static const char *FAIL = "FAIL";
+static const char *PASS_TEXT = "PASS";
+static const char *FAIL_TEXT = "FAIL";
 
 static int g_failures = 0;
 
+static const char *release_level_name(Rel_levels level)
+{
+    switch (level)
+    {
+    case VER_DEB:  return "debug";
+    case VER_EXP:  return "experimental";
+    case VER_BETA: return "beta";
+    case VER_REL:  return "release";
+    default:       return "unknown";
+    }
+}
+
+static void dump_version_info(void)
+{
+    printf("Version info:\n");
+    printf("  sender host version : %u.%u.%u (%c, %s)\n",
+           Ver_maj,
+           Ver_min,
+           Ver_bld,
+           (char)Ver_rel,
+           release_level_name(Ver_rel));
+    printf("  host protocol ver   : %u\n", (unsigned int)SHP_VERSION);
+    printf("  build timestamp     : %s %s\n", __DATE__, __TIME__);
+#if defined(_MSC_VER)
+    printf("  compiler            : MSVC %d\n", _MSC_VER);
+#endif
+}
+
+static void dump_mcu_version_info(Sender_hw_mcu_usb& dev)
+{
+    std::vector<uint8_t> info;
+
+    if (!dev.get_info(info))
+    {
+        printf("  mcu info payload    : unavailable (GET_INFO failed)\n");
+        printf("----------------------------------------\n");
+        return;
+    }
+
+    printf("  mcu info payload    : %u byte(s)",
+           (unsigned int)info.size());
+    if (!info.empty())
+    {
+        printf(" [");
+        for (size_t i = 0; i < info.size(); ++i)
+        {
+            printf("%s%02X", (i == 0) ? "" : " ", (unsigned int)info[i]);
+        }
+        printf("]");
+    }
+    printf("\n");
+
+    if (info.size() >= 3)
+    {
+        printf("  mcu fw version      : %u.%u.%u (bytes 0..2)\n",
+               (unsigned int)info[0],
+               (unsigned int)info[1],
+               (unsigned int)info[2]);
+    }
+
+    if (info.size() >= 4)
+    {
+        printf("  mcu protocol ver    : %u (byte 3)\n",
+               (unsigned int)info[3]);
+    }
+
+    printf("----------------------------------------\n");
+}
+
 static void check(const char *test_name, bool ok)
 {
-    printf("  %-40s %s\n", test_name, ok ? PASS : FAIL);
+    printf("  %-40s %s\n", test_name, ok ? PASS_TEXT : FAIL_TEXT);
     if (!ok)
     {
         ++g_failures;
@@ -63,7 +134,7 @@ int main(int argc, char *argv[])
     Sender_hw_mcu_usb dev(port, 115200);
 
     printf("MCU sender smoke test on %s\n", port);
-    printf("----------------------------------------\n");
+    dump_version_info();
 
     /* 1. Open + GET_INFO -------------------------------------------------- */
     bool opened = dev.init();
@@ -73,6 +144,8 @@ int main(int argc, char *argv[])
         printf("Cannot open port — aborting.\n");
         return 1;
     }
+
+    dump_mcu_version_info(dev);
 
     /* 2. RESET_STATS + verify zero ----------------------------------------- */
     check("2. RESET_STATS", dev.reset_stats());

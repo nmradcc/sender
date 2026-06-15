@@ -12,6 +12,28 @@ extern "C" {
 #define SHP_SOF_MCU  0x5Au
 #define SHP_VERSION  0x01u
 
+#ifndef SHP_MCU_FW_VERSION_MAJOR
+#define SHP_MCU_FW_VERSION_MAJOR 1u
+#endif
+
+#ifndef SHP_MCU_FW_VERSION_MINOR
+#define SHP_MCU_FW_VERSION_MINOR 0u
+#endif
+
+#ifndef SHP_MCU_FW_VERSION_PATCH
+#define SHP_MCU_FW_VERSION_PATCH 0u
+#endif
+
+#ifndef SHP_MCU_FW_VERSION_BUILD
+#define SHP_MCU_FW_VERSION_BUILD 0u
+#endif
+
+#define SHP_MCU_FW_VERSION_NUMBER                                        \
+    ((((uint32_t)SHP_MCU_FW_VERSION_MAJOR) & 0xFFu) << 24 |            \
+     (((uint32_t)SHP_MCU_FW_VERSION_MINOR) & 0xFFu) << 16 |            \
+     (((uint32_t)SHP_MCU_FW_VERSION_PATCH) & 0xFFu) << 8  |            \
+     (((uint32_t)SHP_MCU_FW_VERSION_BUILD) & 0xFFu))
+
 enum shp_cmd
 {
     SHP_CMD_GET_INFO = 0x01,
@@ -36,6 +58,7 @@ enum shp_cmd
     SHP_CMD_GET_STATUS = 0x30,
     SHP_CMD_GET_STATS = 0x31,
     SHP_CMD_RESET_STATS = 0x32,
+    SHP_CMD_GET_MCU_VERSION = 0x33,
 
     SHP_CMD_RESET_DEVICE = 0x7F
 };
