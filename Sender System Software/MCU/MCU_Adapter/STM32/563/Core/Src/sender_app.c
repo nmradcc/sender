@@ -43,11 +43,28 @@ static void sender_app_handle_request(const sender_request_t* req,
     {
         case SHP_CMD_GET_INFO:
             rsp->payload[0] = SHP_VERSION;
-            rsp->payload[1] = 0x01;
-            rsp->payload[2] = 0x00;
-            rsp->payload[3] = 0x00;
+            rsp->payload[1] = SHP_MCU_FW_VERSION_MAJOR;
+            rsp->payload[2] = SHP_MCU_FW_VERSION_MINOR;
+            rsp->payload[3] = SHP_MCU_FW_VERSION_PATCH;
             rsp->payload[4] = 0x02;
             rsp->payload_len = 5;
+            break;
+
+        case SHP_CMD_GET_MCU_VERSION:
+            if (req->payload_len != 0u)
+            {
+                rsp->status = SHP_STATUS_BAD_LENGTH;
+                break;
+            }
+
+            rsp->payload[0] = (uint8_t)(SHP_MCU_FW_VERSION_NUMBER & 0xFFu);
+            rsp->payload[1] =
+                (uint8_t)((SHP_MCU_FW_VERSION_NUMBER >> 8) & 0xFFu);
+            rsp->payload[2] =
+                (uint8_t)((SHP_MCU_FW_VERSION_NUMBER >> 16) & 0xFFu);
+            rsp->payload[3] =
+                (uint8_t)((SHP_MCU_FW_VERSION_NUMBER >> 24) & 0xFFu);
+            rsp->payload_len = 4;
             break;
 
         case SHP_CMD_SET_TIMING:

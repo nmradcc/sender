@@ -43,6 +43,9 @@ class Sender_hw_mcu_usb : public Sender_hw_if
     virtual bool get_stats(Sender_hw_stats& stats);
     virtual bool reset_stats();
 
+    /* Returns raw SHP_CMD_GET_INFO payload from the MCU. */
+    bool get_info(std::vector<uint8_t>& info_payload);
+
     /* Helpers used by host and test code for frame handling. */
     static uint16_t crc16_ccitt(const uint8_t* data, size_t size);
     static std::vector<uint8_t> build_frame(uint8_t sof, uint8_t cmd,
