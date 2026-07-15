@@ -23,11 +23,11 @@
       "stopAtEntry": false
     },
       {
-      "name": "Debug -m send.exe (CMake)",
+      "name": "Debug -J COM4 -m send.exe (CMake)",
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${command:cmake.launchTargetPath}",
-      "args": ["-m"],
+      "args": ["-J", "COM4", "-m"],
       "cwd": "${command:cmake.launchTargetDirectory}",
       "console": "integratedTerminal",
       "stopAtEntry": false

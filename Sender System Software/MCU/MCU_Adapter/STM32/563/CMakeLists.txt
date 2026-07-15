@@ -61,7 +61,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 # Firmware version exposed to host (SHP_CMD_GET_MCU_VERSION)
 set(SHP_MCU_FW_VERSION_MAJOR "1" CACHE STRING "MCU firmware major version")
-set(SHP_MCU_FW_VERSION_MINOR "0" CACHE STRING "MCU firmware minor version")
+set(SHP_MCU_FW_VERSION_MINOR "1" CACHE STRING "MCU firmware minor version")
 set(SHP_MCU_FW_VERSION_PATCH "0" CACHE STRING "MCU firmware patch version")
 set(SHP_MCU_FW_VERSION_BUILD "0" CACHE STRING "MCU firmware build version")
 
