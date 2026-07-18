@@ -495,18 +495,18 @@ main(
 		printf(		"Starting decoder tests, address %u, type %c\n",
 			Args.get_decoder_address(), Args.get_decoder_type() );
 
-		STATPRINT( "Beginning MCU selftests" );
-		printf(    "Beginning MCU selftests\n" );
+		STATPRINT( "Beginning MCU self tests" );
+		printf(    "Beginning MCU self tests\n" );
 
 		if ( do_mcu_self_tests() == OK )
 		{
-			STATPRINT( "MCU selftests passed" );
-			printf(    "MCU selftests passed\n" );
+			STATPRINT( "MCU self tests passed" );
+			printf(    "MCU self tests passed\n" );
 		}
 		else
 		{
-			printf(	                "%s: MCU selftests failed\n", my_name );
-			ERRPRINT( my_name, LOG_ERR, "MCU selftests failed" );
+			printf(	                "%s: MCU self tests failed\n", my_name );
+			ERRPRINT( my_name, LOG_ERR, "MCU self tests failed" );
 			init_key	=	KEY_NULL;			// Don't start tests on fail.
 		}
 	}
