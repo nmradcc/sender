@@ -933,7 +933,6 @@ do_mcu_self_tests( void )
 
 	if ( failures == 0 )
 	{
-		STATPRINT( "MCU selftests: ALL TESTS PASSED" );
 		printf(    "MCU selftests: ALL TESTS PASSED\n" );
 		return ( OK );
 	}
