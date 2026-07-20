@@ -47,11 +47,6 @@ const int		MAX_PKT_LINE	= 24;			// Max packet bytes per line.
 BYTE
 Send_reg::get_gen( void ) const
 {
-	if ( m_log_pkts )
-	{
-		return ( 0 );
-	}
-
 	if ( m_hw_if != NULL )
 	{
 		BYTE gen1 = 0;
@@ -69,12 +64,6 @@ void
 Send_reg::set_scope(
 	bool		scope_on )
 {
-	if ( m_log_pkts )
-	{
-		scope	=	scope_on ? SCOPE_START : SCOPE_IDLE;
-		return;
-	}
-
 	if ( scope_on )
 	{
 		scope	=	SCOPE_START;
@@ -92,12 +81,6 @@ Send_reg::set_scope(
 void
 Send_reg::clr_under( void )
 {
-	if ( m_log_pkts )
-	{
-		DBGLOG( "Skipping hw underclr." );
-		return;
-	}
-
 	if ( m_hw_if != NULL )
 	{
 		m_hw_if->clear_underflow();
@@ -953,7 +936,7 @@ Send_reg::print_stats( void )
 void
 Send_reg::update( void )
 {
-	if ( m_log_pkts || m_hw_if == NULL )
+	if ( m_hw_if == NULL )
 	{
 		DBGLOG( "Send_reg::update() Skipping update." );
 		m_pc_delay_1usec	=	1;

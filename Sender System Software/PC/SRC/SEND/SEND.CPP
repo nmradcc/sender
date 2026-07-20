@@ -455,21 +455,25 @@ main(
 	 */
 	Deflog.set_no_abort_flag( Args.get_no_abort() );
 
+	if ( init_hw_backend() == true )
+	{
+		use_hw_backend = true;
+	}
+	else
+	{
+		use_hw_backend = false;
+		fprintf( stderr,
+			"ERROR: MCU backend init failed on <%s> at %u baud\n",
+			Args.get_mcu_port(), Args.get_mcu_baud() );
+	}
+
+
+
 	/*
 	 *	Tell Dcc_reg whether to log packets or send them to
 	 *	hardware.
 	 */
 	Dcc_reg.set_log_pkts( Args.get_log_pkts() );
-	use_hw_backend = !Args.get_log_pkts();
-
-	if ( use_hw_backend && !init_hw_backend() )
-	{
-		fprintf( stderr,
-			"ERROR: MCU backend init failed on <%s> at %u baud\n",
-			Args.get_mcu_port(), Args.get_mcu_baud() );
-		exit_send( 1 );
-	}
-
 	Dcc_reg.set_hw_if( use_hw_backend ? Lhw_if : NULL );
 
 	if ( Args.get_manual_flag() == true )	// Manual mode.
@@ -488,16 +492,16 @@ main(
 
 	get_log_file( argv[0] );
 
-	if ( !Dcc_reg.get_log_pkts() )
+	STATPRINT(	"Starting decoder tests, address %u, type %c",
+		Args.get_decoder_address(), Args.get_decoder_type() );
+	printf(		"Starting decoder tests, address %u, type %c\n",
+		Args.get_decoder_address(), Args.get_decoder_type() );
+
+	STATPRINT( "Beginning MCU self tests" );
+	printf(    "Beginning MCU self tests\n" );
+
+	if ( use_hw_backend == true )
 	{
-		STATPRINT(	"Starting decoder tests, address %u, type %c",
-			Args.get_decoder_address(), Args.get_decoder_type() );
-		printf(		"Starting decoder tests, address %u, type %c\n",
-			Args.get_decoder_address(), Args.get_decoder_type() );
-
-		STATPRINT( "Beginning MCU self tests" );
-		printf(    "Beginning MCU self tests\n" );
-
 		if ( do_mcu_self_tests() == OK )
 		{
 			STATPRINT( "MCU self tests passed" );
@@ -512,7 +516,7 @@ main(
 	}
 	else
 	{
-		DBGLOG( "%s: Skipping self tests.", my_name );
+		DBGLOG( "%s: No MCU backend. Skipping MCU self tests.", my_name );
 	}
 
 	parse_key_cmd( init_key );
