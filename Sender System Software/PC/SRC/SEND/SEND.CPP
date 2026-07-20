@@ -516,7 +516,8 @@ main(
 	}
 	else
 	{
-		DBGLOG( "%s: No MCU backend. Skipping MCU self tests.", my_name );
+		STATPRINT( "No MCU backend. Skipping MCU self tests." );
+		printf(    "No MCU backend. Skipping MCU self tests.\n" );
 	}
 
 	parse_key_cmd( init_key );
