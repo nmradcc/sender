@@ -467,8 +467,6 @@ main(
 			Args.get_mcu_port(), Args.get_mcu_baud() );
 	}
 
-
-
 	/*
 	 *	Tell Dcc_reg whether to log packets or send them to
 	 *	hardware.

@@ -292,7 +292,7 @@ bool Sender_hw_mcu_usb::send_chunked_commit(const uint8_t* data, size_t size,
                                             uint8_t append_cmd,
                                             uint8_t commit_cmd)
 {
-    const uint32_t busy_status_poll_count = 25;
+    const uint32_t busy_wait_timeout_ms = 5000;
 
     if (data == NULL || size == 0 || size > 0xFFFF)
     {
@@ -333,7 +333,12 @@ bool Sender_hw_mcu_usb::send_chunked_commit(const uint8_t* data, size_t size,
 
     if (status == SHP_STATUS_BUSY)
     {
-        for (uint32_t i = 0; i < busy_status_poll_count; ++i)
+#if defined(_WIN32)
+        uint32_t start_ms = GetTickCount();
+        while ((GetTickCount() - start_ms) < busy_wait_timeout_ms)
+#else
+        for (uint32_t i = 0; i < busy_wait_timeout_ms; ++i)
+#endif
         {
             Sender_hw_status hw_status;
             if (get_status(hw_status) && hw_status.queue_depth == 0)
