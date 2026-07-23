@@ -1091,8 +1091,14 @@ Key_val			init_key )					// Initial key value.
 			if ( hw_is_running() == true )
 			{
 				hw_stop_clk();
+				printf( "Stop clock\n" );			
 			}
-			printf( "Single SW clock toggle is not supported in MCU mode\n" );
+			else
+			{
+				hw_set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
+				hw_start_clk();
+				printf( "Start clock\n" );
+			}
 			Dcc_reg.up_print();
 			break;
 
@@ -1135,7 +1141,7 @@ Key_val			init_key )					// Initial key value.
 			{
 				hw_start_clk();
 			}
-			printf( "Sending Zeros\n" );
+			printf( "Sending 2 Zero Bytes\n" );
 			hw_clr_under();
 			break;
 
@@ -1145,7 +1151,7 @@ Key_val			init_key )					// Initial key value.
 			{
 				hw_start_clk();
 			}
-			printf( "Sending Ones\n" );
+			printf( "Sending 2 One Bytes\n" );
 			hw_clr_under();
 			break;
 
@@ -1183,15 +1189,17 @@ Key_val			init_key )					// Initial key value.
 				}
 			}
 
-			if ( hw_is_running() != true )
-			{
-				hw_start_clk();
-			}
+//			if ( hw_is_running() != true )
+//			{
+//				hw_start_clk();
+//			}
 			printf( "Sending scope timing test with period %5d\n",
 					Scope_time_tbl[ o_time_index ] );
+			hw_stop_clk();
 			hw_set_clk(	Scope_time_tbl[ o_time_index ],
 						Scope_time_tbl[ o_time_index ] / 2,
 						DECODER_1T_NOM );
+			hw_start_clk();
 			hw_clr_under();
 			break;
 
@@ -1534,11 +1542,13 @@ Key_val			init_key )					// Initial key value.
 				case SEND_ZERO:				// Repeat zero bytes.
 					hw_set_scope( true );
 					hw_send_bytes( 2, 0x00, "SEND_ZERO." );
+					hw_set_scope( false );
 					break;
 
 				case SEND_ONE:				// Repeat one bytes.
 					hw_set_scope( true );
 					hw_send_bytes( 2, 0xff, "SEND_ONE." );
+					hw_set_scope( false );
 					break;
 
 				case SEND_SCOPE_A:			// Repeat scope A (0-1) test.
@@ -1635,9 +1645,9 @@ Key_val			init_key )					// Initial key value.
                     Dcc_bits.put_idle_pkt( 1 );
 					Dcc_bits.put_1s( 1 ).done();
 
-					hw_send_bytes( 1, 0x00, "SEND_DCC Send 0." );
-					hw_set_scope( true );
-					hw_send_bits_pkt( Dcc_bits, "SEND_DCC Send pkt." );
+					Dcc_reg.send_bytes( 1, 0x00, "SEND_DCC Send 0." );
+					Dcc_reg.set_scope( true );
+					Dcc_reg.send_pkt( Dcc_bits, "SEND_DCC Send pkt." );
 					break;
 
 				case SEND_DCC_S:   			// Repeat stretched 0 test.
