@@ -825,8 +825,8 @@ get_log_file(
 #define SELF_CHECK( name_, expr_ ) \
 	do { \
 		bool _ok = (expr_); \
+		DBGLOG( "  %-40s %s", (name_), _ok ? "PASS" : "FAIL" ); \
 		printf( "  %-40s %s\n", (name_), _ok ? "PASS" : "FAIL" ); \
-		STATPRINT( "  %-40s %s", (name_), _ok ? "PASS" : "FAIL" ); \
 		if ( !_ok ) \
 		{ \
 			ERRPRINT( my_name, LOG_ERR, "FAILED: %s", (name_) ); \
@@ -841,7 +841,6 @@ do_mcu_self_tests( void )
 	int			 failures = 0;
 
 	STATPRINT( "MCU self test" );
-	STATPRINT( "----------------------------------------" );
 	printf( "MCU self test\n" );
 	printf( "----------------------------------------\n" );
 
@@ -931,7 +930,6 @@ do_mcu_self_tests( void )
 
 #undef SELF_CHECK
 
-	STATPRINT( "----------------------------------------" );
 	printf( "----------------------------------------\n" );
 
 	if ( failures == 0 )
