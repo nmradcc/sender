@@ -1585,14 +1585,13 @@ Key_val			init_key )					// Initial key value.
 					break;
 
 				case SEND_RESET:			// Repeat the reset packet.
-					hw_send_bytes( 1, 0x00, "SEND_RESET." );
-					hw_set_scope( true );
-					hw_send_special( SHP_SPECIAL_RESET );
+
+					Dcc_bits.clr_in();
+					Dcc_bits.put_reset_pkt().put_idle_pkt( 1 ).put_1s( 1 ).done();
+					Dcc_reg.send_bytes( 1, 0x00, "SEND_RESET Send 0." );
+					Dcc_reg.set_scope( true );
+					Dcc_reg.send_pkt( Dcc_bits, "SEND_RESET Send pkt." );
 					hw_set_scope( false );
-					for ( i = 0; i < 15; i++ )	// Send 15 normal idles.
-					{
-						hw_send_special( SHP_SPECIAL_IDLE );
-					}
 					break;
 
 				case SEND_HARD:			// Repeat the hard reset packet.
