@@ -455,21 +455,23 @@ main(
 	 */
 	Deflog.set_no_abort_flag( Args.get_no_abort() );
 
+	if ( init_hw_backend() == true )
+	{
+		use_hw_backend = true;
+	}
+	else
+	{
+		use_hw_backend = false;
+		fprintf( stderr,
+			"ERROR: MCU backend init failed on <%s> at %u baud\n",
+			Args.get_mcu_port(), Args.get_mcu_baud() );
+	}
+
 	/*
 	 *	Tell Dcc_reg whether to log packets or send them to
 	 *	hardware.
 	 */
 	Dcc_reg.set_log_pkts( Args.get_log_pkts() );
-	use_hw_backend = !Args.get_log_pkts();
-
-	if ( use_hw_backend && !init_hw_backend() )
-	{
-		fprintf( stderr,
-			"ERROR: MCU backend init failed on <%s> at %u baud\n",
-			Args.get_mcu_port(), Args.get_mcu_baud() );
-		exit_send( 1 );
-	}
-
 	Dcc_reg.set_hw_if( use_hw_backend ? Lhw_if : NULL );
 
 	if ( Args.get_manual_flag() == true )	// Manual mode.
@@ -488,31 +490,32 @@ main(
 
 	get_log_file( argv[0] );
 
-	if ( !Dcc_reg.get_log_pkts() )
+	STATPRINT(	"Starting decoder tests, address %u, type %c",
+		Args.get_decoder_address(), Args.get_decoder_type() );
+	printf(		"Starting decoder tests, address %u, type %c\n",
+		Args.get_decoder_address(), Args.get_decoder_type() );
+
+	STATPRINT( "Beginning MCU self tests" );
+	printf(    "Beginning MCU self tests\n" );
+
+	if ( use_hw_backend == true )
 	{
-		STATPRINT(	"Starting decoder tests, address %u, type %c",
-			Args.get_decoder_address(), Args.get_decoder_type() );
-		printf(		"Starting decoder tests, address %u, type %c\n",
-			Args.get_decoder_address(), Args.get_decoder_type() );
-
-		STATPRINT( "Beginning MCU selftests" );
-		printf(    "Beginning MCU selftests\n" );
-
 		if ( do_mcu_self_tests() == OK )
 		{
-			STATPRINT( "MCU selftests passed" );
-			printf(    "MCU selftests passed\n" );
+			STATPRINT( "MCU self tests passed" );
+			printf(    "MCU self tests passed\n" );
 		}
 		else
 		{
-			printf(	                "%s: MCU selftests failed\n", my_name );
-			ERRPRINT( my_name, LOG_ERR, "MCU selftests failed" );
+			printf(	                "%s: MCU self tests failed\n", my_name );
+			ERRPRINT( my_name, LOG_ERR, "MCU self tests failed" );
 			init_key	=	KEY_NULL;			// Don't start tests on fail.
 		}
 	}
 	else
 	{
-		DBGLOG( "%s: Skipping self tests.", my_name );
+		STATPRINT( "No MCU backend. Skipping MCU self tests." );
+		printf(    "No MCU backend. Skipping MCU self tests.\n" );
 	}
 
 	parse_key_cmd( init_key );
@@ -822,8 +825,8 @@ get_log_file(
 #define SELF_CHECK( name_, expr_ ) \
 	do { \
 		bool _ok = (expr_); \
+		DBGLOG( "  %-40s %s", (name_), _ok ? "PASS" : "FAIL" ); \
 		printf( "  %-40s %s\n", (name_), _ok ? "PASS" : "FAIL" ); \
-		STATPRINT( "  %-40s %s", (name_), _ok ? "PASS" : "FAIL" ); \
 		if ( !_ok ) \
 		{ \
 			ERRPRINT( my_name, LOG_ERR, "FAILED: %s", (name_) ); \
@@ -838,7 +841,6 @@ do_mcu_self_tests( void )
 	int			 failures = 0;
 
 	STATPRINT( "MCU self test" );
-	STATPRINT( "----------------------------------------" );
 	printf( "MCU self test\n" );
 	printf( "----------------------------------------\n" );
 
@@ -928,12 +930,10 @@ do_mcu_self_tests( void )
 
 #undef SELF_CHECK
 
-	STATPRINT( "----------------------------------------" );
 	printf( "----------------------------------------\n" );
 
 	if ( failures == 0 )
 	{
-		STATPRINT( "MCU selftests: ALL TESTS PASSED" );
 		printf(    "MCU selftests: ALL TESTS PASSED\n" );
 		return ( OK );
 	}
@@ -1089,8 +1089,14 @@ Key_val			init_key )					// Initial key value.
 			if ( hw_is_running() == true )
 			{
 				hw_stop_clk();
+				printf( "Stop clock\n" );			
 			}
-			printf( "Single SW clock toggle is not supported in MCU mode\n" );
+			else
+			{
+				hw_set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
+				hw_start_clk();
+				printf( "Start clock\n" );
+			}
 			Dcc_reg.up_print();
 			break;
 
@@ -1133,7 +1139,7 @@ Key_val			init_key )					// Initial key value.
 			{
 				hw_start_clk();
 			}
-			printf( "Sending Zeros\n" );
+			printf( "Sending 2 Zero Bytes\n" );
 			hw_clr_under();
 			break;
 
@@ -1143,7 +1149,7 @@ Key_val			init_key )					// Initial key value.
 			{
 				hw_start_clk();
 			}
-			printf( "Sending Ones\n" );
+			printf( "Sending 2 One Bytes\n" );
 			hw_clr_under();
 			break;
 
@@ -1181,15 +1187,17 @@ Key_val			init_key )					// Initial key value.
 				}
 			}
 
-			if ( hw_is_running() != true )
-			{
-				hw_start_clk();
-			}
+//			if ( hw_is_running() != true )
+//			{
+//				hw_start_clk();
+//			}
 			printf( "Sending scope timing test with period %5d\n",
 					Scope_time_tbl[ o_time_index ] );
+			hw_stop_clk();
 			hw_set_clk(	Scope_time_tbl[ o_time_index ],
 						Scope_time_tbl[ o_time_index ] / 2,
 						DECODER_1T_NOM );
+			hw_start_clk();
 			hw_clr_under();
 			break;
 
@@ -1532,11 +1540,13 @@ Key_val			init_key )					// Initial key value.
 				case SEND_ZERO:				// Repeat zero bytes.
 					hw_set_scope( true );
 					hw_send_bytes( 2, 0x00, "SEND_ZERO." );
+					hw_set_scope( false );
 					break;
 
 				case SEND_ONE:				// Repeat one bytes.
 					hw_set_scope( true );
 					hw_send_bytes( 2, 0xff, "SEND_ONE." );
+					hw_set_scope( false );
 					break;
 
 				case SEND_SCOPE_A:			// Repeat scope A (0-1) test.
@@ -1573,24 +1583,24 @@ Key_val			init_key )					// Initial key value.
 					break;
 
 				case SEND_RESET:			// Repeat the reset packet.
-					hw_send_bytes( 1, 0x00, "SEND_RESET." );
+					Dcc_reg.send_bytes( 1, 0x00, "SEND_RESET Send 0." );
 					hw_set_scope( true );
-					hw_send_special( SHP_SPECIAL_RESET );
+					Dcc_reg.send_rst();
 					hw_set_scope( false );
 					for ( i = 0; i < 15; i++ )	// Send 15 normal idles.
 					{
-						hw_send_special( SHP_SPECIAL_IDLE );
+						Dcc_reg.send_idle();
 					}
 					break;
 
 				case SEND_HARD:			// Repeat the hard reset packet.
-					hw_send_bytes( 1, 0x00, "SEND_HARD." );
+					Dcc_reg.send_bytes( 1, 0x00, "SEND_HARD." );
 					hw_set_scope( true );
-					hw_send_special( SHP_SPECIAL_HARD_RESET );
+					Dcc_reg.send_hard_rst();	// Send the hard reset.
 					hw_set_scope( false );
 					for ( i = 0; i < 15; i++ )	// Send 15 normal idles.
 					{
-						hw_send_special( SHP_SPECIAL_IDLE );
+						Dcc_reg.send_idle();
 					}
 					break;
 
@@ -1633,9 +1643,9 @@ Key_val			init_key )					// Initial key value.
                     Dcc_bits.put_idle_pkt( 1 );
 					Dcc_bits.put_1s( 1 ).done();
 
-					hw_send_bytes( 1, 0x00, "SEND_DCC Send 0." );
-					hw_set_scope( true );
-					hw_send_bits_pkt( Dcc_bits, "SEND_DCC Send pkt." );
+					Dcc_reg.send_bytes( 1, 0x00, "SEND_DCC Send 0." );
+					Dcc_reg.set_scope( true );
+					Dcc_reg.send_pkt( Dcc_bits, "SEND_DCC Send pkt." );
 					break;
 
 				case SEND_DCC_S:   			// Repeat stretched 0 test.

@@ -47,11 +47,6 @@ const int		MAX_PKT_LINE	= 24;			// Max packet bytes per line.
 BYTE
 Send_reg::get_gen( void ) const
 {
-	if ( m_log_pkts )
-	{
-		return ( 0 );
-	}
-
 	if ( m_hw_if != NULL )
 	{
 		BYTE gen1 = 0;
@@ -69,12 +64,6 @@ void
 Send_reg::set_scope(
 	bool		scope_on )
 {
-	if ( m_log_pkts )
-	{
-		scope	=	scope_on ? SCOPE_START : SCOPE_IDLE;
-		return;
-	}
-
 	if ( scope_on )
 	{
 		scope	=	SCOPE_START;
@@ -92,12 +81,6 @@ Send_reg::set_scope(
 void
 Send_reg::clr_under( void )
 {
-	if ( m_log_pkts )
-	{
-		DBGLOG( "Skipping hw underclr." );
-		return;
-	}
-
 	if ( m_hw_if != NULL )
 	{
 		m_hw_if->clear_underflow();
@@ -146,12 +129,25 @@ Send_reg::set_clk(
 		stop_clk();
 	}
 
-	if ( !m_log_pkts && m_hw_if == NULL )
+	if ( m_hw_if == NULL )
 	{
+		if ( m_log_pkts )
+		{
+			DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu.",
+				my_name, clk0t, clk0h, clk1t );
+			return ( OK );
+		}
+
 		ERRPRINT( my_name, LOG_ERR,
 			"MCU hardware interface not initialized" );
 		clk0t = clk0h = clk1t = DCC_CLK_ERR;
 		return ( FAIL );
+	}
+
+	if ( m_log_pkts )
+	{
+		DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu.",
+			my_name, clk0t, clk0h, clk1t );
 	}
 
 	if ( iclk0t != DCC_CLK_HOLD )
@@ -193,7 +189,7 @@ Send_reg::set_clk(
 		}
 	}
 
-	if ( !m_log_pkts && !m_hw_if->set_timing( clk0t, clk0h, clk1t ) )
+	if ( !m_hw_if->set_timing( clk0t, clk0h, clk1t ) )
 	{
 		ERRPRINT( my_name, LOG_ERR,
 			"set_timing() FAILED" );
@@ -212,9 +208,6 @@ Send_reg::set_clk(
 	{
 		running = false;
 	}
-
-	DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu.",
-		my_name, clk0t, clk0h, clk1t );
 
 	return ( OK );
 }
@@ -253,31 +246,33 @@ Send_reg::start_clk( void )
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts )
+	if ( m_hw_if == NULL )
 	{
-		DBGLOG( "%s() Clock started.", my_name );
-		scope	= 	SCOPE_IDLE;
-		running	=	true;
-		return ( OK );
-	}
-
-	if ( m_hw_if != NULL )
-	{
-		if ( !m_hw_if->start_clock() )
+		if ( m_log_pkts )
 		{
-			ERRPRINT( my_name, LOG_ERR,
-				"start_clock() FAILED" );
-			return ( FAIL );
+			DBGLOG( "%s() Clock started.", my_name );
+			scope	= 	SCOPE_IDLE;
+			running	=	true;
+			return ( OK );
 		}
-	}
-	else
-	{
+
 		ERRPRINT( my_name, LOG_ERR,
 			"MCU hardware interface not initialized" );
 		return ( FAIL );
 	}
 
-	DBGLOG( "%s() Clock started.", my_name );
+	if ( m_log_pkts )
+	{
+		DBGLOG( "%s() Clock started.", my_name );
+	}
+
+	if ( !m_hw_if->start_clock() )
+	{
+		ERRPRINT( my_name, LOG_ERR,
+			"start_clock() FAILED" );
+		return ( FAIL );
+	}
+
 	scope	=	SCOPE_IDLE;
 	running	=	true;						// We're off and running.
 
@@ -318,31 +313,34 @@ Send_reg::stop_clk( void )
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts )
+	if ( m_hw_if == NULL )
 	{
-		DBGLOG( "%s() Clock stopped.", my_name );
-		scope	= 	SCOPE_IDLE;
-		running	=	false;
-		return ( OK );
-	}
-
-	if ( m_hw_if != NULL )
-	{
-		if ( !m_hw_if->stop_clock() )
+		if ( m_log_pkts )
 		{
-			ERRPRINT( my_name, LOG_ERR,
-				"stop_clock() FAILED" );
-			return ( FAIL );
+			DBGLOG( "%s() Clock stopped.", my_name );
+			scope	= 	SCOPE_IDLE;
+			running	=	false;
+			return ( OK );
 		}
-	}
-	else
-	{
+
 		ERRPRINT( my_name, LOG_ERR,
 			"MCU hardware interface not initialized" );
 		return ( FAIL );
 	}
 
-	DBGLOG( "%s() Clock stopped.", my_name );
+	if ( m_log_pkts )
+	{
+		DBGLOG( "%s() Clock stopped.", my_name );
+	}
+
+
+	if ( !m_hw_if->stop_clock() )
+	{
+		ERRPRINT( my_name, LOG_ERR,
+			"stop_clock() FAILED" );
+		return ( FAIL );
+	}
+
 	scope	=	SCOPE_IDLE;
 	running	=	false;						// We're stopped.
 
@@ -384,52 +382,55 @@ Send_reg::send_bytes(
 		return ( FAIL );
 	}
 
+	if ( m_hw_if == NULL )
+	{
+		if ( m_log_pkts )
+		{
+			DBGLOG( "%s() %s.", my_name, info ? info : "" );
+			DBGPKT( "%02x %4d %s", ibyte, icnt, icnt > 1 ? "times" : "time" );
+			clr_err_cnt();
+			b_cnt	+= icnt;
+			++p_cnt;
+			return ( OK );
+		}
+
+		ERRPRINT( my_name, LOG_ERR,
+			"MCU hardware interface not initialized" );
+		return ( FAIL );
+	}
+
 	if ( m_log_pkts )
 	{
 		DBGLOG( "%s() %s.", my_name, info ? info : "" );
 		DBGPKT( "%02x %4d %s", ibyte, icnt, icnt > 1 ? "times" : "time" );
-		clr_err_cnt();
-		b_cnt	+= icnt;
-		++p_cnt;
-		return ( OK );
 	}
 
-	if ( m_hw_if != NULL )
+	switch ( scope )
 	{
-		DBGLOG( "%s() %s.", my_name, info ? info : "" );
-		DBGPKT( "%02x %4d %s", ibyte, icnt, icnt > 1 ? "times" : "time" );
-
-		switch ( scope )
-		{
-		case SCOPE_END:
-			m_hw_if->set_scope( false );
-			scope = SCOPE_IDLE;
-			break;
-		case SCOPE_START:
-			m_hw_if->set_scope( true );
-			scope = SCOPE_END;
-			break;
-		default:
-			break;
-		}
-
-		BYTE out_byte = m_swap_0_1 ? (BYTE)~ibyte : ibyte;
-		if ( !m_hw_if->send_bytes( (u_short)icnt, out_byte, info ) )
-		{
-			ERRPRINT( my_name, LOG_ERR,
-				"send_bytes() FAILED, b_cnt %lu, p_cnt %lu", b_cnt, p_cnt );
-			return ( FAIL );
-		}
-
-		clr_err_cnt();
-		b_cnt	+= icnt;
-		++p_cnt;
-		return ( OK );
+	case SCOPE_END:
+		m_hw_if->set_scope( false );
+		scope = SCOPE_IDLE;
+		break;
+	case SCOPE_START:
+		m_hw_if->set_scope( true );
+		scope = SCOPE_END;
+		break;
+	default:
+		break;
 	}
 
-	ERRPRINT( my_name, LOG_ERR,
-		"MCU hardware interface not initialized" );
-	return ( FAIL );
+	BYTE out_byte = m_swap_0_1 ? (BYTE)~ibyte : ibyte;
+	if ( !m_hw_if->send_bytes( (u_short)icnt, out_byte, info ) )
+	{
+		ERRPRINT( my_name, LOG_ERR,
+			"send_bytes() FAILED, b_cnt %lu, p_cnt %lu", b_cnt, p_cnt );
+		return ( FAIL );
+	}
+
+	clr_err_cnt();
+	b_cnt	+= icnt;
+	++p_cnt;
+	return ( OK );
 }
 
  
@@ -509,9 +510,9 @@ Send_reg::send_stretched_byte(
 
 	if ( m_hw_if != NULL )
 	{
-		DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
-				 my_name, iclk0t, iclk0h, info ? info : "" );
-		DBGPKT( "%02x", ibyte );
+//		DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
+//				 my_name, iclk0t, iclk0h, info ? info : "" );
+//		DBGPKT( "%02x", ibyte );
 
 		switch ( scope )
 		{
@@ -664,68 +665,71 @@ Send_reg::send_pkt(
 		return ( FAIL );
 	}
 
+	if ( m_hw_if == NULL )
+	{
+		if ( m_log_pkts )
+		{
+			DBGLOG( "%s %s.", my_name, info ? info : "" );
+			print_pkt_log( ibytes, isize );
+			clr_err_cnt();
+			b_cnt	+= isize;
+			++p_cnt;
+			return ( OK );
+		}
+
+		ERRPRINT( my_name, LOG_ERR,
+			"MCU hardware interface not initialized" );
+		return ( FAIL );
+	}
+
 	if ( m_log_pkts )
 	{
 		DBGLOG( "%s %s.", my_name, info ? info : "" );
 		print_pkt_log( ibytes, isize );
-		clr_err_cnt();
-		b_cnt	+= isize;
-		++p_cnt;
-		return ( OK );
 	}
 
-	if ( m_hw_if != NULL )
+	switch ( scope )
 	{
-		DBGLOG( "%s %s.", my_name, info ? info : "" );
-		print_pkt_log( ibytes, isize );
+	case SCOPE_END:
+		m_hw_if->set_scope( false );
+		scope = SCOPE_IDLE;
+		break;
+	case SCOPE_START:
+		m_hw_if->set_scope( true );
+		scope = SCOPE_END;
+		break;
+	default:
+		break;
+	}
 
-		switch ( scope )
+	if ( !m_swap_0_1 )
+	{
+		if ( !m_hw_if->send_raw_bytes( ibytes, isize, info ) )
 		{
-		case SCOPE_END:
-			m_hw_if->set_scope( false );
-			scope = SCOPE_IDLE;
-			break;
-		case SCOPE_START:
-			m_hw_if->set_scope( true );
-			scope = SCOPE_END;
-			break;
-		default:
-			break;
+			ERRPRINT( my_name, LOG_ERR,
+				"send_raw_bytes() FAILED, b_cnt %lu, p_cnt %lu",
+				b_cnt, p_cnt );
+			return ( FAIL );
 		}
-
-		if ( !m_swap_0_1 )
+	}
+	else
+	{
+		for ( count = 0; count < isize; ++count )
 		{
-			if ( !m_hw_if->send_raw_bytes( ibytes, isize, info ) )
+			if ( !m_hw_if->send_bytes( 1, (BYTE)~ibytes[count], info ) )
 			{
 				ERRPRINT( my_name, LOG_ERR,
-					"send_raw_bytes() FAILED, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
+					"send_bytes() FAILED, sent %u, b_cnt %lu, p_cnt %lu",
+					count, b_cnt, p_cnt );
 				return ( FAIL );
 			}
 		}
-		else
-		{
-			for ( count = 0; count < isize; ++count )
-			{
-				if ( !m_hw_if->send_bytes( 1, (BYTE)~ibytes[count], info ) )
-				{
-					ERRPRINT( my_name, LOG_ERR,
-						"send_bytes() FAILED, sent %u, b_cnt %lu, p_cnt %lu",
-						count, b_cnt, p_cnt );
-					return ( FAIL );
-				}
-			}
-		}
-
-		clr_err_cnt();
-		b_cnt	+= isize;
-		++p_cnt;
-		return ( OK );
 	}
 
-	ERRPRINT( my_name, LOG_ERR,
-		"MCU hardware interface not initialized" );
-	return ( FAIL );
+	clr_err_cnt();
+	b_cnt	+= isize;
+	++p_cnt;
+	return ( OK );
 }
 
  
@@ -769,80 +773,82 @@ Send_reg::send_pkt(
 		return ( FAIL );
 	}
 
+	const BYTE *pkt_bytes = ibits.get_byte_array();
+	u_int pkt_size = ibits.get_byte_size();
+
+	if ( m_hw_if == NULL )
+	{
+		if ( m_log_pkts )
+		{
+			DBGLOG( "%s %s.", my_name, info ? info : "" );
+			print_pkt_log( pkt_bytes, pkt_size );
+			clr_err_cnt();
+			b_cnt	+= pkt_size;
+			++p_cnt;
+			return ( OK );
+		}
+
+		ERRPRINT( my_name, LOG_ERR,
+			"MCU hardware interface not initialized" );
+		return ( FAIL );
+	}
+
 	if ( m_log_pkts )
 	{
 		DBGLOG( "%s %s.", my_name, info ? info : "" );
-		print_pkt_log( ibits.get_byte_array(), ibits.get_byte_size() );
-		count = ibits.get_byte_size();
-		clr_err_cnt();
-		b_cnt	+= count;
-		++p_cnt;
-		return ( OK );
+		print_pkt_log( pkt_bytes, pkt_size );
 	}
 
-	if ( m_hw_if != NULL )
+	switch ( scope )
 	{
-		DBGLOG( "%s %s.", my_name, info ? info : "" );
-		print_pkt_log( ibits.get_byte_array(), ibits.get_byte_size() );
+	case SCOPE_END:
+		m_hw_if->set_scope( false );
+		scope = SCOPE_IDLE;
+		break;
+	case SCOPE_START:
+		m_hw_if->set_scope( true );
+		scope = SCOPE_END;
+		break;
+	default:
+		break;
+	}
 
-		switch ( scope )
-		{
-		case SCOPE_END:
-			m_hw_if->set_scope( false );
-			scope = SCOPE_IDLE;
-			break;
-		case SCOPE_START:
-			m_hw_if->set_scope( true );
-			scope = SCOPE_END;
-			break;
-		default:
-			break;
-		}
+	if ( pkt_size == 0 )
+	{
+		ERRPRINT( my_name, LOG_ERR,
+			"0 Bytes sent, b_cnt %lu, p_cnt %lu", b_cnt, p_cnt );
+		return ( FAIL );
+	}
 
-		const BYTE *pkt_bytes = ibits.get_byte_array();
-		u_int pkt_size = ibits.get_byte_size();
-
-		if ( pkt_size == 0 )
+	if ( !m_swap_0_1 )
+	{
+		if ( !m_hw_if->send_raw_bytes( pkt_bytes, pkt_size, info ) )
 		{
 			ERRPRINT( my_name, LOG_ERR,
-				"0 Bytes sent, b_cnt %lu, p_cnt %lu", b_cnt, p_cnt );
+				"send_raw_bytes() FAILED, b_cnt %lu, p_cnt %lu",
+				b_cnt, p_cnt );
 			return ( FAIL );
 		}
-
-		if ( !m_swap_0_1 )
+	}
+	else
+	{
+		for ( count = 0, ibits.rst_out();
+				ibits.get_byte( pbyte ) == OK; ++count )
 		{
-			if ( !m_hw_if->send_raw_bytes( pkt_bytes, pkt_size, info ) )
+			if ( !m_hw_if->send_bytes( 1, (BYTE)~pbyte, info ) )
 			{
 				ERRPRINT( my_name, LOG_ERR,
-					"send_raw_bytes() FAILED, b_cnt %lu, p_cnt %lu",
-					b_cnt, p_cnt );
+					"send_bytes() FAILED, sent %u, b_cnt %lu, p_cnt %lu",
+					count, b_cnt, p_cnt );
 				return ( FAIL );
 			}
 		}
-		else
-		{
-			for ( count = 0, ibits.rst_out();
-					ibits.get_byte( pbyte ) == OK; ++count )
-			{
-				if ( !m_hw_if->send_bytes( 1, (BYTE)~pbyte, info ) )
-				{
-					ERRPRINT( my_name, LOG_ERR,
-						"send_bytes() FAILED, sent %u, b_cnt %lu, p_cnt %lu",
-						count, b_cnt, p_cnt );
-					return ( FAIL );
-				}
-			}
-		}
-
-		clr_err_cnt();
-		b_cnt	+= pkt_size;
-		++p_cnt;
-		return ( OK );
 	}
 
-	ERRPRINT( my_name, LOG_ERR,
-		"MCU hardware interface not initialized" );
-	return ( FAIL );
+	clr_err_cnt();
+	b_cnt	+= pkt_size;
+	++p_cnt;
+	return ( OK );
 }
 
  
@@ -930,7 +936,7 @@ Send_reg::print_stats( void )
 void
 Send_reg::update( void )
 {
-	if ( m_log_pkts || m_hw_if == NULL )
+	if ( m_hw_if == NULL )
 	{
 		DBGLOG( "Send_reg::update() Skipping update." );
 		m_pc_delay_1usec	=	1;

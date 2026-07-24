@@ -1831,8 +1831,6 @@ Dec_tst::decoder_ames(
 				"Send packet acceptance trigger packet. (%s b1=%02x b2=%02x b3=%02x chk=%02x)",
 				trig_pkt_type, trig_b1, trig_b2, trig_b3, trig_chk );
 
-			STATPRINT( "Ames trigger decode (%s): b1=%02x b2=%02x b3=%02x chk=%02x",
-				trig_pkt_type, trig_b1, trig_b2, trig_b3, trig_chk );
 			printf(    "Ames trigger decode (%s): b1=%02x b2=%02x b3=%02x chk=%02x\n",
 				trig_pkt_type, trig_b1, trig_b2, trig_b3, trig_chk );
 		}
@@ -1842,8 +1840,6 @@ Dec_tst::decoder_ames(
 				"Send packet acceptance trigger packet. (%s b1=%02x b2=%02x chk=%02x)",
 				trig_pkt_type, trig_b1, trig_b2, trig_chk );
 
-			STATPRINT( "Ames trigger decode (%s): b1=%02x b2=%02x chk=%02x",
-				trig_pkt_type, trig_b1, trig_b2, trig_chk );
 			printf(    "Ames trigger decode (%s): b1=%02x b2=%02x chk=%02x\n",
 				trig_pkt_type, trig_b1, trig_b2, trig_chk );
 		}
