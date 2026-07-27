@@ -97,6 +97,7 @@ Args_obj::Args_obj( void )
 	test_repeats		= 2;				// Times to repeat misc. tests.
 	print_user			= false;			// Don't print user docs.
 	log_pkts			= false;			// Don't send packets to log.
+	m_mcu_bypass_tst	= false;			// Run MCU self tests.
 	m_no_abort			= false;			// Stop on error.
 	m_late_scope		= false;			// Use normal scope trigger.
 	m_ambig_addr_same  	= false;			// Use different address.
@@ -265,6 +266,10 @@ Args_obj::usage(
 		"  -P         LOG_PKTS   "
 		"Send packets to log, not hardware    <value %s>\n",
 		log_pkts		? "true" : "false" );
+	fprintf( ofp,
+		"  -B         MCU_BYPASS_TST  "
+		"Skip MCU startup self tests          <value %s>\n",
+		m_mcu_bypass_tst	? "true" : "false" );
 	fprintf( ofp,
 		"  -A         NO_ABORT   "
 		"Do not stop program on an error      <value %s>\n",
@@ -674,6 +679,10 @@ Args_obj::argscan(
 		{
 			log_pkts	=	log_pkts ? false  : true;
 		}
+		else if ( strcmp( argv[i], "-B" ) == 0 )	// Bypass MCU self tests.
+		{
+			m_mcu_bypass_tst	= 	m_mcu_bypass_tst ? false  : true;
+		}
 		else if ( strcmp( argv[i], "-A" ) == 0 )	// No abort flag.
 		{
 			m_no_abort	=	m_no_abort ? false  : true;
@@ -1057,6 +1066,11 @@ Args_obj::cfgscan( void )
 		{
 			targv[1]	=	"-P";
 			targc		=	2;
+		}
+		else if ( 	!strcmpi( cmd, 	"MCU_BYPASS_TST" ) )
+		{
+			targv[1]	= 	"-B";
+			targc		= 	2;
 		}
 		else if ( 	!strcmpi( cmd,	"NO_ABORT" ) )
 		{

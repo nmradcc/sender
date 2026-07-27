@@ -495,11 +495,16 @@ main(
 	printf(		"Starting decoder tests, address %u, type %c\n",
 		Args.get_decoder_address(), Args.get_decoder_type() );
 
-	STATPRINT( "Beginning MCU self tests" );
-	printf(    "Beginning MCU self tests\n" );
-
-	if ( use_hw_backend == true )
+	if ( Args.get_mcu_bypass_tst() == true )
 	{
+		STATPRINT( "MCU self tests bypassed" );
+		printf(    "MCU self tests bypassed\n" );
+	}
+	else if ( use_hw_backend == true )
+	{
+		STATPRINT( "Beginning MCU self tests" );
+		printf(    "Beginning MCU self tests\n" );
+
 		if ( do_mcu_self_tests() == OK )
 		{
 			STATPRINT( "MCU self tests passed" );
@@ -1093,7 +1098,7 @@ Key_val			init_key )					// Initial key value.
 			}
 			else
 			{
-				hw_set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
+//				hw_set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
 				hw_start_clk();
 				printf( "Start clock\n" );
 			}
@@ -1197,6 +1202,7 @@ Key_val			init_key )					// Initial key value.
 			hw_set_clk(	Scope_time_tbl[ o_time_index ],
 						Scope_time_tbl[ o_time_index ] / 2,
 						DECODER_1T_NOM );
+//						70 );
 			hw_start_clk();
 			hw_clr_under();
 			break;
