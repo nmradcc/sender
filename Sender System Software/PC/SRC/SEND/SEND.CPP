@@ -53,10 +53,10 @@ struct Snd_question
 Snd_question	Questions[] =
 {
 	{	"Enter Manufacturer > ",  		"Manufacturer: %s\n"	},
-	{	"Enter Model number > ",  		"Model number: %s\n"	},
-	{	"Enter Version number > ",		"Version number: %s\n"	},
-    {	"Enter Modified CVs > ",		"Modified CVs: %s\n"	},
-    {	"Enter Booster type > ",		"Booster type: %s\n"	},
+	{	"Enter Model > ",			 		"Model: %s\n"	},
+	{	"Enter Version > ",				"Version: %s\n"	},
+    {	"Enter Modified CVs > ",			"Modified CVs: %s\n"	},
+    {	"Enter Booster type > ",			"Booster type: %s\n"	},
     {	"Enter Track Direction > ",		"Track Direction: %s\n"	},
 };
 

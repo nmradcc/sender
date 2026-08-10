@@ -292,7 +292,7 @@ bool Sender_hw_mcu_usb::send_chunked_commit(const uint8_t* data, size_t size,
                                             uint8_t append_cmd,
                                             uint8_t commit_cmd)
 {
-    const uint32_t busy_wait_timeout_ms = 5000;
+    const uint32_t busy_wait_timeout_ms = 10000;
 
     if (data == NULL || size == 0 || size > 0xFFFF)
     {
@@ -301,57 +301,83 @@ bool Sender_hw_mcu_usb::send_chunked_commit(const uint8_t* data, size_t size,
 
     std::vector<uint8_t> out;
     uint8_t status = SHP_STATUS_INTERNAL_ERROR;
-    size_t off = 0;
 
-    while (off < size)
+#if defined(_WIN32)
+    uint32_t start_ms = GetTickCount();
+#endif
+
+    for (;;)
     {
-        uint16_t chunk_len = (uint16_t)((size - off) > SHP_PACKET_CHUNK_MAX
-                                            ? SHP_PACKET_CHUNK_MAX
-                                            : (size - off));
-        status = SHP_STATUS_INTERNAL_ERROR;
-        if (!send_command_wait_response(append_cmd,
-                                        data + off,
-                                        chunk_len,
-                                        out,
-                                        status))
+        size_t off = 0;
+        bool saw_busy = false;
+
+        while (off < size)
+        {
+            uint16_t chunk_len =
+                (uint16_t)((size - off) > SHP_PACKET_CHUNK_MAX
+                               ? SHP_PACKET_CHUNK_MAX
+                               : (size - off));
+
+            status = SHP_STATUS_INTERNAL_ERROR;
+            if (!send_command_wait_response(append_cmd,
+                                            data + off,
+                                            chunk_len,
+                                            out,
+                                            status))
+            {
+                if (status != SHP_STATUS_BUSY)
+                {
+                    return false;
+                }
+                saw_busy = true;
+                break;
+            }
+
+            off += chunk_len;
+        }
+
+        if (off == size)
+        {
+            status = SHP_STATUS_INTERNAL_ERROR;
+            if (send_command_wait_response(commit_cmd,
+                                           NULL,
+                                           0,
+                                           out,
+                                           status))
+            {
+                return true;
+            }
+            if (status != SHP_STATUS_BUSY)
+            {
+                return false;
+            }
+            saw_busy = true;
+        }
+
+        if (!saw_busy)
         {
             return false;
         }
 
-        off += chunk_len;
-    }
-
-    status = SHP_STATUS_INTERNAL_ERROR;
-    if (send_command_wait_response(commit_cmd,
-                                   NULL,
-                                   0,
-                                   out,
-                                   status))
-    {
-        return true;
-    }
-
-    if (status == SHP_STATUS_BUSY)
-    {
 #if defined(_WIN32)
-        uint32_t start_ms = GetTickCount();
         while ((GetTickCount() - start_ms) < busy_wait_timeout_ms)
-#else
-        for (uint32_t i = 0; i < busy_wait_timeout_ms; ++i)
-#endif
         {
             Sender_hw_status hw_status;
             if (get_status(hw_status) && hw_status.queue_depth == 0)
             {
-                return true;
+                break;
             }
-#if defined(_WIN32)
             Sleep(1);
-#endif
         }
-    }
 
-    return false;
+        if ((GetTickCount() - start_ms) >= busy_wait_timeout_ms)
+        {
+            return false;
+        }
+#else
+        return false;
+#endif
+    }
 }
 
 bool Sender_hw_mcu_usb::send_stretched_byte(uint16_t clk0t_us,

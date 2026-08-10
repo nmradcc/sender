@@ -1257,12 +1257,33 @@ Dec_tst::decoder_ramp(
 
 		if ( state != RAMP_END )
 		{
-        	printf(
-            	"  %-18s Pre %2d, Addr %5u, Speed %2d, "
-				"Dir. %c, Fails %4lu\r",
-				tst_name, pre_cnt, Args.get_decoder_address(), speed,
-				fw ? 'F' :  'R',
-				t_stat.get_f_cnt() );
+			char ramp_msg[128];
+
+			if ( speed == SP_E_STOP )
+			{
+				sprintf( ramp_msg,
+	            		"  %-18s Pre %2d, Addr %5u, Speed E-STOP, "
+					"Dir. %c, Fails %4lu",
+					tst_name, pre_cnt, Args.get_decoder_address(),
+					fw ? 'F' :  'R',
+					t_stat.get_f_cnt() );
+			}
+			else
+			{
+				sprintf( ramp_msg,
+	            		"  %-18s Pre %2d, Addr %5u, Speed %2d, "
+					"Dir. %c, Fails %4lu",
+					tst_name, pre_cnt, Args.get_decoder_address(), speed,
+					fw ? 'F' :  'R',
+					t_stat.get_f_cnt() );
+			}
+
+			printf( "%s\r", ramp_msg );
+
+			if ( Dcc_reg.get_log_pkts() )
+			{
+				DBGLOG( "%s() %s", my_name, ramp_msg );
+			}
 
 			dcc_bits.clr_in();
 			dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
