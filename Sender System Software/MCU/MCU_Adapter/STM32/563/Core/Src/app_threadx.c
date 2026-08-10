@@ -20,10 +20,10 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "app_threadx.h"
-#include "stm32h5xx_nucleo.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "main.h"
 #include "sender_app.h"
 
 /* USER CODE END Includes */
@@ -165,7 +165,9 @@ static VOID PacketMonitorThreadTask(ULONG thread_input)
     if (event_count != last_event_count)
     {
       last_event_count = event_count;
-      BSP_LED_Toggle(LED_GREEN);
+      HAL_GPIO_WritePin(SCOPE_ADR_GPIO_Port, SCOPE_ADR_Pin, GPIO_PIN_SET);
+      tx_thread_sleep(1);
+      HAL_GPIO_WritePin(SCOPE_ADR_GPIO_Port, SCOPE_ADR_Pin, GPIO_PIN_RESET);
     }
 
     tx_thread_sleep(2);
