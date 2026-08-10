@@ -29,7 +29,7 @@
 #define DCC_GPIO_AF         GPIO_AF2_TIM5
 
 /* Half-period FIFO (single-producer / single-consumer, power-of-2 size). */
-#define DCC_FIFO_SIZE       512u
+#define DCC_FIFO_SIZE       4096u
 #define DCC_FIFO_MASK       (DCC_FIFO_SIZE - 1u)
 
 static volatile uint16_t g_hp_fifo[DCC_FIFO_SIZE];
