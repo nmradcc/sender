@@ -35,6 +35,21 @@
 static volatile uint16_t g_hp_fifo[DCC_FIFO_SIZE];
 static volatile uint32_t g_hp_head;     /* ISR consumer  */
 static volatile uint32_t g_hp_tail;     /* thread producer */
+static volatile uint32_t g_non_idle_packet_events;
+static volatile uint8_t g_last_non_idle_address;
+
+typedef enum dcc_mon_state
+{
+    DCC_MON_WAIT_PREAMBLE = 0,
+    DCC_MON_READ_BYTE,
+    DCC_MON_WAIT_DELIM
+} dcc_mon_state_t;
+
+static dcc_mon_state_t g_mon_state;
+static uint8_t g_mon_preamble_ones;
+static uint8_t g_mon_byte_accum;
+static uint8_t g_mon_bit_count;
+static bool g_mon_first_byte_pending;
 
 extern TIM_HandleTypeDef htim5;
 
@@ -43,6 +58,86 @@ extern TIM_HandleTypeDef htim5;
 #define DCC_RESET_BITS      25u
 #define DCC_HARD_RESET_BITS 50u
 #define DCC_IDLE_HP_US      58u         /* half-period for a DCC "1" bit */
+#define DCC_MON_MIN_PREAMBLE_ONES 10u
+
+static void dcc_monitor_reset(void)
+{
+    g_mon_state = DCC_MON_WAIT_PREAMBLE;
+    g_mon_preamble_ones = 0u;
+    g_mon_byte_accum = 0u;
+    g_mon_bit_count = 0u;
+    g_mon_first_byte_pending = false;
+}
+
+static void dcc_monitor_note_address(uint8_t address)
+{
+    if (address != 0xFFu)
+    {
+        g_last_non_idle_address = address;
+        g_non_idle_packet_events += 1u;
+    }
+}
+
+static void dcc_monitor_consume_bit(bool one)
+{
+    switch (g_mon_state)
+    {
+        case DCC_MON_WAIT_PREAMBLE:
+            if (one)
+            {
+                if (g_mon_preamble_ones < 0xFFu)
+                {
+                    g_mon_preamble_ones += 1u;
+                }
+            }
+            else
+            {
+                if (g_mon_preamble_ones >= DCC_MON_MIN_PREAMBLE_ONES)
+                {
+                    g_mon_state = DCC_MON_READ_BYTE;
+                    g_mon_first_byte_pending = true;
+                    g_mon_bit_count = 0u;
+                    g_mon_byte_accum = 0u;
+                }
+                g_mon_preamble_ones = 0u;
+            }
+            break;
+
+        case DCC_MON_READ_BYTE:
+            g_mon_byte_accum = (uint8_t)((g_mon_byte_accum << 1u) | (one ? 1u : 0u));
+            g_mon_bit_count += 1u;
+            if (g_mon_bit_count >= 8u)
+            {
+                if (g_mon_first_byte_pending)
+                {
+                    dcc_monitor_note_address(g_mon_byte_accum);
+                    g_mon_first_byte_pending = false;
+                }
+                g_mon_state = DCC_MON_WAIT_DELIM;
+                g_mon_bit_count = 0u;
+                g_mon_byte_accum = 0u;
+            }
+            break;
+
+        case DCC_MON_WAIT_DELIM:
+            if (!one)
+            {
+                g_mon_state = DCC_MON_READ_BYTE;
+                g_mon_bit_count = 0u;
+                g_mon_byte_accum = 0u;
+            }
+            else
+            {
+                g_mon_state = DCC_MON_WAIT_PREAMBLE;
+                g_mon_preamble_ones = 1u;
+            }
+            break;
+
+        default:
+            dcc_monitor_reset();
+            break;
+    }
+}
 
 /* ======================================================================= */
 /* FIFO helpers (SPSC, lock-free)                                          */
@@ -200,6 +295,9 @@ void sender_engine_init(sender_engine_t *eng)
 
     g_hp_head = 0u;
     g_hp_tail = 0u;
+    g_non_idle_packet_events = 0u;
+    g_last_non_idle_address = 0xFFu;
+    dcc_monitor_reset();
 
     /* Ensure the external scope trigger GPIO is in the OFF state. */
     HAL_GPIO_WritePin(SCOPE_GPIO_Port, SCOPE_Pin, GPIO_PIN_RESET);
@@ -365,6 +463,8 @@ uint8_t sender_engine_send_packet(sender_engine_t *eng, const uint8_t *data,
         return SHP_STATUS_BUSY;
     }
 
+    dcc_monitor_note_address(data[0]);
+
     /* Preamble */
     for (i = 0u; i < DCC_PREAMBLE_BITS; i++)
     {
@@ -391,6 +491,7 @@ uint8_t sender_engine_send_raw_bytes(sender_engine_t *eng, const uint8_t *data,
 {
     uint32_t hps_needed;
     uint16_t i;
+    uint8_t mask;
 
     if (eng == 0)
     {
@@ -414,6 +515,10 @@ uint8_t sender_engine_send_raw_bytes(sender_engine_t *eng, const uint8_t *data,
 
     for (i = 0u; i < size; ++i)
     {
+        for (mask = 0x80u; mask != 0u; mask = (uint8_t)(mask >> 1u))
+        {
+            dcc_monitor_consume_bit((data[i] & mask) != 0u);
+        }
         dcc_push_byte_unchecked(eng, data[i]);
     }
 
@@ -571,6 +676,8 @@ void sender_engine_get_status(const sender_engine_t *eng,
     out->queue_depth = (uint16_t)((g_hp_tail - g_hp_head) & DCC_FIFO_MASK);
     out->gen1 = eng->gen_in1;
     out->gen2 = eng->gen_in2;
+    out->non_idle_event_count = g_non_idle_packet_events;
+    out->last_non_idle_address = g_last_non_idle_address;
 }
 
 void sender_engine_get_stats(const sender_engine_t *eng,
@@ -584,4 +691,16 @@ void sender_engine_get_stats(const sender_engine_t *eng,
     out->packets_sent = eng->packets_sent;
     out->bytes_sent   = eng->bytes_sent;
     out->underruns    = eng->underruns;
+}
+
+void sender_engine_get_non_idle_packet_event(uint32_t *event_count,
+                                             uint8_t *last_address)
+{
+    if (event_count == 0 || last_address == 0)
+    {
+        return;
+    }
+
+    *event_count = g_non_idle_packet_events;
+    *last_address = g_last_non_idle_address;
 }

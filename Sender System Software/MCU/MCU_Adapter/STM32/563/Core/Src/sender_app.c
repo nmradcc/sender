@@ -241,7 +241,15 @@ static void sender_app_handle_request(const sender_request_t* req,
             rsp->payload[7] = (uint8_t)((status.queue_depth >> 8) & 0xFFu);
             rsp->payload[8] = status.gen1;
             rsp->payload[9] = status.gen2;
-            rsp->payload_len = 10;
+            rsp->payload[10] = (uint8_t)(status.non_idle_event_count & 0xFFu);
+            rsp->payload[11] =
+                (uint8_t)((status.non_idle_event_count >> 8) & 0xFFu);
+            rsp->payload[12] =
+                (uint8_t)((status.non_idle_event_count >> 16) & 0xFFu);
+            rsp->payload[13] =
+                (uint8_t)((status.non_idle_event_count >> 24) & 0xFFu);
+            rsp->payload[14] = status.last_non_idle_address;
+            rsp->payload_len = 15;
             break;
 
         case SHP_CMD_GET_STATS:
@@ -313,4 +321,10 @@ void sender_app_poll(void)
     {
         sender_transport_write_frame(g_tx_frame, tx_size);
     }
+}
+
+void sender_app_get_non_idle_packet_event(uint32_t *event_count,
+                                          uint8_t *last_address)
+{
+    sender_engine_get_non_idle_packet_event(event_count, last_address);
 }

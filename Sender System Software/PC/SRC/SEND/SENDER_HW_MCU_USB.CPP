@@ -416,6 +416,8 @@ bool Sender_hw_mcu_usb::get_gen_in(uint8_t& gen1, uint8_t& gen2)
 
 bool Sender_hw_mcu_usb::get_status(Sender_hw_status& status)
 {
+    static uint32_t s_last_non_idle_event_count = 0;
+
     std::vector<uint8_t> out;
     uint8_t rsp_status = SHP_STATUS_INTERNAL_ERROR;
 
@@ -437,7 +439,25 @@ bool Sender_hw_mcu_usb::get_status(Sender_hw_status& status)
     status.queue_depth = (uint16_t)out[6] | ((uint16_t)out[7] << 8);
     status.gen1 = out[8];
     status.gen2 = out[9];
+#if 0
+    status.non_idle_event_count = 0;
+    status.last_non_idle_address = 0xFF;
+    if (out.size() >= 15)
+    {
+        status.non_idle_event_count =
+            ((uint32_t)out[10]) | ((uint32_t)out[11] << 8) |
+            ((uint32_t)out[12] << 16) | ((uint32_t)out[13] << 24);
+        status.last_non_idle_address = out[14];
 
+        if (status.non_idle_event_count != s_last_non_idle_event_count)
+        {
+            printf("MCU monitor: non-idle packet detected, count=%lu, last_addr=0x%02X\n",
+                   (unsigned long)status.non_idle_event_count,
+                   (unsigned int)status.last_non_idle_address);
+            s_last_non_idle_event_count = status.non_idle_event_count;
+        }
+    }
+#endif
     return true;
 }
 

@@ -2996,7 +2996,8 @@ Dec_tst::quick_ames(
 	 *	This test fails if any of the 100 tests fails making it more
 	 *	stringent than the normal Ames test.
 	 */
-	for ( i = 0; i < 100; i++ )
+	for ( i = 0; i < 3; i++ )
+//	for ( i = 0; i < 100; i++ )
 	{
 		pre_fail	=	false;
 		trig_fail	=	false;

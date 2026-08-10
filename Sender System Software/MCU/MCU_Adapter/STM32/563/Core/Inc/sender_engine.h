@@ -63,6 +63,9 @@ void sender_engine_get_status(const sender_engine_t* eng,
 void sender_engine_get_stats(const sender_engine_t* eng,
                              sender_stats_payload_t* out);
 
+void sender_engine_get_non_idle_packet_event(uint32_t* event_count,
+                                             uint8_t* last_address);
+
 /* Called from TIM2_IRQHandler — do not call directly. */
 void sender_engine_tim_irq_handler(void);
 

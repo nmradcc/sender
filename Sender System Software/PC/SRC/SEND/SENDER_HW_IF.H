@@ -12,10 +12,13 @@ struct Sender_hw_status
     uint16_t queue_depth;
     uint8_t gen1;
     uint8_t gen2;
+  uint32_t non_idle_event_count;
+  uint8_t last_non_idle_address;
 
     Sender_hw_status()
         : running(false), underflow(false), err_flags(0), queue_depth(0),
-          gen1(0), gen2(0)
+      gen1(0), gen2(0), non_idle_event_count(0),
+      last_non_idle_address(0xFF)
     {
     }
 };
