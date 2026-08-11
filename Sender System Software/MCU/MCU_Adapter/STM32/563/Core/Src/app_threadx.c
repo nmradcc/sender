@@ -161,13 +161,9 @@ static VOID PacketMonitorThreadTask(ULONG thread_input)
   while (1)
   {
     sender_app_get_non_idle_packet_event(&event_count, &last_address);
-    (void)last_address;
     if (event_count != last_event_count)
     {
       last_event_count = event_count;
-      HAL_GPIO_WritePin(SCOPE_ADR_GPIO_Port, SCOPE_ADR_Pin, GPIO_PIN_SET);
-      tx_thread_sleep(1);
-      HAL_GPIO_WritePin(SCOPE_ADR_GPIO_Port, SCOPE_ADR_Pin, GPIO_PIN_RESET);
     }
 
     tx_thread_sleep(2);
