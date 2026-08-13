@@ -267,7 +267,7 @@ Args_obj::usage(
 		"Send packets to log, not hardware    <value %s>\n",
 		log_pkts		? "true" : "false" );
 	fprintf( ofp,
-		"  -B         MCU_BYPASS_TST  "
+		"  -B    MCU_BYPASS_TST  "
 		"Skip MCU startup self tests          <value %s>\n",
 		m_mcu_bypass_tst	? "true" : "false" );
 	fprintf( ofp,
@@ -302,11 +302,11 @@ Args_obj::usage(
 		Deflog.get_dbg_on() ? "true" : "false" );
 	fprintf( ofp,
 		"  -J <port>  MCU_PORT   "
-		"MCU serial port name                <value %s>\n",
+		"MCU serial port name                 <value %s>\n",
 		m_mcu_port );
 	fprintf( ofp,
 		"  -Y <baud>  MCU_BAUD   "
-		"MCU serial baud rate               <value %u>\n",
+		"MCU serial baud rate                 <value %u>\n",
 		m_mcu_baud );
 				
 	fprintf( ofp, "\nManual keyboard commands >\n\n%s\n", key_help);
