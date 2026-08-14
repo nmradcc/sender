@@ -2203,7 +2203,7 @@ Dec_tst::decoder_bad_addr(
 	int				addr;						// Test address.
 	int				addr_min;					// Minimum test address.
 	int				addr_max;					// Maximum test address.
-	int				send_addr;					// Address to send to decoder.
+	u_short			send_addr;					// Address used for trigger packet.
 	BYTE			tgen;						// Generic input BYTE.
 	bool			pre_fail;	  				// Preset failed.
 	bool			trig_fail;	  				// Trigger failed.
@@ -2922,6 +2922,11 @@ Dec_tst::quick_ames(
 	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
 	BYTE			tgen;					// Generic input BYTE.
+	BYTE			pre_gen = 0;				// GEN input after preset sequence.
+	BYTE			trig_gen = 0;				// GEN input after trigger sequence.
+	bool			pre_fail_exp0;				// Preset fail if expected state is 0.
+	bool			pre_fail_exp1;				// Preset fail if expected state is 1.
+	bool			trans_fail;				// Trigger failed to transition from preset.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
 
@@ -3042,10 +3047,7 @@ Dec_tst::quick_ames(
 		}
 
 		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != 0 )
-		{
-			pre_fail	=	true;
-		}
+		pre_fail = ( (tgen & 0x01) != 0 );
 
 		/*
 		 * Send a scope trigger at start of trigger packet

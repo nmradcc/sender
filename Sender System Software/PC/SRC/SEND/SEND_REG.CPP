@@ -714,16 +714,29 @@ Send_reg::send_pkt(
 	}
 	else
 	{
+		BYTE *swap_bytes = new BYTE[ isize ];
+		if ( swap_bytes == NULL )
+		{
+			ERRPRINT( my_name, LOG_ERR,
+				"Failed to allocate swap_bytes, isize %u", isize );
+			return ( FAIL );
+		}
+
 		for ( count = 0; count < isize; ++count )
 		{
-			if ( !m_hw_if->send_bytes( 1, (BYTE)~ibytes[count], info ) )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-					"send_bytes() FAILED, sent %u, b_cnt %lu, p_cnt %lu",
-					count, b_cnt, p_cnt );
-				return ( FAIL );
-			}
+			swap_bytes[count] = (BYTE)~ibytes[count];
 		}
+
+		if ( !m_hw_if->send_raw_bytes( swap_bytes, isize, info ) )
+		{
+			delete [] swap_bytes;
+			ERRPRINT( my_name, LOG_ERR,
+				"send_raw_bytes() FAILED in swap mode, b_cnt %lu, p_cnt %lu",
+				b_cnt, p_cnt );
+			return ( FAIL );
+		}
+
+		delete [] swap_bytes;
 	}
 
 	clr_err_cnt();
@@ -832,17 +845,30 @@ Send_reg::send_pkt(
 	}
 	else
 	{
+		BYTE *swap_bytes = new BYTE[ pkt_size ];
+		if ( swap_bytes == NULL )
+		{
+			ERRPRINT( my_name, LOG_ERR,
+				"Failed to allocate swap_bytes, pkt_size %u", pkt_size );
+			return ( FAIL );
+		}
+
 		for ( count = 0, ibits.rst_out();
 				ibits.get_byte( pbyte ) == OK; ++count )
 		{
-			if ( !m_hw_if->send_bytes( 1, (BYTE)~pbyte, info ) )
-			{
-				ERRPRINT( my_name, LOG_ERR,
-					"send_bytes() FAILED, sent %u, b_cnt %lu, p_cnt %lu",
-					count, b_cnt, p_cnt );
-				return ( FAIL );
-			}
+			swap_bytes[count] = (BYTE)~pbyte;
 		}
+
+		if ( !m_hw_if->send_raw_bytes( swap_bytes, pkt_size, info ) )
+		{
+			delete [] swap_bytes;
+			ERRPRINT( my_name, LOG_ERR,
+				"send_raw_bytes() FAILED in swap mode, b_cnt %lu, p_cnt %lu",
+				b_cnt, p_cnt );
+			return ( FAIL );
+		}
+
+		delete [] swap_bytes;
 	}
 
 	clr_err_cnt();
