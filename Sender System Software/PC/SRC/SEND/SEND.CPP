@@ -701,13 +701,16 @@ get_log_file(
 		buf[ strlen( buf ) - 1 ] = '\0';
 	}
 
-	strcpy( fname, buf );
-	strcat( fname, ".log" );
-	if ( Deflog.open_log( fname ) != OK )
+	if ( Args.get_log_pkts() == true )
 	{
-		ERRPRINT( my_name, LOG_CRIT,
-			"Log file <%s> could not be opened", buf );
-		exit_send( 1 );
+		strcpy( fname, buf );
+		strcat( fname, ".log" );
+		if ( Deflog.open_log( fname ) != OK )
+		{
+			ERRPRINT( my_name, LOG_CRIT,
+				"Log file <%s> could not be opened", buf );
+			exit_send( 1 );
+		}
 	}
 
 	strcpy( fname, buf );
@@ -772,7 +775,8 @@ get_log_file(
 	TO_STAT( "--------------------------------\n\n" );
 
 	// Log summary of command line switches and .CFG file
-	if ( (fp = Deflog.get_fp_log()) != NULL )
+	if ( Args.get_log_pkts() == true &&
+		 (fp = Deflog.get_fp_log()) != NULL )
 	{
     	fputs(
 			"Summary of command line and 'SEND.CFG' switches:\n\n",
@@ -830,7 +834,10 @@ get_log_file(
 #define SELF_CHECK( name_, expr_ ) \
 	do { \
 		bool _ok = (expr_); \
-		DBGLOG( "  %-40s %s", (name_), _ok ? "PASS" : "FAIL" ); \
+		if ( Deflog.get_fp_log() != NULL ) \
+		{ \
+			DBGLOG( "  %-40s %s", (name_), _ok ? "PASS" : "FAIL" ); \
+		} \
 		printf( "  %-40s %s\n", (name_), _ok ? "PASS" : "FAIL" ); \
 		if ( !_ok ) \
 		{ \

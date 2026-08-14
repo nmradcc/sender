@@ -263,8 +263,8 @@ Args_obj::usage(
 		"Non packet acceptance test repeats   <value %u>\n",
 		test_repeats );
 	fprintf( ofp,
-		"  -P         LOG_PKTS   "
-		"Send packets to log, not hardware    <value %s>\n",
+		"  -P         LOG        "
+		"Send packet info to log              <value %s>\n",
 		log_pkts		? "true" : "false" );
 	fprintf( ofp,
 		"  -B    MCU_BYPASS_TST  "
@@ -1062,7 +1062,7 @@ Args_obj::cfgscan( void )
 			targv[1]	=	"-R";
 			targc		=	3;
 		}
-		else if ( 	!strcmpi( cmd,	"LOG_PKTS" ) )
+		else if ( 	!strcmpi( cmd,	"LOG" ) )
 		{
 			targv[1]	=	"-P";
 			targc		=	2;

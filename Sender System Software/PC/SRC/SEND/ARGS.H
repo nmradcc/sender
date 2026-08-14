@@ -160,7 +160,7 @@ class Args_obj : public Z_core
 	u_int					test_repeats;		// Number of times to do tests.
 	bool					print_user;			// If true, print user docs.
 	bool					log_pkts;			// If true, send pkts to log.
-	bool				m_mcu_bypass_tst;	// If true, skip MCU self tests.
+	bool				    m_mcu_bypass_tst;	// If true, skip MCU self tests.
 	bool					m_no_abort;			// If true, no stop on error.
 	bool					m_late_scope;		// If true, use late scope.
 	bool					m_ambig_addr_same;	// If true, use same address.

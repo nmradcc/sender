@@ -30,7 +30,7 @@
 
 /*
  * Uncomment PKT_REP_DEBUG to show all 3 fill packet counts when
- * LOG_PKTS is uncommented to log packets rather than using hardware.
+ * LOG is uncommented to log packets.
  */
 //#define PKT_REP_DEBUG
 
