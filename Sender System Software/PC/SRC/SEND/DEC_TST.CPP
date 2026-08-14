@@ -1376,21 +1376,14 @@ Dec_tst::func_ramp(
 
 	pre_cnt	=	BEST_PRE + Args.get_extra_preamble();
 
-	Dcc_reg.clr_err_cnt();					// Restart error counter.
-	t_stat.reset();
-	
-	CLR_LINE;
-
 	for ( func = 1; func >= 0; func-- )
-    {
-		DBGLOG( "Dce_tst::func_ramp() Starting func test loop func %s.",
-                    func == 0 ? "OFF" : " ON" );
-       	printf(
-           	"  %-18s Pre %2d, Addr %5u, Function <%s>, "
-	 		"Fails %4lu\r",
-	 		tst_name, pre_cnt, Args.get_decoder_address(),
-	 		func == 0 ? "OFF" : " ON",
-	 		t_stat.get_f_cnt() );
+	{
+		printf(
+			"  %-18s Pre %2d, Addr %5u, Function <%s>, "
+			"Fails %4lu\r",
+			tst_name, pre_cnt, Args.get_decoder_address(),
+			func == 0 ? "OFF" : " ON",
+			t_stat.get_f_cnt() );
 
 		dcc_bits.clr_in();
 		// See .\NMRA\put_........_pktx Info.txt
@@ -2203,9 +2196,9 @@ Dec_tst::decoder_bad_addr(
 	int				addr;						// Test address.
 	int				addr_min;					// Minimum test address.
 	int				addr_max;					// Maximum test address.
-	u_short			send_addr;					// Address used for trigger packet.
+	u_short			send_addr;					// Address to send.
 	BYTE			tgen;						// Generic input BYTE.
-	bool			pre_fail;	  				// Preset failed.
+	bool			pre_fail;					// Preset failed.
 	bool			trig_fail;	  				// Trigger failed.
 	bool			rst_fail;					// Reset failed.
 	u_int			pre_cnt;					// Preamble count for test.
