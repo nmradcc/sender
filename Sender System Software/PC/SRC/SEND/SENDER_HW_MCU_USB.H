@@ -42,6 +42,7 @@ class Sender_hw_mcu_usb : public Sender_hw_if
     virtual bool get_status(Sender_hw_status& status);
     virtual bool get_stats(Sender_hw_stats& stats);
     virtual bool reset_stats();
+    virtual bool reset_device();
 
     /* Returns raw SHP_CMD_GET_INFO payload from the MCU. */
     bool get_info(std::vector<uint8_t>& info_payload);

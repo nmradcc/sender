@@ -136,6 +136,7 @@ static void		print_user_docs();
 static void		exit_send( int status );
 static bool		init_hw_backend();
 static void		close_hw_backend();
+static void		reset_mcu_before_abort();
 static bool		hw_is_running();
 static Rslt_t	hw_set_clk( u_short clk0t, u_short clk0h, u_short clk1t );
 static Rslt_t	hw_start_clk();
@@ -247,6 +248,23 @@ close_hw_backend( void )
 
 	Lhw_if = NULL;
 	Lhw_running = false;
+}
+
+static void
+reset_mcu_before_abort( void )
+{
+	if ( Lhw_if == NULL )
+	{
+		return;
+	}
+
+	if ( Lhw_running == true )
+	{
+		Lhw_if->stop_clock();
+		Lhw_running = false;
+	}
+
+	Lhw_if->reset_device();
 }
 
 static bool
@@ -430,6 +448,8 @@ main(
 	const char	*my_name = "main";
 	Key_val		init_key = KEY_DEC_TST;		// Initial key value.
 	bool		use_hw_backend;
+
+	Deflog.set_abort_handler( reset_mcu_before_abort );
 
 	if ( Args.get_args( argc, argv ) != OK )
 	{

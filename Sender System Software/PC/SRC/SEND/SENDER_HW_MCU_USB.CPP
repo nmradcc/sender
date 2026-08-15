@@ -2,10 +2,43 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <zlog.h>
 
 #if defined(_WIN32)
 #include <windows.h>
 #endif
+
+static const char *shp_cmd_name(uint8_t cmd)
+{
+    switch (cmd)
+    {
+    case SHP_CMD_APPEND_RAW_CHUNK: return "APPEND_RAW_CHUNK";
+    case SHP_CMD_COMMIT_RAW_BYTES: return "COMMIT_RAW_BYTES";
+    case SHP_CMD_GET_STATUS: return "GET_STATUS";
+    case SHP_CMD_RESET_DEVICE: return "RESET_DEVICE";
+    default: return "UNKNOWN";
+    }
+}
+
+static const char *shp_status_name(uint8_t status)
+{
+    switch (status)
+    {
+    case SHP_STATUS_OK: return "OK";
+    case SHP_STATUS_BAD_VERSION: return "BAD_VERSION";
+    case SHP_STATUS_BAD_COMMAND: return "BAD_COMMAND";
+    case SHP_STATUS_BAD_LENGTH: return "BAD_LENGTH";
+    case SHP_STATUS_BAD_CRC: return "BAD_CRC";
+    case SHP_STATUS_BUSY: return "BUSY";
+    case SHP_STATUS_INTERNAL_ERROR: return "INTERNAL_ERROR";
+    default: return "UNKNOWN";
+    }
+}
+
+#define SHP_LOG_FAILURE( cmd_, seq_, phase_, detail_ ) \
+    DBGLOG("MCU transport failure: cmd=%s(0x%02X), seq=%u, phase=%s, %s", \
+           shp_cmd_name(cmd_), (unsigned int)(cmd_), (unsigned int)(seq_), \
+           phase_, detail_)
 
 Sender_hw_mcu_usb::Sender_hw_mcu_usb(const char* port_name, uint32_t baud_rate)
     : m_port_name(port_name ? port_name : ""),
@@ -292,7 +325,7 @@ bool Sender_hw_mcu_usb::send_chunked_commit(const uint8_t* data, size_t size,
                                             uint8_t append_cmd,
                                             uint8_t commit_cmd)
 {
-    const uint32_t busy_wait_timeout_ms = 10000;
+    const uint32_t busy_wait_timeout_ms = 15000;
 
     if (data == NULL || size == 0 || size > 0xFFFF)
     {
@@ -372,6 +405,8 @@ bool Sender_hw_mcu_usb::send_chunked_commit(const uint8_t* data, size_t size,
 
         if ((GetTickCount() - start_ms) >= busy_wait_timeout_ms)
         {
+            SHP_LOG_FAILURE(append_cmd, 0, "busy-wait",
+                            "MCU remained busy for 15000 ms");
             return false;
         }
 #else
@@ -521,6 +556,14 @@ bool Sender_hw_mcu_usb::reset_stats()
                                       rsp_status);
 }
 
+bool Sender_hw_mcu_usb::reset_device()
+{
+    std::vector<uint8_t> out;
+    uint8_t rsp_status = SHP_STATUS_INTERNAL_ERROR;
+    return send_command_wait_response(SHP_CMD_RESET_DEVICE, NULL, 0, out,
+                                      rsp_status);
+}
+
 bool Sender_hw_mcu_usb::get_info(std::vector<uint8_t>& info_payload)
 {
     uint8_t rsp_status = SHP_STATUS_INTERNAL_ERROR;
@@ -613,6 +656,7 @@ bool Sender_hw_mcu_usb::send_command_wait_response(uint8_t cmd,
 
     if (!m_open)
     {
+        SHP_LOG_FAILURE(cmd, 0, "state", "port is not open");
         return false;
     }
 
@@ -621,20 +665,24 @@ bool Sender_hw_mcu_usb::send_command_wait_response(uint8_t cmd,
 
     if (!write_all(&tx[0], tx.size()))
     {
+        SHP_LOG_FAILURE(cmd, seq, "write", "WriteFile failed or wrote zero bytes");
         return false;
     }
 
     if (!read_exact(hdr, sizeof(hdr), 1000))
     {
+        SHP_LOG_FAILURE(cmd, seq, "response-header", "no complete response within 1000 ms");
         return false;
     }
 
     if (hdr[0] != SHP_SOF_MCU || hdr[1] != SHP_VERSION)
     {
+        SHP_LOG_FAILURE(cmd, seq, "response-header", "invalid SOF or protocol version");
         return false;
     }
     if (hdr[2] != cmd || hdr[3] != seq)
     {
+        SHP_LOG_FAILURE(cmd, seq, "response-header", "command or sequence mismatch");
         return false;
     }
 
@@ -644,6 +692,7 @@ bool Sender_hw_mcu_usb::send_command_wait_response(uint8_t cmd,
     tail.resize((size_t)rsp_len + 2);
     if (!read_exact(&tail[0], tail.size(), 1000))
     {
+        SHP_LOG_FAILURE(cmd, seq, "response-payload", "no complete payload within 1000 ms");
         return false;
     }
 
@@ -664,12 +713,18 @@ bool Sender_hw_mcu_usb::send_command_wait_response(uint8_t cmd,
     crc_calc = crc16_ccitt(&crc_buf[0], crc_buf.size());
     if (crc_calc != crc_rx)
     {
+        SHP_LOG_FAILURE(cmd, seq, "response-crc", "CRC mismatch");
         return false;
     }
 
     if (rsp_len > 0)
     {
         out_payload.assign(tail.begin(), tail.begin() + rsp_len);
+    }
+
+    if (out_status != SHP_STATUS_OK && out_status != SHP_STATUS_BUSY)
+    {
+        SHP_LOG_FAILURE(cmd, seq, "response-status", shp_status_name(out_status));
     }
 
     return out_status == SHP_STATUS_OK;
