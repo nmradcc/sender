@@ -909,6 +909,14 @@ Dec_tst::decoder_test(
 			clk_idx < dclk_size;
 			clk_idx++, l_clk_msk <<= 1 )
 	{
+		if ( Deflog.get_fp_log() != NULL )
+		{
+			DBGLOG( "Clock mask check: index %d, bit 0x%08lx, mask 0x%08lx, "
+				"clock <%s>, selected %s",
+				clk_idx, l_clk_msk, clk_mask, dclk_tbl[clk_idx].msg,
+				( l_clk_msk & clk_mask ) ? "yes" : "no" );
+		}
+
 		/*	Skip this dclk_tbl[] entry if Clock mask bit is not set.
 		 *	Do it by setting l_clk_run so that l_run_mask is updated.
 		 */
