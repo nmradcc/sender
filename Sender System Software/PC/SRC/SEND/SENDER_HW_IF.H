@@ -55,6 +55,15 @@ class Sender_hw_if
                              const char* info_tag) = 0;
     virtual bool send_raw_bytes(const uint8_t* data, size_t size,
                   const char* info_tag) = 0;
+    virtual bool send_raw_bytes_stretched(const uint8_t* data, size_t size,
+                        size_t stretch_byte_index,
+                        uint16_t clk0t_us, uint16_t clk0h_us,
+                        const char* info_tag) = 0;
+    virtual bool send_raw_bytes_timed(const uint8_t* data, size_t size,
+                      uint16_t bit_index1, uint16_t clk0t1_us,
+                      uint16_t clk0h1_us, uint16_t bit_index2,
+                      uint16_t clk0t2_us, uint16_t clk0h2_us,
+                      const char* info_tag) = 0;
     virtual bool send_stretched_byte(uint16_t clk0t_us, uint16_t clk0h_us,
                                      uint8_t byte_value,
                                      const char* info_tag) = 0;

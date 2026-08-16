@@ -498,7 +498,7 @@ Send_reg::send_stretched_byte(
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts )
+	if ( m_log_pkts && m_hw_if == NULL )
 	{
 		DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
 				 my_name, iclk0t, iclk0h, info ? info : "" );
@@ -510,9 +510,12 @@ Send_reg::send_stretched_byte(
 
 	if ( m_hw_if != NULL )
 	{
-//		DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
-//				 my_name, iclk0t, iclk0h, info ? info : "" );
-//		DBGPKT( "%02x", ibyte );
+		if ( m_log_pkts )
+		{
+			DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
+				my_name, iclk0t, iclk0h, info ? info : "" );
+			DBGPKT( "%02x", ibyte );
+		}
 
 		switch ( scope )
 		{
@@ -547,6 +550,73 @@ Send_reg::send_stretched_byte(
 	return ( FAIL );
 }
 
+Rslt_t
+Send_reg::send_raw_bytes_stretched(
+	const BYTE		*ibytes,
+	u_int			isize,
+	u_int			stretch_byte_index,
+	u_short			iclk0t,
+	u_short			iclk0h,
+	const char		*info )
+{
+	const char	*my_name = "Send_reg::send_raw_bytes_stretched";
+
+	if ( ibytes == NULL || isize == 0 || stretch_byte_index >= isize )
+	{
+		ERRPRINT( my_name, LOG_ERR, "Invalid raw stretched-byte arguments" );
+		return ( FAIL );
+	}
+
+	if ( m_log_pkts && m_hw_if == NULL )
+	{
+		DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
+			my_name, iclk0t, iclk0h, info ? info : "" );
+		print_pkt_log( ibytes, isize );
+		b_cnt += isize;
+		return ( OK );
+	}
+
+	if ( m_hw_if == NULL )
+	{
+		ERRPRINT( my_name, LOG_ERR, "MCU hardware interface not initialized" );
+		return ( FAIL );
+	}
+
+	if ( m_log_pkts )
+	{
+		DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
+			my_name, iclk0t, iclk0h, info ? info : "" );
+		print_pkt_log( ibytes, isize );
+	}
+
+	switch ( scope )
+	{
+	case SCOPE_END:
+		m_hw_if->set_scope( false );
+		scope = SCOPE_IDLE;
+		break;
+	case SCOPE_START:
+		m_hw_if->set_scope( true );
+		scope = SCOPE_END;
+		break;
+	default:
+		break;
+	}
+
+	if ( !m_hw_if->send_raw_bytes_stretched( ibytes, isize,
+		stretch_byte_index, iclk0t, iclk0h, info ) )
+	{
+		ERRPRINT( my_name, LOG_ERR,
+			"send_raw_bytes_stretched() FAILED, b_cnt %lu, p_cnt %lu",
+			b_cnt, p_cnt );
+		return ( FAIL );
+	}
+
+	clr_err_cnt();
+	b_cnt += isize;
+	return ( OK );
+}
+
  
 /*--------------------------------------------------------------------------*/
 /*
@@ -577,6 +647,64 @@ Send_reg::send_1_ambig_bit(
 	const char		*info )					// Packet log info.
 {
 	return ( send_stretched_byte( iclk0t, iclk0h, ibyte, info ) );
+}
+
+Rslt_t
+Send_reg::send_raw_bytes_timed(
+	const BYTE	*ibytes, u_int isize, u_short bit_index1, u_short iclk0t1,
+	u_short		iclk0h1, u_short bit_index2, u_short iclk0t2,
+	u_short		iclk0h2, const char *info )
+{
+	const char	*my_name = "Send_reg::send_raw_bytes_timed";
+
+	if ( ibytes == NULL || isize == 0 || bit_index1 >= isize * BITS_IN_BYTE ||
+		 (bit_index2 != 0xFFFF && bit_index2 >= isize * BITS_IN_BYTE) )
+	{
+		ERRPRINT( my_name, LOG_ERR, "Invalid raw timed-bit arguments" );
+		return ( FAIL );
+	}
+
+	if ( m_log_pkts && m_hw_if == NULL )
+	{
+		DBGLOG( "%s() %s.", my_name, info ? info : "" );
+		print_pkt_log( ibytes, isize );
+		b_cnt += isize;
+		return ( OK );
+	}
+
+	if ( m_hw_if == NULL )
+	{
+		ERRPRINT( my_name, LOG_ERR, "MCU hardware interface not initialized" );
+		return ( FAIL );
+	}
+
+	if ( m_log_pkts )
+	{
+		DBGLOG( "%s() %s.", my_name, info ? info : "" );
+		print_pkt_log( ibytes, isize );
+	}
+
+	if ( scope == SCOPE_START )
+	{
+		m_hw_if->set_scope( true );
+		scope = SCOPE_END;
+	}
+	else if ( scope == SCOPE_END )
+	{
+		m_hw_if->set_scope( false );
+		scope = SCOPE_IDLE;
+	}
+
+	if ( !m_hw_if->send_raw_bytes_timed( ibytes, isize, bit_index1,
+		iclk0t1, iclk0h1, bit_index2, iclk0t2, iclk0h2, info ) )
+	{
+		ERRPRINT( my_name, LOG_ERR, "send_raw_bytes_timed() FAILED" );
+		return ( FAIL );
+	}
+
+	clr_err_cnt();
+	b_cnt += isize;
+	return ( OK );
 }
 
  
@@ -613,20 +741,8 @@ Send_reg::send_2_ambig_bits(
 	BYTE			ibyte,					// Byte to send.
 	const char		*info )					// Packet log info.
 {
-	const char		*my_name = "Send_reg::send_2_ambig_bits";
-	if ( m_log_pkts )
-	{
-		DBGLOG( "%s() Clk 0T1 %hu, 0H1 %hu, 0T2 %hu, 0H2 %hu: %s.",
-			my_name, iclk0t1, iclk0h1, iclk0t2, iclk0h2, info ? info : "" );
-		DBGPKT( "%02x", ibyte );
-		clr_err_cnt();
-		++b_cnt;
-		return ( OK );
-	}
-
-	ERRPRINT( my_name, LOG_ERR,
-		"send_2_ambig_bits() is not supported in MCU mode" );
-	return ( FAIL );
+	return ( send_raw_bytes_timed( &ibyte, 1, 0, iclk0t1, iclk0h1,
+		1, iclk0t2, iclk0h2, info ) );
 }
 
  

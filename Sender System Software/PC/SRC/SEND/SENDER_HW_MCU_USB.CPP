@@ -321,9 +321,69 @@ bool Sender_hw_mcu_usb::send_raw_bytes(const uint8_t* data, size_t size,
                                SHP_CMD_COMMIT_RAW_BYTES);
 }
 
+bool Sender_hw_mcu_usb::send_raw_bytes_stretched(
+    const uint8_t* data, size_t size, size_t stretch_byte_index,
+    uint16_t clk0t_us, uint16_t clk0h_us, const char* info_tag)
+{
+    uint8_t payload[6];
+
+    (void)info_tag;
+
+    if (stretch_byte_index >= size || stretch_byte_index > 0xFFFFu)
+    {
+        return false;
+    }
+
+    payload[0] = (uint8_t)(stretch_byte_index & 0xFFu);
+    payload[1] = (uint8_t)((stretch_byte_index >> 8) & 0xFFu);
+    payload[2] = (uint8_t)(clk0t_us & 0xFFu);
+    payload[3] = (uint8_t)((clk0t_us >> 8) & 0xFFu);
+    payload[4] = (uint8_t)(clk0h_us & 0xFFu);
+    payload[5] = (uint8_t)((clk0h_us >> 8) & 0xFFu);
+
+    return send_chunked_commit(data, size, SHP_CMD_APPEND_RAW_CHUNK,
+                               SHP_CMD_COMMIT_RAW_STRETCHED_BYTE,
+                               payload, (uint16_t)sizeof(payload));
+}
+
+bool Sender_hw_mcu_usb::send_raw_bytes_timed(
+    const uint8_t* data, size_t size, uint16_t bit_index1,
+    uint16_t clk0t1_us, uint16_t clk0h1_us, uint16_t bit_index2,
+    uint16_t clk0t2_us, uint16_t clk0h2_us, const char* info_tag)
+{
+    uint8_t payload[12];
+
+    (void)info_tag;
+
+    if (size == 0 || bit_index1 >= size * 8u ||
+        (bit_index2 != 0xFFFFu && bit_index2 >= size * 8u))
+    {
+        return false;
+    }
+
+    payload[0] = (uint8_t)(bit_index1 & 0xFFu);
+    payload[1] = (uint8_t)(bit_index1 >> 8);
+    payload[2] = (uint8_t)(clk0t1_us & 0xFFu);
+    payload[3] = (uint8_t)(clk0t1_us >> 8);
+    payload[4] = (uint8_t)(clk0h1_us & 0xFFu);
+    payload[5] = (uint8_t)(clk0h1_us >> 8);
+    payload[6] = (uint8_t)(bit_index2 & 0xFFu);
+    payload[7] = (uint8_t)(bit_index2 >> 8);
+    payload[8] = (uint8_t)(clk0t2_us & 0xFFu);
+    payload[9] = (uint8_t)(clk0t2_us >> 8);
+    payload[10] = (uint8_t)(clk0h2_us & 0xFFu);
+    payload[11] = (uint8_t)(clk0h2_us >> 8);
+
+    return send_chunked_commit(data, size, SHP_CMD_APPEND_RAW_CHUNK,
+                               SHP_CMD_COMMIT_RAW_TIMED_BITS,
+                               payload, (uint16_t)sizeof(payload));
+}
+
 bool Sender_hw_mcu_usb::send_chunked_commit(const uint8_t* data, size_t size,
                                             uint8_t append_cmd,
-                                            uint8_t commit_cmd)
+                                            uint8_t commit_cmd,
+                                            const uint8_t* commit_payload,
+                                            uint16_t commit_payload_len)
 {
     const uint32_t busy_wait_timeout_ms = 15000;
 
@@ -373,8 +433,8 @@ bool Sender_hw_mcu_usb::send_chunked_commit(const uint8_t* data, size_t size,
         {
             status = SHP_STATUS_INTERNAL_ERROR;
             if (send_command_wait_response(commit_cmd,
-                                           NULL,
-                                           0,
+                                           commit_payload,
+                                           commit_payload_len,
                                            out,
                                            status))
             {
@@ -570,6 +630,23 @@ bool Sender_hw_mcu_usb::get_info(std::vector<uint8_t>& info_payload)
     info_payload.clear();
     return send_command_wait_response(SHP_CMD_GET_INFO, NULL, 0, info_payload,
                                       rsp_status);
+}
+
+bool Sender_hw_mcu_usb::get_mcu_version(uint32_t& version)
+{
+    std::vector<uint8_t> out;
+    uint8_t rsp_status = SHP_STATUS_INTERNAL_ERROR;
+
+    version = 0;
+    if (!send_command_wait_response(SHP_CMD_GET_MCU_VERSION, NULL, 0, out,
+                                    rsp_status) || out.size() != 4)
+    {
+        return false;
+    }
+
+    version = (uint32_t)out[0] | ((uint32_t)out[1] << 8) |
+              ((uint32_t)out[2] << 16) | ((uint32_t)out[3] << 24);
+    return true;
 }
 
 uint16_t Sender_hw_mcu_usb::crc16_ccitt(const uint8_t* data, size_t size)

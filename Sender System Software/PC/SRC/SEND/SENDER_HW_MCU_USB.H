@@ -31,6 +31,15 @@ class Sender_hw_mcu_usb : public Sender_hw_if
                              const char* info_tag);
     virtual bool send_raw_bytes(const uint8_t* data, size_t size,
                   const char* info_tag);
+    virtual bool send_raw_bytes_stretched(const uint8_t* data, size_t size,
+                        size_t stretch_byte_index,
+                        uint16_t clk0t_us, uint16_t clk0h_us,
+                        const char* info_tag);
+    virtual bool send_raw_bytes_timed(const uint8_t* data, size_t size,
+                      uint16_t bit_index1, uint16_t clk0t1_us,
+                      uint16_t clk0h1_us, uint16_t bit_index2,
+                      uint16_t clk0t2_us, uint16_t clk0h2_us,
+                      const char* info_tag);
     virtual bool send_stretched_byte(uint16_t clk0t_us, uint16_t clk0h_us,
                                      uint8_t byte_value,
                                      const char* info_tag);
@@ -46,6 +55,7 @@ class Sender_hw_mcu_usb : public Sender_hw_if
 
     /* Returns raw SHP_CMD_GET_INFO payload from the MCU. */
     bool get_info(std::vector<uint8_t>& info_payload);
+    bool get_mcu_version(uint32_t& version);
 
     /* Helpers used by host and test code for frame handling. */
     static uint16_t crc16_ccitt(const uint8_t* data, size_t size);
@@ -62,7 +72,9 @@ class Sender_hw_mcu_usb : public Sender_hw_if
                                     std::vector<uint8_t>& out_payload,
                                     uint8_t& out_status);
     bool send_chunked_commit(const uint8_t* data, size_t size,
-                 uint8_t append_cmd, uint8_t commit_cmd);
+                 uint8_t append_cmd, uint8_t commit_cmd,
+                 const uint8_t* commit_payload = NULL,
+                 uint16_t commit_payload_len = 0);
 
   private:
     std::string m_port_name;

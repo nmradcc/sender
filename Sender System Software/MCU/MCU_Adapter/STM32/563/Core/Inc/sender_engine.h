@@ -47,6 +47,17 @@ uint8_t sender_engine_send_packet(sender_engine_t* eng, const uint8_t* data,
                                   uint16_t size);
 uint8_t sender_engine_send_raw_bytes(sender_engine_t* eng, const uint8_t* data,
                                      uint16_t size);
+uint8_t sender_engine_send_raw_bytes_stretched(sender_engine_t* eng,
+                                               const uint8_t* data,
+                                               uint16_t size,
+                                               uint16_t stretch_byte_index,
+                                               uint16_t clk0t_us,
+                                               uint16_t clk0h_us);
+uint8_t sender_engine_send_raw_bytes_timed(sender_engine_t* eng,
+                                           const uint8_t* data, uint16_t size,
+                                           uint16_t bit_index1, uint16_t clk0t1_us,
+                                           uint16_t clk0h1_us, uint16_t bit_index2,
+                                           uint16_t clk0t2_us, uint16_t clk0h2_us);
 uint8_t sender_engine_send_stretched_byte(sender_engine_t* eng,
                                           uint16_t clk0t_us,
                                           uint16_t clk0h_us,

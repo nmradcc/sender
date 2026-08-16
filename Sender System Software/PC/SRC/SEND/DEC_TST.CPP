@@ -27,6 +27,7 @@
 
 #include <conio.h>
 #include <string.h>
+#include <vector>
 
 /*
  * Uncomment PKT_REP_DEBUG to show all 3 fill packet counts when
@@ -2003,6 +2004,7 @@ Dec_tst::decoder_str0_ames(
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
 	BYTE			pbyte;					// Present byte to send.
+	std::vector<BYTE>	trigger_bytes;		// Atomic stretched trigger stream.
 
 	sprintf( m_tst_name, "0T %5u 0H %5u:", iclk0t, iclk0h );
 	Dcc_reg.clr_err_cnt();					// Restart error counter.
@@ -2097,11 +2099,12 @@ Dec_tst::decoder_str0_ames(
         /*
          * Send BYTES immediately before single stretched 0.
          */
+		trigger_bytes.clear();
 		dcc_bits2.rst_out();
-		dcc_bits2.get_byte( pbyte );			// Send first 2 preamble bits.
-		Dcc_reg.send_bytes( 1, pbyte, "Send 1st stretched trigger byte." );
-		dcc_bits2.get_byte( pbyte );			// Send remaining 8 preambles.
-		Dcc_reg.send_bytes( 1, pbyte, "Send 2nd stretched trigger byte." );
+		while ( dcc_bits2.get_byte( pbyte ) == OK )
+		{
+			trigger_bytes.push_back( pbyte );
+		}
 
 		/*
 		 * Send a scope trigger at start of trigger packet
@@ -2112,17 +2115,9 @@ Dec_tst::decoder_str0_ames(
 			Dcc_reg.set_scope( true );
 		}
 
-		dcc_bits2.get_byte( pbyte );			// Get first part of packet.
-		Dcc_reg.send_stretched_byte(	iclk0t,	// Send single stretched 0.
-										iclk0h,
-										pbyte,
-										"Send byte with single stretched 0." );
-		// Send remaining part of packet.
-		while ( dcc_bits2.get_byte( pbyte ) == OK )
-		{
-			Dcc_reg.send_bytes(	1, pbyte,
-								"Send remaining stretched trigger packet." );
-		}
+		Dcc_reg.send_raw_bytes_stretched( &trigger_bytes[0], trigger_bytes.size(),
+			( STRETCH_BITS + PRE_BITS ) / BITS_IN_BYTE, iclk0t, iclk0h,
+			"Send trigger packet with single stretched 0." );
 
 		/*
 		 * The following code sends another idle filler, turns
@@ -3968,6 +3963,7 @@ Dec_tst::decoder_ambig1(
     int				fill_bits;				// Number of fill bits.
     int				pre_bytes;				// Bytes prior to ambiguous byte.
 	BYTE			pbyte;					// Present byte to send.
+	std::vector<BYTE>	ambig_bytes;			// Atomic ambiguous trigger stream.
 	u_int			test_repeats;			// Number of times to repeat test.
     u_short	 		ambig1_0t;				// Ambiguous bit 0T time.
     u_short			ambig1_0h;				// Ambiguous bit 0H time.
@@ -4172,16 +4168,12 @@ Dec_tst::decoder_ambig1(
         			pre_fail	=	true;
         		}
 
-            	//	Reset dcc_bits2 to the beginning of the packet.
-            	dcc_bits2.rst_out();
-
-        		//	Send pre_bytes just before ambiguous bit.
-            	for ( j = 0; j < pre_bytes; j++ )
-            	{
-            		dcc_bits2.get_byte( pbyte );
-                	Dcc_reg.send_bytes( 1, pbyte,
-        				"Send preset BYTE just before ambiguous bit." );
-            	}
+				ambig_bytes.clear();
+				dcc_bits2.rst_out();
+				while ( dcc_bits2.get_byte( pbyte ) == OK )
+				{
+					ambig_bytes.push_back( pbyte );
+				}
 
 				/*
 		 	 	 * Send a scope trigger at start of trigger packet
@@ -4189,18 +4181,9 @@ Dec_tst::decoder_ambig1(
 		 	 	 */
                  Dcc_reg.set_scope( true );
 
-				dcc_bits2.get_byte( pbyte );	// Get first BYTE of packet.
-				Dcc_reg.send_1_ambig_bit(	ambig1_0t,
-                							ambig1_0h,
-                                            pbyte,
-                                            "Send byte with 1 ambiguous bit." );
-
-				// Send remaining part of preset packet & the trigger packet.
-				while ( dcc_bits2.get_byte( pbyte ) == OK )
-				{
-					Dcc_reg.send_bytes(	1, pbyte,
-										"Send remaining ambig 1 packet." );
-				}
+				Dcc_reg.send_raw_bytes_timed( &ambig_bytes[0], ambig_bytes.size(),
+					pre_bytes * BITS_IN_BYTE, ambig1_0t, ambig1_0h, 0xFFFF,
+					0, 0, "Send trigger packet with 1 ambiguous bit." );
 
 				send_filler();		  			// Send filler.
 
@@ -4288,6 +4271,7 @@ Dec_tst::decoder_ambig2(
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
 	BYTE			pbyte;					// Present byte to send.
+	std::vector<BYTE>	ambig_bytes;			// Atomic ambiguous trigger stream.
 	u_int			pre_cnt;				// Preamble count for test.
 	u_short			t_addr;					// Prior address.
     int				test_cycle;				// Ambiguous 2 test cycle.
@@ -4471,21 +4455,15 @@ Dec_tst::decoder_ambig2(
              	 */
             	Dcc_reg.set_scope( true );
 
-        		dcc_bits3.rst_out();
-				dcc_bits3.get_byte( pbyte );	// Get first BYTE of packet.
-				Dcc_reg.send_2_ambig_bits(	ambig2_0t1,
-        								ambig2_0h1,
-                                    	ambig2_0t2,
-                                    	ambig2_0h2,
-                                    	pbyte,
-                                    	"Send byte with 2 ambiguous bits." );
-
-				// Send remaining part of packet.
+				ambig_bytes.clear();
+				dcc_bits3.rst_out();
 				while ( dcc_bits3.get_byte( pbyte ) == OK )
 				{
-					Dcc_reg.send_bytes(	1, pbyte,
-									"Send remaining ambig 2 trigger packet." );
+					ambig_bytes.push_back( pbyte );
 				}
+				Dcc_reg.send_raw_bytes_timed( &ambig_bytes[0], ambig_bytes.size(),
+					0, ambig2_0t1, ambig2_0h1, 1, ambig2_0t2, ambig2_0h2,
+					"Send trigger packet with 2 ambiguous bits." );
 
 				send_filler();					// Send filler.
         

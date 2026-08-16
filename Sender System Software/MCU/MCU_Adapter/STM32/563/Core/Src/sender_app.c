@@ -33,7 +33,9 @@ static void sender_app_handle_request(const sender_request_t* req,
     if (req->cmd != SHP_CMD_APPEND_PACKET_CHUNK &&
         req->cmd != SHP_CMD_COMMIT_PACKET &&
         req->cmd != SHP_CMD_APPEND_RAW_CHUNK &&
-        req->cmd != SHP_CMD_COMMIT_RAW_BYTES)
+        req->cmd != SHP_CMD_COMMIT_RAW_BYTES &&
+        req->cmd != SHP_CMD_COMMIT_RAW_STRETCHED_BYTE &&
+        req->cmd != SHP_CMD_COMMIT_RAW_TIMED_BITS)
     {
         g_packet_stage_len = 0u;
         g_packet_stage_mode = PACKET_STAGE_NONE;
@@ -189,6 +191,47 @@ static void sender_app_handle_request(const sender_request_t* req,
             rsp->status = sender_engine_send_raw_bytes(&g_engine,
                                                        g_packet_stage,
                                                        g_packet_stage_len);
+            g_packet_stage_len = 0u;
+            g_packet_stage_mode = PACKET_STAGE_NONE;
+            break;
+
+        case SHP_CMD_COMMIT_RAW_STRETCHED_BYTE:
+            if (req->payload_len != 6u || g_packet_stage_len == 0u ||
+                g_packet_stage_mode != PACKET_STAGE_RAW_BYTES)
+            {
+                g_packet_stage_len = 0u;
+                g_packet_stage_mode = PACKET_STAGE_NONE;
+                rsp->status = SHP_STATUS_BAD_LENGTH;
+                break;
+            }
+
+            rsp->status = sender_engine_send_raw_bytes_stretched(
+                &g_engine, g_packet_stage, g_packet_stage_len,
+                (uint16_t)req->payload[0] | ((uint16_t)req->payload[1] << 8),
+                (uint16_t)req->payload[2] | ((uint16_t)req->payload[3] << 8),
+                (uint16_t)req->payload[4] | ((uint16_t)req->payload[5] << 8));
+            g_packet_stage_len = 0u;
+            g_packet_stage_mode = PACKET_STAGE_NONE;
+            break;
+
+        case SHP_CMD_COMMIT_RAW_TIMED_BITS:
+            if (req->payload_len != 12u || g_packet_stage_len == 0u ||
+                g_packet_stage_mode != PACKET_STAGE_RAW_BYTES)
+            {
+                g_packet_stage_len = 0u;
+                g_packet_stage_mode = PACKET_STAGE_NONE;
+                rsp->status = SHP_STATUS_BAD_LENGTH;
+                break;
+            }
+
+            rsp->status = sender_engine_send_raw_bytes_timed(
+                &g_engine, g_packet_stage, g_packet_stage_len,
+                (uint16_t)req->payload[0] | ((uint16_t)req->payload[1] << 8),
+                (uint16_t)req->payload[2] | ((uint16_t)req->payload[3] << 8),
+                (uint16_t)req->payload[4] | ((uint16_t)req->payload[5] << 8),
+                (uint16_t)req->payload[6] | ((uint16_t)req->payload[7] << 8),
+                (uint16_t)req->payload[8] | ((uint16_t)req->payload[9] << 8),
+                (uint16_t)req->payload[10] | ((uint16_t)req->payload[11] << 8));
             g_packet_stage_len = 0u;
             g_packet_stage_mode = PACKET_STAGE_NONE;
             break;

@@ -211,6 +211,8 @@ enum Ramp_state
 static bool
 init_hw_backend( void )
 {
+	uint32_t mcu_version;
+
 	Lmcu_hw = new Sender_hw_mcu_usb( Args.get_mcu_port(), Args.get_mcu_baud() );
 	if ( Lmcu_hw == NULL )
 	{
@@ -229,6 +231,18 @@ init_hw_backend( void )
 
 	printf( "Using MCU backend on port <%s> at %u baud\n",
 		Args.get_mcu_port(), Args.get_mcu_baud() );
+	if ( Lmcu_hw->get_mcu_version( mcu_version ) )
+	{
+		printf( "MCU firmware version %u.%u.%u.%u\n",
+			(unsigned int)((mcu_version >> 24) & 0xFF),
+			(unsigned int)((mcu_version >> 16) & 0xFF),
+			(unsigned int)((mcu_version >> 8) & 0xFF),
+			(unsigned int)(mcu_version & 0xFF) );
+	}
+	else
+	{
+		printf( "MCU firmware version unavailable\n" );
+	}
 	return ( true );
 }
 
@@ -871,9 +885,28 @@ do_mcu_self_tests( void )
 {
 	const char	*my_name = "do_mcu_self_tests";
 	int			 failures = 0;
+	uint32_t	 mcu_version;
 
 	STATPRINT( "MCU self test" );
 	printf( "MCU self test\n" );
+	if ( Lmcu_hw != NULL && Lmcu_hw->get_mcu_version( mcu_version ) )
+	{
+		STATPRINT( "MCU firmware version %u.%u.%u.%u",
+			(unsigned int)((mcu_version >> 24) & 0xFF),
+			(unsigned int)((mcu_version >> 16) & 0xFF),
+			(unsigned int)((mcu_version >> 8) & 0xFF),
+			(unsigned int)(mcu_version & 0xFF) );
+		printf( "MCU firmware version %u.%u.%u.%u\n",
+			(unsigned int)((mcu_version >> 24) & 0xFF),
+			(unsigned int)((mcu_version >> 16) & 0xFF),
+			(unsigned int)((mcu_version >> 8) & 0xFF),
+			(unsigned int)(mcu_version & 0xFF) );
+	}
+	else
+	{
+		STATPRINT( "MCU firmware version unavailable" );
+		printf( "MCU firmware version unavailable\n" );
+	}
 	printf( "----------------------------------------\n" );
 
 	/* 1. RESET_STATS */

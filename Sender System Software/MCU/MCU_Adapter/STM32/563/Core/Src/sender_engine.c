@@ -631,8 +631,8 @@ uint8_t sender_engine_send_stretched_byte(sender_engine_t *eng,
                                           uint16_t clk0h_us,
                                           uint8_t byte_value)
 {
-    uint16_t save_t;
-    uint16_t save_h;
+    uint8_t mask;
+    bool one;
 
     if (eng == 0)
     {
@@ -642,21 +642,29 @@ uint8_t sender_engine_send_stretched_byte(sender_engine_t *eng,
     {
         return SHP_STATUS_BUSY;
     }
+    if (clk0t_us < eng->clk0t_us || clk0h_us < eng->clk0h_us ||
+        clk0h_us > clk0t_us)
+    {
+        return SHP_STATUS_BAD_LENGTH;
+    }
     if (dcc_fifo_free() < 16u)
     {
         return SHP_STATUS_BUSY;
     }
 
-    /* Temporarily substitute the caller's zero-bit timing for this byte. */
-    save_t = eng->clk0t_us;
-    save_h = eng->clk0h_us;
-    eng->clk0t_us = clk0t_us;
-    eng->clk0h_us = clk0h_us;
-
-    dcc_push_byte_unchecked(eng, byte_value);
-
-    eng->clk0t_us = save_t;
-    eng->clk0h_us = save_h;
+    for (mask = 0x80u; mask != 0u; mask = (uint8_t)(mask >> 1u))
+    {
+        one = ((byte_value & mask) != 0u);
+        if (mask == 0x80u && !one)
+        {
+            dcc_push_unchecked(clk0h_us);
+            dcc_push_unchecked((uint16_t)(clk0t_us - clk0h_us));
+        }
+        else
+        {
+            dcc_push_bit_unchecked(eng, one);
+        }
+    }
 
     eng->bytes_sent += 1u;
     return SHP_STATUS_OK;
@@ -802,4 +810,128 @@ void sender_engine_get_non_idle_packet_event(uint32_t *event_count,
 
     *event_count = g_non_idle_packet_events;
     *last_address = g_last_non_idle_address;
+}
+
+uint8_t sender_engine_send_raw_bytes_stretched(sender_engine_t *eng,
+                                               const uint8_t *data,
+                                               uint16_t size,
+                                               uint16_t stretch_byte_index,
+                                               uint16_t clk0t_us,
+                                               uint16_t clk0h_us)
+{
+    uint32_t hps_needed;
+    uint32_t bit_hp_index;
+    uint16_t i;
+    uint8_t mask;
+    bool one;
+
+    if (eng == 0)
+    {
+        return SHP_STATUS_INTERNAL_ERROR;
+    }
+    if (!eng->running)
+    {
+        return SHP_STATUS_BUSY;
+    }
+    if (data == 0 || size == 0u || stretch_byte_index >= size ||
+        clk0t_us < eng->clk0t_us || clk0h_us < eng->clk0h_us ||
+        clk0h_us > clk0t_us)
+    {
+        return SHP_STATUS_BAD_LENGTH;
+    }
+
+    hps_needed = (uint32_t)size * 16u;
+    if (dcc_fifo_free() < hps_needed)
+    {
+        return SHP_STATUS_BUSY;
+    }
+
+    for (i = 0u; i < size; ++i)
+    {
+        for (mask = 0x80u; mask != 0u; mask = (uint8_t)(mask >> 1u))
+        {
+            one = ((data[i] & mask) != 0u);
+            bit_hp_index = g_hp_enqueued_total;
+            dcc_monitor_consume_bit(one, bit_hp_index);
+            if (i == stretch_byte_index && mask == 0x80u && !one)
+            {
+                dcc_push_unchecked(clk0h_us);
+                dcc_push_unchecked((uint16_t)(clk0t_us - clk0h_us));
+            }
+            else
+            {
+                dcc_push_bit_unchecked(eng, one);
+            }
+        }
+    }
+
+    eng->bytes_sent += size;
+    eng->packets_sent += 1u;
+    return SHP_STATUS_OK;
+}
+
+uint8_t sender_engine_send_raw_bytes_timed(sender_engine_t *eng,
+                                           const uint8_t *data, uint16_t size,
+                                           uint16_t bit_index1, uint16_t clk0t1_us,
+                                           uint16_t clk0h1_us, uint16_t bit_index2,
+                                           uint16_t clk0t2_us, uint16_t clk0h2_us)
+{
+    uint32_t hps_needed;
+    uint32_t bit_hp_index;
+    uint32_t bit_index = 0u;
+    uint16_t i;
+    uint8_t mask;
+    bool one;
+
+    if (eng == 0)
+    {
+        return SHP_STATUS_INTERNAL_ERROR;
+    }
+    if (!eng->running)
+    {
+        return SHP_STATUS_BUSY;
+    }
+    if (data == 0 || size == 0u || bit_index1 >= (uint32_t)size * 8u ||
+        (bit_index2 != 0xFFFFu && bit_index2 >= (uint32_t)size * 8u) ||
+        clk0t1_us < eng->clk0t_us || clk0h1_us < eng->clk0h_us ||
+        clk0h1_us > clk0t1_us ||
+        (bit_index2 != 0xFFFFu && (clk0t2_us < eng->clk0t_us ||
+         clk0h2_us < eng->clk0h_us || clk0h2_us > clk0t2_us)))
+    {
+        return SHP_STATUS_BAD_LENGTH;
+    }
+
+    hps_needed = (uint32_t)size * 16u;
+    if (dcc_fifo_free() < hps_needed)
+    {
+        return SHP_STATUS_BUSY;
+    }
+
+    for (i = 0u; i < size; ++i)
+    {
+        for (mask = 0x80u; mask != 0u; mask = (uint8_t)(mask >> 1u), ++bit_index)
+        {
+            one = ((data[i] & mask) != 0u);
+            bit_hp_index = g_hp_enqueued_total;
+            dcc_monitor_consume_bit(one, bit_hp_index);
+            if (bit_index == bit_index1 && !one)
+            {
+                dcc_push_unchecked(clk0h1_us);
+                dcc_push_unchecked((uint16_t)(clk0t1_us - clk0h1_us));
+            }
+            else if (bit_index == bit_index2 && !one)
+            {
+                dcc_push_unchecked(clk0h2_us);
+                dcc_push_unchecked((uint16_t)(clk0t2_us - clk0h2_us));
+            }
+            else
+            {
+                dcc_push_bit_unchecked(eng, one);
+            }
+        }
+    }
+
+    eng->bytes_sent += size;
+    eng->packets_sent += 1u;
+    return SHP_STATUS_OK;
 }
