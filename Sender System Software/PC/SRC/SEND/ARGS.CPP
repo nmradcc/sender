@@ -97,6 +97,7 @@ Args_obj::Args_obj( void )
 	test_repeats		= 2;				// Times to repeat misc. tests.
 	print_user			= false;			// Don't print user docs.
 	log_pkts			= false;			// Don't send packets to log.
+	m_mcu_bypass_tst	= false;			// Run MCU self tests.
 	m_no_abort			= false;			// Stop on error.
 	m_late_scope		= false;			// Use normal scope trigger.
 	m_ambig_addr_same  	= false;			// Use different address.
@@ -262,9 +263,13 @@ Args_obj::usage(
 		"Non packet acceptance test repeats   <value %u>\n",
 		test_repeats );
 	fprintf( ofp,
-		"  -P         LOG_PKTS   "
-		"Send packets to log, not hardware    <value %s>\n",
+		"  -P         LOG        "
+		"Send packet info to log              <value %s>\n",
 		log_pkts		? "true" : "false" );
+	fprintf( ofp,
+		"  -B    MCU_BYPASS_TST  "
+		"Skip MCU startup self tests          <value %s>\n",
+		m_mcu_bypass_tst	? "true" : "false" );
 	fprintf( ofp,
 		"  -A         NO_ABORT   "
 		"Do not stop program on an error      <value %s>\n",
@@ -297,11 +302,11 @@ Args_obj::usage(
 		Deflog.get_dbg_on() ? "true" : "false" );
 	fprintf( ofp,
 		"  -J <port>  MCU_PORT   "
-		"MCU serial port name                <value %s>\n",
+		"MCU serial port name                 <value %s>\n",
 		m_mcu_port );
 	fprintf( ofp,
 		"  -Y <baud>  MCU_BAUD   "
-		"MCU serial baud rate               <value %u>\n",
+		"MCU serial baud rate                 <value %u>\n",
 		m_mcu_baud );
 				
 	fprintf( ofp, "\nManual keyboard commands >\n\n%s\n", key_help);
@@ -673,6 +678,10 @@ Args_obj::argscan(
 		else if ( strcmp( argv[i], "-P" ) == 0 )	// Log packets.
 		{
 			log_pkts	=	log_pkts ? false  : true;
+		}
+		else if ( strcmp( argv[i], "-B" ) == 0 )	// Bypass MCU self tests.
+		{
+			m_mcu_bypass_tst	= 	m_mcu_bypass_tst ? false  : true;
 		}
 		else if ( strcmp( argv[i], "-A" ) == 0 )	// No abort flag.
 		{
@@ -1053,10 +1062,15 @@ Args_obj::cfgscan( void )
 			targv[1]	=	"-R";
 			targc		=	3;
 		}
-		else if ( 	!strcmpi( cmd,	"LOG_PKTS" ) )
+		else if ( 	!strcmpi( cmd,	"LOG" ) )
 		{
 			targv[1]	=	"-P";
 			targc		=	2;
+		}
+		else if ( 	!strcmpi( cmd, 	"MCU_BYPASS_TST" ) )
+		{
+			targv[1]	= 	"-B";
+			targc		= 	2;
 		}
 		else if ( 	!strcmpi( cmd,	"NO_ABORT" ) )
 		{

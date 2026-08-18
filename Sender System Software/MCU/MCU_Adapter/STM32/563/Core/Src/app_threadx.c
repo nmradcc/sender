@@ -20,10 +20,11 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "app_threadx.h"
-#include "stm32h5xx_nucleo.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "main.h"
+#include "sender_app.h"
 
 /* USER CODE END Includes */
 
@@ -31,6 +32,8 @@
 /* USER CODE BEGIN PTD */
 #define LED_TASK_THREAD_STACK_SIZE         1024U
 #define LED_TASK_THREAD_PRIO               20U
+#define PKT_MON_THREAD_STACK_SIZE          1024U
+#define PKT_MON_THREAD_PRIO                21U
 
 
 /* USER CODE END PTD */
@@ -49,12 +52,15 @@
 /* USER CODE BEGIN PV */
 static TX_THREAD led_task_thread;
 static UCHAR *led_task_thread_stack;
+static TX_THREAD pkt_mon_thread;
+static UCHAR *pkt_mon_thread_stack;
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
 static VOID LedThreadTask(ULONG thread_input);
+static VOID PacketMonitorThreadTask(ULONG thread_input);
 /* USER CODE END PFP */
 
 /**
@@ -84,6 +90,26 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
                        LED_TASK_THREAD_STACK_SIZE,
                        LED_TASK_THREAD_PRIO,
                        LED_TASK_THREAD_PRIO,
+                       TX_NO_TIME_SLICE,
+                       TX_AUTO_START) != TX_SUCCESS)
+  {
+    return TX_THREAD_ERROR;
+  }
+
+  if (tx_byte_allocate(byte_pool, (VOID **)&pkt_mon_thread_stack, PKT_MON_THREAD_STACK_SIZE,
+                       TX_NO_WAIT) != TX_SUCCESS)
+  {
+    return TX_POOL_ERROR;
+  }
+
+  if (tx_thread_create(&pkt_mon_thread,
+                       "Packet Monitor Task",
+                       PacketMonitorThreadTask,
+                       0,
+                       pkt_mon_thread_stack,
+                       PKT_MON_THREAD_STACK_SIZE,
+                       PKT_MON_THREAD_PRIO,
+                       PKT_MON_THREAD_PRIO,
                        TX_NO_TIME_SLICE,
                        TX_AUTO_START) != TX_SUCCESS)
   {
@@ -121,6 +147,26 @@ static VOID LedThreadTask(ULONG thread_input)
   {
     BSP_LED_Toggle(LED_YELLOW);
     tx_thread_sleep(TX_TIMER_TICKS_PER_SECOND / 2U);
+  }
+}
+
+static VOID PacketMonitorThreadTask(ULONG thread_input)
+{
+  uint32_t last_event_count = 0u;
+  uint32_t event_count = 0u;
+  uint8_t last_address = 0xFFu;
+
+  TX_PARAMETER_NOT_USED(thread_input);
+
+  while (1)
+  {
+    sender_app_get_non_idle_packet_event(&event_count, &last_address);
+    if (event_count != last_event_count)
+    {
+      last_event_count = event_count;
+    }
+
+    tx_thread_sleep(2);
   }
 }
 

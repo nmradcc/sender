@@ -137,6 +137,13 @@ class Send_reg : public Sr_core
 	Rslt_t	send_base( void )
 	{ return ( send_pkt(base_bytes,PKT_SIZE,"Baseline") ); }
 	Rslt_t	send_bytes( u_int icnt, BYTE ibyte, const char *info );
+	Rslt_t	send_raw_bytes_stretched( const BYTE *ibytes, u_int isize,
+								u_int stretch_byte_index, u_short iclk0t,
+								u_short iclk0h, const char *info );
+	Rslt_t	send_raw_bytes_timed( const BYTE *ibytes, u_int isize,
+								u_short bit_index1, u_short iclk0t1,
+								u_short iclk0h1, u_short bit_index2,
+								u_short iclk0t2, u_short iclk0h2, const char *info );
 	Rslt_t	send_stretched_byte(
 									u_short iclk0t, u_short iclk0h,
 									BYTE ibyte, const char *into );

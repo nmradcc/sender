@@ -69,6 +69,8 @@ void MX_USB_PCD_Init(void);
 #define STLK_MCO_GPIO_Port GPIOH
 #define SCOPE_Pin GPIO_PIN_7
 #define SCOPE_GPIO_Port GPIOE
+#define SCOPE_ADR_Pin GPIO_PIN_8
+#define SCOPE_ADR_GPIO_Port GPIOE
 #define IN0_Pin GPIO_PIN_10
 #define IN0_GPIO_Port GPIOE
 #define IN1_Pin GPIO_PIN_12

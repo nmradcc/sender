@@ -95,6 +95,7 @@ Zlog::Zlog( void )
 	no_abort_flag	=	false;
 	stderr_too		=	true;
 	dbg_on			=	false;
+	abort_handler	= NULL;
 
 }
 
@@ -474,6 +475,11 @@ Zlog::verrprint(
 	 */
 	if ( !no_abort_flag && (priority <= LOG_ABORT_PRIORITY) )
 	{
+		if ( abort_handler != NULL )
+		{
+			abort_handler();
+		}
+
 		set_no_abort_flag( true );	// Don't spiral trying to end.
 		ERRPRINT( "errprint", LOG_ERR,
 			"Aborting program - error priority <%s>",

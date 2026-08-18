@@ -29,12 +29,48 @@
 #define DCC_GPIO_AF         GPIO_AF2_TIM5
 
 /* Half-period FIFO (single-producer / single-consumer, power-of-2 size). */
-#define DCC_FIFO_SIZE       512u
+#define DCC_FIFO_SIZE       4096u
 #define DCC_FIFO_MASK       (DCC_FIFO_SIZE - 1u)
+#define DCC_ADR_EVT_FIFO_SIZE 64u
+#define DCC_ADR_EVT_FIFO_MASK (DCC_ADR_EVT_FIFO_SIZE - 1u)
+#define DCC_ADR_EVT_SET      1u
+#define DCC_ADR_EVT_CLEAR    0u
+#define DCC_HPS_PER_BIT      2u
+#define DCC_HPS_TO_FIRST_BIT_IN_BYTE (7u * DCC_HPS_PER_BIT)
+/*
+ * TIM5 CC ISR runs at half-period boundaries. Scheduling clear +2 half-periods
+ * after first address-bit start clears at the end of that bit cell.
+ */
+#define DCC_HPS_TO_ADDR_PULSE_CLEAR DCC_HPS_PER_BIT
+#define DCC_HPS_TO_FIRST_ADDR_BIT ((DCC_PREAMBLE_BITS + 1u) * 2u)
 
 static volatile uint16_t g_hp_fifo[DCC_FIFO_SIZE];
 static volatile uint32_t g_hp_head;     /* ISR consumer  */
 static volatile uint32_t g_hp_tail;     /* thread producer */
+static volatile uint32_t g_hp_enqueued_total;
+static volatile uint32_t g_hp_dequeued_total;
+
+static volatile uint32_t g_adr_evt_fifo[DCC_ADR_EVT_FIFO_SIZE];
+static volatile uint8_t g_adr_evt_addr_fifo[DCC_ADR_EVT_FIFO_SIZE];
+static volatile uint8_t g_adr_evt_action_fifo[DCC_ADR_EVT_FIFO_SIZE];
+static volatile uint32_t g_adr_evt_head;
+static volatile uint32_t g_adr_evt_tail;
+
+static volatile uint32_t g_non_idle_packet_events;
+static volatile uint8_t g_last_non_idle_address;
+
+typedef enum dcc_mon_state
+{
+    DCC_MON_WAIT_PREAMBLE = 0,
+    DCC_MON_READ_BYTE,
+    DCC_MON_WAIT_DELIM
+} dcc_mon_state_t;
+
+static dcc_mon_state_t g_mon_state;
+static uint8_t g_mon_preamble_ones;
+static uint8_t g_mon_byte_accum;
+static uint8_t g_mon_bit_count;
+static bool g_mon_first_byte_pending;
 
 extern TIM_HandleTypeDef htim5;
 
@@ -43,6 +79,122 @@ extern TIM_HandleTypeDef htim5;
 #define DCC_RESET_BITS      25u
 #define DCC_HARD_RESET_BITS 50u
 #define DCC_IDLE_HP_US      58u         /* half-period for a DCC "1" bit */
+#define DCC_MON_MIN_PREAMBLE_ONES 10u
+
+static void dcc_monitor_reset(void)
+{
+    g_mon_state = DCC_MON_WAIT_PREAMBLE;
+    g_mon_preamble_ones = 0u;
+    g_mon_byte_accum = 0u;
+    g_mon_bit_count = 0u;
+    g_mon_first_byte_pending = false;
+}
+
+static void dcc_monitor_note_address(uint8_t address)
+{
+    if (address != 0xFFu && address != 0x00u)
+    {
+        g_last_non_idle_address = address;
+        g_non_idle_packet_events += 1u;
+    }
+}
+
+static void dcc_schedule_address_event(uint8_t address, uint32_t hp_index)
+{
+    uint32_t set_slot;
+    uint32_t clear_slot;
+    uint32_t next_tail;
+
+    if (address == 0xFFu || address == 0x00u)
+    {
+        return;
+    }
+
+    set_slot = g_adr_evt_tail;
+    clear_slot = (set_slot + 1u) & DCC_ADR_EVT_FIFO_MASK;
+    next_tail = (clear_slot + 1u) & DCC_ADR_EVT_FIFO_MASK;
+    if (next_tail == g_adr_evt_head)
+    {
+        return;
+    }
+
+    g_adr_evt_fifo[set_slot] = hp_index;
+    g_adr_evt_addr_fifo[set_slot] = address;
+    g_adr_evt_action_fifo[set_slot] = DCC_ADR_EVT_SET;
+
+    g_adr_evt_fifo[clear_slot] = hp_index + DCC_HPS_TO_ADDR_PULSE_CLEAR;
+    g_adr_evt_addr_fifo[clear_slot] = 0u;
+    g_adr_evt_action_fifo[clear_slot] = DCC_ADR_EVT_CLEAR;
+
+    __DMB();
+    g_adr_evt_tail = next_tail;
+}
+
+static void dcc_monitor_consume_bit(bool one, uint32_t bit_hp_index)
+{
+    switch (g_mon_state)
+    {
+        case DCC_MON_WAIT_PREAMBLE:
+            if (one)
+            {
+                if (g_mon_preamble_ones < 0xFFu)
+                {
+                    g_mon_preamble_ones += 1u;
+                }
+            }
+            else
+            {
+                if (g_mon_preamble_ones >= DCC_MON_MIN_PREAMBLE_ONES)
+                {
+                    g_mon_state = DCC_MON_READ_BYTE;
+                    g_mon_first_byte_pending = true;
+                    g_mon_bit_count = 0u;
+                    g_mon_byte_accum = 0u;
+                }
+                g_mon_preamble_ones = 0u;
+            }
+            break;
+
+        case DCC_MON_READ_BYTE:
+            g_mon_byte_accum = (uint8_t)((g_mon_byte_accum << 1u) | (one ? 1u : 0u));
+            g_mon_bit_count += 1u;
+            if (g_mon_bit_count >= 8u)
+            {
+                if (g_mon_first_byte_pending)
+                {
+                    if (g_mon_byte_accum != 0xFFu && g_mon_byte_accum != 0x00u)
+                    {
+                        dcc_schedule_address_event(
+                            g_mon_byte_accum,
+                            bit_hp_index - DCC_HPS_TO_FIRST_BIT_IN_BYTE);
+                    }
+                    g_mon_first_byte_pending = false;
+                }
+                g_mon_state = DCC_MON_WAIT_DELIM;
+                g_mon_bit_count = 0u;
+                g_mon_byte_accum = 0u;
+            }
+            break;
+
+        case DCC_MON_WAIT_DELIM:
+            if (!one)
+            {
+                g_mon_state = DCC_MON_READ_BYTE;
+                g_mon_bit_count = 0u;
+                g_mon_byte_accum = 0u;
+            }
+            else
+            {
+                g_mon_state = DCC_MON_WAIT_PREAMBLE;
+                g_mon_preamble_ones = 1u;
+            }
+            break;
+
+        default:
+            dcc_monitor_reset();
+            break;
+    }
+}
 
 /* ======================================================================= */
 /* FIFO helpers (SPSC, lock-free)                                          */
@@ -61,6 +213,7 @@ static void dcc_push_unchecked(uint16_t hp)
     g_hp_fifo[g_hp_tail] = hp;
     __DMB();                            /* store to fifo before updating tail */
     g_hp_tail = (g_hp_tail + 1u) & DCC_FIFO_MASK;
+    g_hp_enqueued_total += 1u;
 }
 
 /* Push both half-periods of one DCC bit.  Caller ensures >= 2 free slots. */
@@ -155,6 +308,9 @@ void sender_engine_tim_irq_handler(void)
     uint32_t head;
     uint32_t tail;
     uint16_t hp;
+    uint32_t trigger_hp_index;
+    uint8_t trigger_address;
+    uint8_t trigger_action;
 
     if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_CC1) == 0)
     {
@@ -170,6 +326,29 @@ void sender_engine_tim_irq_handler(void)
         hp = g_hp_fifo[head];
         __DMB();                        /* read fifo slot before advancing head */
         g_hp_head = (head + 1u) & DCC_FIFO_MASK;
+        g_hp_dequeued_total += 1u;
+
+        while (g_adr_evt_head != g_adr_evt_tail)
+        {
+            trigger_hp_index = g_adr_evt_fifo[g_adr_evt_head];
+            if ((int32_t)((g_hp_dequeued_total - 1u) - trigger_hp_index) < 0)
+            {
+                break;
+            }
+
+            trigger_address = g_adr_evt_addr_fifo[g_adr_evt_head];
+            trigger_action = g_adr_evt_action_fifo[g_adr_evt_head];
+            g_adr_evt_head = (g_adr_evt_head + 1u) & DCC_ADR_EVT_FIFO_MASK;
+            if (trigger_action == DCC_ADR_EVT_SET)
+            {
+                HAL_GPIO_WritePin(SCOPE_ADR_GPIO_Port, SCOPE_ADR_Pin, GPIO_PIN_SET);
+                dcc_monitor_note_address(trigger_address);
+            }
+            else
+            {
+                HAL_GPIO_WritePin(SCOPE_ADR_GPIO_Port, SCOPE_ADR_Pin, GPIO_PIN_RESET);
+            }
+        }
     }
     else
     {
@@ -200,9 +379,17 @@ void sender_engine_init(sender_engine_t *eng)
 
     g_hp_head = 0u;
     g_hp_tail = 0u;
+    g_hp_enqueued_total = 0u;
+    g_hp_dequeued_total = 0u;
+    g_adr_evt_head = 0u;
+    g_adr_evt_tail = 0u;
+    g_non_idle_packet_events = 0u;
+    g_last_non_idle_address = 0xFFu;
+    dcc_monitor_reset();
 
     /* Ensure the external scope trigger GPIO is in the OFF state. */
     HAL_GPIO_WritePin(SCOPE_GPIO_Port, SCOPE_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(SCOPE_ADR_GPIO_Port, SCOPE_ADR_Pin, GPIO_PIN_RESET);
 }
 
 void sender_engine_reset(sender_engine_t *eng)
@@ -256,6 +443,10 @@ uint8_t sender_engine_start(sender_engine_t *eng)
 
     g_hp_head     = 0u;
     g_hp_tail     = 0u;
+    g_hp_enqueued_total = 0u;
+    g_hp_dequeued_total = 0u;
+    g_adr_evt_head = 0u;
+    g_adr_evt_tail = 0u;
     eng->underflow = false;
     dcc_hw_start();
     eng->running  = true;
@@ -344,6 +535,7 @@ uint8_t sender_engine_send_packet(sender_engine_t *eng, const uint8_t *data,
      * Half-periods needed = (14 + 1 + size*9) * 2
      */
     uint32_t hps_needed;
+    uint32_t packet_hp_start;
     uint16_t i;
 
     if (eng == 0)
@@ -364,6 +556,9 @@ uint8_t sender_engine_send_packet(sender_engine_t *eng, const uint8_t *data,
     {
         return SHP_STATUS_BUSY;
     }
+
+    packet_hp_start = g_hp_enqueued_total;
+    dcc_schedule_address_event(data[0], packet_hp_start + DCC_HPS_TO_FIRST_ADDR_BIT);
 
     /* Preamble */
     for (i = 0u; i < DCC_PREAMBLE_BITS; i++)
@@ -390,7 +585,10 @@ uint8_t sender_engine_send_raw_bytes(sender_engine_t *eng, const uint8_t *data,
                                      uint16_t size)
 {
     uint32_t hps_needed;
+    uint32_t bit_hp_index;
     uint16_t i;
+    uint8_t mask;
+    bool one;
 
     if (eng == 0)
     {
@@ -414,7 +612,13 @@ uint8_t sender_engine_send_raw_bytes(sender_engine_t *eng, const uint8_t *data,
 
     for (i = 0u; i < size; ++i)
     {
-        dcc_push_byte_unchecked(eng, data[i]);
+        for (mask = 0x80u; mask != 0u; mask = (uint8_t)(mask >> 1u))
+        {
+            one = ((data[i] & mask) != 0u);
+            bit_hp_index = g_hp_enqueued_total;
+            dcc_monitor_consume_bit(one, bit_hp_index);
+            dcc_push_bit_unchecked(eng, one);
+        }
     }
 
     eng->bytes_sent   += size;
@@ -427,8 +631,8 @@ uint8_t sender_engine_send_stretched_byte(sender_engine_t *eng,
                                           uint16_t clk0h_us,
                                           uint8_t byte_value)
 {
-    uint16_t save_t;
-    uint16_t save_h;
+    uint8_t mask;
+    bool one;
 
     if (eng == 0)
     {
@@ -438,21 +642,29 @@ uint8_t sender_engine_send_stretched_byte(sender_engine_t *eng,
     {
         return SHP_STATUS_BUSY;
     }
+    if (clk0t_us < eng->clk0t_us || clk0h_us < eng->clk0h_us ||
+        clk0h_us > clk0t_us)
+    {
+        return SHP_STATUS_BAD_LENGTH;
+    }
     if (dcc_fifo_free() < 16u)
     {
         return SHP_STATUS_BUSY;
     }
 
-    /* Temporarily substitute the caller's zero-bit timing for this byte. */
-    save_t = eng->clk0t_us;
-    save_h = eng->clk0h_us;
-    eng->clk0t_us = clk0t_us;
-    eng->clk0h_us = clk0h_us;
-
-    dcc_push_byte_unchecked(eng, byte_value);
-
-    eng->clk0t_us = save_t;
-    eng->clk0h_us = save_h;
+    for (mask = 0x80u; mask != 0u; mask = (uint8_t)(mask >> 1u))
+    {
+        one = ((byte_value & mask) != 0u);
+        if (mask == 0x80u && !one)
+        {
+            dcc_push_unchecked(clk0h_us);
+            dcc_push_unchecked((uint16_t)(clk0t_us - clk0h_us));
+        }
+        else
+        {
+            dcc_push_bit_unchecked(eng, one);
+        }
+    }
 
     eng->bytes_sent += 1u;
     return SHP_STATUS_OK;
@@ -571,6 +783,8 @@ void sender_engine_get_status(const sender_engine_t *eng,
     out->queue_depth = (uint16_t)((g_hp_tail - g_hp_head) & DCC_FIFO_MASK);
     out->gen1 = eng->gen_in1;
     out->gen2 = eng->gen_in2;
+    out->non_idle_event_count = g_non_idle_packet_events;
+    out->last_non_idle_address = g_last_non_idle_address;
 }
 
 void sender_engine_get_stats(const sender_engine_t *eng,
@@ -584,4 +798,139 @@ void sender_engine_get_stats(const sender_engine_t *eng,
     out->packets_sent = eng->packets_sent;
     out->bytes_sent   = eng->bytes_sent;
     out->underruns    = eng->underruns;
+}
+
+void sender_engine_get_non_idle_packet_event(uint32_t *event_count,
+                                             uint8_t *last_address)
+{
+    if (event_count == 0 || last_address == 0)
+    {
+        return;
+    }
+
+    *event_count = g_non_idle_packet_events;
+    *last_address = g_last_non_idle_address;
+}
+
+uint8_t sender_engine_send_raw_bytes_stretched(sender_engine_t *eng,
+                                               const uint8_t *data,
+                                               uint16_t size,
+                                               uint16_t stretch_byte_index,
+                                               uint16_t clk0t_us,
+                                               uint16_t clk0h_us)
+{
+    uint32_t hps_needed;
+    uint32_t bit_hp_index;
+    uint16_t i;
+    uint8_t mask;
+    bool one;
+
+    if (eng == 0)
+    {
+        return SHP_STATUS_INTERNAL_ERROR;
+    }
+    if (!eng->running)
+    {
+        return SHP_STATUS_BUSY;
+    }
+    if (data == 0 || size == 0u || stretch_byte_index >= size ||
+        clk0t_us < eng->clk0t_us || clk0h_us < eng->clk0h_us ||
+        clk0h_us > clk0t_us)
+    {
+        return SHP_STATUS_BAD_LENGTH;
+    }
+
+    hps_needed = (uint32_t)size * 16u;
+    if (dcc_fifo_free() < hps_needed)
+    {
+        return SHP_STATUS_BUSY;
+    }
+
+    for (i = 0u; i < size; ++i)
+    {
+        for (mask = 0x80u; mask != 0u; mask = (uint8_t)(mask >> 1u))
+        {
+            one = ((data[i] & mask) != 0u);
+            bit_hp_index = g_hp_enqueued_total;
+            dcc_monitor_consume_bit(one, bit_hp_index);
+            if (i == stretch_byte_index && mask == 0x80u && !one)
+            {
+                dcc_push_unchecked(clk0h_us);
+                dcc_push_unchecked((uint16_t)(clk0t_us - clk0h_us));
+            }
+            else
+            {
+                dcc_push_bit_unchecked(eng, one);
+            }
+        }
+    }
+
+    eng->bytes_sent += size;
+    eng->packets_sent += 1u;
+    return SHP_STATUS_OK;
+}
+
+uint8_t sender_engine_send_raw_bytes_timed(sender_engine_t *eng,
+                                           const uint8_t *data, uint16_t size,
+                                           uint16_t bit_index1, uint16_t clk0t1_us,
+                                           uint16_t clk0h1_us, uint16_t bit_index2,
+                                           uint16_t clk0t2_us, uint16_t clk0h2_us)
+{
+    uint32_t hps_needed;
+    uint32_t bit_hp_index;
+    uint32_t bit_index = 0u;
+    uint16_t i;
+    uint8_t mask;
+    bool one;
+
+    if (eng == 0)
+    {
+        return SHP_STATUS_INTERNAL_ERROR;
+    }
+    if (!eng->running)
+    {
+        return SHP_STATUS_BUSY;
+    }
+    if (data == 0 || size == 0u || bit_index1 >= (uint32_t)size * 8u ||
+        (bit_index2 != 0xFFFFu && bit_index2 >= (uint32_t)size * 8u) ||
+        clk0t1_us == 0u || clk0h1_us == 0u || clk0h1_us > clk0t1_us ||
+        (bit_index2 != 0xFFFFu &&
+         (clk0t2_us == 0u || clk0h2_us == 0u || clk0h2_us > clk0t2_us)))
+    {
+        return SHP_STATUS_BAD_LENGTH;
+    }
+
+    hps_needed = (uint32_t)size * 16u;
+    if (dcc_fifo_free() < hps_needed)
+    {
+        return SHP_STATUS_BUSY;
+    }
+
+    for (i = 0u; i < size; ++i)
+    {
+        for (mask = 0x80u; mask != 0u; mask = (uint8_t)(mask >> 1u), ++bit_index)
+        {
+            one = ((data[i] & mask) != 0u);
+            bit_hp_index = g_hp_enqueued_total;
+            dcc_monitor_consume_bit(one, bit_hp_index);
+            if (bit_index == bit_index1 && !one)
+            {
+                dcc_push_unchecked(clk0h1_us);
+                dcc_push_unchecked((uint16_t)(clk0t1_us - clk0h1_us));
+            }
+            else if (bit_index == bit_index2 && !one)
+            {
+                dcc_push_unchecked(clk0h2_us);
+                dcc_push_unchecked((uint16_t)(clk0t2_us - clk0h2_us));
+            }
+            else
+            {
+                dcc_push_bit_unchecked(eng, one);
+            }
+        }
+    }
+
+    eng->bytes_sent += size;
+    eng->packets_sent += 1u;
+    return SHP_STATUS_OK;
 }

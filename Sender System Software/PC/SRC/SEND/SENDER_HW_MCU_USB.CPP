@@ -2,10 +2,46 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <zlog.h>
 
 #if defined(_WIN32)
 #include <windows.h>
 #endif
+
+static const char *shp_cmd_name(uint8_t cmd)
+{
+    switch (cmd)
+    {
+    case SHP_CMD_APPEND_RAW_CHUNK: return "APPEND_RAW_CHUNK";
+    case SHP_CMD_COMMIT_RAW_BYTES: return "COMMIT_RAW_BYTES";
+    case SHP_CMD_COMMIT_RAW_STRETCHED_BYTE: return "COMMIT_RAW_STRETCHED_BYTE";
+    case SHP_CMD_COMMIT_RAW_TIMED_BITS: return "COMMIT_RAW_TIMED_BITS";
+    case SHP_CMD_SET_SCOPE: return "SET_SCOPE";
+    case SHP_CMD_GET_STATUS: return "GET_STATUS";
+    case SHP_CMD_RESET_DEVICE: return "RESET_DEVICE";
+    default: return "UNKNOWN";
+    }
+}
+
+static const char *shp_status_name(uint8_t status)
+{
+    switch (status)
+    {
+    case SHP_STATUS_OK: return "OK";
+    case SHP_STATUS_BAD_VERSION: return "BAD_VERSION";
+    case SHP_STATUS_BAD_COMMAND: return "BAD_COMMAND";
+    case SHP_STATUS_BAD_LENGTH: return "BAD_LENGTH";
+    case SHP_STATUS_BAD_CRC: return "BAD_CRC";
+    case SHP_STATUS_BUSY: return "BUSY";
+    case SHP_STATUS_INTERNAL_ERROR: return "INTERNAL_ERROR";
+    default: return "UNKNOWN";
+    }
+}
+
+#define SHP_LOG_FAILURE( cmd_, seq_, phase_, detail_ ) \
+    DBGLOG("MCU transport failure: cmd=%s(0x%02X), seq=%u, phase=%s, %s", \
+           shp_cmd_name(cmd_), (unsigned int)(cmd_), (unsigned int)(seq_), \
+           phase_, detail_)
 
 Sender_hw_mcu_usb::Sender_hw_mcu_usb(const char* port_name, uint32_t baud_rate)
     : m_port_name(port_name ? port_name : ""),
@@ -288,11 +324,71 @@ bool Sender_hw_mcu_usb::send_raw_bytes(const uint8_t* data, size_t size,
                                SHP_CMD_COMMIT_RAW_BYTES);
 }
 
+bool Sender_hw_mcu_usb::send_raw_bytes_stretched(
+    const uint8_t* data, size_t size, size_t stretch_byte_index,
+    uint16_t clk0t_us, uint16_t clk0h_us, const char* info_tag)
+{
+    uint8_t payload[6];
+
+    (void)info_tag;
+
+    if (stretch_byte_index >= size || stretch_byte_index > 0xFFFFu)
+    {
+        return false;
+    }
+
+    payload[0] = (uint8_t)(stretch_byte_index & 0xFFu);
+    payload[1] = (uint8_t)((stretch_byte_index >> 8) & 0xFFu);
+    payload[2] = (uint8_t)(clk0t_us & 0xFFu);
+    payload[3] = (uint8_t)((clk0t_us >> 8) & 0xFFu);
+    payload[4] = (uint8_t)(clk0h_us & 0xFFu);
+    payload[5] = (uint8_t)((clk0h_us >> 8) & 0xFFu);
+
+    return send_chunked_commit(data, size, SHP_CMD_APPEND_RAW_CHUNK,
+                               SHP_CMD_COMMIT_RAW_STRETCHED_BYTE,
+                               payload, (uint16_t)sizeof(payload));
+}
+
+bool Sender_hw_mcu_usb::send_raw_bytes_timed(
+    const uint8_t* data, size_t size, uint16_t bit_index1,
+    uint16_t clk0t1_us, uint16_t clk0h1_us, uint16_t bit_index2,
+    uint16_t clk0t2_us, uint16_t clk0h2_us, const char* info_tag)
+{
+    uint8_t payload[12];
+
+    (void)info_tag;
+
+    if (size == 0 || bit_index1 >= size * 8u ||
+        (bit_index2 != 0xFFFFu && bit_index2 >= size * 8u))
+    {
+        return false;
+    }
+
+    payload[0] = (uint8_t)(bit_index1 & 0xFFu);
+    payload[1] = (uint8_t)(bit_index1 >> 8);
+    payload[2] = (uint8_t)(clk0t1_us & 0xFFu);
+    payload[3] = (uint8_t)(clk0t1_us >> 8);
+    payload[4] = (uint8_t)(clk0h1_us & 0xFFu);
+    payload[5] = (uint8_t)(clk0h1_us >> 8);
+    payload[6] = (uint8_t)(bit_index2 & 0xFFu);
+    payload[7] = (uint8_t)(bit_index2 >> 8);
+    payload[8] = (uint8_t)(clk0t2_us & 0xFFu);
+    payload[9] = (uint8_t)(clk0t2_us >> 8);
+    payload[10] = (uint8_t)(clk0h2_us & 0xFFu);
+    payload[11] = (uint8_t)(clk0h2_us >> 8);
+
+    return send_chunked_commit(data, size, SHP_CMD_APPEND_RAW_CHUNK,
+                               SHP_CMD_COMMIT_RAW_TIMED_BITS,
+                               payload, (uint16_t)sizeof(payload));
+}
+
 bool Sender_hw_mcu_usb::send_chunked_commit(const uint8_t* data, size_t size,
                                             uint8_t append_cmd,
-                                            uint8_t commit_cmd)
+                                            uint8_t commit_cmd,
+                                            const uint8_t* commit_payload,
+                                            uint16_t commit_payload_len)
 {
-    const uint32_t busy_wait_timeout_ms = 5000;
+    const uint32_t busy_wait_timeout_ms = 15000;
 
     if (data == NULL || size == 0 || size > 0xFFFF)
     {
@@ -301,57 +397,85 @@ bool Sender_hw_mcu_usb::send_chunked_commit(const uint8_t* data, size_t size,
 
     std::vector<uint8_t> out;
     uint8_t status = SHP_STATUS_INTERNAL_ERROR;
-    size_t off = 0;
 
-    while (off < size)
+#if defined(_WIN32)
+    uint32_t start_ms = GetTickCount();
+#endif
+
+    for (;;)
     {
-        uint16_t chunk_len = (uint16_t)((size - off) > SHP_PACKET_CHUNK_MAX
-                                            ? SHP_PACKET_CHUNK_MAX
-                                            : (size - off));
-        status = SHP_STATUS_INTERNAL_ERROR;
-        if (!send_command_wait_response(append_cmd,
-                                        data + off,
-                                        chunk_len,
-                                        out,
-                                        status))
+        size_t off = 0;
+        bool saw_busy = false;
+
+        while (off < size)
+        {
+            uint16_t chunk_len =
+                (uint16_t)((size - off) > SHP_PACKET_CHUNK_MAX
+                               ? SHP_PACKET_CHUNK_MAX
+                               : (size - off));
+
+            status = SHP_STATUS_INTERNAL_ERROR;
+            if (!send_command_wait_response(append_cmd,
+                                            data + off,
+                                            chunk_len,
+                                            out,
+                                            status))
+            {
+                if (status != SHP_STATUS_BUSY)
+                {
+                    return false;
+                }
+                saw_busy = true;
+                break;
+            }
+
+            off += chunk_len;
+        }
+
+        if (off == size)
+        {
+            status = SHP_STATUS_INTERNAL_ERROR;
+            if (send_command_wait_response(commit_cmd,
+                                           commit_payload,
+                                           commit_payload_len,
+                                           out,
+                                           status))
+            {
+                return true;
+            }
+            if (status != SHP_STATUS_BUSY)
+            {
+                return false;
+            }
+            saw_busy = true;
+        }
+
+        if (!saw_busy)
         {
             return false;
         }
 
-        off += chunk_len;
-    }
-
-    status = SHP_STATUS_INTERNAL_ERROR;
-    if (send_command_wait_response(commit_cmd,
-                                   NULL,
-                                   0,
-                                   out,
-                                   status))
-    {
-        return true;
-    }
-
-    if (status == SHP_STATUS_BUSY)
-    {
 #if defined(_WIN32)
-        uint32_t start_ms = GetTickCount();
         while ((GetTickCount() - start_ms) < busy_wait_timeout_ms)
-#else
-        for (uint32_t i = 0; i < busy_wait_timeout_ms; ++i)
-#endif
         {
             Sender_hw_status hw_status;
             if (get_status(hw_status) && hw_status.queue_depth == 0)
             {
-                return true;
+                break;
             }
-#if defined(_WIN32)
             Sleep(1);
-#endif
         }
-    }
 
-    return false;
+        if ((GetTickCount() - start_ms) >= busy_wait_timeout_ms)
+        {
+            SHP_LOG_FAILURE(append_cmd, 0, "busy-wait",
+                            "MCU remained busy for 15000 ms");
+            return false;
+        }
+#else
+        return false;
+#endif
+    }
 }
 
 bool Sender_hw_mcu_usb::send_stretched_byte(uint16_t clk0t_us,
@@ -416,6 +540,8 @@ bool Sender_hw_mcu_usb::get_gen_in(uint8_t& gen1, uint8_t& gen2)
 
 bool Sender_hw_mcu_usb::get_status(Sender_hw_status& status)
 {
+    static uint32_t s_last_non_idle_event_count = 0;
+
     std::vector<uint8_t> out;
     uint8_t rsp_status = SHP_STATUS_INTERNAL_ERROR;
 
@@ -437,7 +563,25 @@ bool Sender_hw_mcu_usb::get_status(Sender_hw_status& status)
     status.queue_depth = (uint16_t)out[6] | ((uint16_t)out[7] << 8);
     status.gen1 = out[8];
     status.gen2 = out[9];
+#if 0
+    status.non_idle_event_count = 0;
+    status.last_non_idle_address = 0xFF;
+    if (out.size() >= 15)
+    {
+        status.non_idle_event_count =
+            ((uint32_t)out[10]) | ((uint32_t)out[11] << 8) |
+            ((uint32_t)out[12] << 16) | ((uint32_t)out[13] << 24);
+        status.last_non_idle_address = out[14];
 
+        if (status.non_idle_event_count != s_last_non_idle_event_count)
+        {
+            printf("MCU monitor: non-idle packet detected, count=%lu, last_addr=0x%02X\n",
+                   (unsigned long)status.non_idle_event_count,
+                   (unsigned int)status.last_non_idle_address);
+            s_last_non_idle_event_count = status.non_idle_event_count;
+        }
+    }
+#endif
     return true;
 }
 
@@ -475,12 +619,37 @@ bool Sender_hw_mcu_usb::reset_stats()
                                       rsp_status);
 }
 
+bool Sender_hw_mcu_usb::reset_device()
+{
+    std::vector<uint8_t> out;
+    uint8_t rsp_status = SHP_STATUS_INTERNAL_ERROR;
+    return send_command_wait_response(SHP_CMD_RESET_DEVICE, NULL, 0, out,
+                                      rsp_status);
+}
+
 bool Sender_hw_mcu_usb::get_info(std::vector<uint8_t>& info_payload)
 {
     uint8_t rsp_status = SHP_STATUS_INTERNAL_ERROR;
     info_payload.clear();
     return send_command_wait_response(SHP_CMD_GET_INFO, NULL, 0, info_payload,
                                       rsp_status);
+}
+
+bool Sender_hw_mcu_usb::get_mcu_version(uint32_t& version)
+{
+    std::vector<uint8_t> out;
+    uint8_t rsp_status = SHP_STATUS_INTERNAL_ERROR;
+
+    version = 0;
+    if (!send_command_wait_response(SHP_CMD_GET_MCU_VERSION, NULL, 0, out,
+                                    rsp_status) || out.size() != 4)
+    {
+        return false;
+    }
+
+    version = (uint32_t)out[0] | ((uint32_t)out[1] << 8) |
+              ((uint32_t)out[2] << 16) | ((uint32_t)out[3] << 24);
+    return true;
 }
 
 uint16_t Sender_hw_mcu_usb::crc16_ccitt(const uint8_t* data, size_t size)
@@ -567,6 +736,7 @@ bool Sender_hw_mcu_usb::send_command_wait_response(uint8_t cmd,
 
     if (!m_open)
     {
+        SHP_LOG_FAILURE(cmd, 0, "state", "port is not open");
         return false;
     }
 
@@ -575,20 +745,24 @@ bool Sender_hw_mcu_usb::send_command_wait_response(uint8_t cmd,
 
     if (!write_all(&tx[0], tx.size()))
     {
+        SHP_LOG_FAILURE(cmd, seq, "write", "WriteFile failed or wrote zero bytes");
         return false;
     }
 
     if (!read_exact(hdr, sizeof(hdr), 1000))
     {
+        SHP_LOG_FAILURE(cmd, seq, "response-header", "no complete response within 1000 ms");
         return false;
     }
 
     if (hdr[0] != SHP_SOF_MCU || hdr[1] != SHP_VERSION)
     {
+        SHP_LOG_FAILURE(cmd, seq, "response-header", "invalid SOF or protocol version");
         return false;
     }
     if (hdr[2] != cmd || hdr[3] != seq)
     {
+        SHP_LOG_FAILURE(cmd, seq, "response-header", "command or sequence mismatch");
         return false;
     }
 
@@ -598,6 +772,7 @@ bool Sender_hw_mcu_usb::send_command_wait_response(uint8_t cmd,
     tail.resize((size_t)rsp_len + 2);
     if (!read_exact(&tail[0], tail.size(), 1000))
     {
+        SHP_LOG_FAILURE(cmd, seq, "response-payload", "no complete payload within 1000 ms");
         return false;
     }
 
@@ -618,12 +793,18 @@ bool Sender_hw_mcu_usb::send_command_wait_response(uint8_t cmd,
     crc_calc = crc16_ccitt(&crc_buf[0], crc_buf.size());
     if (crc_calc != crc_rx)
     {
+        SHP_LOG_FAILURE(cmd, seq, "response-crc", "CRC mismatch");
         return false;
     }
 
     if (rsp_len > 0)
     {
         out_payload.assign(tail.begin(), tail.begin() + rsp_len);
+    }
+
+    if (out_status != SHP_STATUS_OK && out_status != SHP_STATUS_BUSY)
+    {
+        SHP_LOG_FAILURE(cmd, seq, "response-status", shp_status_name(out_status));
     }
 
     return out_status == SHP_STATUS_OK;

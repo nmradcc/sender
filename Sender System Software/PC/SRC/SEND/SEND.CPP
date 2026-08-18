@@ -53,10 +53,10 @@ struct Snd_question
 Snd_question	Questions[] =
 {
 	{	"Enter Manufacturer > ",  		"Manufacturer: %s\n"	},
-	{	"Enter Model number > ",  		"Model number: %s\n"	},
-	{	"Enter Version number > ",		"Version number: %s\n"	},
-    {	"Enter Modified CVs > ",		"Modified CVs: %s\n"	},
-    {	"Enter Booster type > ",		"Booster type: %s\n"	},
+	{	"Enter Model > ",			 		"Model: %s\n"	},
+	{	"Enter Version > ",				"Version: %s\n"	},
+    {	"Enter Modified CVs > ",			"Modified CVs: %s\n"	},
+    {	"Enter Booster type > ",			"Booster type: %s\n"	},
     {	"Enter Track Direction > ",		"Track Direction: %s\n"	},
 };
 
@@ -136,6 +136,7 @@ static void		print_user_docs();
 static void		exit_send( int status );
 static bool		init_hw_backend();
 static void		close_hw_backend();
+static void		reset_mcu_before_abort();
 static bool		hw_is_running();
 static Rslt_t	hw_set_clk( u_short clk0t, u_short clk0h, u_short clk1t );
 static Rslt_t	hw_start_clk();
@@ -210,6 +211,8 @@ enum Ramp_state
 static bool
 init_hw_backend( void )
 {
+	uint32_t mcu_version;
+
 	Lmcu_hw = new Sender_hw_mcu_usb( Args.get_mcu_port(), Args.get_mcu_baud() );
 	if ( Lmcu_hw == NULL )
 	{
@@ -228,6 +231,18 @@ init_hw_backend( void )
 
 	printf( "Using MCU backend on port <%s> at %u baud\n",
 		Args.get_mcu_port(), Args.get_mcu_baud() );
+	if ( Lmcu_hw->get_mcu_version( mcu_version ) )
+	{
+		printf( "MCU firmware version %u.%u.%u.%u\n",
+			(unsigned int)((mcu_version >> 24) & 0xFF),
+			(unsigned int)((mcu_version >> 16) & 0xFF),
+			(unsigned int)((mcu_version >> 8) & 0xFF),
+			(unsigned int)(mcu_version & 0xFF) );
+	}
+	else
+	{
+		printf( "MCU firmware version unavailable\n" );
+	}
 	return ( true );
 }
 
@@ -247,6 +262,23 @@ close_hw_backend( void )
 
 	Lhw_if = NULL;
 	Lhw_running = false;
+}
+
+static void
+reset_mcu_before_abort( void )
+{
+	if ( Lhw_if == NULL )
+	{
+		return;
+	}
+
+	if ( Lhw_running == true )
+	{
+		Lhw_if->stop_clock();
+		Lhw_running = false;
+	}
+
+	Lhw_if->reset_device();
 }
 
 static bool
@@ -431,6 +463,8 @@ main(
 	Key_val		init_key = KEY_DEC_TST;		// Initial key value.
 	bool		use_hw_backend;
 
+	Deflog.set_abort_handler( reset_mcu_before_abort );
+
 	if ( Args.get_args( argc, argv ) != OK )
 	{
 		if ( Args.get_print_user() )
@@ -495,11 +529,16 @@ main(
 	printf(		"Starting decoder tests, address %u, type %c\n",
 		Args.get_decoder_address(), Args.get_decoder_type() );
 
-	STATPRINT( "Beginning MCU self tests" );
-	printf(    "Beginning MCU self tests\n" );
-
-	if ( use_hw_backend == true )
+	if ( Args.get_mcu_bypass_tst() == true )
 	{
+		STATPRINT( "MCU self tests bypassed" );
+		printf(    "MCU self tests bypassed\n" );
+	}
+	else if ( use_hw_backend == true )
+	{
+		STATPRINT( "Beginning MCU self tests" );
+		printf(    "Beginning MCU self tests\n" );
+
 		if ( do_mcu_self_tests() == OK )
 		{
 			STATPRINT( "MCU self tests passed" );
@@ -696,13 +735,16 @@ get_log_file(
 		buf[ strlen( buf ) - 1 ] = '\0';
 	}
 
-	strcpy( fname, buf );
-	strcat( fname, ".log" );
-	if ( Deflog.open_log( fname ) != OK )
+	if ( Args.get_log_pkts() == true )
 	{
-		ERRPRINT( my_name, LOG_CRIT,
-			"Log file <%s> could not be opened", buf );
-		exit_send( 1 );
+		strcpy( fname, buf );
+		strcat( fname, ".log" );
+		if ( Deflog.open_log( fname ) != OK )
+		{
+			ERRPRINT( my_name, LOG_CRIT,
+				"Log file <%s> could not be opened", buf );
+			exit_send( 1 );
+		}
 	}
 
 	strcpy( fname, buf );
@@ -767,7 +809,8 @@ get_log_file(
 	TO_STAT( "--------------------------------\n\n" );
 
 	// Log summary of command line switches and .CFG file
-	if ( (fp = Deflog.get_fp_log()) != NULL )
+	if ( Args.get_log_pkts() == true &&
+		 (fp = Deflog.get_fp_log()) != NULL )
 	{
     	fputs(
 			"Summary of command line and 'SEND.CFG' switches:\n\n",
@@ -825,7 +868,10 @@ get_log_file(
 #define SELF_CHECK( name_, expr_ ) \
 	do { \
 		bool _ok = (expr_); \
-		DBGLOG( "  %-40s %s", (name_), _ok ? "PASS" : "FAIL" ); \
+		if ( Deflog.get_fp_log() != NULL ) \
+		{ \
+			DBGLOG( "  %-40s %s", (name_), _ok ? "PASS" : "FAIL" ); \
+		} \
 		printf( "  %-40s %s\n", (name_), _ok ? "PASS" : "FAIL" ); \
 		if ( !_ok ) \
 		{ \
@@ -839,9 +885,28 @@ do_mcu_self_tests( void )
 {
 	const char	*my_name = "do_mcu_self_tests";
 	int			 failures = 0;
+	uint32_t	 mcu_version;
 
 	STATPRINT( "MCU self test" );
 	printf( "MCU self test\n" );
+	if ( Lmcu_hw != NULL && Lmcu_hw->get_mcu_version( mcu_version ) )
+	{
+		STATPRINT( "MCU firmware version %u.%u.%u.%u",
+			(unsigned int)((mcu_version >> 24) & 0xFF),
+			(unsigned int)((mcu_version >> 16) & 0xFF),
+			(unsigned int)((mcu_version >> 8) & 0xFF),
+			(unsigned int)(mcu_version & 0xFF) );
+		printf( "MCU firmware version %u.%u.%u.%u\n",
+			(unsigned int)((mcu_version >> 24) & 0xFF),
+			(unsigned int)((mcu_version >> 16) & 0xFF),
+			(unsigned int)((mcu_version >> 8) & 0xFF),
+			(unsigned int)(mcu_version & 0xFF) );
+	}
+	else
+	{
+		STATPRINT( "MCU firmware version unavailable" );
+		printf( "MCU firmware version unavailable\n" );
+	}
 	printf( "----------------------------------------\n" );
 
 	/* 1. RESET_STATS */
@@ -1093,7 +1158,7 @@ Key_val			init_key )					// Initial key value.
 			}
 			else
 			{
-				hw_set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
+//				hw_set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
 				hw_start_clk();
 				printf( "Start clock\n" );
 			}
@@ -1197,6 +1262,7 @@ Key_val			init_key )					// Initial key value.
 			hw_set_clk(	Scope_time_tbl[ o_time_index ],
 						Scope_time_tbl[ o_time_index ] / 2,
 						DECODER_1T_NOM );
+//						70 );
 			hw_start_clk();
 			hw_clr_under();
 			break;

@@ -51,6 +51,8 @@ enum shp_cmd
     SHP_CMD_COMMIT_PACKET = 0x15,
     SHP_CMD_APPEND_RAW_CHUNK = 0x16,
     SHP_CMD_COMMIT_RAW_BYTES = 0x17,
+    SHP_CMD_COMMIT_RAW_STRETCHED_BYTE = 0x18,
+    SHP_CMD_COMMIT_RAW_TIMED_BITS = 0x19,
 
     SHP_CMD_SET_GEN_OUT = 0x20,
     SHP_CMD_GET_GEN_IN = 0x21,
@@ -92,6 +94,8 @@ typedef struct sender_status_payload
     uint16_t queue_depth;
     uint8_t gen1;
     uint8_t gen2;
+    uint32_t non_idle_event_count;
+    uint8_t last_non_idle_address;
 } sender_status_payload_t;
 
 typedef struct sender_stats_payload

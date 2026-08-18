@@ -33,7 +33,24 @@ static void sender_app_handle_request(const sender_request_t* req,
     if (req->cmd != SHP_CMD_APPEND_PACKET_CHUNK &&
         req->cmd != SHP_CMD_COMMIT_PACKET &&
         req->cmd != SHP_CMD_APPEND_RAW_CHUNK &&
-        req->cmd != SHP_CMD_COMMIT_RAW_BYTES)
+        req->cmd != SHP_CMD_COMMIT_RAW_BYTES &&
+        req->cmd != SHP_CMD_COMMIT_RAW_STRETCHED_BYTE &&
+        req->cmd != SHP_CMD_COMMIT_RAW_TIMED_BITS &&
+        req->cmd != SHP_CMD_GET_INFO &&
+        req->cmd != SHP_CMD_GET_MCU_VERSION &&
+        req->cmd != SHP_CMD_GET_STATUS &&
+        req->cmd != SHP_CMD_GET_STATS &&
+        req->cmd != SHP_CMD_RESET_STATS &&
+        req->cmd != SHP_CMD_SET_TIMING &&
+        req->cmd != SHP_CMD_START_CLK &&
+        req->cmd != SHP_CMD_STOP_CLK &&
+        req->cmd != SHP_CMD_CLR_UNDERFLOW &&
+        req->cmd != SHP_CMD_SET_SCOPE &&
+        req->cmd != SHP_CMD_SEND_BYTES &&
+        req->cmd != SHP_CMD_SEND_STRETCHED_BYTE &&
+        req->cmd != SHP_CMD_SEND_SPECIAL &&
+        req->cmd != SHP_CMD_SET_GEN_OUT &&
+        req->cmd != SHP_CMD_GET_GEN_IN)
     {
         g_packet_stage_len = 0u;
         g_packet_stage_mode = PACKET_STAGE_NONE;
@@ -193,6 +210,47 @@ static void sender_app_handle_request(const sender_request_t* req,
             g_packet_stage_mode = PACKET_STAGE_NONE;
             break;
 
+        case SHP_CMD_COMMIT_RAW_STRETCHED_BYTE:
+            if (req->payload_len != 6u || g_packet_stage_len == 0u ||
+                g_packet_stage_mode != PACKET_STAGE_RAW_BYTES)
+            {
+                g_packet_stage_len = 0u;
+                g_packet_stage_mode = PACKET_STAGE_NONE;
+                rsp->status = SHP_STATUS_BAD_LENGTH;
+                break;
+            }
+
+            rsp->status = sender_engine_send_raw_bytes_stretched(
+                &g_engine, g_packet_stage, g_packet_stage_len,
+                (uint16_t)req->payload[0] | ((uint16_t)req->payload[1] << 8),
+                (uint16_t)req->payload[2] | ((uint16_t)req->payload[3] << 8),
+                (uint16_t)req->payload[4] | ((uint16_t)req->payload[5] << 8));
+            g_packet_stage_len = 0u;
+            g_packet_stage_mode = PACKET_STAGE_NONE;
+            break;
+
+        case SHP_CMD_COMMIT_RAW_TIMED_BITS:
+            if (req->payload_len != 12u || g_packet_stage_len == 0u ||
+                g_packet_stage_mode != PACKET_STAGE_RAW_BYTES)
+            {
+                g_packet_stage_len = 0u;
+                g_packet_stage_mode = PACKET_STAGE_NONE;
+                rsp->status = SHP_STATUS_BAD_LENGTH;
+                break;
+            }
+
+            rsp->status = sender_engine_send_raw_bytes_timed(
+                &g_engine, g_packet_stage, g_packet_stage_len,
+                (uint16_t)req->payload[0] | ((uint16_t)req->payload[1] << 8),
+                (uint16_t)req->payload[2] | ((uint16_t)req->payload[3] << 8),
+                (uint16_t)req->payload[4] | ((uint16_t)req->payload[5] << 8),
+                (uint16_t)req->payload[6] | ((uint16_t)req->payload[7] << 8),
+                (uint16_t)req->payload[8] | ((uint16_t)req->payload[9] << 8),
+                (uint16_t)req->payload[10] | ((uint16_t)req->payload[11] << 8));
+            g_packet_stage_len = 0u;
+            g_packet_stage_mode = PACKET_STAGE_NONE;
+            break;
+
         case SHP_CMD_SEND_STRETCHED_BYTE:
             if (req->payload_len != 5)
             {
@@ -241,7 +299,15 @@ static void sender_app_handle_request(const sender_request_t* req,
             rsp->payload[7] = (uint8_t)((status.queue_depth >> 8) & 0xFFu);
             rsp->payload[8] = status.gen1;
             rsp->payload[9] = status.gen2;
-            rsp->payload_len = 10;
+            rsp->payload[10] = (uint8_t)(status.non_idle_event_count & 0xFFu);
+            rsp->payload[11] =
+                (uint8_t)((status.non_idle_event_count >> 8) & 0xFFu);
+            rsp->payload[12] =
+                (uint8_t)((status.non_idle_event_count >> 16) & 0xFFu);
+            rsp->payload[13] =
+                (uint8_t)((status.non_idle_event_count >> 24) & 0xFFu);
+            rsp->payload[14] = status.last_non_idle_address;
+            rsp->payload_len = 15;
             break;
 
         case SHP_CMD_GET_STATS:
@@ -313,4 +379,10 @@ void sender_app_poll(void)
     {
         sender_transport_write_frame(g_tx_frame, tx_size);
     }
+}
+
+void sender_app_get_non_idle_packet_event(uint32_t *event_count,
+                                          uint8_t *last_address)
+{
+    sender_engine_get_non_idle_packet_event(event_count, last_address);
 }

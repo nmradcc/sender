@@ -221,8 +221,7 @@ int main(int argc, char *argv[])
         Sender_hw_mcu_usb dev2(port, 115200);
         if (dev2.init())
         {
-            /* Sender_hw_mcu_usb doesn't expose reset_device directly;
-               we just verify the port can be reopened and GET_INFO still works. */
+                /* Verify the port can be reopened after close. */
             check("12. Re-open after close", true);
             dev2.close();
         }

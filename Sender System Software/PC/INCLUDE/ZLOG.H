@@ -38,6 +38,8 @@
 #define LOG_MASK_INIT	((Bits_t)0L)		// Initial logging mask.
 #endif
 
+typedef void (*Zlog_abort_handler)( void );
+
 /*
  *	Constants
  */
@@ -120,6 +122,8 @@ class Zlog
 	void set_lib_log_mask( Bits_t imask ) { lib_log_mask = imask; }
 	void set_no_abort_flag( bool iabort ) { no_abort_flag = iabort; }
 	void set_dbg_on( bool idbg) { dbg_on = idbg;} 
+	void set_abort_handler( Zlog_abort_handler handler )
+		{ abort_handler = handler; }
 
 	void
 	set_cmd_name(
@@ -297,6 +301,7 @@ class Zlog
 	bool				no_abort_flag;				// If true, don't abort.
 	bool				stderr_too;					// Log to stderr also
 	bool				dbg_on;						// If true, log dbg msgs.
+	Zlog_abort_handler		abort_handler;				// Called before aborting.
 };
 
 extern Zlog		Deflog;						// Default error log.

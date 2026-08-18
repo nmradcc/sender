@@ -47,6 +47,17 @@ uint8_t sender_engine_send_packet(sender_engine_t* eng, const uint8_t* data,
                                   uint16_t size);
 uint8_t sender_engine_send_raw_bytes(sender_engine_t* eng, const uint8_t* data,
                                      uint16_t size);
+uint8_t sender_engine_send_raw_bytes_stretched(sender_engine_t* eng,
+                                               const uint8_t* data,
+                                               uint16_t size,
+                                               uint16_t stretch_byte_index,
+                                               uint16_t clk0t_us,
+                                               uint16_t clk0h_us);
+uint8_t sender_engine_send_raw_bytes_timed(sender_engine_t* eng,
+                                           const uint8_t* data, uint16_t size,
+                                           uint16_t bit_index1, uint16_t clk0t1_us,
+                                           uint16_t clk0h1_us, uint16_t bit_index2,
+                                           uint16_t clk0t2_us, uint16_t clk0h2_us);
 uint8_t sender_engine_send_stretched_byte(sender_engine_t* eng,
                                           uint16_t clk0t_us,
                                           uint16_t clk0h_us,
@@ -62,6 +73,9 @@ void sender_engine_get_status(const sender_engine_t* eng,
                               sender_status_payload_t* out);
 void sender_engine_get_stats(const sender_engine_t* eng,
                              sender_stats_payload_t* out);
+
+void sender_engine_get_non_idle_packet_event(uint32_t* event_count,
+                                             uint8_t* last_address);
 
 /* Called from TIM2_IRQHandler — do not call directly. */
 void sender_engine_tim_irq_handler(void);

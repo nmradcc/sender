@@ -12,10 +12,13 @@ struct Sender_hw_status
     uint16_t queue_depth;
     uint8_t gen1;
     uint8_t gen2;
+  uint32_t non_idle_event_count;
+  uint8_t last_non_idle_address;
 
     Sender_hw_status()
         : running(false), underflow(false), err_flags(0), queue_depth(0),
-          gen1(0), gen2(0)
+      gen1(0), gen2(0), non_idle_event_count(0),
+      last_non_idle_address(0xFF)
     {
     }
 };
@@ -52,6 +55,15 @@ class Sender_hw_if
                              const char* info_tag) = 0;
     virtual bool send_raw_bytes(const uint8_t* data, size_t size,
                   const char* info_tag) = 0;
+    virtual bool send_raw_bytes_stretched(const uint8_t* data, size_t size,
+                        size_t stretch_byte_index,
+                        uint16_t clk0t_us, uint16_t clk0h_us,
+                        const char* info_tag) = 0;
+    virtual bool send_raw_bytes_timed(const uint8_t* data, size_t size,
+                      uint16_t bit_index1, uint16_t clk0t1_us,
+                      uint16_t clk0h1_us, uint16_t bit_index2,
+                      uint16_t clk0t2_us, uint16_t clk0h2_us,
+                      const char* info_tag) = 0;
     virtual bool send_stretched_byte(uint16_t clk0t_us, uint16_t clk0h_us,
                                      uint8_t byte_value,
                                      const char* info_tag) = 0;
@@ -63,6 +75,7 @@ class Sender_hw_if
     virtual bool get_status(Sender_hw_status& status) = 0;
     virtual bool get_stats(Sender_hw_stats& stats) = 0;
     virtual bool reset_stats() = 0;
+    virtual bool reset_device() = 0;
 };
 
 #endif /* SENDER_HW_IF_H_DECLARED */

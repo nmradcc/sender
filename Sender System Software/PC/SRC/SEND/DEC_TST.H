@@ -180,12 +180,12 @@ class Dec_tst : public Z_core
         if ( tst_rslt == OK )
      	{
     		printf(
-        		"All tests have currently passed\n" );
+	        	"All clock tests have currently passed\n" );
     	}
     	else
     	{
     		printf(
-        		"One or more tests have currently failed\n" );
+        		"One or more clock tests have currently failed\n" );
     	}
     }
 
