@@ -14,6 +14,9 @@ static const char *shp_cmd_name(uint8_t cmd)
     {
     case SHP_CMD_APPEND_RAW_CHUNK: return "APPEND_RAW_CHUNK";
     case SHP_CMD_COMMIT_RAW_BYTES: return "COMMIT_RAW_BYTES";
+    case SHP_CMD_COMMIT_RAW_STRETCHED_BYTE: return "COMMIT_RAW_STRETCHED_BYTE";
+    case SHP_CMD_COMMIT_RAW_TIMED_BITS: return "COMMIT_RAW_TIMED_BITS";
+    case SHP_CMD_SET_SCOPE: return "SET_SCOPE";
     case SHP_CMD_GET_STATUS: return "GET_STATUS";
     case SHP_CMD_RESET_DEVICE: return "RESET_DEVICE";
     default: return "UNKNOWN";

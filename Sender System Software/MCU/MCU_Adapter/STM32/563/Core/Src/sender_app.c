@@ -35,7 +35,22 @@ static void sender_app_handle_request(const sender_request_t* req,
         req->cmd != SHP_CMD_APPEND_RAW_CHUNK &&
         req->cmd != SHP_CMD_COMMIT_RAW_BYTES &&
         req->cmd != SHP_CMD_COMMIT_RAW_STRETCHED_BYTE &&
-        req->cmd != SHP_CMD_COMMIT_RAW_TIMED_BITS)
+        req->cmd != SHP_CMD_COMMIT_RAW_TIMED_BITS &&
+        req->cmd != SHP_CMD_GET_INFO &&
+        req->cmd != SHP_CMD_GET_MCU_VERSION &&
+        req->cmd != SHP_CMD_GET_STATUS &&
+        req->cmd != SHP_CMD_GET_STATS &&
+        req->cmd != SHP_CMD_RESET_STATS &&
+        req->cmd != SHP_CMD_SET_TIMING &&
+        req->cmd != SHP_CMD_START_CLK &&
+        req->cmd != SHP_CMD_STOP_CLK &&
+        req->cmd != SHP_CMD_CLR_UNDERFLOW &&
+        req->cmd != SHP_CMD_SET_SCOPE &&
+        req->cmd != SHP_CMD_SEND_BYTES &&
+        req->cmd != SHP_CMD_SEND_STRETCHED_BYTE &&
+        req->cmd != SHP_CMD_SEND_SPECIAL &&
+        req->cmd != SHP_CMD_SET_GEN_OUT &&
+        req->cmd != SHP_CMD_GET_GEN_IN)
     {
         g_packet_stage_len = 0u;
         g_packet_stage_mode = PACKET_STAGE_NONE;

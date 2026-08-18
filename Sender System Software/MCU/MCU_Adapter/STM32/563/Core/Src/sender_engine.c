@@ -893,10 +893,9 @@ uint8_t sender_engine_send_raw_bytes_timed(sender_engine_t *eng,
     }
     if (data == 0 || size == 0u || bit_index1 >= (uint32_t)size * 8u ||
         (bit_index2 != 0xFFFFu && bit_index2 >= (uint32_t)size * 8u) ||
-        clk0t1_us < eng->clk0t_us || clk0h1_us < eng->clk0h_us ||
-        clk0h1_us > clk0t1_us ||
-        (bit_index2 != 0xFFFFu && (clk0t2_us < eng->clk0t_us ||
-         clk0h2_us < eng->clk0h_us || clk0h2_us > clk0t2_us)))
+        clk0t1_us == 0u || clk0h1_us == 0u || clk0h1_us > clk0t1_us ||
+        (bit_index2 != 0xFFFFu &&
+         (clk0t2_us == 0u || clk0h2_us == 0u || clk0h2_us > clk0t2_us)))
     {
         return SHP_STATUS_BAD_LENGTH;
     }
