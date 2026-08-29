@@ -50,3 +50,14 @@ if (MSVC)
   target_compile_definitions(mcu_smoke_test PRIVATE _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_WARNINGS)
 endif()
 
+if (WIN32)
+  add_executable(sendgui WIN32
+    ${SEND_DIR}/sendgui.cpp
+  )
+  target_include_directories(sendgui PRIVATE ${INC_DIR})
+  target_link_libraries(sendgui PRIVATE comdlg32 comctl32)
+  if (MSVC)
+    target_compile_definitions(sendgui PRIVATE _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_WARNINGS)
+  endif()
+endif()
+
