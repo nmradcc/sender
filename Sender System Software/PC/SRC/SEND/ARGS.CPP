@@ -824,19 +824,7 @@ Args_obj::cfgopen(
 	char		fext[MAXEXT];				// File extension.
 
 	/*
-	 *	First, try the local directory for the cfg file.
-	 */
-		if ( (cfg_fp = fopen( inifile, "r" )) != NULL  )
-		{
-			_getcwd( cfg_path, MAXPATH );
-			strcat( cfg_path, "\\" );
-			strcat( cfg_path, inifile );
-			return ( OK );	   				// Opened the cfg file locally.
-		}
-
-	/*
-	 *	Next, check to see if the cfg file path is set in the
-	 *	environment variable.
+	 *	First, check for an explicitly selected config file.
 	 */
 	if ( (sptr = getenv( inienv )) != NULL )
 	{
@@ -845,6 +833,17 @@ Args_obj::cfgopen(
 			strcpy( cfg_path, sptr );
 			return ( OK );					// Opened the inienv file.
 		}
+	}
+
+	/*
+	 *	Next, try the local directory for the cfg file.
+	 */
+	if ( (cfg_fp = fopen( inifile, "r" )) != NULL  )
+	{
+		_getcwd( cfg_path, MAXPATH );
+		strcat( cfg_path, "\\" );
+		strcat( cfg_path, inifile );
+		return ( OK );	   				// Opened the cfg file locally.
 	}
 
 	/*
