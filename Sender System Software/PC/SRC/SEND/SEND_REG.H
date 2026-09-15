@@ -94,7 +94,8 @@ class Send_reg : public Sr_core
 	:	running( false ), scope( SCOPE_IDLE ),
 		clk0t( DCC_CLK_ERR ), clk0h( DCC_CLK_ERR ), clk1t( DCC_CLK_ERR ),
 		err_cnt( 0 ), m_pc_delay_1usec( PC_DELAY_INIT ),
-		m_swap_0_1( false ), m_log_pkts( false ), m_hw_if( NULL )
+		m_swap_0_1( false ), m_no_hw_sim( false ), m_log_pkts( false ),
+		m_log_data( false ), m_hw_if( NULL )
 	{
 		rst_stats();
 	}
@@ -108,13 +109,17 @@ class Send_reg : public Sr_core
 	u_short	get_clk0h( void ) const { return ( clk0h ); }
 	u_short	get_clk1t( void ) const { return ( clk1t ); }
 	bool	get_swap_0_1( void ) const { return ( m_swap_0_1 ); }
+	bool	get_no_hw_sim( void ) const { return ( m_no_hw_sim ); }
 	bool	get_log_pkts( void ) const { return ( m_log_pkts ); }
+	bool	get_log_data( void ) const { return ( m_log_data ); }
 
 	BYTE	get_gen( void ) const;
 
 	/* Simple set methods */
 	void	set_swap_0_1( bool iswap ) { m_swap_0_1 =  iswap; }
+	void	set_no_hw_sim( bool ino_hw_sim ) { m_no_hw_sim = ino_hw_sim; }
 	void	set_log_pkts( bool ilog_pkts ) { m_log_pkts =  ilog_pkts; }
+	void	set_log_data( bool ilog_data ) { m_log_data = ilog_data; }
 	void	set_hw_if( Sender_hw_if *ihw_if ) { m_hw_if = ihw_if; }
 
 	/* Board initialization and reset routines */
@@ -200,7 +205,9 @@ class Send_reg : public Sr_core
 	u_int				err_cnt;				// Count of contiguous errors.
 	u_int				m_pc_delay_1usec;	   	// Loop count for 1 usec. delay.
 	bool				m_swap_0_1;				// Swap 0 & 1 if true.
+	bool				m_no_hw_sim;			// true to simulate with no MCU.
 	bool				m_log_pkts;				// true to log pkts.
+	bool				m_log_data;				// true to log packet data.
 	Sender_hw_if		*m_hw_if;			// Optional MCU backend interface.
 
 	/* Method section */

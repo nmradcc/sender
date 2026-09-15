@@ -910,7 +910,7 @@ Dec_tst::decoder_test(
 			clk_idx < dclk_size;
 			clk_idx++, l_clk_msk <<= 1 )
 	{
-		if ( Deflog.get_fp_log() != NULL )
+		if ( Dcc_reg.get_log_pkts() )
 		{
 			DBGLOG( "Clock mask check: index %d, bit 0x%08lx, mask 0x%08lx, "
 				"clock <%s>, selected %s",
@@ -1404,7 +1404,10 @@ Dec_tst::func_ramp(
 	  	Dcc_reg.clr_under();
 
         Dcc_reg.set_scope( true );
-		DBGLOG( "Dce_tst::func_ramp() Sending %d function ramp packets.", pkt_rep_cnt );
+		if ( Dcc_reg.get_log_pkts() )
+		{
+			DBGLOG( "Dce_tst::func_ramp() Sending %d function ramp packets.", pkt_rep_cnt );
+		}
 		debug_gen( "Dce_tst::func_ramp() Just before send function sequence" );
 	  	for ( i = 0; i < pkt_rep_cnt; i++ )
 	  	{

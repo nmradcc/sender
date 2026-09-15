@@ -503,9 +503,12 @@ main(
 
 	/*
 	 *	Tell Dcc_reg whether to log packets or send them to
-	 *	hardware.
+	 *	hardware.  Simulating without an MCU backend is always
+	 *	allowed; LOG only controls how much detail is recorded.
 	 */
-	Dcc_reg.set_log_pkts( Args.get_log_pkts() );
+	Dcc_reg.set_no_hw_sim( true );
+	Dcc_reg.set_log_pkts( Args.get_log_mode() >= 2 );
+	Dcc_reg.set_log_data( Args.get_log_mode() >= 3 );
 	Dcc_reg.set_hw_if( use_hw_backend ? Lhw_if : NULL );
 
 	if ( Args.get_manual_flag() == true )	// Manual mode.
@@ -735,7 +738,7 @@ get_log_file(
 		buf[ strlen( buf ) - 1 ] = '\0';
 	}
 
-	if ( Args.get_log_pkts() == true )
+	if ( Args.get_log_mode() != 0 )
 	{
 		strcpy( fname, buf );
 		strcat( fname, ".log" );
@@ -809,7 +812,7 @@ get_log_file(
 	TO_STAT( "--------------------------------\n\n" );
 
 	// Log summary of command line switches and .CFG file
-	if ( Args.get_log_pkts() == true &&
+	if ( Args.get_log_mode() != 0 &&
 		 (fp = Deflog.get_fp_log()) != NULL )
 	{
     	fputs(
@@ -868,7 +871,7 @@ get_log_file(
 #define SELF_CHECK( name_, expr_ ) \
 	do { \
 		bool _ok = (expr_); \
-		if ( Deflog.get_fp_log() != NULL ) \
+		if ( Dcc_reg.get_log_pkts() ) \
 		{ \
 			DBGLOG( "  %-40s %s", (name_), _ok ? "PASS" : "FAIL" ); \
 		} \
@@ -1836,7 +1839,10 @@ Key_val			init_key )					// Initial key value.
 						}
 						else
 						{
-							DBGLOG( "%s: Decoder tests completed; stopping clock and restoring nominal timing.", my_name );
+							if ( Dcc_reg.get_log_pkts() )
+							{
+								DBGLOG( "%s: Decoder tests completed; stopping clock and restoring nominal timing.", my_name );
+							}
 							if ( hw_is_running() == true )
 							{
 								hw_stop_clk();

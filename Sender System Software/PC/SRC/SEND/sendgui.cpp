@@ -48,7 +48,7 @@ enum
 	ID_CHK_REPEAT,
 	ID_CHK_TRIG_REV,
 	ID_CHK_LOCO_FIRST,
-	ID_CHK_LOG,
+	ID_COMBO_LOG,
 	ID_CHK_NO_ABORT,
 	ID_CHK_LATE_SCOPE,
 	ID_CHK_FRAGMENT,
@@ -81,7 +81,8 @@ enum
 static const int TESTBIT_COUNT = 32;
 
 /* Short description of what each TESTS mask bit selects (see DEC_TST.CPP
- * print_user_docs() for the authoritative bit ordering). */
+ * print_user_docs() for the authoritative bit ordering). Valid bits are 0-19;
+ * bits 20-31 are reserved and must stay clear. */
 static const char *g_testBitLabels[TESTBIT_COUNT] =
 {
 	"1T margin test",
@@ -122,7 +123,8 @@ static const char *g_testBitLabels[TESTBIT_COUNT] =
 static const int CLOCKBIT_COUNT = 32;
 
 /* Name of each CLOCKS mask bit's clock timing variant (see DEC_TST.CPP
- * Dec_tst::dclk_tbl[] for the authoritative bit ordering). */
+ * Dec_tst::dclk_tbl[] for the authoritative bit ordering). Valid bits are 0-16;
+ * bits 17-31 are reserved and must stay clear. */
 static const char *g_clockBitLabels[CLOCKBIT_COUNT] =
 {
 	"All nominal",
@@ -182,7 +184,6 @@ static const FlagCtrl g_flagCtrls[] =
 	{ ID_CHK_REPEAT,          "REPEAT" },
 	{ ID_CHK_TRIG_REV,        "TRIG_REV" },
 	{ ID_CHK_LOCO_FIRST,      "LOCO_FIRST" },
-	{ ID_CHK_LOG,             "LOG" },
 	{ ID_CHK_NO_ABORT,        "NO_ABORT" },
 	{ ID_CHK_LATE_SCOPE,      "LATE_SCOPE" },
 	{ ID_CHK_FRAGMENT,        "FRAGMENT" },
@@ -385,9 +386,9 @@ SyncClocksFromBits( void )
 	SetEditUInt( ID_EDIT_CLOCKS, mask, true );
 }
 
-/* Default mask values (mirrors ARGS.CPP Args_obj defaults). */
-static const unsigned long DEF_TESTS_MASK = 0xFFFFFFFFUL;
-static const unsigned long DEF_CLOCKS_MASK = 0xFFFFFFFFUL & ~0x8 & ~0x10 & ~0x100 & ~0x200;
+/* Default masks: TESTS valid bits are 0-19 (20-31 reserved), CLOCKS valid bits are 0-16 (17-31 reserved). */
+static const unsigned long DEF_TESTS_MASK = 0x000FFFFFUL;
+static const unsigned long DEF_CLOCKS_MASK = 0xFFFFFFFFUL & ~0x8 & ~0x10 & ~0x100 & ~0x200 & 0x0001FFFFUL;
 
 static void
 ResetTestsMaskDefault( void )
@@ -423,6 +424,7 @@ LoadDefaults( void )
 	SetEditUInt( ID_EDIT_TESTS, DEF_TESTS_MASK, true );
 	SetEditUInt( ID_EDIT_CLOCKS, DEF_CLOCKS_MASK, true );
 	SetEditUInt( ID_EDIT_FUNCS, 0x1F, true );
+	SendDlgItemMessage( g_hMain, ID_COMBO_LOG, CB_SETCURSEL, 1, 0 ); // Enabled
 
 	for ( size_t i = 0; i < _countof( g_flagCtrls ); i++ )
 	{
@@ -528,6 +530,14 @@ LoadCfgFile( const char *path )
 		{
 			SetEditText( ID_EDIT_FUNCS, val.c_str() );
 		}
+		else if ( _stricmp( key.c_str(), "LOG" ) == 0 )
+		{
+			// Bare "LOG" with no value means mode 1 (logging enabled).
+			int mode = val.empty() ? 1 : atoi( val.c_str() );
+			if ( mode < 0 ) mode = 0;
+			if ( mode > 3 ) mode = 3;
+			SendDlgItemMessage( g_hMain, ID_COMBO_LOG, CB_SETCURSEL, mode, 0 );
+		}
 		else if ( _stricmp( key.c_str(), "EXTRA_PRE" ) == 0 )
 		{
 			SetEditText( ID_EDIT_EXTRA_PRE, val.c_str() );
@@ -620,7 +630,8 @@ SaveCfgFile( const char *path )
 	writeFlag( ID_CHK_LOCO_FIRST, "LOCO_FIRST" );
 	fprintf( fp, "%-16s %s\n", "FILL_MSEC", GetEditText( ID_EDIT_FILL_MSEC ).c_str() );
 	fprintf( fp, "%-16s %s\n", "TEST_REPS", GetEditText( ID_EDIT_TEST_REPS ).c_str() );
-	writeFlag( ID_CHK_LOG, "LOG" );
+	int logSel = (int)SendDlgItemMessage( g_hMain, ID_COMBO_LOG, CB_GETCURSEL, 0, 0 );
+	fprintf( fp, "%-16s %d\n", "LOG", logSel < 0 ? 0 : logSel );
 	writeFlag( ID_CHK_MCU_BYPASS_TST, "MCU_BYPASS_TST" );
 	writeFlag( ID_CHK_NO_ABORT, "NO_ABORT" );
 	writeFlag( ID_CHK_LATE_SCOPE, "LATE_SCOPE" );
@@ -888,7 +899,18 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REPEAT, "REPEAT - Continuously repeat tests", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_TRIG_REV, "TRIG_REV - Use reverse as trigger cmd", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LOCO_FIRST, "LOCO_FIRST - Loco pkt before func pkt", xChk, yChk, chkW, 20 ) ); yChk += rowH;
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LOG, "LOG - Send packet data to log", xChk, yChk, chkW, 20 ) ); yChk += rowH;
+
+	g_page0Ctrls.push_back( MakeStatic( hwnd, "LOG mode:", xChk, yChk, 90, 18 ) );
+	HWND logCombo = CreateWindowEx( WS_EX_CLIENTEDGE, "COMBOBOX", "",
+		WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST,
+		xChk + 95, yChk - 2, chkW - 95, 200, hwnd, (HMENU)(INT_PTR)ID_COMBO_LOG, NULL, NULL );
+	SendMessage( logCombo, CB_ADDSTRING, 0, (LPARAM)"0 - Disabled" );
+	SendMessage( logCombo, CB_ADDSTRING, 0, (LPARAM)"1 - Enabled" );
+	SendMessage( logCombo, CB_ADDSTRING, 0, (LPARAM)"2 - Command capture (!L)" );
+	SendMessage( logCombo, CB_ADDSTRING, 0, (LPARAM)"3 - Command/packet capture (!L,!P)" );
+	g_page0Ctrls.push_back( logCombo );
+	yChk += rowH;
+
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_NO_ABORT, "NO_ABORT - Do not stop on error", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LATE_SCOPE, "LATE_SCOPE - Scope trigger after cmd", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_FRAGMENT, "FRAGMENT - Test all fragment lengths", xChk, yChk, chkW, 20 ) ); yChk += rowH;

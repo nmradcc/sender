@@ -57,7 +57,9 @@ Send_reg::get_gen( void ) const
 		}
 	}
 
-	return ( 0 );
+	// No decoder feedback wiring present; simulate a floating (pulled-up)
+	// input so checks fail the same way a disconnected decoder would.
+	return ( 0x01 );
 }
 
 void
@@ -85,7 +87,7 @@ Send_reg::clr_under( void )
 	{
 		m_hw_if->clear_underflow();
 	}
-	else
+	else if ( m_log_pkts )
 	{
 		DBGLOG( "Skipping hw underclr." );
 	}
@@ -131,10 +133,13 @@ Send_reg::set_clk(
 
 	if ( m_hw_if == NULL )
 	{
-		if ( m_log_pkts )
+		if ( m_no_hw_sim )
 		{
-			DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu.",
-				my_name, clk0t, clk0h, clk1t );
+			if ( m_log_pkts )
+			{
+				DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu.",
+					my_name, clk0t, clk0h, clk1t );
+			}
 			return ( OK );
 		}
 
@@ -248,9 +253,12 @@ Send_reg::start_clk( void )
 
 	if ( m_hw_if == NULL )
 	{
-		if ( m_log_pkts )
+		if ( m_no_hw_sim )
 		{
-			DBGLOG( "%s() Clock started.", my_name );
+			if ( m_log_pkts )
+			{
+				DBGLOG( "%s() Clock started.", my_name );
+			}
 			scope	= 	SCOPE_IDLE;
 			running	=	true;
 			return ( OK );
@@ -315,9 +323,12 @@ Send_reg::stop_clk( void )
 
 	if ( m_hw_if == NULL )
 	{
-		if ( m_log_pkts )
+		if ( m_no_hw_sim )
 		{
-			DBGLOG( "%s() Clock stopped.", my_name );
+			if ( m_log_pkts )
+			{
+				DBGLOG( "%s() Clock stopped.", my_name );
+			}
 			scope	= 	SCOPE_IDLE;
 			running	=	false;
 			return ( OK );
@@ -384,10 +395,16 @@ Send_reg::send_bytes(
 
 	if ( m_hw_if == NULL )
 	{
-		if ( m_log_pkts )
+		if ( m_no_hw_sim )
 		{
-			DBGLOG( "%s() %s.", my_name, info ? info : "" );
-			DBGPKT( "%02x %4d %s", ibyte, icnt, icnt > 1 ? "times" : "time" );
+			if ( m_log_pkts )
+			{
+				DBGLOG( "%s() %s.", my_name, info ? info : "" );
+				if ( m_log_data )
+				{
+					DBGPKT( "%02x %4d %s", ibyte, icnt, icnt > 1 ? "times" : "time" );
+				}
+			}
 			clr_err_cnt();
 			b_cnt	+= icnt;
 			++p_cnt;
@@ -402,7 +419,10 @@ Send_reg::send_bytes(
 	if ( m_log_pkts )
 	{
 		DBGLOG( "%s() %s.", my_name, info ? info : "" );
-		DBGPKT( "%02x %4d %s", ibyte, icnt, icnt > 1 ? "times" : "time" );
+		if ( m_log_data )
+		{
+			DBGPKT( "%02x %4d %s", ibyte, icnt, icnt > 1 ? "times" : "time" );
+		}
 	}
 
 	switch ( scope )
@@ -498,11 +518,17 @@ Send_reg::send_stretched_byte(
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts && m_hw_if == NULL )
+	if ( m_no_hw_sim && m_hw_if == NULL )
 	{
-		DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
-				 my_name, iclk0t, iclk0h, info ? info : "" );
-		DBGPKT( "%02x", ibyte );
+		if ( m_log_pkts )
+		{
+			DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
+					 my_name, iclk0t, iclk0h, info ? info : "" );
+			if ( m_log_data )
+			{
+				DBGPKT( "%02x", ibyte );
+			}
+		}
 		clr_err_cnt();
 		++b_cnt;
 		return ( OK );
@@ -514,7 +540,10 @@ Send_reg::send_stretched_byte(
 		{
 			DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
 				my_name, iclk0t, iclk0h, info ? info : "" );
-			DBGPKT( "%02x", ibyte );
+			if ( m_log_data )
+			{
+				DBGPKT( "%02x", ibyte );
+			}
 		}
 
 		switch ( scope )
@@ -567,11 +596,14 @@ Send_reg::send_raw_bytes_stretched(
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts && m_hw_if == NULL )
+	if ( m_no_hw_sim && m_hw_if == NULL )
 	{
-		DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
-			my_name, iclk0t, iclk0h, info ? info : "" );
-		print_pkt_log( ibytes, isize );
+		if ( m_log_pkts )
+		{
+			DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
+				my_name, iclk0t, iclk0h, info ? info : "" );
+			print_pkt_log( ibytes, isize );
+		}
 		b_cnt += isize;
 		return ( OK );
 	}
@@ -664,10 +696,13 @@ Send_reg::send_raw_bytes_timed(
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts && m_hw_if == NULL )
+	if ( m_no_hw_sim && m_hw_if == NULL )
 	{
-		DBGLOG( "%s() %s.", my_name, info ? info : "" );
-		print_pkt_log( ibytes, isize );
+		if ( m_log_pkts )
+		{
+			DBGLOG( "%s() %s.", my_name, info ? info : "" );
+			print_pkt_log( ibytes, isize );
+		}
 		b_cnt += isize;
 		return ( OK );
 	}
@@ -783,10 +818,13 @@ Send_reg::send_pkt(
 
 	if ( m_hw_if == NULL )
 	{
-		if ( m_log_pkts )
+		if ( m_no_hw_sim )
 		{
-			DBGLOG( "%s %s.", my_name, info ? info : "" );
-			print_pkt_log( ibytes, isize );
+			if ( m_log_pkts )
+			{
+				DBGLOG( "%s %s.", my_name, info ? info : "" );
+				print_pkt_log( ibytes, isize );
+			}
 			clr_err_cnt();
 			b_cnt	+= isize;
 			++p_cnt;
@@ -907,10 +945,13 @@ Send_reg::send_pkt(
 
 	if ( m_hw_if == NULL )
 	{
-		if ( m_log_pkts )
+		if ( m_no_hw_sim )
 		{
-			DBGLOG( "%s %s.", my_name, info ? info : "" );
-			print_pkt_log( pkt_bytes, pkt_size );
+			if ( m_log_pkts )
+			{
+				DBGLOG( "%s %s.", my_name, info ? info : "" );
+				print_pkt_log( pkt_bytes, pkt_size );
+			}
 			clr_err_cnt();
 			b_cnt	+= pkt_size;
 			++p_cnt;
@@ -1080,7 +1121,10 @@ Send_reg::update( void )
 {
 	if ( m_hw_if == NULL )
 	{
-		DBGLOG( "Send_reg::update() Skipping update." );
+		if ( m_log_pkts )
+		{
+			DBGLOG( "Send_reg::update() Skipping update." );
+		}
 		m_pc_delay_1usec	=	1;
 		return;
 	}
@@ -1422,6 +1466,11 @@ Send_reg::print_pkt_log(
 	u_int			isize )				// Size of BYTE array.
 {
 	const char		*my_name 	= "Send_reg::print_pkt_log()";
+
+	if ( !m_log_data )
+	{
+		return;
+	}
 	int				lcnt;				// Count of BYTES on present line.
 
 	if ( !ibytes )

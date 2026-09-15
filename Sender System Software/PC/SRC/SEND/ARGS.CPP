@@ -43,23 +43,22 @@ const u_int		MIN_TEST_REPS	= 1;					// Min test repeats.
 const u_int		MAX_TEST_REPS	= 1000;					// Max test repeats.
 const u_int		MIN_MCU_BAUD	= 9600;					// Min MCU baud rate.
 const u_int		MAX_MCU_BAUD	= 3000000;				// Max MCU baud rate.
+const u_int		DEF_LOG_MODE	= 1;					// Default LOG mode (1=enabled).
 
 const BYTE		DEF_FUNC_MASK	=	0x1f;				// Function Mask.
 
-const Bits_t	DEF_RUN_MASK	=	~0L;				// Default run mask.
+const Bits_t	DEF_RUN_MASK	=	(~0L) & 0x000FFFFFUL;	// Default run mask; bits 20-31 are reserved and kept clear.
 
-const Bits_t	DEF_CLK_MASK	=	~0L					// Default clock mask.
-								  & ~0x00000008 		// No min + 2.
-								  & ~0x00000010 		// No min + 1.
-								  & ~0x00000100 		// No max - 2.
-								  & ~0x00000200;		// No max - 1.
-
+const Bits_t	DEF_CLK_MASK	=	(~0L & 0x0001FFFFUL)		// Default clock mask; bits 17-31 are reserved and kept clear.
+							  & ~0x00000008 		// No min + 2.
+							  & ~0x00000010 		// No min + 1.
+							  & ~0x00000100 		// No max - 2.
+							  & ~0x00000200;		// No max - 1.
 
 /*
- *	Global Args_obj object for sender args.
+ * Global Args_obj instance for the sender application.
  */
 Args_obj	Args;
-
 
 /*--------------------------------------------------------------------------*/
 /*
@@ -96,7 +95,7 @@ Args_obj::Args_obj( void )
 	fill_msec			= MSEC_PER_SEC;		// Use 1 second fill time.
 	test_repeats		= 2;				// Times to repeat misc. tests.
 	print_user			= false;			// Don't print user docs.
-	log_pkts			= false;			// Don't send packets to log.
+	log_mode			= DEF_LOG_MODE;		// Logging enabled.
 	m_mcu_bypass_tst	= false;			// Run MCU self tests.
 	m_no_abort			= false;			// Stop on error.
 	m_late_scope		= false;			// Use normal scope trigger.
@@ -177,7 +176,7 @@ Args_obj::usage(
 		"                [-l] [-f] [-r] [-t mask] [-c mask] [-E pre]\n",
 		cmd_name );			
     fprintf( ofp,
-		"                [-T] [-F fill] [-R reps] [-P] [-A] [-s] [-S] [-g mask]\n"
+		"                [-T] [-F fill] [-R reps] [-P [mode]] [-A] [-s] [-S] [-g mask]\n"
 		"                [-o pair] [-k] [-D] [-e trg] [-J port]\n"
 		"                [-Y baud]\n\n" );
 
@@ -263,9 +262,9 @@ Args_obj::usage(
 		"Non packet acceptance test repeats   <value %u>\n",
 		test_repeats );
 	fprintf( ofp,
-		"  -P         LOG        "
-		"Send packet info to log              <value %s>\n",
-		log_pkts		? "true" : "false" );
+		"  -P <mode>  LOG        "
+		"0=none, 1=log, 2=log+!L, 3=log+!L+!P <value %u>\n",
+		log_mode );
 	fprintf( ofp,
 		"  -B    MCU_BYPASS_TST  "
 		"Skip MCU startup self tests          <value %s>\n",
@@ -675,9 +674,24 @@ Args_obj::argscan(
 				return ( FAIL );
 			}
 		}
-		else if ( strcmp( argv[i], "-P" ) == 0 )	// Log packets.
+		else if ( strcmp( argv[i], "-P" ) == 0 )	// Logging mode.
 		{
-			log_pkts	=	log_pkts ? false  : true;
+			if ( i + 1 < argc && argv[i + 1][0] != '-' )
+			{
+				++i;
+				t_u_int = (u_int)strtoul( argv[i], NULL, 0 );
+				if ( t_u_int > LOG_MODE_MAX )
+				{
+					fprintf( stderr, "ERROR: -P mode %u must be 0, 1, 2, or 3\n\n",
+						t_u_int );
+					return ( FAIL );
+				}
+				log_mode = t_u_int;
+			}
+			else
+			{
+				log_mode = 1;
+			}
 		}
 		else if ( strcmp( argv[i], "-B" ) == 0 )	// Bypass MCU self tests.
 		{
@@ -950,8 +964,13 @@ Args_obj::cfgscan( void )
 		}
 		else if (	!strcmpi( cmd,	"LAMP" ) )
 		{
+			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+			{
+				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
+				return ( FAIL );
+			}
 			targv[1]	=	"-l";
-			targc		=	2;
+			targc	=3;
 		}
 		else if (	!strcmpi( cmd,	"PRESET" ) )
 		{
@@ -1063,8 +1082,12 @@ Args_obj::cfgscan( void )
 		}
 		else if ( 	!strcmpi( cmd,	"LOG" ) )
 		{
-			targv[1]	=	"-P";
-			targc		=	2;
+			targv[1]	= "-P";
+			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+			{
+				targv[2]	= "1";
+			}
+			targc		= 3;
 		}
 		else if ( 	!strcmpi( cmd, 	"MCU_BYPASS_TST" ) )
 		{
