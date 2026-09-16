@@ -700,13 +700,13 @@ SaveCfgFile( const char *path )
 	addFlag( "MANUAL", IsChecked( ID_CHK_MANUAL ) );
 
 	int typeSel = (int)SendDlgItemMessage( g_hMain, ID_COMBO_TYPE, CB_GETCURSEL, 0, 0 );
-	const char *typeChar = "l";
+	const char *typeChar = "L";
 	switch ( typeSel )
 	{
-		case 0: typeChar = "l"; break;
-		case 1: typeChar = "f"; break;
-		case 2: typeChar = "a"; break;
-		case 3: typeChar = "s"; break;
+		case 0: typeChar = "L"; break;
+		case 1: typeChar = "F"; break;
+		case 2: typeChar = "A"; break;
+		case 3: typeChar = "S"; break;
 	}
 
 	addField( "ADDRESS", GetEditText( ID_EDIT_ADDRESS ) );
