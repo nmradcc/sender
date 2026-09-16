@@ -969,10 +969,10 @@ CreateControls( HWND hwnd )
 	HWND combo = CreateWindowEx( WS_EX_CLIENTEDGE, "COMBOBOX", "",
 		WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST,
 		xEdit, y - 2, editW, 200, hwnd, (HMENU)(INT_PTR)ID_COMBO_TYPE, NULL, NULL );
-	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"LOCO (l)" );
-	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"FUNC (f)" );
-	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"ACC (a)" );
-	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"SIG (s)" );
+	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"LOCO (L)" );
+	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"FUNC (F)" );
+	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"ACC (A)" );
+	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"SIG (S)" );
 	g_page0Ctrls.push_back( combo );
 	y += rowH;
 

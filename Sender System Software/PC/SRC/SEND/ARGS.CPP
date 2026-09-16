@@ -206,8 +206,8 @@ Args_obj::usage(
 		"  -a <addr>  ADDRESS    Decoder address                      <value ???>\n" );
 	}
 	fprintf( ofp,
-		"  -d l|f|a|s TYPE       "
-		"Dec. type(l-LOC,f-FUNC,a-ACC,s-SIG)  <value %c>\n",
+		"  -d L|F|A|S|l|f|a|s TYPE       "
+		"Dec. type(L-LOC,F-FUNC,A-ACC,S-SIG)  <value %c>\n",
 		decoder_type );
 	fprintf( ofp,
 		"  -l         LAMP       "
