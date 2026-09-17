@@ -1428,7 +1428,7 @@ Dec_tst::func_ramp(
 	 	 */
 	 	t_stat.incr_t_cnt();
 	 	tgen	=	Dcc_reg.get_gen();
-	 	if ( (tgen & 0x01) != (func == 0 ? 0x01 : 0) )
+	 	if ( (tgen & 0x04) != (func == 1 ? 0x04 : 0) )
 	 	{
 	 		t_stat.incr_f_cnt();
 	 		tst_rslt	=	FAIL;
