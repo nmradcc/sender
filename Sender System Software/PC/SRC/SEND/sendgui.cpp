@@ -42,6 +42,9 @@ enum
 	ID_EDIT_TESTS,
 	ID_EDIT_CLOCKS,
 	ID_EDIT_FUNCS,
+	ID_EDIT_TESTS_GENERAL,
+	ID_EDIT_CLOCKS_GENERAL,
+	ID_EDIT_FUNCS_GENERAL,
 
 	ID_CHK_MANUAL,
 	ID_CHK_LAMP,
@@ -74,7 +77,12 @@ enum
 	ID_CHK_CLOCKBIT_BASE,			// 32 sequential ids follow (bits 0..31).
 	ID_BTN_CLOCKBITS_ALL = ID_CHK_CLOCKBIT_BASE + 32,
 	ID_BTN_CLOCKBITS_NONE,
-	ID_BTN_CLOCKBITS_DEFAULT
+	ID_BTN_CLOCKBITS_DEFAULT,
+
+	ID_CHK_FUNCBIT_BASE,
+	ID_BTN_FUNCBITS_ALL = ID_CHK_FUNCBIT_BASE + 5,
+	ID_BTN_FUNCBITS_NONE,
+	ID_BTN_FUNCBITS_DEFAULT
 };
 
 /* Number of individual TESTS mask bit checkboxes. */
@@ -161,6 +169,17 @@ static const char *g_clockBitLabels[CLOCKBIT_COUNT] =
 	"Reserved bit 31",
 };
 
+static const int FUNCBIT_COUNT = 5;
+
+static const char *g_funcBitLabels[FUNCBIT_COUNT] =
+{
+	"AUX1",
+	"AUX2",
+	"AUX3",
+	"AUX4",
+	"FL",
+};
+
 /*---------------------------------------------------------------------------
  * Global state.
  *-------------------------------------------------------------------------*/
@@ -170,6 +189,7 @@ static std::vector<std::string>	g_origLines;	// Raw lines of the last loaded/sav
 static std::vector<HWND>	g_page0Ctrls;	// Controls shown on the "General" tab.
 static std::vector<HWND>	g_page1Ctrls;	// Controls shown on the "Test Mask Bits" tab.
 static std::vector<HWND>	g_page2Ctrls;	// Controls shown on the "Clock Mask Bits" tab.
+static std::vector<HWND>	g_page3Ctrls;	// Controls shown on the "Function Mask Bits" tab.
 
 struct FlagCtrl
 {
@@ -245,6 +265,20 @@ SetEditUInt( int id, unsigned long value, bool hex )
 		sprintf( buf, "%lu", value );
 	}
 	SetEditText( id, buf );
+}
+
+static void
+SetMaskText( int pageId, int generalId, const char *text )
+{
+	SetEditText( pageId, text );
+	SetEditText( generalId, text );
+}
+
+static void
+SetMaskUInt( int pageId, int generalId, unsigned long value )
+{
+	SetEditUInt( pageId, value, true );
+	SetEditUInt( generalId, value, true );
 }
 
 static std::string
@@ -411,7 +445,7 @@ SyncTestsFromBits( void )
 			mask |= ( 1UL << i );
 		}
 	}
-	SetEditUInt( ID_EDIT_TESTS, mask, true );
+	SetMaskUInt( ID_EDIT_TESTS, ID_EDIT_TESTS_GENERAL, mask );
 }
 
 /*---------------------------------------------------------------------------
@@ -438,7 +472,34 @@ SyncClocksFromBits( void )
 			mask |= ( 1UL << i );
 		}
 	}
-	SetEditUInt( ID_EDIT_CLOCKS, mask, true );
+	SetMaskUInt( ID_EDIT_CLOCKS, ID_EDIT_CLOCKS_GENERAL, mask );
+}
+
+/*---------------------------------------------------------------------------
+ * Keep the FUNCS mask hex field and the per-bit checkboxes in sync.
+ *-------------------------------------------------------------------------*/
+static void
+SyncBitsFromFuncs( void )
+{
+	unsigned long mask = GetEditULong( ID_EDIT_FUNCS );
+	for ( int i = 0; i < FUNCBIT_COUNT; i++ )
+	{
+		SetChecked( ID_CHK_FUNCBIT_BASE + i, ( mask & ( 1UL << i ) ) != 0 );
+	}
+}
+
+static void
+SyncFuncsFromBits( void )
+{
+	unsigned long mask = 0;
+	for ( int i = 0; i < FUNCBIT_COUNT; i++ )
+	{
+		if ( IsChecked( ID_CHK_FUNCBIT_BASE + i ) )
+		{
+			mask |= ( 1UL << i );
+		}
+	}
+	SetMaskUInt( ID_EDIT_FUNCS, ID_EDIT_FUNCS_GENERAL, mask );
 }
 
 /* Default masks: TESTS valid bits are 0-19 (20-31 reserved), CLOCKS valid bits are 0-16 (17-31 reserved). */
@@ -448,15 +509,22 @@ static const unsigned long DEF_CLOCKS_MASK = 0xFFFFFFFFUL & ~0x8 & ~0x10 & ~0x10
 static void
 ResetTestsMaskDefault( void )
 {
-	SetEditUInt( ID_EDIT_TESTS, DEF_TESTS_MASK, true );
+	SetMaskUInt( ID_EDIT_TESTS, ID_EDIT_TESTS_GENERAL, DEF_TESTS_MASK );
 	SyncBitsFromTests();
 }
 
 static void
 ResetClocksMaskDefault( void )
 {
-	SetEditUInt( ID_EDIT_CLOCKS, DEF_CLOCKS_MASK, true );
+	SetMaskUInt( ID_EDIT_CLOCKS, ID_EDIT_CLOCKS_GENERAL, DEF_CLOCKS_MASK );
 	SyncBitsFromClocks();
+}
+
+static void
+ResetFuncsMaskDefault( void )
+{
+	SetMaskUInt( ID_EDIT_FUNCS, ID_EDIT_FUNCS_GENERAL, 0x1F );
+	SyncBitsFromFuncs();
 }
 
 /*---------------------------------------------------------------------------
@@ -476,9 +544,9 @@ LoadDefaults( void )
 	SetEditUInt( ID_EDIT_EXTRA_TRG, 0, false );
 	SetEditText( ID_EDIT_MCU_PORT, "COM3" );
 	SetEditUInt( ID_EDIT_MCU_BAUD, 115200, false );
-	SetEditUInt( ID_EDIT_TESTS, DEF_TESTS_MASK, true );
-	SetEditUInt( ID_EDIT_CLOCKS, DEF_CLOCKS_MASK, true );
-	SetEditUInt( ID_EDIT_FUNCS, 0x1F, true );
+	SetMaskUInt( ID_EDIT_TESTS, ID_EDIT_TESTS_GENERAL, DEF_TESTS_MASK );
+	SetMaskUInt( ID_EDIT_CLOCKS, ID_EDIT_CLOCKS_GENERAL, DEF_CLOCKS_MASK );
+	SetMaskUInt( ID_EDIT_FUNCS, ID_EDIT_FUNCS_GENERAL, 0x1F );
 	SendDlgItemMessage( g_hMain, ID_COMBO_LOG, CB_SETCURSEL, 1, 0 ); // Enabled
 
 	for ( size_t i = 0; i < _countof( g_flagCtrls ); i++ )
@@ -488,6 +556,7 @@ LoadDefaults( void )
 
 	SyncBitsFromTests();
 	SyncBitsFromClocks();
+	SyncBitsFromFuncs();
 }
 
 /*---------------------------------------------------------------------------
@@ -589,15 +658,15 @@ LoadCfgFile( const char *path )
 		}
 		else if ( _stricmp( key.c_str(), "TESTS" ) == 0 )
 		{
-			SetEditText( ID_EDIT_TESTS, val.c_str() );
+			SetMaskText( ID_EDIT_TESTS, ID_EDIT_TESTS_GENERAL, val.c_str() );
 		}
 		else if ( _stricmp( key.c_str(), "CLOCKS" ) == 0 )
 		{
-			SetEditText( ID_EDIT_CLOCKS, val.c_str() );
+			SetMaskText( ID_EDIT_CLOCKS, ID_EDIT_CLOCKS_GENERAL, val.c_str() );
 		}
 		else if ( _stricmp( key.c_str(), "FUNCS" ) == 0 )
 		{
-			SetEditText( ID_EDIT_FUNCS, val.c_str() );
+			SetMaskText( ID_EDIT_FUNCS, ID_EDIT_FUNCS_GENERAL, val.c_str() );
 		}
 		else if ( _stricmp( key.c_str(), "LOG" ) == 0 )
 		{
@@ -640,6 +709,7 @@ LoadCfgFile( const char *path )
 
 	SyncBitsFromTests();
 	SyncBitsFromClocks();
+	SyncBitsFromFuncs();
 	return true;
 }
 
@@ -950,6 +1020,8 @@ CreateControls( HWND hwnd )
 	TabCtrl_InsertItem( tab, 1, &tie );
 	tie.pszText = (char *)"Clock Mask Bits";
 	TabCtrl_InsertItem( tab, 2, &tie );
+	tie.pszText = (char *)"Function Mask Bits";
+	TabCtrl_InsertItem( tab, 3, &tie );
 
 	const int pageTop = 50;	// Below the tab strip.
 
@@ -1030,15 +1102,15 @@ CreateControls( HWND hwnd )
 	y += rowH + 6;
 
 	g_page0Ctrls.push_back( MakeStatic( hwnd, "Tests Mask (hex):", xLabel, y, labelW, 18 ) );
-	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_TESTS, xEdit, y - 2, editW, 22 ) );
+	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_TESTS_GENERAL, xEdit, y - 2, editW, 22 ) );
 	y += rowH;
 
 	g_page0Ctrls.push_back( MakeStatic( hwnd, "Clocks Mask (hex):", xLabel, y, labelW, 18 ) );
-	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_CLOCKS, xEdit, y - 2, editW, 22 ) );
+	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_CLOCKS_GENERAL, xEdit, y - 2, editW, 22 ) );
 	y += rowH;
 
 	g_page0Ctrls.push_back( MakeStatic( hwnd, "Funcs Mask (hex):", xLabel, y, labelW, 18 ) );
-	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_FUNCS, xEdit, y - 2, editW, 22 ) );
+	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_FUNCS_GENERAL, xEdit, y - 2, editW, 22 ) );
 	y += rowH;
 
 	/* Right column: boolean flag checkboxes. */
@@ -1080,6 +1152,11 @@ CreateControls( HWND hwnd )
 		const int bitRowH = 24;
 		const int bitsPerCol = ( TESTBIT_COUNT + 1 ) / 2;
 
+		g_page1Ctrls.push_back( MakeStatic( hwnd, "Tests Mask (hex):",
+			xLabel, pageTop, labelW, 18 ) );
+		g_page1Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_TESTS,
+			xEdit, pageTop - 2, 150, 22 ) );
+
 		for ( int i = 0; i < TESTBIT_COUNT; i++ )
 		{
 			char text[64];
@@ -1088,11 +1165,11 @@ CreateControls( HWND hwnd )
 			int col = i / bitsPerCol;
 			int row = i % bitsPerCol;
 			HWND chk = MakeCheck( hwnd, ID_CHK_TESTBIT_BASE + i, text,
-				xLabel + col * bitColW, pageTop + row * bitRowH, bitColW - 10, 20 );
+				xLabel + col * bitColW, pageTop + 32 + row * bitRowH, bitColW - 10, 20 );
 			g_page1Ctrls.push_back( chk );
 		}
 
-		int by = pageTop + bitsPerCol * bitRowH + 10;
+		int by = pageTop + 32 + ((CLOCKBIT_COUNT + 1) / 2) * bitRowH + 10;
 		g_page1Ctrls.push_back(
 			MakeButton( hwnd, ID_BTN_TESTBITS_ALL, "Select All", xLabel, by, 110, 26 ) );
 		g_page1Ctrls.push_back(
@@ -1106,11 +1183,51 @@ CreateControls( HWND hwnd )
 		}
 	}
 
+	/* Function Mask Bits page: the five bits select functions F0-F4. */
+	{
+		const int bitColW = 500;
+		const int bitRowH = 24;
+
+		g_page3Ctrls.push_back( MakeStatic( hwnd, "Funcs Mask (hex):",
+			xLabel, pageTop, labelW, 18 ) );
+		g_page3Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_FUNCS,
+			xEdit, pageTop - 2, 150, 22 ) );
+
+		for ( int i = 0; i < FUNCBIT_COUNT; i++ )
+		{
+			char text[64];
+			sprintf( text, "Bit %2d (0x%02lX) - %s", i, 1UL << i, g_funcBitLabels[i] );
+
+			HWND chk = MakeCheck( hwnd, ID_CHK_FUNCBIT_BASE + i, text,
+				xLabel, pageTop + 32 + i * bitRowH,
+				bitColW - 10, 20 );
+			g_page3Ctrls.push_back( chk );
+		}
+
+		int by = pageTop + 32 + ((CLOCKBIT_COUNT + 1) / 2) * bitRowH + 10;
+		g_page3Ctrls.push_back(
+			MakeButton( hwnd, ID_BTN_FUNCBITS_ALL, "Select All", xLabel, by, 110, 26 ) );
+		g_page3Ctrls.push_back(
+			MakeButton( hwnd, ID_BTN_FUNCBITS_NONE, "Select None", xLabel + 120, by, 110, 26 ) );
+		g_page3Ctrls.push_back(
+			MakeButton( hwnd, ID_BTN_FUNCBITS_DEFAULT, "Reset Mask Defaults", xLabel + 240, by, 160, 26 ) );
+
+		if ( by + 26 > contentBottom )
+		{
+			contentBottom = by + 26;
+		}
+	}
+
 	/* Clock Mask Bits page: one checkbox per CLOCKS mask bit, 2 columns. */
 	{
 		const int bitColW = 500;
 		const int bitRowH = 24;
 		const int bitsPerCol = ( CLOCKBIT_COUNT + 1 ) / 2;
+
+		g_page2Ctrls.push_back( MakeStatic( hwnd, "Clocks Mask (hex):",
+			xLabel, pageTop, labelW, 18 ) );
+		g_page2Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_CLOCKS,
+			xEdit, pageTop - 2, 150, 22 ) );
 
 		for ( int i = 0; i < CLOCKBIT_COUNT; i++ )
 		{
@@ -1120,11 +1237,11 @@ CreateControls( HWND hwnd )
 			int col = i / bitsPerCol;
 			int row = i % bitsPerCol;
 			HWND chk = MakeCheck( hwnd, ID_CHK_CLOCKBIT_BASE + i, text,
-				xLabel + col * bitColW, pageTop + row * bitRowH, bitColW - 10, 20 );
+				xLabel + col * bitColW, pageTop + 32 + row * bitRowH, bitColW - 10, 20 );
 			g_page2Ctrls.push_back( chk );
 		}
 
-		int by = pageTop + bitsPerCol * bitRowH + 10;
+		int by = pageTop + 32 + ((CLOCKBIT_COUNT + 1) / 2) * bitRowH + 10;
 		g_page2Ctrls.push_back(
 			MakeButton( hwnd, ID_BTN_CLOCKBITS_ALL, "Select All", xLabel, by, 110, 26 ) );
 		g_page2Ctrls.push_back(
@@ -1140,7 +1257,7 @@ CreateControls( HWND hwnd )
 
 	/* Bottom: buttons + path label (shared, always visible). */
 	const int btnW = 110;
-	int yLaunch = contentBottom + 20;
+	int yLaunch = pageTop + 32 + ((CLOCKBIT_COUNT + 1) / 2) * 24 + 10;
 	g_page0Ctrls.push_back(
 		MakeButton( hwnd, ID_BTN_LAUNCH, "Launch send.exe", 20, yLaunch, btnW + 40, 26 ) );
 	g_page0Ctrls.push_back(
@@ -1153,8 +1270,8 @@ CreateControls( HWND hwnd )
 	MakeButton( hwnd, ID_BTN_SAVE, "Save", xBtn, yBtn, btnW, 26 ); xBtn += btnW + 10;
 	MakeButton( hwnd, ID_BTN_SAVEAS, "Save As...", xBtn, yBtn, btnW, 26 );
 
-	CreateWindowEx( 0, "STATIC", "", WS_CHILD | WS_VISIBLE,
-		20, yBtn + 36, 1000, 20, hwnd, (HMENU)(INT_PTR)ID_STATIC_PATH, NULL, NULL );
+	CreateWindowEx( 0, "STATIC", "", WS_CHILD | WS_VISIBLE | SS_PATHELLIPSIS | SS_NOPREFIX,
+		20, yBtn + 30, 1020, 20, hwnd, (HMENU)(INT_PTR)ID_STATIC_PATH, NULL, NULL );
 
 	/* Start on the General page. */
 	for ( size_t i = 0; i < g_page1Ctrls.size(); i++ )
@@ -1164,6 +1281,10 @@ CreateControls( HWND hwnd )
 	for ( size_t i = 0; i < g_page2Ctrls.size(); i++ )
 	{
 		ShowWindow( g_page2Ctrls[i], SW_HIDE );
+	}
+	for ( size_t i = 0; i < g_page3Ctrls.size(); i++ )
+	{
+		ShowWindow( g_page3Ctrls[i], SW_HIDE );
 	}
 }
 
@@ -1183,6 +1304,43 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 			return 0;
 
 		case WM_COMMAND:
+			if ( HIWORD( wParam ) == EN_CHANGE )
+			{
+				static bool syncingMasks = false;
+				if ( !syncingMasks )
+				{
+					int changedId = LOWORD( wParam );
+					int sourceId = 0;
+					int targetId = 0;
+					if ( changedId == ID_EDIT_TESTS || changedId == ID_EDIT_TESTS_GENERAL )
+					{
+						sourceId = changedId;
+						targetId = changedId == ID_EDIT_TESTS
+							? ID_EDIT_TESTS_GENERAL : ID_EDIT_TESTS;
+					}
+					else if ( changedId == ID_EDIT_CLOCKS || changedId == ID_EDIT_CLOCKS_GENERAL )
+					{
+						sourceId = changedId;
+						targetId = changedId == ID_EDIT_CLOCKS
+							? ID_EDIT_CLOCKS_GENERAL : ID_EDIT_CLOCKS;
+					}
+					else if ( changedId == ID_EDIT_FUNCS || changedId == ID_EDIT_FUNCS_GENERAL )
+					{
+						sourceId = changedId;
+						targetId = changedId == ID_EDIT_FUNCS
+							? ID_EDIT_FUNCS_GENERAL : ID_EDIT_FUNCS;
+					}
+
+					if ( targetId != 0 )
+					{
+						std::string value = GetEditText( sourceId );
+						syncingMasks = true;
+						SetEditText( targetId, value.c_str() );
+						syncingMasks = false;
+					}
+				}
+			}
+
 			switch ( LOWORD( wParam ) )
 			{
 				case ID_BTN_LOAD:
@@ -1285,6 +1443,26 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 				case ID_BTN_CLOCKBITS_DEFAULT:
 					ResetClocksMaskDefault();
 					return 0;
+
+				case ID_BTN_FUNCBITS_ALL:
+					for ( int i = 0; i < FUNCBIT_COUNT; i++ )
+					{
+						SetChecked( ID_CHK_FUNCBIT_BASE + i, true );
+					}
+					SyncFuncsFromBits();
+					return 0;
+
+				case ID_BTN_FUNCBITS_NONE:
+					for ( int i = 0; i < FUNCBIT_COUNT; i++ )
+					{
+						SetChecked( ID_CHK_FUNCBIT_BASE + i, false );
+					}
+					SyncFuncsFromBits();
+					return 0;
+
+				case ID_BTN_FUNCBITS_DEFAULT:
+					ResetFuncsMaskDefault();
+					return 0;
 			}
 
 			if ( LOWORD( wParam ) >= ID_CHK_TESTBIT_BASE
@@ -1298,6 +1476,12 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 				&& HIWORD( wParam ) == BN_CLICKED )
 			{
 				SyncClocksFromBits();
+			}
+			else if ( LOWORD( wParam ) >= ID_CHK_FUNCBIT_BASE
+				&& LOWORD( wParam ) < ID_CHK_FUNCBIT_BASE + FUNCBIT_COUNT
+				&& HIWORD( wParam ) == BN_CLICKED )
+			{
+				SyncFuncsFromBits();
 			}
 			return 0;
 
@@ -1315,6 +1499,10 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 				{
 					SyncBitsFromClocks();
 				}
+				else if ( sel == 3 )
+				{
+					SyncBitsFromFuncs();
+				}
 				for ( size_t i = 0; i < g_page0Ctrls.size(); i++ )
 				{
 					ShowWindow( g_page0Ctrls[i], sel == 0 ? SW_SHOW : SW_HIDE );
@@ -1326,6 +1514,10 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 				for ( size_t i = 0; i < g_page2Ctrls.size(); i++ )
 				{
 					ShowWindow( g_page2Ctrls[i], sel == 2 ? SW_SHOW : SW_HIDE );
+				}
+				for ( size_t i = 0; i < g_page3Ctrls.size(); i++ )
+				{
+					ShowWindow( g_page3Ctrls[i], sel == 3 ? SW_SHOW : SW_HIDE );
 				}
 
 				/* Force a repaint so no stale label/checkbox text lingers
@@ -1368,7 +1560,7 @@ WinMain( HINSTANCE hInstance, HINSTANCE, LPSTR lpCmdLine, int nCmdShow )
 
 	g_hMain = CreateWindowEx( 0, wc.lpszClassName, "Send Config Editor (sendgui)",
 		WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME,
-		CW_USEDEFAULT, CW_USEDEFAULT, 1060, 640,
+		CW_USEDEFAULT, CW_USEDEFAULT, 1060, 680,
 		NULL, NULL, hInstance, NULL );
 
 	if ( g_hMain == NULL )
