@@ -59,7 +59,7 @@ Send_reg::get_gen( void ) const
 
 	// No decoder feedback wiring present; simulate a floating (pulled-up)
 	// input so checks fail the same way a disconnected decoder would.
-	return ( 0x01 );
+	return ( 0x03 );
 }
 
 void

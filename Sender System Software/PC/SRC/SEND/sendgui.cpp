@@ -43,7 +43,6 @@ enum
 	ID_EDIT_CLOCKS,
 	ID_EDIT_FUNCS,
 
-	ID_CHK_DEBUG_ON,
 	ID_CHK_MANUAL,
 	ID_CHK_LAMP,
 	ID_CHK_REPEAT,
@@ -180,7 +179,6 @@ struct FlagCtrl
 
 static const FlagCtrl g_flagCtrls[] =
 {
-	{ ID_CHK_DEBUG_ON,        "DEBUG_ON" },
 	{ ID_CHK_MANUAL,          "MANUAL" },
 	{ ID_CHK_LAMP,            "LAMP" },
 	{ ID_CHK_REPEAT,          "REPEAT" },
@@ -734,7 +732,6 @@ SaveCfgFile( const char *path )
 	addFlag( "SAME_AMBIG_ADDR", IsChecked( ID_CHK_SAME_AMBIG_ADDR ) );
 	addField( "ACC_PAIR", GetEditText( ID_EDIT_ACC_PAIR ) );
 	addFlag( "KICK_START", IsChecked( ID_CHK_KICK_START ) );
-	addFlag( "DEBUG_ON", IsChecked( ID_CHK_DEBUG_ON ) );
 	addField( "EXTRA_TRG", GetEditText( ID_EDIT_EXTRA_TRG ) );
 	addField( "MCU_PORT", GetEditText( ID_EDIT_MCU_PORT ) );
 	addField( "MCU_BAUD", GetEditText( ID_EDIT_MCU_BAUD ) );
@@ -1049,7 +1046,6 @@ CreateControls( HWND hwnd )
 	int yChk = pageTop;
 	const int chkW = 340;
 
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_DEBUG_ON, "DEBUG_ON - Log debug messages", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MANUAL, "MANUAL - Don't run tests automatically", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LAMP, "LAMP - Use rear lamp for func tests", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REPEAT, "REPEAT - Continuously repeat tests", xChk, yChk, chkW, 20 ) ); yChk += rowH;

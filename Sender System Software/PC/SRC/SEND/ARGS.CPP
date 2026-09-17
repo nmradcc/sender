@@ -22,7 +22,6 @@
  *
  *****************************************************************************/
 
-#include <zlog.h>
 #include <dcc.h>
  
 #include "args.h"
@@ -177,7 +176,7 @@ Args_obj::usage(
 		cmd_name );			
     fprintf( ofp,
 		"                [-T] [-F fill] [-R reps] [-P [mode]] [-A] [-s] [-S] [-g mask]\n"
-		"                [-o pair] [-k] [-D] [-e trg] [-J port]\n"
+		"                [-o pair] [-k] [-e trg] [-J port]\n"
 		"                [-Y baud]\n\n" );
 
 	if ( cfg_path[0] != '\0' )
@@ -295,10 +294,6 @@ Args_obj::usage(
 		"  -e <trg>   EXTRA_TRG  "
 		"Extra Ames test trigger packets      <value %u>\n",
 		extra_trg );
-	fprintf( ofp,
-		"  -D        DEBUG_ON    "
-		"Log debug messages                   <value %s>\n",
-		Deflog.get_dbg_on() ? "true" : "false" );
 	fprintf( ofp,
 		"  -J <port>  MCU_PORT   "
 		"MCU serial port name                 <value %s>\n",
@@ -732,10 +727,6 @@ Args_obj::argscan(
 		{
 			m_kick_start	=	m_kick_start ? false  : true;
 		}
-		else if ( strcmp( argv[i], "-D" ) == 0 )	// Log dbg msgs flag.
-		{
-			Deflog.set_dbg_on( !Deflog.get_dbg_on() );
-		}
 		else if ( strcmp( argv[i], "-e" ) == 0 )	// Extra trigger packets.
 		{
 			if ( ++i < argc )
@@ -1125,12 +1116,7 @@ Args_obj::cfgscan( void )
 			targv[1]	=	"-k";
 			targc		=	2;
 		}
-		else if ( 	!strcmpi( cmd,	"DEBUG_ON" ) )
-		{
-			targv[1]	=	"-D";
-			targc		=	2;
-		}
-		else if (	!strcmpi( cmd,	"EXTRA_TRG" ) )
+		else if ( 	!strcmpi( cmd, "EXTRA_TRG" ) )
 		{
 			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
 			{
