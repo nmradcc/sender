@@ -53,7 +53,7 @@ Send_reg::get_gen( void ) const
 		BYTE gen2 = 0;
 		if ( m_hw_if->get_gen_in( gen1, gen2 ) )
 		{
-			return ( gen1 );
+			return ( gen1 & 0x0F );
 		}
 	}
 

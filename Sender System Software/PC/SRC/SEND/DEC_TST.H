@@ -111,7 +111,6 @@ class Dec_tst : public Z_core
   protected:
   
 	/* Method section */
-	void debug_gen( const char *msg = "" );
 	void fsoc_send( const char *msg );
 
 	/* Data section */

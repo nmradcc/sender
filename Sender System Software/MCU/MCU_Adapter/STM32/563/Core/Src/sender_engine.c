@@ -738,20 +738,24 @@ uint8_t sender_engine_set_gen_out(sender_engine_t *eng, uint8_t value)
 void sender_engine_get_gen_in(sender_engine_t *eng, uint8_t *gen1,
                               uint8_t *gen2)
 {
-    bool in0_status;
-    bool in1_status;
+    uint8_t status = 0u;
 
     if (eng == 0 || gen1 == 0 || gen2 == 0)
     {
         return;
     }
- 
-    in0_status = (HAL_GPIO_ReadPin(IN0_GPIO_Port, IN0_Pin) == GPIO_PIN_SET);
-    in1_status = (HAL_GPIO_ReadPin(IN1_GPIO_Port, IN1_Pin) == GPIO_PIN_SET);
-    eng->gen_in1 = (uint8_t)((eng->gen_in1 & (uint8_t)~0x01u) |
-                             (in0_status ? 0x01u : 0x00u));
-    eng->gen_in2 = (uint8_t)((eng->gen_in2 & (uint8_t)~0x01u) |
-                             (in1_status ? 0x01u : 0x00u));
+
+    /*
+     * Pack the input states in bits 0..3 of the returned byte.
+     * The raw GPIO is active-low, so a LOW == active means the bit should be 1.
+     */
+    status |= (HAL_GPIO_ReadPin(IN0_GPIO_Port, IN0_Pin) == GPIO_PIN_RESET) ? 0x01u : 0u;
+    status |= (HAL_GPIO_ReadPin(IN1_GPIO_Port, IN1_Pin) == GPIO_PIN_RESET) ? 0x02u : 0u;
+    status |= (HAL_GPIO_ReadPin(IN2_GPIO_Port, IN2_Pin) == GPIO_PIN_RESET) ? 0x04u : 0u;
+    status |= (HAL_GPIO_ReadPin(IN3_GPIO_Port, IN3_Pin) == GPIO_PIN_RESET) ? 0x08u : 0u;
+
+    eng->gen_in1 = status;
+    eng->gen_in2 = 0u;
 
     *gen1 = eng->gen_in1;
     *gen2 = eng->gen_in2;

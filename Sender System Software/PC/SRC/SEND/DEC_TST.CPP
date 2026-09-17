@@ -458,37 +458,6 @@ static const char *err_msg[] =
  * should be skipped.
  */
 #define FSOC_SKIP ((decoder_type) == DEC_FUNC && (trig_rev))
-
- 
-/*--------------------------------------------------------------------------*/
-/*
- *	NAME
- *
- *		debug_gen()						-	 Print GEN input states.
- *
- *	RETURN VALUE
- *
- *		None.
- *
- *	DESCRIPTION
- *
- *		debug_gen() prints the 'msg' variable followed by the GEN input.states.
- *		Note: This is a temporary DEBUG method that can be removed at some
- *      point.
- */
-/*--------------------------------------------------------------------------*/
-
-void
-Dec_tst::debug_gen( const char *msg ) // DEBUG
-{
-	if ( Deflog.get_dbg_on() == true )
-	{
-		DBGPRINT( DBG_DFLT, "%s: Gen %s.", msg,
-				  (Dcc_reg.get_gen() & 0x1) ? "HiGH" : " LOW" );
-		Dcc_reg.clr_under();
-	}
-}
-
  
 /*--------------------------------------------------------------------------*/
 /*
@@ -1319,17 +1288,41 @@ Dec_tst::decoder_ramp(
              *	decoders, and will show 100% failures if no decoder is
              *	connected.
 			 */
-			if ( speed >= SP_TEST_MIN && fw ==  false && !(speed & 0x01) )
+			if ( speed >= SP_TEST_MIN && !(speed & 0x01) )
 			{
 				t_stat.incr_t_cnt();
 				tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != fw )
+
+				if ( Dcc_reg.get_log_pkts() )
 				{
-					t_stat.incr_f_cnt();
-					tst_rslt	=	FAIL;
-					ERRPRINT( my_name, LOG_WARNING,
-						"Test FAILED: Speed %2d, Dir. %c",
-						speed, fw ? 'F' :  'R' );
+					sprintf( ramp_msg,
+							"  %-18s At speed gen1 %02X",
+						tst_name, tgen );
+
+					DBGLOG( "%s() %s", my_name, ramp_msg );
+				}
+				
+				if (fw)
+				{
+					if ( (tgen & 0x03) != 0x02 )
+					{
+						t_stat.incr_f_cnt();
+						tst_rslt	=	FAIL;
+						ERRPRINT( my_name, LOG_WARNING,
+							"Test FAILED: Speed %2d, Dir. %c",
+							speed, fw ? 'F' :  'R' );
+					}
+				}
+				else
+				{
+					if ( (tgen & 0x03) != 0x01 )
+					{
+						t_stat.incr_f_cnt();
+						tst_rslt	=	FAIL;
+						ERRPRINT( my_name, LOG_WARNING,
+							"Test FAILED: Speed %2d, Dir. %c",
+							speed, fw ? 'F' :  'R' );
+					}
 				}
 			}
 		}
@@ -1377,6 +1370,7 @@ Dec_tst::func_ramp(
 {
 	const char		*my_name = "Func";
 	const char		*tst_name = "Func:";   	// Test name.
+	char ramp_msg[128];
 	int				i;						// Function variable.
     int				func;					// Function state.
 	Rslt_t			retval = OK;	   		// Return value.
@@ -1407,13 +1401,26 @@ Dec_tst::func_ramp(
 		if ( Dcc_reg.get_log_pkts() )
 		{
 			DBGLOG( "Dce_tst::func_ramp() Sending %d function ramp packets.", pkt_rep_cnt );
+	 		tgen	=	Dcc_reg.get_gen();
+			sprintf( ramp_msg,
+					"  %-18s Just before send function sequence gen1 %02X",
+				tst_name, tgen );
+
+			DBGLOG( "%s() %s", my_name, ramp_msg );
 		}
-		debug_gen( "Dce_tst::func_ramp() Just before send function sequence" );
 	  	for ( i = 0; i < pkt_rep_cnt; i++ )
 	  	{
 			Dcc_reg.send_pkt( dcc_bits, "Send function ramp test packet." );
 	   	}
-		debug_gen( "Dce_tst::func_ramp() Just after send function sequence" );
+		if ( Dcc_reg.get_log_pkts() )
+		{
+	 		tgen	=	Dcc_reg.get_gen();
+			sprintf( ramp_msg,
+					"  %-18s Just after send function sequence gen1 %02X",
+				tst_name, tgen );
+
+			DBGLOG( "%s() %s", my_name, ramp_msg );
+		}
 
 	  	/*
 	  	 *	Test the function input to verify it matches the
@@ -1429,7 +1436,15 @@ Dec_tst::func_ramp(
 	 			"Test FAILED: Function <%s>",
 	 			func == 0 ? "OFF" : "ON" );
 	 	}
-		debug_gen( "Dce_tst::func_ramp() Just after input test" );
+		if ( Dcc_reg.get_log_pkts() )
+		{
+	 		tgen	=	Dcc_reg.get_gen();
+			sprintf( ramp_msg,
+					"  %-18s Just after input test gen1 %02X",
+				tst_name, tgen );
+
+			DBGLOG( "%s() %s", my_name, ramp_msg );
+		}
 
 		if ( get_test_break() )
 		{
