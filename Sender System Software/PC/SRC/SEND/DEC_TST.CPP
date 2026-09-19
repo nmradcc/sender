@@ -3061,7 +3061,9 @@ Dec_tst::quick_ames(
 		}
 
 		tgen	=	Dcc_reg.get_gen();
-		pre_fail = ( (tgen & 0x01) != 0 );
+	//test TODO:
+//		pre_fail = ( (tgen & 0x01) != 0 );
+		pre_fail = ( (tgen & 0x04) != 0x04 );
 
 		/*
 		 * Send a scope trigger at start of trigger packet
@@ -3090,7 +3092,9 @@ Dec_tst::quick_ames(
 		send_filler();							// Send filler.
 
 		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != true )
+//TODO: Verify the trigger failure condition.
+//		if ( (tgen & 0x01) != true )
+		if ( (tgen & 0x04) == 0x04 )
 		{
 			trig_fail	=	true;
 		}
