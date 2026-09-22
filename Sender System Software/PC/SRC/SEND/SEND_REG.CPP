@@ -64,6 +64,37 @@ Send_reg::get_gen( void ) const
 	return ( 0x03 );
 }
 
+bool
+Send_reg::get_gen_fb(
+	Dec_types	idec_type ) const
+{
+	if ( m_hw_if == NULL )
+	{
+		return ( false );
+	}
+
+	BYTE gen1 = 0;
+	BYTE gen2 = 0;
+	if ( !m_hw_if->get_gen_in( gen1, gen2 ) )
+	{
+		return ( false );
+	}
+
+	BYTE	gen		=	gen1 & 0x0F;
+	BYTE	mask	=	0;
+
+	if ( idec_type == DEC_LOCO )
+	{
+		mask	=	GEN_MOTOR_P_BIT;
+	}
+	else
+	{
+		mask	=	GEN_FL_BIT;
+	}
+
+	return ( ( gen & mask ) != 0 );
+}
+
 void
 Send_reg::set_scope(
 	bool		scope_on )

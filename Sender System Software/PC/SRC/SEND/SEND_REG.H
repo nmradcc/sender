@@ -28,6 +28,7 @@
 #include <zlog.h>
 #include <dcc.h>
 #include "sr_core.h"
+#include "send.h"
 
 const u_short	DCC_CLK_HOLD	= 0;		// Hold present clock value.
 const u_short	DCC_CLK_ERR		= 1;		// Clock has an error.
@@ -44,6 +45,13 @@ const u_int		FILL_2_1S		= 1;		// 2 packet 1 filler.
 const u_int		FILL_4_0S		= 3;		// 4 packet 0 filler.
 const u_int		FILL_4_1S		= 1;		// 4 packet 1 filler.
 const u_short	PKT_REP_MIN		= 10;		// Min. pkt repeat count.
+
+const BYTE		GEN_INPUT1_MASK		    = 0x0F;	// Valid GEN1 input bits.
+const BYTE		GEN_MOTOR_FEEDBACK_MASK	= 0x03;	// Motor feedback mask bit.
+const BYTE		GEN_MOTOR_P_BIT 		= 0x01; // Motor positive feedback bit.
+const BYTE		GEN_MOTOR_N_BIT 		= 0x02; // Motor negative feedback bit.
+const BYTE		GEN_FL_MASK	            = 0x04;	// Front Light mask bit.
+const BYTE		GEN_FL_BIT 		        = 0x04; // Front Light bit.
 
 
 const u_int		PC_DELAY_INIT	= 5;		// Initial 1 usec delay count.
@@ -114,6 +122,7 @@ class Send_reg : public Sr_core
 	bool	get_log_data( void ) const { return ( m_log_data ); }
 
 	BYTE	get_gen( void ) const;
+	bool	get_gen_fb( Dec_types idec_type ) const;
 
 	/* Simple set methods */
 	void	set_swap_0_1( bool iswap ) { m_swap_0_1 =  iswap; }

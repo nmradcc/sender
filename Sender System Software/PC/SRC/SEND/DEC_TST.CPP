@@ -1546,14 +1546,14 @@ Dec_tst::acc_ramp(
 					test_expect	=	true;
 				}
 
-				if ( (tgen & 0x01) != test_expect )
+				if ( (tgen & 0x04) != test_expect )
 				{
 					t_stat.incr_f_cnt();
 					tst_rslt	=	FAIL;
 					ERRPRINT( my_name, LOG_WARNING,
 						"Test FAILED: Out_id %1d, Active %3s, Input %3s",
 						out_id, active ? "ON" : "OFF",
-                        (tgen & 0x01) ? "ON" : "OFF" );
+                        (tgen & 0x04) ? "ON" : "OFF" );
 				}
 			}
 		}
@@ -1649,8 +1649,8 @@ Dec_tst::sig_ramp(
 	 		t_stat.incr_t_cnt();
 	 		tgen	=	Dcc_reg.get_gen();
 
-	 		if ( 	(tgen & 0x01)
-            	!= (aspect == Args.get_aspect_preset() ? 0 : 0x01) )
+	 		if ( 	(tgen & 0x04)
+            	!= (aspect == Args.get_aspect_preset() ? 0 : 0x04) )
 	 		{
 	 			t_stat.incr_f_cnt();
 	 			tst_rslt	=	FAIL;
@@ -1706,7 +1706,6 @@ Dec_tst::decoder_ames(
 	int				i;			  			// Index variable.
 	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
 	bool			pre_fail = false;	  	// Preset failed.
 	bool			trig_fail = false;	  	// Trigger failed.
 	int				t_pkt_cnt;				// Temp repeat count.
@@ -1921,8 +1920,7 @@ Dec_tst::decoder_ames(
 								"Send packet acceptance preset packet." );
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != 0 )
+		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			pre_fail	=	true;
 		}
@@ -1954,8 +1952,7 @@ Dec_tst::decoder_ames(
 
 		send_filler();							// Send filler.
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != true )
+		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			trig_fail	=	true;
 		}
@@ -2018,7 +2015,6 @@ Dec_tst::decoder_str0_ames(
 	int				i;			  			// Index variable.
 	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
 	BYTE			pbyte;					// Present byte to send.
@@ -2109,8 +2105,7 @@ Dec_tst::decoder_str0_ames(
 			Dcc_reg.send_pkt( dcc_bits, "Send stretched test preset packet." );
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != 0 )
+		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			pre_fail	=	true;
 		}
@@ -2152,8 +2147,7 @@ Dec_tst::decoder_str0_ames(
 
 		send_filler();							// Send filler.
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != true )
+		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			trig_fail	=	true;
 		}
@@ -2218,7 +2212,6 @@ Dec_tst::decoder_bad_addr(
 	int				addr_min;					// Minimum test address.
 	int				addr_max;					// Maximum test address.
 	u_short			send_addr;					// Address to send.
-	BYTE			tgen;						// Generic input BYTE.
 	bool			pre_fail;					// Preset failed.
 	bool			trig_fail;	  				// Trigger failed.
 	bool			rst_fail;					// Reset failed.
@@ -2358,8 +2351,7 @@ Dec_tst::decoder_bad_addr(
 			}
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != true )
+		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			rst_fail	=	true;
 		}
@@ -2369,8 +2361,7 @@ Dec_tst::decoder_bad_addr(
 			Dcc_reg.send_pkt( dcc_bits, "Send bad address preset packet." );
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != 0 )
+		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			pre_fail	=	true;
 		}
@@ -2381,8 +2372,7 @@ Dec_tst::decoder_bad_addr(
 			Dcc_reg.send_pkt( dcc_bits2, "Send bad address trigger packet." );
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != ( send_addr ==
+		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) != ( send_addr ==
 								Args.get_decoder_address() ? true : false) )
 		{
 			trig_fail	=	true;
@@ -2447,7 +2437,6 @@ Dec_tst::decoder_bad_bit(
 	int				i;			  			// Index variable.
 	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
 	bool			rst_fail;				// Reset failed.
@@ -2592,8 +2581,7 @@ Dec_tst::decoder_bad_bit(
 			}
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != true )
+		if ( !Dcc_reg.get_gen_fb( decoder_type ) )
 		{
 			rst_fail	=	true;
 		}
@@ -2603,8 +2591,7 @@ Dec_tst::decoder_bad_bit(
 			Dcc_reg.send_pkt( dcc_bits, "Send bad bit preset packet." );
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != 0 )
+		if ( Dcc_reg.get_gen_fb( decoder_type ) )
 		{
 			pre_fail	=	true;
 		}
@@ -2615,8 +2602,7 @@ Dec_tst::decoder_bad_bit(
 			Dcc_reg.send_pkt( dcc_bits2, "Send bad bit trigger packet." );
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != (i == last_bit ? true : false) )
+		if ( Dcc_reg.get_gen_fb( decoder_type ) != (i == last_bit ? true : false) )
 		{
 			trig_fail	=	true;
 		}
@@ -2935,7 +2921,6 @@ Dec_tst::quick_ames(
 	int				i;			  			// Index variable.
 	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
 	BYTE			pre_gen = 0;				// GEN input after preset sequence.
 	BYTE			trig_gen = 0;				// GEN input after trigger sequence.
 	bool			pre_fail_exp0;				// Preset fail if expected state is 0.
@@ -3060,10 +3045,7 @@ Dec_tst::quick_ames(
 			Dcc_reg.send_pkt( dcc_bits, "Send preset for quick test." );
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-	//test TODO:
-//		pre_fail = ( (tgen & 0x01) != 0 );
-		pre_fail = ( (tgen & 0x04) != 0x04 );
+		pre_fail = !Dcc_reg.get_gen_fb( Args.get_decoder_type() );
 
 		/*
 		 * Send a scope trigger at start of trigger packet
@@ -3091,10 +3073,7 @@ Dec_tst::quick_ames(
 
 		send_filler();							// Send filler.
 
-		tgen	=	Dcc_reg.get_gen();
-//TODO: Verify the trigger failure condition.
-//		if ( (tgen & 0x01) != true )
-		if ( (tgen & 0x04) == 0x04 )
+		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			trig_fail	=	true;
 		}
@@ -3153,7 +3132,6 @@ Dec_tst::decoder_truncate(
 	BYTE			t_addr;					// Truncated address.
 	BYTE			t_cmd;					// Truncated command.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
 	u_int			test_repeats;			// Number of times to repeat test.
@@ -3291,8 +3269,7 @@ Dec_tst::decoder_truncate(
 					Dcc_reg.send_pkt( dcc_bits, "Send truncate test preset." );
 				}
 
-				tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != 0 )
+				if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
 					pre_fail	=	true;
 				}
@@ -3324,8 +3301,7 @@ Dec_tst::decoder_truncate(
 			
 				send_filler();			 			// Send filler.
 
-				tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != true )
+				if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
 					trig_fail	=	true;
 				}
@@ -3421,7 +3397,6 @@ Dec_tst::decoder_prior(
 	BYTE			t_addr;					// Prior address.
 	BYTE			t_cmd;					// Prior command.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
 	u_int			test_repeats;			// Number of times to repeat test.
@@ -3579,8 +3554,7 @@ Dec_tst::decoder_prior(
 						"Send prior packet preset." );
 				}
 
-				tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != 0 )
+				if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
 					pre_fail	=	true;
 				}
@@ -3612,8 +3586,7 @@ Dec_tst::decoder_prior(
 
 				send_filler();				  	// Send filler.
 
-				tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != true )
+				if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
 					trig_fail	=	true;
 				}
@@ -3709,7 +3682,6 @@ Dec_tst::decoder_6_byte(
 	BYTE			t_cmd3;					// Prior command byte 3.
 	BYTE			t_cmd4;					// Prior command byte 4.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
 	u_int			test_repeats;			// Number of times to repeat test.
@@ -3860,8 +3832,7 @@ Dec_tst::decoder_6_byte(
 						"Send 6 byte prior packet preset." );
 				}
 
-				tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != 0 )
+				if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
 					pre_fail	=	true;
 				}
@@ -3893,8 +3864,7 @@ Dec_tst::decoder_6_byte(
 
 				send_filler();				  	// Send filler.
 
-				tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != true )
+				if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
 					trig_fail	=	true;
 				}
@@ -3978,7 +3948,6 @@ Dec_tst::decoder_ambig1(
 	int				i;			  			// Index variable.
 	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
     int				ambig1_bit;				// Ambiguous bit number.
@@ -4184,8 +4153,7 @@ Dec_tst::decoder_ambig1(
             			"Send ambig 1 packet preset." );
         		}
 
-        		tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != 0 )
+				if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
         		{
         			pre_fail	=	true;
         		}
@@ -4209,8 +4177,7 @@ Dec_tst::decoder_ambig1(
 
 				send_filler();		  			// Send filler.
 
-        		tgen	=	Dcc_reg.get_gen();
-        		if ( (tgen & 0x01) != true )
+        		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
         		{
         			trig_fail	=	true;
         		}
@@ -4289,7 +4256,6 @@ Dec_tst::decoder_ambig2(
 	int				i;			  			// Index variable.
 	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
 	BYTE			pbyte;					// Present byte to send.
@@ -4461,8 +4427,7 @@ Dec_tst::decoder_ambig2(
             			"Send ambig 2 packet preset." );
         		}
 
-        		tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != 0 )
+				if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
         		{
         			pre_fail	=	true;
         		}
@@ -4489,8 +4454,7 @@ Dec_tst::decoder_ambig2(
 
 				send_filler();					// Send filler.
         
-        		tgen	=	Dcc_reg.get_gen();
-        		if ( (tgen & 0x01) != true )
+        		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
         		{
         			trig_fail	=	true;
         		}
