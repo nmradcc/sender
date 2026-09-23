@@ -175,7 +175,7 @@ Args_obj::usage(
 		"                [-l] [-f] [-r] [-t mask] [-c mask] [-E pre]\n",
 		cmd_name );			
     fprintf( ofp,
-		"                [-T] [-F fill] [-R reps] [-P [mode]] [-A] [-s] [-S] [-g mask]\n"
+		"                [-T] [-F fill] [-R reps] [-P mask] [-A] [-s] [-S] [-g mask]\n"
 		"                [-o pair] [-k] [-e trg] [-J port]\n"
 		"                [-Y baud]\n\n" );
 
