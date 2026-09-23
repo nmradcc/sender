@@ -45,13 +45,14 @@ enum
 	ID_EDIT_TESTS_GENERAL,
 	ID_EDIT_CLOCKS_GENERAL,
 	ID_EDIT_FUNCS_GENERAL,
+	ID_EDIT_LOG,
+	ID_EDIT_LOG_GENERAL,
 
 	ID_CHK_MANUAL,
 	ID_CHK_LAMP,
 	ID_CHK_REPEAT,
 	ID_CHK_TRIG_REV,
 	ID_CHK_LOCO_FIRST,
-	ID_COMBO_LOG,
 	ID_CHK_NO_ABORT,
 	ID_CHK_LATE_SCOPE,
 	ID_CHK_FRAGMENT,
@@ -82,7 +83,12 @@ enum
 	ID_CHK_FUNCBIT_BASE,
 	ID_BTN_FUNCBITS_ALL = ID_CHK_FUNCBIT_BASE + 5,
 	ID_BTN_FUNCBITS_NONE,
-	ID_BTN_FUNCBITS_DEFAULT
+	ID_BTN_FUNCBITS_DEFAULT,
+
+	ID_CHK_LOGBIT_BASE,
+	ID_BTN_LOGBITS_ALL = ID_CHK_LOGBIT_BASE + 5,
+	ID_BTN_LOGBITS_NONE,
+	ID_BTN_LOGBITS_DEFAULT
 };
 
 /* Number of individual TESTS mask bit checkboxes. */
@@ -180,6 +186,17 @@ static const char *g_funcBitLabels[FUNCBIT_COUNT] =
 	"FL",
 };
 
+static const int LOGBIT_COUNT = 5;
+
+static const char *g_logBitLabels[LOGBIT_COUNT] =
+{
+	"Log file",
+	"Command logging",
+	"Packet data logging",
+	"IO data logging",
+	"Squelch idle packets",
+};
+
 /*---------------------------------------------------------------------------
  * Global state.
  *-------------------------------------------------------------------------*/
@@ -190,6 +207,7 @@ static std::vector<HWND>	g_page0Ctrls;	// Controls shown on the "General" tab.
 static std::vector<HWND>	g_page1Ctrls;	// Controls shown on the "Test Mask Bits" tab.
 static std::vector<HWND>	g_page2Ctrls;	// Controls shown on the "Clock Mask Bits" tab.
 static std::vector<HWND>	g_page3Ctrls;	// Controls shown on the "Function Mask Bits" tab.
+static std::vector<HWND>	g_page4Ctrls;	// Controls shown on the "Log Mask Bits" tab.
 
 struct FlagCtrl
 {
@@ -502,6 +520,30 @@ SyncFuncsFromBits( void )
 	SetMaskUInt( ID_EDIT_FUNCS, ID_EDIT_FUNCS_GENERAL, mask );
 }
 
+static void
+SyncBitsFromLog( void )
+{
+	unsigned long mask = GetEditULong( ID_EDIT_LOG );
+	for ( int i = 0; i < LOGBIT_COUNT; i++ )
+	{
+		SetChecked( ID_CHK_LOGBIT_BASE + i, ( mask & ( 1UL << i ) ) != 0 );
+	}
+}
+
+static void
+SyncLogFromBits( void )
+{
+	unsigned long mask = 0;
+	for ( int i = 0; i < LOGBIT_COUNT; i++ )
+	{
+		if ( IsChecked( ID_CHK_LOGBIT_BASE + i ) )
+		{
+			mask |= ( 1UL << i );
+		}
+	}
+	SetMaskUInt( ID_EDIT_LOG, ID_EDIT_LOG_GENERAL, mask );
+}
+
 /* Default masks: TESTS valid bits are 0-19 (20-31 reserved), CLOCKS valid bits are 0-16 (17-31 reserved). */
 static const unsigned long DEF_TESTS_MASK = 0x000FFFFFUL;
 static const unsigned long DEF_CLOCKS_MASK = 0xFFFFFFFFUL & ~0x8 & ~0x10 & ~0x100 & ~0x200 & 0x0001FFFFUL;
@@ -527,6 +569,13 @@ ResetFuncsMaskDefault( void )
 	SyncBitsFromFuncs();
 }
 
+static void
+ResetLogMaskDefault( void )
+{
+	SetMaskUInt( ID_EDIT_LOG, ID_EDIT_LOG_GENERAL, 0x01 );
+	SyncBitsFromLog();
+}
+
 /*---------------------------------------------------------------------------
  * Default program-defined values (mirrors ARGS.CPP Args_obj defaults).
  *-------------------------------------------------------------------------*/
@@ -547,7 +596,7 @@ LoadDefaults( void )
 	SetMaskUInt( ID_EDIT_TESTS, ID_EDIT_TESTS_GENERAL, DEF_TESTS_MASK );
 	SetMaskUInt( ID_EDIT_CLOCKS, ID_EDIT_CLOCKS_GENERAL, DEF_CLOCKS_MASK );
 	SetMaskUInt( ID_EDIT_FUNCS, ID_EDIT_FUNCS_GENERAL, 0x1F );
-	SendDlgItemMessage( g_hMain, ID_COMBO_LOG, CB_SETCURSEL, 1, 0 ); // Enabled
+	SetMaskUInt( ID_EDIT_LOG, ID_EDIT_LOG_GENERAL, 0x01 );
 
 	for ( size_t i = 0; i < _countof( g_flagCtrls ); i++ )
 	{
@@ -557,6 +606,7 @@ LoadDefaults( void )
 	SyncBitsFromTests();
 	SyncBitsFromClocks();
 	SyncBitsFromFuncs();
+	SyncBitsFromLog();
 }
 
 /*---------------------------------------------------------------------------
@@ -670,11 +720,8 @@ LoadCfgFile( const char *path )
 		}
 		else if ( _stricmp( key.c_str(), "LOG" ) == 0 )
 		{
-			// Bare "LOG" with no value means mode 1 (logging enabled).
-			int mode = val.empty() ? 1 : atoi( val.c_str() );
-			if ( mode < 0 ) mode = 0;
-			if ( mode > 3 ) mode = 3;
-			SendDlgItemMessage( g_hMain, ID_COMBO_LOG, CB_SETCURSEL, mode, 0 );
+			unsigned long mask = val.empty() ? 0x01 : strtoul( val.c_str(), NULL, 0 );
+			SetMaskUInt( ID_EDIT_LOG, ID_EDIT_LOG_GENERAL, mask );
 		}
 		else if ( _stricmp( key.c_str(), "EXTRA_PRE" ) == 0 )
 		{
@@ -710,6 +757,7 @@ LoadCfgFile( const char *path )
 	SyncBitsFromTests();
 	SyncBitsFromClocks();
 	SyncBitsFromFuncs();
+	SyncBitsFromLog();
 	return true;
 }
 
@@ -786,15 +834,12 @@ SaveCfgFile( const char *path )
 	addMaskField( "TESTS", GetEditText( ID_EDIT_TESTS ) );
 	addMaskField( "CLOCKS", GetEditText( ID_EDIT_CLOCKS ) );
 	addMaskField( "FUNCS", GetEditText( ID_EDIT_FUNCS ) );
+	addMaskField( "LOG", GetEditText( ID_EDIT_LOG ) );
 	addField( "EXTRA_PRE", GetEditText( ID_EDIT_EXTRA_PRE ) );
 	addFlag( "TRIG_REV", IsChecked( ID_CHK_TRIG_REV ) );
 	addFlag( "LOCO_FIRST", IsChecked( ID_CHK_LOCO_FIRST ) );
 	addField( "FILL_MSEC", GetEditText( ID_EDIT_FILL_MSEC ) );
 	addField( "TEST_REPS", GetEditText( ID_EDIT_TEST_REPS ) );
-	int logSel = (int)SendDlgItemMessage( g_hMain, ID_COMBO_LOG, CB_GETCURSEL, 0, 0 );
-	char logText[16];
-	snprintf( logText, sizeof( logText ), "%d", logSel < 0 ? 0 : logSel );
-	addField( "LOG", logText );
 	addFlag( "MCU_BYPASS_TST", IsChecked( ID_CHK_MCU_BYPASS_TST ) );
 	addFlag( "NO_ABORT", IsChecked( ID_CHK_NO_ABORT ) );
 	addFlag( "LATE_SCOPE", IsChecked( ID_CHK_LATE_SCOPE ) );
@@ -1022,6 +1067,8 @@ CreateControls( HWND hwnd )
 	TabCtrl_InsertItem( tab, 2, &tie );
 	tie.pszText = (char *)"Function Mask Bits";
 	TabCtrl_InsertItem( tab, 3, &tie );
+	tie.pszText = (char *)"Log Mask Bits";
+	TabCtrl_InsertItem( tab, 4, &tie );
 
 	const int pageTop = 50;	// Below the tab strip.
 
@@ -1101,16 +1148,20 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( baudCombo );
 	y += rowH + 6;
 
-	g_page0Ctrls.push_back( MakeStatic( hwnd, "Tests Mask (hex):", xLabel, y, labelW, 18 ) );
+	g_page0Ctrls.push_back( MakeStatic( hwnd, "Tests Mask:", xLabel, y, labelW, 18 ) );
 	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_TESTS_GENERAL, xEdit, y - 2, editW, 22 ) );
 	y += rowH;
 
-	g_page0Ctrls.push_back( MakeStatic( hwnd, "Clocks Mask (hex):", xLabel, y, labelW, 18 ) );
+	g_page0Ctrls.push_back( MakeStatic( hwnd, "Clocks Mask:", xLabel, y, labelW, 18 ) );
 	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_CLOCKS_GENERAL, xEdit, y - 2, editW, 22 ) );
 	y += rowH;
 
-	g_page0Ctrls.push_back( MakeStatic( hwnd, "Funcs Mask (hex):", xLabel, y, labelW, 18 ) );
+	g_page0Ctrls.push_back( MakeStatic( hwnd, "Funcs Mask:", xLabel, y, labelW, 18 ) );
 	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_FUNCS_GENERAL, xEdit, y - 2, editW, 22 ) );
+	y += rowH;
+
+	g_page0Ctrls.push_back( MakeStatic( hwnd, "Log Mask:", xLabel, y, labelW, 18 ) );
+	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_LOG_GENERAL, xEdit, y - 2, editW, 22 ) );
 	y += rowH;
 
 	/* Right column: boolean flag checkboxes. */
@@ -1123,17 +1174,6 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REPEAT, "REPEAT - Continuously repeat tests", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_TRIG_REV, "TRIG_REV - Use reverse as trigger cmd", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LOCO_FIRST, "LOCO_FIRST - Loco pkt before func pkt", xChk, yChk, chkW, 20 ) ); yChk += rowH;
-
-	g_page0Ctrls.push_back( MakeStatic( hwnd, "LOG mode:", xChk, yChk, 90, 18 ) );
-	HWND logCombo = CreateWindowEx( WS_EX_CLIENTEDGE, "COMBOBOX", "",
-		WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST,
-		xChk + 95, yChk - 2, chkW - 95, 200, hwnd, (HMENU)(INT_PTR)ID_COMBO_LOG, NULL, NULL );
-	SendMessage( logCombo, CB_ADDSTRING, 0, (LPARAM)"0 - Disabled" );
-	SendMessage( logCombo, CB_ADDSTRING, 0, (LPARAM)"1 - Enabled" );
-	SendMessage( logCombo, CB_ADDSTRING, 0, (LPARAM)"2 - Command capture (!L)" );
-	SendMessage( logCombo, CB_ADDSTRING, 0, (LPARAM)"3 - Command/packet capture (!L,!P)" );
-	g_page0Ctrls.push_back( logCombo );
-	yChk += rowH;
 
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_NO_ABORT, "NO_ABORT - Do not stop on error", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LATE_SCOPE, "LATE_SCOPE - Scope trigger after cmd", xChk, yChk, chkW, 20 ) ); yChk += rowH;
@@ -1182,6 +1222,38 @@ CreateControls( HWND hwnd )
 			contentBottom = by + 26;
 		}
 	}
+
+		/* Log Mask Bits page: independent file, command, and packet logging bits. */
+		{
+			const int bitColW = 500;
+			const int bitRowH = 24;
+
+			g_page4Ctrls.push_back( MakeStatic( hwnd, "Log Mask",
+				xLabel, pageTop, labelW, 18 ) );
+			g_page4Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_LOG,
+				xEdit, pageTop - 2, 150, 22 ) );
+
+			for ( int i = 0; i < LOGBIT_COUNT; i++ )
+			{
+				char text[64];
+				sprintf( text, "Bit %2d (0x%02lX) - %s", i, 1UL << i, g_logBitLabels[i] );
+				g_page4Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LOGBIT_BASE + i, text,
+					xLabel, pageTop + 32 + i * bitRowH, bitColW - 10, 20 ) );
+			}
+
+			int by = pageTop + 32 + ((CLOCKBIT_COUNT + 1) / 2) * bitRowH + 10;
+			g_page4Ctrls.push_back(
+				MakeButton( hwnd, ID_BTN_LOGBITS_ALL, "Select All", xLabel, by, 110, 26 ) );
+			g_page4Ctrls.push_back(
+				MakeButton( hwnd, ID_BTN_LOGBITS_NONE, "Select None", xLabel + 120, by, 110, 26 ) );
+			g_page4Ctrls.push_back(
+				MakeButton( hwnd, ID_BTN_LOGBITS_DEFAULT, "Reset Mask Defaults", xLabel + 240, by, 160, 26 ) );
+
+			if ( by + 26 > contentBottom )
+			{
+				contentBottom = by + 26;
+			}
+		}
 
 	/* Function Mask Bits page: the five bits select functions F0-F4. */
 	{
@@ -1286,6 +1358,10 @@ CreateControls( HWND hwnd )
 	{
 		ShowWindow( g_page3Ctrls[i], SW_HIDE );
 	}
+	for ( size_t i = 0; i < g_page4Ctrls.size(); i++ )
+	{
+		ShowWindow( g_page4Ctrls[i], SW_HIDE );
+	}
 }
 
 
@@ -1329,6 +1405,12 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 						sourceId = changedId;
 						targetId = changedId == ID_EDIT_FUNCS
 							? ID_EDIT_FUNCS_GENERAL : ID_EDIT_FUNCS;
+					}
+					else if ( changedId == ID_EDIT_LOG || changedId == ID_EDIT_LOG_GENERAL )
+					{
+						sourceId = changedId;
+						targetId = changedId == ID_EDIT_LOG
+							? ID_EDIT_LOG_GENERAL : ID_EDIT_LOG;
 					}
 
 					if ( targetId != 0 )
@@ -1463,6 +1545,26 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 				case ID_BTN_FUNCBITS_DEFAULT:
 					ResetFuncsMaskDefault();
 					return 0;
+
+				case ID_BTN_LOGBITS_ALL:
+					for ( int i = 0; i < LOGBIT_COUNT; i++ )
+					{
+						SetChecked( ID_CHK_LOGBIT_BASE + i, true );
+					}
+					SyncLogFromBits();
+					return 0;
+
+				case ID_BTN_LOGBITS_NONE:
+					for ( int i = 0; i < LOGBIT_COUNT; i++ )
+					{
+						SetChecked( ID_CHK_LOGBIT_BASE + i, false );
+					}
+					SyncLogFromBits();
+					return 0;
+
+				case ID_BTN_LOGBITS_DEFAULT:
+					ResetLogMaskDefault();
+					return 0;
 			}
 
 			if ( LOWORD( wParam ) >= ID_CHK_TESTBIT_BASE
@@ -1482,6 +1584,12 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 				&& HIWORD( wParam ) == BN_CLICKED )
 			{
 				SyncFuncsFromBits();
+			}
+			else if ( LOWORD( wParam ) >= ID_CHK_LOGBIT_BASE
+				&& LOWORD( wParam ) < ID_CHK_LOGBIT_BASE + LOGBIT_COUNT
+				&& HIWORD( wParam ) == BN_CLICKED )
+			{
+				SyncLogFromBits();
 			}
 			return 0;
 
@@ -1503,6 +1611,10 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 				{
 					SyncBitsFromFuncs();
 				}
+				else if ( sel == 4 )
+				{
+					SyncBitsFromLog();
+				}
 				for ( size_t i = 0; i < g_page0Ctrls.size(); i++ )
 				{
 					ShowWindow( g_page0Ctrls[i], sel == 0 ? SW_SHOW : SW_HIDE );
@@ -1518,6 +1630,10 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 				for ( size_t i = 0; i < g_page3Ctrls.size(); i++ )
 				{
 					ShowWindow( g_page3Ctrls[i], sel == 3 ? SW_SHOW : SW_HIDE );
+				}
+				for ( size_t i = 0; i < g_page4Ctrls.size(); i++ )
+				{
+					ShowWindow( g_page4Ctrls[i], sel == 4 ? SW_SHOW : SW_HIDE );
 				}
 
 				/* Force a repaint so no stale label/checkbox text lingers

@@ -261,9 +261,9 @@ Args_obj::usage(
 		"Non packet acceptance test repeats   <value %u>\n",
 		test_repeats );
 	fprintf( ofp,
-		"  -P <mode>  LOG        "
-		"0=none, 1=log, 2=log+!L, 3=log+!L+!P <value %u>\n",
-		log_mode );
+		"  -P <mask>  LOG        "
+		"0=none, 1=file, 2=command, 4=packet data <value 0x%02X>\n",
+		 LOG_MODE_MAX );
 	fprintf( ofp,
 		"  -B    MCU_BYPASS_TST  "
 		"Skip MCU startup self tests          <value %s>\n",
@@ -677,7 +677,7 @@ Args_obj::argscan(
 				t_u_int = (u_int)strtoul( argv[i], NULL, 0 );
 				if ( t_u_int > LOG_MODE_MAX )
 				{
-					fprintf( stderr, "ERROR: -P mode %u must be 0, 1, 2, or 3\n\n",
+					fprintf( stderr, "ERROR: -P mask %u contains unsupported bits; use 0 through 7\n\n",
 						t_u_int );
 					return ( FAIL );
 				}

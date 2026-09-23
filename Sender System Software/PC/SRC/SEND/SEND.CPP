@@ -507,8 +507,10 @@ main(
 	 *	allowed; LOG only controls how much detail is recorded.
 	 */
 	Dcc_reg.set_no_hw_sim( true );
-	Dcc_reg.set_log_pkts( Args.get_log_mode() >= 2 );
-	Dcc_reg.set_log_data( Args.get_log_mode() >= 3 );
+	Dcc_reg.set_log_pkts( ( Args.get_log_mode() & LOG_COMMAND_BIT ) != 0 );
+	Dcc_reg.set_log_data( ( Args.get_log_mode() & LOG_PACKET_BIT ) != 0 );
+	Dcc_reg.set_log_io( ( Args.get_log_mode() & LOG_IO_BIT ) != 0 );
+	Dcc_reg.set_squelch_idle( ( Args.get_log_mode() & LOG_SQUELCH_IDLE_BIT ) != 0 );
 	Dcc_reg.set_hw_if( use_hw_backend ? Lhw_if : NULL );
 
 	if ( Args.get_manual_flag() == true )	// Manual mode.
@@ -738,7 +740,7 @@ get_log_file(
 		buf[ strlen( buf ) - 1 ] = '\0';
 	}
 
-	if ( Args.get_log_mode() != 0 )
+	if ( ( Args.get_log_mode() & LOG_FILE_BIT ) != 0 )
 	{
 		strcpy( fname, buf );
 		strcat( fname, ".log" );
@@ -812,7 +814,7 @@ get_log_file(
 	TO_STAT( "--------------------------------\n\n" );
 
 	// Log summary of command line switches and .CFG file
-	if ( Args.get_log_mode() != 0 &&
+	if ( ( Args.get_log_mode() & LOG_FILE_BIT ) != 0 &&
 		 (fp = Deflog.get_fp_log()) != NULL )
 	{
     	fputs(

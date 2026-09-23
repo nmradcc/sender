@@ -1546,7 +1546,8 @@ Dec_tst::acc_ramp(
 					test_expect	=	true;
 				}
 
-				if ( (tgen & 0x04) != test_expect )
+				bool feedback = ( tgen & 0x04 ) ? true : false;
+				if ( feedback != test_expect )
 				{
 					t_stat.incr_f_cnt();
 					tst_rslt	=	FAIL;

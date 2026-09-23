@@ -55,6 +55,10 @@ Send_reg::get_gen( void ) const
 		BYTE gen2 = 0;
 		if ( m_hw_if->get_gen_in( gen1, gen2 ) )
 		{
+			if ( m_log_io )
+			{
+				DBGLOG( "Send_reg::get_gen() GEN1 %02X GEN2 %02X", gen1, gen2 );
+			}
 			return ( gen1 & 0x0F );
 		}
 	}
@@ -73,14 +77,7 @@ Send_reg::get_gen_fb(
 		return ( false );
 	}
 
-	BYTE gen1 = 0;
-	BYTE gen2 = 0;
-	if ( !m_hw_if->get_gen_in( gen1, gen2 ) )
-	{
-		return ( false );
-	}
-
-	BYTE	gen		=	gen1 & 0x0F;
+	BYTE	gen		=	get_gen();
 	BYTE	mask	=	0;
 
 	if ( idec_type == DEC_LOCO )
@@ -855,7 +852,7 @@ Send_reg::send_pkt(
 	{
 		if ( m_no_hw_sim )
 		{
-			if ( m_log_pkts && !is_idle_pkt )
+			if ( m_log_pkts && ( !m_squelch_idle || !is_idle_pkt ) )
 			{
 				DBGLOG( "%s %s.", my_name, info ? info : "" );
 				print_pkt_log( ibytes, isize );
@@ -871,7 +868,7 @@ Send_reg::send_pkt(
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts && !is_idle_pkt )
+	if ( m_log_pkts && ( !m_squelch_idle || !is_idle_pkt ) )
 	{
 		DBGLOG( "%s %s.", my_name, info ? info : "" );
 		print_pkt_log( ibytes, isize );
