@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: DEC_TST.CPP $
- * Path:                 $Logfile: /NMRA/SRC/SEND/DEC_TST.CPP $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 66 $
- * Last Modified on:     $Modtime: 3/28/24 9:21p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 4/01/24 3:53p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	dec_tst.cpp	-	Methods for Dec_tst decoder test class.
@@ -30,10 +15,12 @@
 #include <vector>
 
 /*
- * Uncomment PKT_REP_DEBUG to show all 3 fill packet counts when
- * LOG is uncommented to log packets.
- */
-//#define PKT_REP_DEBUG
+*	Note: Test is repeated 100 times to make sure there is less
+*	Than a 1% chance of not seeing at least 1 failure assuming the
+*	average pass rate is 95%.  100 tests gives a miss rate of .59%.
+*/
+//TODO:shorter test!!const int       PERCENT100      = 3;              // 100 percent value.
+const int       PERCENT100      = 100;              // 100 percent value.
 
 const int		SP_TEST_MIN		= 14;				// Min. test speed.
 													// (Step 7 + light 14 step
@@ -1895,16 +1882,13 @@ Dec_tst::decoder_ames(
 	 * Send a scope trigger at start of trigger packet
 	 * if the normal (early) scope trigger is desired.
 	 */
-#ifdef PKT_REP_DEBUG
-	DBGLOG( "%s: Sending %2u packet acceptance trigger packet(s).",
-			my_name, extra_trg + 1 );
-#endif
+	if ( Dcc_reg.get_log_pkts() )
+	{
+		DBGLOG( "%s: Sending %2u packet acceptance trigger packet(s).",
+				my_name, extra_trg + 1 );
+	}
 		
-	/*
-	 *	Note: This test is run 100 times to make sure there is less
-	 *	Than a 1% chance of not seeing at least 1 failure assuming the
-	 */
-	for ( i = 0; i < 100; i++ )
+	for ( i = 0; i < PERCENT100; i++ )
 	{
 		pre_fail	=	false;
 
@@ -1921,7 +1905,7 @@ Dec_tst::decoder_ames(
 								"Send packet acceptance preset packet." );
 		}
 
-		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
+		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			pre_fail	=	true;
 		}
@@ -1953,7 +1937,7 @@ Dec_tst::decoder_ames(
 
 		send_filler();							// Send filler.
 
-		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
+		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			trig_fail	=	true;
 		}
@@ -2085,12 +2069,7 @@ Dec_tst::decoder_str0_ames(
 	dcc_bits2.put_idle_pkt( 1 );
 	dcc_bits2.put_1s(1).done();
 
-	/*
-	 *	Note: This test is run 100 times to make sure there is less
-	 *	Than a 1% chance of not seeing at least 1 failure assuming the
-	 *	average pass rate is 95%.  100 tests gives a miss rate of .59%.
-	 */
-	for ( i = 0; i < 100; i++ )
+	for ( i = 0; i < PERCENT100; i++ )
 	{
 		pre_fail	=	false;
 		trig_fail	=	false;
@@ -2106,7 +2085,7 @@ Dec_tst::decoder_str0_ames(
 			Dcc_reg.send_pkt( dcc_bits, "Send stretched test preset packet." );
 		}
 
-		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
+		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			pre_fail	=	true;
 		}
@@ -2148,7 +2127,7 @@ Dec_tst::decoder_str0_ames(
 
 		send_filler();							// Send filler.
 
-		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
+		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			trig_fail	=	true;
 		}
@@ -2352,7 +2331,7 @@ Dec_tst::decoder_bad_addr(
 			}
 		}
 
-		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
+		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			rst_fail	=	true;
 		}
@@ -2362,7 +2341,7 @@ Dec_tst::decoder_bad_addr(
 			Dcc_reg.send_pkt( dcc_bits, "Send bad address preset packet." );
 		}
 
-		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
+		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			pre_fail	=	true;
 		}
@@ -2373,7 +2352,7 @@ Dec_tst::decoder_bad_addr(
 			Dcc_reg.send_pkt( dcc_bits2, "Send bad address trigger packet." );
 		}
 
-		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) != ( send_addr ==
+		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) != ( send_addr ==
 								Args.get_decoder_address() ? true : false) )
 		{
 			trig_fail	=	true;
@@ -2582,7 +2561,7 @@ Dec_tst::decoder_bad_bit(
 			}
 		}
 
-		if ( !Dcc_reg.get_gen_fb( decoder_type ) )
+		if ( Dcc_reg.get_gen_fb( decoder_type ) )
 		{
 			rst_fail	=	true;
 		}
@@ -2592,7 +2571,7 @@ Dec_tst::decoder_bad_bit(
 			Dcc_reg.send_pkt( dcc_bits, "Send bad bit preset packet." );
 		}
 
-		if ( Dcc_reg.get_gen_fb( decoder_type ) )
+		if ( !Dcc_reg.get_gen_fb( decoder_type ) )
 		{
 			pre_fail	=	true;
 		}
@@ -2603,7 +2582,7 @@ Dec_tst::decoder_bad_bit(
 			Dcc_reg.send_pkt( dcc_bits2, "Send bad bit trigger packet." );
 		}
 
-		if ( Dcc_reg.get_gen_fb( decoder_type ) != (i == last_bit ? true : false) )
+		if ( !Dcc_reg.get_gen_fb( decoder_type ) != (i == last_bit ? true : false) )
 		{
 			trig_fail	=	true;
 		}
@@ -3015,14 +2994,7 @@ Dec_tst::quick_ames(
 	dcc_bits2.put_idle_pkt( 1 );
 	dcc_bits2.put_1s(1).done();
 
-	/*
-	 *	Note: This test is run 100 times to make sure there is less
-	 *	Than a 1% chance of not seeing at least 1 failure assuming the
-	 *	average pass rate is 95%.  100 tests gives a miss rate of .59%.
-	 *	This test fails if any of the 100 tests fails making it more
-	 *	stringent than the normal Ames test.
-	 */
-	for ( i = 0; i < 100; i++ )
+	for ( i = 0; i < PERCENT100; i++ )
 	{
 		pre_fail	=	false;
 		trig_fail	=	false;
@@ -4543,11 +4515,10 @@ Dec_tst::calc_filler(
 
 	if ( Dcc_reg.get_log_pkts() )
 	{
-#ifdef PKT_REP_DEBUG
 		DBGLOG(
 			"Dec_tst::calc_filler() fill_usec %10lu, clk0t %5u, clk1t %5u.",
 			fill_usec, clk0t, clk1t );
-#endif
+
 		DBGLOG(
 			"Dec_tst::calc_filler() Fill_Idle %3u, Cmd_one %3u, Cmd_two %3u.",
 			filler_idles, pkt_rep_cnt,
