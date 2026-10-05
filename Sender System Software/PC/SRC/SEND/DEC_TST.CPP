@@ -730,11 +730,11 @@ Dec_tst::decoder_test(
     }
 	STATPRINT(  "Beginning booster warm up." );
 	printf(		"Beginning booster warm up.\n" );
+	Dcc_reg.set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
 	if ( !Dcc_reg.get_running() )
 	{
 		Dcc_reg.start_clk();
 	}
-	Dcc_reg.set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
 	calc_filler( DECODER_0T_NOM, DECODER_1T_NOM );
 
  
@@ -2901,11 +2901,6 @@ Dec_tst::quick_ames(
 	int				i;			  			// Index variable.
 	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			pre_gen = 0;				// GEN input after preset sequence.
-	BYTE			trig_gen = 0;				// GEN input after trigger sequence.
-	bool			pre_fail_exp0;				// Preset fail if expected state is 0.
-	bool			pre_fail_exp1;				// Preset fail if expected state is 1.
-	bool			trans_fail;				// Trigger failed to transition from preset.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
 
@@ -3017,8 +3012,11 @@ Dec_tst::quick_ames(
 		{
 			Dcc_reg.send_pkt( dcc_bits, "Send preset for quick test." );
 		}
-
-		pre_fail = !Dcc_reg.get_gen_fb( Args.get_decoder_type() );
+		
+		if (!Dcc_reg.get_gen_fb( Args.get_decoder_type() ))
+		{
+			pre_fail	=	true;
+		}
 
 		/*
 		 * Send a scope trigger at start of trigger packet
@@ -3054,6 +3052,30 @@ Dec_tst::quick_ames(
 		if ( pre_fail || trig_fail )
 		{
 			++f_cnt;
+		}
+
+		if ( Dcc_reg.get_log_pkts() )
+		{
+			if ( swap_0_1 )
+			{
+				DBGLOG( "%s() cycle %d %s: preset %s, trigger %s; "
+						"0T %hu, 1H %hu, 1T %hu",
+					tst_name, i + 1,
+					( pre_fail || trig_fail ) ? "FAIL" : "PASS",
+					pre_fail ? "FAIL" : "PASS",
+					trig_fail ? "FAIL" : "PASS",
+					tclk1t, tclk0h, tclk0t );
+			}
+			else
+			{
+				DBGLOG( "%s() cycle %d %s: preset %s, trigger %s; "
+						"0T %hu, 0H %hu, 1T %hu",
+					tst_name, i + 1,
+					( pre_fail || trig_fail ) ? "FAIL" : "PASS",
+					pre_fail ? "FAIL" : "PASS",
+					trig_fail ? "FAIL" : "PASS",
+					tclk0t, tclk0h, tclk1t );
+			}
 		}
 
 		if ( get_test_break() )

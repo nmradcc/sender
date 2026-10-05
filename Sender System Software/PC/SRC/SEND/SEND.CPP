@@ -1525,10 +1525,6 @@ Key_val			init_key )					// Initial key value.
 
 		case KEY_DEC_TST:				// Run one or more decoder test cycles.
 			rep_type	=	SEND_DEC_TST;
-			if ( hw_is_running() != true )
-			{
-				hw_start_clk();
-			}
 			printf(
 				"Starting Decoder tests, type '<ESC> q' to stop tests\n" );
 			hw_clr_under();

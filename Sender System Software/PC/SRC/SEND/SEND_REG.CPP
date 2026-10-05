@@ -168,7 +168,7 @@ Send_reg::set_clk(
 			if ( m_log_pkts )
 			{
 				DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu.",
-					my_name, clk0t, clk0h, clk1t );
+					my_name, iclk0t, iclk0h, iclk1t );
 			}
 			return ( OK );
 		}
@@ -177,12 +177,6 @@ Send_reg::set_clk(
 			"MCU hardware interface not initialized" );
 		clk0t = clk0h = clk1t = DCC_CLK_ERR;
 		return ( FAIL );
-	}
-
-	if ( m_log_pkts )
-	{
-		DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu.",
-			my_name, clk0t, clk0h, clk1t );
 	}
 
 	if ( iclk0t != DCC_CLK_HOLD )
@@ -222,6 +216,12 @@ Send_reg::set_clk(
 		{
 			clk1t = iclk1t;
 		}
+	}
+
+	if ( m_log_pkts )
+	{
+		DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu.",
+			my_name, clk0t, clk0h, clk1t );
 	}
 
 	if ( !m_hw_if->set_timing( clk0t, clk0h, clk1t ) )
