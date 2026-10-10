@@ -66,8 +66,10 @@ enum
 	ID_BTN_SAVEAS,
 	ID_BTN_DEFAULTS,
 	ID_BTN_LAUNCH,
+	ID_BTN_MCU_TEST,
 
 	ID_STATIC_PATH,
+	ID_STATIC_MCU_STATUS,
 
 	ID_TAB,
 
@@ -203,6 +205,10 @@ static const char *g_logBitLabels[LOGBIT_COUNT] =
  *-------------------------------------------------------------------------*/
 static HWND	g_hMain;
 static char	g_cfgPath[MAX_PATH] = "";
+static HANDLE	g_mcuTestProcess = NULL;
+static HANDLE	g_mcuTestOutputRead = NULL;
+static std::string	g_mcuTestOutput;
+static const UINT_PTR MCU_TEST_TIMER_ID = 1;
 static std::vector<std::string>	g_origLines;	// Raw lines of the last loaded/saved cfg file, preserved across saves.
 static std::vector<HWND>	g_page0Ctrls;	// Controls shown on the "General" tab.
 static std::vector<HWND>	g_page1Ctrls;	// Controls shown on the "Test Mask Bits" tab.
@@ -1041,6 +1047,226 @@ LaunchSendExe( HWND hwnd )
 	}
 }
 
+static void
+ReadMcuSmokeTestOutput( void )
+{
+	if ( g_mcuTestOutputRead == NULL )
+	{
+		return;
+	}
+
+	DWORD bytesAvailable = 0;
+	if ( !PeekNamedPipe( g_mcuTestOutputRead, NULL, 0, NULL,
+		&bytesAvailable, NULL ) )
+	{
+		return;
+	}
+
+	while ( bytesAvailable > 0 )
+	{
+		char buffer[1024];
+		DWORD bytesRead = 0;
+		DWORD bytesToRead = bytesAvailable < sizeof( buffer )
+			? bytesAvailable : sizeof( buffer );
+		if ( !ReadFile( g_mcuTestOutputRead, buffer, bytesToRead,
+			&bytesRead, NULL ) || bytesRead == 0 )
+		{
+			break;
+		}
+
+		if ( g_mcuTestOutput.size() < 8192 )
+		{
+			size_t keep = 8192 - g_mcuTestOutput.size();
+			g_mcuTestOutput.append( buffer,
+				bytesRead < keep ? bytesRead : keep );
+		}
+
+		if ( !PeekNamedPipe( g_mcuTestOutputRead, NULL, 0, NULL,
+			&bytesAvailable, NULL ) )
+		{
+			break;
+		}
+	}
+}
+
+static std::string
+GetMcuFirmwareVersion( void )
+{
+	const char *versionLabel = "mcu fw version";
+	size_t labelPos = g_mcuTestOutput.find( versionLabel );
+	if ( labelPos == std::string::npos )
+	{
+		return "";
+	}
+
+	size_t versionStart = g_mcuTestOutput.find( ':', labelPos );
+	if ( versionStart == std::string::npos )
+	{
+		return "";
+	}
+	versionStart = g_mcuTestOutput.find_first_not_of( " \t",
+		versionStart + 1 );
+	if ( versionStart == std::string::npos )
+	{
+		return "";
+	}
+
+	size_t versionEnd = g_mcuTestOutput.find_first_of( " \r\n", versionStart );
+	return g_mcuTestOutput.substr( versionStart, versionEnd - versionStart );
+}
+
+static void
+FinishMcuSmokeTest( HWND hwnd, bool passed )
+{
+	if ( g_mcuTestProcess != NULL )
+	{
+		CloseHandle( g_mcuTestProcess );
+		g_mcuTestProcess = NULL;
+	}
+	if ( g_mcuTestOutputRead != NULL )
+	{
+		CloseHandle( g_mcuTestOutputRead );
+		g_mcuTestOutputRead = NULL;
+	}
+	KillTimer( hwnd, MCU_TEST_TIMER_ID );
+	EnableWindow( GetDlgItem( hwnd, ID_BTN_MCU_TEST ), TRUE );
+	if ( passed )
+	{
+		std::string version = GetMcuFirmwareVersion();
+		std::string status = "MCU test: PASS";
+		if ( version.empty() )
+		{
+			status += " - MCU version unavailable";
+		}
+		else
+		{
+			status += " - MCU ";
+			status += version;
+		}
+		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS, status.c_str() );
+	}
+	else
+	{
+		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS, "MCU test: FAIL" );
+	}
+	g_mcuTestOutput.clear();
+}
+
+static void
+LaunchMcuSmokeTest( HWND hwnd )
+{
+	if ( g_mcuTestProcess != NULL )
+	{
+		return;
+	}
+
+	char port[MAX_PATH];
+	GetDlgItemText( hwnd, ID_EDIT_MCU_PORT, port, sizeof( port ) );
+	std::string portName( port );
+	Trim( portName );
+	if ( portName.empty() || portName.find_first_of( "\"\r\n" ) != std::string::npos )
+	{
+		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS, "MCU test: FAIL (invalid port)" );
+		return;
+	}
+
+	char exePath[MAX_PATH];
+	DWORD pathLength = GetModuleFileName( NULL, exePath, MAX_PATH );
+	if ( pathLength == 0 || pathLength >= MAX_PATH )
+	{
+		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS, "MCU test: FAIL (cannot locate executable)" );
+		return;
+	}
+
+	char *slash = strrchr( exePath, '\\' );
+	if ( slash == NULL )
+	{
+		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS, "MCU test: FAIL (cannot locate executable)" );
+		return;
+	}
+	slash[1] = '\0';
+
+	std::string exeDir( exePath );
+	std::string smokeExe = exeDir + "mcu_smoke_test.exe";
+	if ( GetFileAttributes( smokeExe.c_str() ) == INVALID_FILE_ATTRIBUTES )
+	{
+		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS,
+			"MCU test: FAIL (mcu_smoke_test.exe not found)" );
+		return;
+	}
+
+	std::string commandLine = "\"" + smokeExe + "\" \"" + portName + "\"";
+	std::vector<char> mutableCommandLine( commandLine.begin(), commandLine.end() );
+	mutableCommandLine.push_back( '\0' );
+
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+	SECURITY_ATTRIBUTES pipeSecurity;
+	ZeroMemory( &pipeSecurity, sizeof( pipeSecurity ) );
+	pipeSecurity.nLength = sizeof( pipeSecurity );
+	pipeSecurity.bInheritHandle = TRUE;
+
+	HANDLE outputRead = NULL;
+	HANDLE outputWrite = NULL;
+	if ( !CreatePipe( &outputRead, &outputWrite, &pipeSecurity, 0 )
+		|| !SetHandleInformation( outputRead, HANDLE_FLAG_INHERIT, 0 ) )
+	{
+		if ( outputRead != NULL )
+		{
+			CloseHandle( outputRead );
+		}
+		if ( outputWrite != NULL )
+		{
+			CloseHandle( outputWrite );
+		}
+		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS,
+			"MCU test: FAIL (could not capture test output)" );
+		return;
+	}
+
+	ZeroMemory( &si, sizeof( si ) );
+	ZeroMemory( &pi, sizeof( pi ) );
+	si.cb = sizeof( si );
+	si.dwFlags = STARTF_USESTDHANDLES;
+	si.hStdInput = GetStdHandle( STD_INPUT_HANDLE );
+	si.hStdOutput = outputWrite;
+	si.hStdError = outputWrite;
+
+	if ( !CreateProcess( smokeExe.c_str(), mutableCommandLine.data(),
+		NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, exeDir.c_str(), &si, &pi ) )
+	{
+		CloseHandle( outputRead );
+		CloseHandle( outputWrite );
+		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS, "MCU test: FAIL (launch failed)" );
+		return;
+	}
+
+	CloseHandle( outputWrite );
+	CloseHandle( pi.hThread );
+	g_mcuTestProcess = pi.hProcess;
+	g_mcuTestOutputRead = outputRead;
+	g_mcuTestOutput.clear();
+	SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS, "MCU test: running..." );
+	EnableWindow( GetDlgItem( hwnd, ID_BTN_MCU_TEST ), FALSE );
+
+	if ( SetTimer( hwnd, MCU_TEST_TIMER_ID, 100, NULL ) == 0 )
+	{
+		ReadMcuSmokeTestOutput();
+		DWORD waitResult;
+		do
+		{
+			waitResult = WaitForSingleObject( g_mcuTestProcess, 50 );
+			ReadMcuSmokeTestOutput();
+		} while ( waitResult == WAIT_TIMEOUT );
+
+		DWORD exitCode = 1;
+		bool passed = waitResult == WAIT_OBJECT_0
+			&& GetExitCodeProcess( g_mcuTestProcess, &exitCode )
+			&& exitCode == 0;
+		FinishMcuSmokeTest( hwnd, passed );
+	}
+}
+
 /*---------------------------------------------------------------------------
  * Layout.
  *-------------------------------------------------------------------------*/
@@ -1335,6 +1561,8 @@ CreateControls( HWND hwnd )
 		MakeButton( hwnd, ID_BTN_LAUNCH, "Launch send.exe", 20, yLaunch, btnW + 40, 26 ) );
 	g_page0Ctrls.push_back(
 		MakeButton( hwnd, ID_BTN_DEFAULTS, "Reset All Defaults", 20 + btnW + 50, yLaunch, btnW + 40, 26 ) );
+	g_page0Ctrls.push_back(
+		MakeButton( hwnd, ID_BTN_MCU_TEST, "MCU test", 20 + 2 * (btnW + 50), yLaunch, btnW, 26 ) );
 
 	int yBtn = yLaunch + 36;
 	int xBtn = 20;
@@ -1345,6 +1573,8 @@ CreateControls( HWND hwnd )
 
 	CreateWindowEx( 0, "STATIC", "", WS_CHILD | WS_VISIBLE | SS_PATHELLIPSIS | SS_NOPREFIX,
 		20, yBtn + 30, 1020, 20, hwnd, (HMENU)(INT_PTR)ID_STATIC_PATH, NULL, NULL );
+	CreateWindowEx( 0, "STATIC", "MCU test: Not run", WS_CHILD | WS_VISIBLE | SS_NOPREFIX,
+		20, yBtn + 52, 1020, 20, hwnd, (HMENU)(INT_PTR)ID_STATIC_MCU_STATUS, NULL, NULL );
 
 	/* Start on the General page. */
 	for ( size_t i = 0; i < g_page1Ctrls.size(); i++ )
@@ -1485,6 +1715,10 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 
 				case ID_BTN_LAUNCH:
 					LaunchSendExe( hwnd );
+					return 0;
+
+				case ID_BTN_MCU_TEST:
+					LaunchMcuSmokeTest( hwnd );
 					return 0;
 
 				case ID_BTN_TESTBITS_ALL:
@@ -1644,7 +1878,38 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 			return 0;
 		}
 
+		case WM_TIMER:
+			if ( wParam == MCU_TEST_TIMER_ID && g_mcuTestProcess != NULL )
+			{
+				ReadMcuSmokeTestOutput();
+				DWORD waitResult = WaitForSingleObject( g_mcuTestProcess, 0 );
+				if ( waitResult == WAIT_OBJECT_0 )
+				{
+					DWORD exitCode = 1;
+					bool passed = GetExitCodeProcess( g_mcuTestProcess, &exitCode )
+						&& exitCode == 0;
+					FinishMcuSmokeTest( hwnd, passed );
+				}
+				else if ( waitResult == WAIT_FAILED )
+				{
+					FinishMcuSmokeTest( hwnd, false );
+				}
+				return 0;
+			}
+			break;
+
 		case WM_DESTROY:
+			KillTimer( hwnd, MCU_TEST_TIMER_ID );
+			if ( g_mcuTestProcess != NULL )
+			{
+				CloseHandle( g_mcuTestProcess );
+				g_mcuTestProcess = NULL;
+			}
+			if ( g_mcuTestOutputRead != NULL )
+			{
+				CloseHandle( g_mcuTestOutputRead );
+				g_mcuTestOutputRead = NULL;
+			}
 			PostQuitMessage( 0 );
 			return 0;
 	}
