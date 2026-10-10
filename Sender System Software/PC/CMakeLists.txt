@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 
 project(SenderV4System LANGUAGES C CXX)
 
+option(BUILD_TEST_TOOLS "Build and register unit test tools" OFF)
+
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -22,6 +24,26 @@ target_include_directories(nmra_lib PUBLIC ${INC_DIR})
 
 if (MSVC)
   target_compile_definitions(nmra_lib PRIVATE _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_WARNINGS)
+endif()
+
+if (BUILD_TEST_TOOLS)
+  enable_testing()
+
+  add_executable(bit_test
+    ${LIB_DIR}/BIT_TEST.CPP
+  )
+  target_link_libraries(bit_test PRIVATE nmra_lib)
+  add_test(NAME bit_test COMMAND bit_test)
+
+  add_executable(zlog_test
+    ${LIB_DIR}/ZLOG_TEST.CPP
+  )
+  target_link_libraries(zlog_test PRIVATE nmra_lib)
+  add_test(NAME zlog_test COMMAND zlog_test)
+
+  set_tests_properties(bit_test zlog_test PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  )
 endif()
 
 add_executable(send
@@ -60,4 +82,3 @@ if (WIN32)
     target_compile_definitions(sendgui PRIVATE _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_WARNINGS)
   endif()
 endif()
-

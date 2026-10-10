@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: ZLOG.H $
- * Path:                 $Logfile: /NMRA/INCLUDE/ZLOG.H $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 10 $
- * Last Modified on:     $Modtime: 9/12/23 5:34p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 9/12/23 6:10p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	zlog.h	-	Error and Logging routines.  These functions log status
@@ -23,7 +8,7 @@
  *****************************************************************************/
 
 #ifndef ZLOG_H_DECLARED
-#define ZLOG_H_DECLARED	"@(#) $Workfile: ZLOG.H $$ $Revision: 10 $$"
+#define ZLOG_H_DECLARED
 
 #include <stdarg.h>
 #include <ztypes.h>							// Define Rslt_t, etc.

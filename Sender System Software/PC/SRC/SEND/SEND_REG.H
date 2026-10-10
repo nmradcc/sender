@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: SEND_REG.H $
- * Path:                 $Logfile: /NMRA/SRC/SEND/SEND_REG.H $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 13 $
- * Last Modified on:     $Modtime: 9/14/23 4:03p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 9/14/23 4:12p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	send_reg.h	-	This file defines the Send_reg class which handles
@@ -23,7 +8,7 @@
  *****************************************************************************/
 
 #ifndef SEND_REG_H_DECLARED
-#define SEND_REG_H_DECLARED	"@(#) $Workfile: SEND_REG.H $$ $Revision: 13 $$"
+#define SEND_REG_H_DECLARED
 
 #include <zlog.h>
 #include <dcc.h>

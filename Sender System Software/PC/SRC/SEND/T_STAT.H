@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: T_STAT.H $
- * Path:                 $Logfile: /NMRA/SRC/SEND/T_STAT.H $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 2 $
- * Last Modified on:     $Modtime: 4/28/96 5:08p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 4/30/96 8:39p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	t_stat.h	-	This file defines extern interface to the
@@ -23,7 +8,7 @@
  *****************************************************************************/
 
 #ifndef T_STAT_H_DECLARED
-#define T_STAT_H_DECLARED	"@(#) $Workfile: T_STAT.H $$ $Revision: 2 $$"
+#define T_STAT_H_DECLARED
 
 #include <ztypes.h>
 

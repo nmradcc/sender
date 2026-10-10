@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: DEC_TST.H $
- * Path:                 $Logfile: /NMRA/SRC/SEND/DEC_TST.H $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 23 $
- * Last Modified on:     $Modtime: 8/14/23 2:42p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 8/16/23 3:40p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	dec_tst.h	-	Defines the Dec_tst class which performs the decoder
@@ -23,7 +8,7 @@
  *****************************************************************************/
 
 #ifndef DEC_TST_H_DECLARED
-#define DEC_TST_H_DECLARED	"@(#) $Workfile: DEC_TST.H $$ $Revision: 23 $$"
+#define DEC_TST_H_DECLARED
 
 #include "t_stat.h"
 #include "args.h"

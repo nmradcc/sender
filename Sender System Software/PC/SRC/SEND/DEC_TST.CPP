@@ -1275,7 +1275,7 @@ Dec_tst::decoder_ramp(
              *	decoders, and will show 100% failures if no decoder is
              *	connected.
 			 */
-			if ( speed >= SP_TEST_MIN && !(speed & 0x01) )
+			if ( speed >= SP_TEST_MIN && !fw && !(speed & 0x01) )
 			{
 				t_stat.incr_t_cnt();
 				tgen	=	Dcc_reg.get_gen();

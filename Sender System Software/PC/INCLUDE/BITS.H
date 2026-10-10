@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: BITS.H $
- * Path:                 $Logfile: /NMRA/INCLUDE/BITS.H $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 13 $
- * Last Modified on:     $Modtime: 8/06/23 3:00p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 8/06/23 4:11p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	bits.h	-	Bit array handling class.  This class stores and manipulates
@@ -23,7 +8,7 @@
  *****************************************************************************/
 
 #ifndef BITS_H_DECLARED
-#define BITS_H_DECLARED	"@(#) $Workfile: BITS.H $$ $Revision: 13 $$"
+#define BITS_H_DECLARED
 
 #include <z_core.h>							// Define Z_core class.
 #include <dcc.h>							// Fundamental DCC constants.

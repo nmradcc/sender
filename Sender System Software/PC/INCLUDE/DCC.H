@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: DCC.H $
- * Path:                 $Logfile: /NMRA/INCLUDE/DCC.H $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 16 $
- * Last Modified on:     $Modtime: 4/21/17 7:44p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 9/19/17 12:46p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	dcc.h	-	Fundamental DCC constants.
@@ -22,7 +7,7 @@
  *****************************************************************************/
 
 #ifndef DCC_H_DECLARED
-#define DCC_H_DECLARED	"@(#) $Workfile: DCC.H $$ $Revision: 16 $$"
+#define DCC_H_DECLARED
 
 #include <ztypes.h>
 
@@ -33,6 +18,8 @@
 
 /*
  *	Decoder time constants from 9.1 in microseconds.
+ *
+ *	All times are in microseconds unless otherwise noted.
  */
 const u_long	USEC_PER_SEC	= 1000000L;			// usecs. per sec.
 const u_int		MSEC_PER_SEC	= 1000;				// msecs. per sec.
