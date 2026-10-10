@@ -89,14 +89,15 @@ const BYTE	SDCC_STOP		= 0x00;			// Normal stop.
 
 Bits::Bits(
 	u_int			isize )					// Size of bytes array.
+: bytes( new BYTE[ isize ] ),
+  last_byte( bytes + isize - 1 ),
+  in_byte( bytes ),
+  in_bit( MAX_BIT_POS ),
+  out_byte( bytes ),
+  check_byte( CHECK_INIT ),
+  flip_byte( (BYTE *)0 ),
+  flip_bit( MAX_BIT_POS )
 {
-	if ( (bytes = new BYTE[ isize ]) == (BYTE *)0 )
-	{
-		SET_ERROR( CONSTRUCTOR_OBJ_ERR );
-	}
-
-	last_byte	=	&bytes[ isize - 1];
-
 	clr_in();
 
 }
