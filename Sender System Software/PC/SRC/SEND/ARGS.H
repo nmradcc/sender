@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: ARGS.H $
- * Path:                 $Logfile: /NMRA/SRC/SEND/ARGS.H $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 20 $
- * Last Modified on:     $Modtime: 10/03/23 2:08p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 1/08/24 4:23p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	args.h	-	Public defines for command line and cfg file
@@ -23,7 +8,7 @@
  *****************************************************************************/
 
 #ifndef ARGS_H_DECLARED
-#define ARGS_H_DECLARED	"@(#) $Workfile: ARGS.H $$ $Revision: 20 $$"
+#define ARGS_H_DECLARED
 
 #include "send.h"
 

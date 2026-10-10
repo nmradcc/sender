@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: CKSUM.H $
- * Path:                 $Logfile: /NMRA/INCLUDE/CKSUM.H $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 1 $
- * Last Modified on:     $Modtime: 1/26/04 10:19p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 2/01/04 6:19p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	cksum.h	-	Function to open a file and calculate its checksum.
@@ -22,7 +7,7 @@
  *****************************************************************************/
 
 #ifndef CKSUM_H_DECLARED
-#define CKSUM_H_DECLARED	"@(#) $Workfile: CKSUM.H $$ $Revision: 1 $$"
+#define CKSUM_H_DECLARED
 
 int
 nCheckSumFile(

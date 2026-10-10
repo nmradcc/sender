@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: Z_CORE.H $
- * Path:                 $Logfile: /NMRA/INCLUDE/Z_CORE.H $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 1 $
- * Last Modified on:     $Modtime: 4/21/96 1:11p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 4/21/96 1:19p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	z_core.h	-	Class description for Z_core.  This abstract
@@ -44,7 +29,7 @@
  *****************************************************************************/
 
 #ifndef Z_CORE_H_DECLARED
-#define Z_CORE_H_DECLARED	"@(#) $Workfile: Z_CORE.H $$ $Revision: 1 $$"
+#define Z_CORE_H_DECLARED
 
 #include <ztypes.h>
 

@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: SEND.H $
- * Path:                 $Logfile: /NMRA/SRC/SEND/SEND.H $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 54 $
- * Last Modified on:     $Modtime: 3/28/24 9:30p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 4/01/24 3:53p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	send.h	-	Public defines for main() Sender test program in send.cpp.
@@ -22,7 +7,7 @@
  *****************************************************************************/
 
 #ifndef SEND_H_DECLARED
-#define SEND_H_DECLARED	"@(#) $Workfile: SEND.H $$ $Revision: 54 $$"
+#define SEND_H_DECLARED
 
 #include <ztypes.h>
 

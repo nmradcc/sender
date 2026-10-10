@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: ZTYPES.H $
- * Path:                 $Logfile: /NMRA/INCLUDE/ZTYPES.H $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 8 $
- * Last Modified on:     $Modtime: 8/21/23 5:55p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 8/21/23 5:57p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *  ztypes.h    -   Declares core system constants and types.
@@ -22,7 +7,7 @@
  *****************************************************************************/
 
 #ifndef ZTYPES_H_DECLARED
-#define ZTYPES_H_DECLARED   "@(#) $Workfile: ZTYPES.H $$ $Revision: 8 $$"
+#define ZTYPES_H_DECLARED
 
 /*
  *  Enum for a result type returning 2 possible results.

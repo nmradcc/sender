@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: SR_CORE.H $
- * Path:                 $Logfile: /NMRA/SRC/SEND/SR_CORE.H $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 2 $
- * Last Modified on:     $Modtime: 8/27/00 1:04p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 8/31/00 7:57p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	sr_core	-	This file defines the Sr_core class which stores
@@ -24,7 +9,7 @@
  *****************************************************************************/
 
 #ifndef SR_CORE_H_DECLARED
-#define SR_CORE_H_DECLARED	"@(#) $Workfile: SR_CORE.H $$ $Revision: 2 $$"
+#define SR_CORE_H_DECLARED
 
 #include <z_core.h>
 
