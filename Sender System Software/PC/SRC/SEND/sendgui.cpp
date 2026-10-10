@@ -12,6 +12,7 @@
 #include <windows.h>
 #include <commdlg.h>
 #include <commctrl.h>
+#include "send.h"
 #include <string>
 #include <vector>
 #include <utility>
@@ -1674,7 +1675,12 @@ WinMain( HINSTANCE hInstance, HINSTANCE, LPSTR lpCmdLine, int nCmdShow )
 		return 1;
 	}
 
-	g_hMain = CreateWindowEx( 0, wc.lpszClassName, "Send Config Editor (sendgui)",
+	char windowTitle[128];
+	snprintf( windowTitle, sizeof( windowTitle ),
+		"Send Config Editor (sendgui) %c.%u.%u.%u",
+		Ver_rel, Ver_maj, Ver_min, Ver_bld );
+
+	g_hMain = CreateWindowEx( 0, wc.lpszClassName, windowTitle,
 		WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME,
 		CW_USEDEFAULT, CW_USEDEFAULT, 1060, 680,
 		NULL, NULL, hInstance, NULL );
