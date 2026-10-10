@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: BITS.CPP $
- * Path:                 $Logfile: /NMRA/LIB/BITS.CPP $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 15 $
- * Last Modified on:     $Modtime: 8/07/23 5:33p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 8/12/23 8:23p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	bits.cpp	-	Methods for Bits class.

@@ -1,23 +1,8 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: ZLOG.CPP $
- * Path:                 $Logfile: /NMRA/LIB/ZLOG.CPP $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 13 $
- * Last Modified on:     $Modtime: 9/12/23 5:34p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 9/12/23 6:09p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
- *	zlog.cc	-	Error and Logging routines.
+ *	zlog.cpp	-	Error and Logging routines.
  *
  *****************************************************************************/
  #include <zlog.h>
