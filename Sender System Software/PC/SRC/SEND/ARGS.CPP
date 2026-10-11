@@ -262,8 +262,8 @@ Args_obj::usage(
 		test_repeats );
 	fprintf( ofp,
 		"  -P <mask>  LOG        "
-		"0=none, 1=file, 2=command, 4=packet data <value 0x%02X>\n",
-		 LOG_MODE_MAX );
+		"Bit mask for logging                 <value 0x%02X>\n",
+		 log_mode );
 	fprintf( ofp,
 		"  -B    MCU_BYPASS_TST  "
 		"Skip MCU startup self tests          <value %s>\n",
