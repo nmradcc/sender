@@ -1065,6 +1065,13 @@ Args_obj::cfgscan( void )
 			}
 			targc		= 3;
 		}
+		else if ( 	!strcmpi( cmd, 	"LOG_PKTS" ) )
+		{
+			/* Legacy .ini key: log general, command and packet info */
+			targv[1]	= "-P";
+			targv[2]	= "7";
+			targc		= 3;
+		}
 		else if ( 	!strcmpi( cmd, 	"MCU_BYPASS_TST" ) )
 		{
 			targv[1]	= 	"-B";

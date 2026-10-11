@@ -616,6 +616,14 @@ LoadDefaults( void )
 	SyncBitsFromLog();
 }
 
+/* True for legacy .ini files, which have no LOG mask of their own. */
+static bool
+IsIniPath( const char *path )
+{
+	const char *dot = strrchr( path, '.' );
+	return dot != NULL && _stricmp( dot, ".ini" ) == 0;
+}
+
 /*---------------------------------------------------------------------------
  * Load/parse a SEND.CFG style file into the controls.
  *-------------------------------------------------------------------------*/
@@ -644,6 +652,7 @@ LoadCfgFile( const char *path )
 	fclose( fp );
 
 	LoadDefaults();
+	bool logPkts = false;
 
 	for ( size_t li = 0; li < g_origLines.size(); li++ )
 	{
@@ -672,6 +681,14 @@ LoadCfgFile( const char *path )
 		}
 
 		bool matchedFlag = false;
+		if ( _stricmp( key.c_str(), "LOG_PKTS" ) == 0 )
+		{
+			logPkts = val.empty() || ( _stricmp( val.c_str(), "0" ) != 0
+				&& _stricmp( val.c_str(), "false" ) != 0
+				&& _stricmp( val.c_str(), "off" ) != 0
+				&& _stricmp( val.c_str(), "no" ) != 0 );
+			continue;
+		}
 		for ( size_t i = 0; i < _countof( g_flagCtrls ); i++ )
 		{
 			if ( _stricmp( key.c_str(), g_flagCtrls[i].key ) == 0 )
@@ -761,6 +778,12 @@ LoadCfgFile( const char *path )
 		/* Unknown keys are silently ignored so newer cfg files still load. */
 	}
 
+	/* Legacy .ini files have no LOG mask; derive it from LOG_PKTS. */
+	if ( IsIniPath( path ) )
+	{
+		SetMaskUInt( ID_EDIT_LOG, ID_EDIT_LOG_GENERAL, logPkts ? 0x07 : 0x01 );
+	}
+
 	SyncBitsFromTests();
 	SyncBitsFromClocks();
 	SyncBitsFromFuncs();
@@ -847,7 +870,6 @@ SaveCfgFile( const char *path )
 	addFlag( "LOCO_FIRST", IsChecked( ID_CHK_LOCO_FIRST ) );
 	addField( "FILL_MSEC", GetEditText( ID_EDIT_FILL_MSEC ) );
 	addField( "TEST_REPS", GetEditText( ID_EDIT_TEST_REPS ) );
-	addFlag( "MCU_BYPASS_TST", IsChecked( ID_CHK_MCU_BYPASS_TST ) );
 	addFlag( "NO_ABORT", IsChecked( ID_CHK_NO_ABORT ) );
 	addFlag( "LATE_SCOPE", IsChecked( ID_CHK_LATE_SCOPE ) );
 	addFlag( "FRAGMENT", IsChecked( ID_CHK_FRAGMENT ) );
@@ -855,6 +877,7 @@ SaveCfgFile( const char *path )
 	addField( "ACC_PAIR", GetEditText( ID_EDIT_ACC_PAIR ) );
 	addFlag( "KICK_START", IsChecked( ID_CHK_KICK_START ) );
 	addField( "EXTRA_TRG", GetEditText( ID_EDIT_EXTRA_TRG ) );
+	addFlag( "MCU_BYPASS_TST", IsChecked( ID_CHK_MCU_BYPASS_TST ) );
 	addField( "MCU_PORT", GetEditText( ID_EDIT_MCU_PORT ) );
 	addField( "MCU_BAUD", GetEditText( ID_EDIT_MCU_BAUD ) );
 
@@ -964,7 +987,7 @@ BrowseSave( char *outPath, DWORD outSize )
 	ZeroMemory( &ofn, sizeof( ofn ) );
 	ofn.lStructSize     = sizeof( ofn );
 	ofn.hwndOwner       = g_hMain;
-	ofn.lpstrFilter     = "Config Files (*.cfg;*.ini)\0*.cfg;*.ini\0All Files\0*.*\0";
+	ofn.lpstrFilter     = "Config Files (*.cfg)\0*.cfg\0All Files\0*.*\0";
 	ofn.lpstrFile       = file;
 	ofn.nMaxFile        = sizeof( file );
 	ofn.lpstrDefExt     = "cfg";
