@@ -12,20 +12,11 @@ extern "C" {
 #define SHP_SOF_MCU  0x5Au
 #define SHP_VERSION  0x01u
 
-#ifndef SHP_MCU_FW_VERSION_MAJOR
-#define SHP_MCU_FW_VERSION_MAJOR 1u
-#endif
-
-#ifndef SHP_MCU_FW_VERSION_MINOR
-#define SHP_MCU_FW_VERSION_MINOR 0u
-#endif
-
-#ifndef SHP_MCU_FW_VERSION_PATCH
-#define SHP_MCU_FW_VERSION_PATCH 0u
-#endif
-
-#ifndef SHP_MCU_FW_VERSION_BUILD
-#define SHP_MCU_FW_VERSION_BUILD 0u
+/* The firmware version is defined once, in CMakeLists.txt, and passed in as
+ * compile definitions. */
+#if !defined(SHP_MCU_FW_VERSION_MAJOR) || !defined(SHP_MCU_FW_VERSION_MINOR) || \
+    !defined(SHP_MCU_FW_VERSION_PATCH) || !defined(SHP_MCU_FW_VERSION_BUILD)
+#error "SHP_MCU_FW_VERSION_* must be defined by CMakeLists.txt"
 #endif
 
 #define SHP_MCU_FW_VERSION_NUMBER                                        \

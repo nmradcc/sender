@@ -34,12 +34,18 @@ enum Dec_types
 };
 
 /*
- *	Version information.
+ *	Version information. The values are defined once, in CMakeLists.txt.
  */
-const Rel_levels	Ver_rel		= VER_BETA;		// Release level.
-const u_int			Ver_maj		=  7;			// Major version.
-const u_int			Ver_min		=  0;			// Minor version.
-const u_int			Ver_bld		=  0;			// Build version.
+#if !defined(PC_VER_REL) || !defined(PC_VER_MAJOR) || !defined(PC_VER_MINOR) \
+	|| !defined(PC_VER_PATCH) || !defined(PC_VER_BUILD)
+#error "PC_VER_* must be defined by CMakeLists.txt"
+#endif
+
+const Rel_levels	Ver_rel		= PC_VER_REL;	// Release level.
+const u_int			Ver_maj		= PC_VER_MAJOR;	// Major version.
+const u_int			Ver_min		= PC_VER_MINOR;	// Minor version.
+const u_int			Ver_pat		= PC_VER_PATCH;	// Patch version.
+const u_int			Ver_bld		= PC_VER_BUILD;	// Build version.
 
 /*
  *	Forward references.

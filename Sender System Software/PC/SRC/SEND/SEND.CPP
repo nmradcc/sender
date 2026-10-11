@@ -507,10 +507,10 @@ main(
 	 *	allowed; LOG only controls how much detail is recorded.
 	 */
 	Dcc_reg.set_no_hw_sim( true );
-	Dcc_reg.set_log_pkts( ( Args.get_log_mode() & LOG_COMMAND_BIT ) != 0 );
-	Dcc_reg.set_log_data( ( Args.get_log_mode() & LOG_PACKET_BIT ) != 0 );
-	Dcc_reg.set_log_io( ( Args.get_log_mode() & LOG_IO_BIT ) != 0 );
-	Dcc_reg.set_squelch_idle( ( Args.get_log_mode() & LOG_SQUELCH_IDLE_BIT ) != 0 );
+	Dcc_reg.set_log_pkts( ( Args.get_log_mask() & LOG_COMMAND_BIT ) != 0 );
+	Dcc_reg.set_log_data( ( Args.get_log_mask() & LOG_PACKET_BIT ) != 0 );
+	Dcc_reg.set_log_io( ( Args.get_log_mask() & LOG_IO_BIT ) != 0 );
+	Dcc_reg.set_squelch_idle( ( Args.get_log_mask() & LOG_SQUELCH_IDLE_BIT ) != 0 );
 	Dcc_reg.set_hw_if( use_hw_backend ? Lhw_if : NULL );
 
 	if ( Args.get_manual_flag() == true )	// Manual mode.
@@ -653,8 +653,8 @@ print_user_docs( void )
 	 *	Write user documentation summary to DOCS_FILE
 	 */
 	fprintf( fp,
-		"User documenation summary for test software version %c.%u.%u.%u\n\n",
-		Ver_rel, Ver_maj, Ver_min, Ver_bld );
+		"User documenation summary for test software version %c.%u.%u.%u.%u\n\n",
+		Ver_rel, Ver_maj, Ver_min, Ver_pat, Ver_bld );
 	fputs(
 		"Summary of command line and 'SEND.CFG' switches:\n\n",
 		fp );
@@ -721,8 +721,8 @@ get_log_file(
 		exit_send( 1 );
     }
 
-	printf(		"Test software version %c.%u.%u.%u\n",
-		Ver_rel, Ver_maj, Ver_min, Ver_bld );
+	printf(		"Test software version %c.%u.%u.%u.%u\n",
+		Ver_rel, Ver_maj, Ver_min, Ver_pat, Ver_bld );
     printf(		"File <%s>\n",
     	cmd_name );
     printf(		"CRC %lu, Length %lu\n",
@@ -740,7 +740,7 @@ get_log_file(
 		buf[ strlen( buf ) - 1 ] = '\0';
 	}
 
-	if ( ( Args.get_log_mode() & LOG_FILE_BIT ) != 0 )
+	if ( ( Args.get_log_mask() & LOG_FILE_BIT ) != 0 )
 	{
 		strcpy( fname, buf );
 		strcat( fname, ".log" );
@@ -762,8 +762,8 @@ get_log_file(
 	}
 
 	STATPRINT( "BEGINNING decoder test log" );
-	STATPRINT(	"Test software version %c.%u.%u.%u",
-		Ver_rel, Ver_maj, Ver_min, Ver_bld );
+	STATPRINT(	"Test software version %c.%u.%u.%u.%u",
+		Ver_rel, Ver_maj, Ver_min, Ver_pat, Ver_bld );
     STATPRINT(	"File <%s>",
     	cmd_name );
     STATPRINT(	"CRC %lu, Length %lu",
@@ -814,7 +814,7 @@ get_log_file(
 	TO_STAT( "--------------------------------\n\n" );
 
 	// Log summary of command line switches and .CFG file
-	if ( ( Args.get_log_mode() & LOG_FILE_BIT ) != 0 &&
+	if ( ( Args.get_log_mask() & LOG_FILE_BIT ) != 0 &&
 		 (fp = Deflog.get_fp_log()) != NULL )
 	{
     	fputs(

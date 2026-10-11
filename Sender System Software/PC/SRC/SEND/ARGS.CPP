@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: ARGS.CPP $
- * Path:                 $Logfile: /NMRA/SRC/SEND/ARGS.CPP $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 33 $
- * Last Modified on:     $Modtime: 10/03/23 2:30p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 1/08/24 4:23p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	args.cpp	-	This file contains the command line and cfg file argument
@@ -42,13 +27,13 @@ const u_int		MIN_TEST_REPS	= 1;					// Min test repeats.
 const u_int		MAX_TEST_REPS	= 1000;					// Max test repeats.
 const u_int		MIN_MCU_BAUD	= 9600;					// Min MCU baud rate.
 const u_int		MAX_MCU_BAUD	= 3000000;				// Max MCU baud rate.
-const u_int		DEF_LOG_MODE	= 1;					// Default LOG mode (1=enabled).
+const u_int		DEF_LOG_MASK	= 1;					// Default LOG mask (1=file logging).
 
 const BYTE		DEF_FUNC_MASK	=	0x1f;				// Function Mask.
 
 const Bits_t	DEF_RUN_MASK	=	(~0L) & 0x000FFFFFUL;	// Default run mask; bits 20-31 are reserved and kept clear.
 
-const Bits_t	DEF_CLK_MASK	=	(~0L & 0x0001FFFFUL)		// Default clock mask; bits 17-31 are reserved and kept clear.
+const Bits_t	DEF_CLK_MASK	=	(~0L & 0x0001FFFFUL)	// Default clock mask; bits 17-31 are reserved and kept clear.
 							  & ~0x00000008 		// No min + 2.
 							  & ~0x00000010 		// No min + 1.
 							  & ~0x00000100 		// No max - 2.
@@ -94,7 +79,7 @@ Args_obj::Args_obj( void )
 	fill_msec			= MSEC_PER_SEC;		// Use 1 second fill time.
 	test_repeats		= 2;				// Times to repeat misc. tests.
 	print_user			= false;			// Don't print user docs.
-	log_mode			= DEF_LOG_MODE;		// Logging enabled.
+	log_mask			= DEF_LOG_MASK;		// Logging enabled.
 	m_mcu_bypass_tst	= false;			// Run MCU self tests.
 	m_no_abort			= false;			// Stop on error.
 	m_late_scope		= false;			// Use normal scope trigger.
@@ -175,7 +160,7 @@ Args_obj::usage(
 		"                [-l] [-f] [-r] [-t mask] [-c mask] [-E pre]\n",
 		cmd_name );			
     fprintf( ofp,
-		"                [-T] [-F fill] [-R reps] [-P mask] [-A] [-s] [-S] [-g mask]\n"
+		"                [-T] [-F fill] [-R reps] [-A] [-s] [-S] [-g mask] [-P mask]\n"
 		"                [-o pair] [-k] [-e trg] [-J port]\n"
 		"                [-Y baud]\n\n" );
 
@@ -241,6 +226,10 @@ Args_obj::usage(
 		"Bit mask of active functions         <value 0x%02x>\n",
 		func_mask );
 	fprintf( ofp,
+		"  -P <mask>  LOG        "
+		"Bit mask for logging                 <value 0x%02X>\n",
+		 log_mask );
+	fprintf( ofp,
 		"  -E <pre>   EXTRA_PRE  "
 		"Extra margin test preamble bits      <value %u>\n",
 		extra_preamble );
@@ -260,10 +249,6 @@ Args_obj::usage(
 		"  -R <reps>  TEST_REPS  "
 		"Non packet acceptance test repeats   <value %u>\n",
 		test_repeats );
-	fprintf( ofp,
-		"  -P <mask>  LOG        "
-		"Bit mask for logging                 <value 0x%02X>\n",
-		 log_mode );
 	fprintf( ofp,
 		"  -B    MCU_BYPASS_TST  "
 		"Skip MCU startup self tests          <value %s>\n",
@@ -675,17 +660,17 @@ Args_obj::argscan(
 			{
 				++i;
 				t_u_int = (u_int)strtoul( argv[i], NULL, 0 );
-				if ( t_u_int > LOG_MODE_MAX )
+				if ( t_u_int > LOG_MASK_MAX )
 				{
-					fprintf( stderr, "ERROR: -P mask %u contains unsupported bits; use 0 through 7\n\n",
-						t_u_int );
+					fprintf( stderr, 					"ERROR: -P mask %u contains unsupported bits; use 0 through %u\n\n",
+											t_u_int, LOG_MASK_MAX );
 					return ( FAIL );
 				}
-				log_mode = t_u_int;
+				log_mask = t_u_int;
 			}
 			else
 			{
-				log_mode = 1;
+				log_mask = 1;
 			}
 		}
 		else if ( strcmp( argv[i], "-B" ) == 0 )	// Bypass MCU self tests.

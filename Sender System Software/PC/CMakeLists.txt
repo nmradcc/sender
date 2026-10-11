@@ -14,6 +14,32 @@ set(SEND_DIR ${SRC_DIR}/SRC/SEND)
 set(INC_DIR ${SRC_DIR}/INCLUDE)
 set(LIB_DIR ${SRC_DIR}/LIB)
 
+# PC software version. This is the single definition of the version; it is
+# passed to the compiler below and is required by SRC/SEND/SEND.H.
+# PREFIX is the release level: D-debug, X-experimental, B-beta, R-released.
+set(PC_VERSION_PREFIX B)
+set(PC_VERSION_MAJOR 7)
+set(PC_VERSION_MINOR 0)
+set(PC_VERSION_PATCH 0)
+set(PC_VERSION_BUILD 0)
+
+set(_pc_ver_rel_D DEB)
+set(_pc_ver_rel_X EXP)
+set(_pc_ver_rel_B BETA)
+set(_pc_ver_rel_R REL)
+if (NOT DEFINED _pc_ver_rel_${PC_VERSION_PREFIX})
+  message(FATAL_ERROR "PC_VERSION_PREFIX must be one of D, X, B or R (got '${PC_VERSION_PREFIX}')")
+endif()
+message("PC software version: ${PC_VERSION_PREFIX}.${PC_VERSION_MAJOR}.${PC_VERSION_MINOR}.${PC_VERSION_PATCH}.${PC_VERSION_BUILD}")
+
+add_compile_definitions(
+  PC_VER_REL=VER_${_pc_ver_rel_${PC_VERSION_PREFIX}}
+  PC_VER_MAJOR=${PC_VERSION_MAJOR}u
+  PC_VER_MINOR=${PC_VERSION_MINOR}u
+  PC_VER_PATCH=${PC_VERSION_PATCH}u
+  PC_VER_BUILD=${PC_VERSION_BUILD}u
+)
+
 add_library(nmra_lib
   ${LIB_DIR}/BITS.CPP
   ${LIB_DIR}/ZLOG.CPP

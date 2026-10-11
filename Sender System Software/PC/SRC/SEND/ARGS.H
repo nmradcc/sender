@@ -40,7 +40,7 @@ const int	MAXROOT				= MAXFILE + MAXEXT - 1;	// Max command size.
 const int	MAX_MCU_PORT		= 64;					// Max MCU port name size.
 const u_int	MAX_EXTRA_PREAMBLE	=  8;					// Max extra preamble bits.
 const u_int MAX_EXTRA_TRG       = 50;                   // Max extra trig pkts.
-const u_int LOG_MODE_MAX        = 0x1F;                 // Maximum LOG mask.
+const u_int LOG_MASK_MAX        = 0x1F;                 // Maximum LOG mask.
 const u_int LOG_FILE_BIT        = 0x01;                 // Write the log file.
 const u_int LOG_COMMAND_BIT     = 0x02;                 // Log command activity.
 const u_int LOG_PACKET_BIT      = 0x04;                 // Log packet data.
@@ -93,8 +93,8 @@ class Args_obj : public Z_core
 				{ return ( test_repeats ); }
 	bool	  	get_print_user( void ) const
 				{ return ( print_user ); }
-	u_int		get_log_mode( void ) const
-				{ return ( log_mode ); }
+	u_int		get_log_mask( void ) const
+				{ return ( log_mask ); }
 	bool	  		get_mcu_bypass_tst( void ) const
 				{ return ( m_mcu_bypass_tst ); }
 	bool	  	get_no_abort( void ) const
@@ -150,7 +150,7 @@ class Args_obj : public Z_core
 	u_int					fill_msec;			// Fill time (msec).
 	u_int					test_repeats;		// Number of times to do tests.
 	bool					print_user;			// If true, print user docs.
-	u_int					log_mode;			// LOG mode: 0..3.
+	u_int					log_mask;			// LOG mode: 0..3.
 	bool				    m_mcu_bypass_tst;	// If true, skip MCU self tests.
 	bool					m_no_abort;			// If true, no stop on error.
 	bool					m_late_scope;		// If true, use late scope.

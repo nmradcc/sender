@@ -54,9 +54,10 @@ static const char *release_level_name(Rel_levels level)
 static void dump_version_info(void)
 {
     printf("Version info:\n");
-    printf("  sender host version : %u.%u.%u (%c, %s)\n",
+    printf("  sender host version : %u.%u.%u.%u (%c, %s)\n",
            Ver_maj,
            Ver_min,
+           Ver_pat,
            Ver_bld,
            (char)Ver_rel,
            release_level_name(Ver_rel));

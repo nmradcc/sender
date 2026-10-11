@@ -1942,8 +1942,8 @@ WinMain( HINSTANCE hInstance, HINSTANCE, LPSTR lpCmdLine, int nCmdShow )
 
 	char windowTitle[128];
 	snprintf( windowTitle, sizeof( windowTitle ),
-		"Send Config Editor (sendgui) %c.%u.%u.%u",
-		Ver_rel, Ver_maj, Ver_min, Ver_bld );
+		"Send Config Editor (sendgui) %c.%u.%u.%u.%u",
+		Ver_rel, Ver_maj, Ver_min, Ver_pat, Ver_bld );
 
 	g_hMain = CreateWindowEx( 0, wc.lpszClassName, windowTitle,
 		WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME,
