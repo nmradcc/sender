@@ -1058,8 +1058,26 @@ LaunchSendExe( HWND hwnd )
 	ZeroMemory( &si, sizeof( si ) );
 	si.cb = sizeof( si );
 
+	/* Run in the cfg file's directory so the .log/.sum files land beside it. */
+	char workDir[MAX_PATH];
+	strncpy( workDir, g_cfgPath, sizeof( workDir ) - 1 );
+	workDir[sizeof( workDir ) - 1] = '\0';
+	char *cfgSlash = strrchr( workDir, '\\' );
+	if ( cfgSlash == NULL )
+	{
+		cfgSlash = strrchr( workDir, '/' );
+	}
+	if ( cfgSlash != NULL )
+	{
+		*cfgSlash = '\0';
+	}
+	else
+	{
+		strcpy( workDir, exeDir );
+	}
+
 	if ( CreateProcess( sendExe.c_str(), cmdLine, NULL, NULL, FALSE, 0,
-		NULL, exeDir, &si, &pi ) )
+		NULL, workDir, &si, &pi ) )
 	{
 		CloseHandle( pi.hThread );
 		CloseHandle( pi.hProcess );
