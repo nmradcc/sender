@@ -210,6 +210,7 @@ static HANDLE	g_mcuTestOutputRead = NULL;
 static std::string	g_mcuTestOutput;
 static const UINT_PTR MCU_TEST_TIMER_ID = 1;
 static std::vector<std::string>	g_origLines;	// Raw lines of the last loaded/saved cfg file, preserved across saves.
+static bool	g_iniSource = false;	// True when the last loaded file was an .ini; restricts Save As to .ini.
 static std::vector<HWND>	g_page0Ctrls;	// Controls shown on the "General" tab.
 static std::vector<HWND>	g_page1Ctrls;	// Controls shown on the "Test Mask Bits" tab.
 static std::vector<HWND>	g_page2Ctrls;	// Controls shown on the "Clock Mask Bits" tab.
@@ -639,6 +640,7 @@ LoadCfgFile( const char *path )
 	/* Keep the raw lines around so a later Save can patch just the changed
 	 * fields back into this file's original layout/comments. */
 	g_origLines.clear();
+	g_iniSource = IsIniPath( path );
 	char line[256];
 	while ( fgets( line, sizeof( line ), fp ) )
 	{
@@ -982,19 +984,32 @@ static bool
 BrowseSave( char *outPath, DWORD outSize )
 {
 	OPENFILENAME ofn;
-	char file[MAX_PATH] = "SEND.CFG";
+	char file[MAX_PATH];
+
+	/* An .ini source may only be saved as .ini; anything else only as .cfg. */
+	strcpy( file, g_iniSource ? "SEND.INI" : "SEND.CFG" );
 
 	ZeroMemory( &ofn, sizeof( ofn ) );
 	ofn.lStructSize     = sizeof( ofn );
 	ofn.hwndOwner       = g_hMain;
-	ofn.lpstrFilter     = "Config Files (*.cfg)\0*.cfg\0All Files\0*.*\0";
+	ofn.lpstrFilter     = g_iniSource
+		? "Ini Files (*.ini)\0*.ini\0"
+		: "Config Files (*.cfg)\0*.cfg\0All Files\0*.*\0";
 	ofn.lpstrFile       = file;
 	ofn.nMaxFile        = sizeof( file );
-	ofn.lpstrDefExt     = "cfg";
+	ofn.lpstrDefExt     = g_iniSource ? "ini" : "cfg";
 	ofn.Flags           = OFN_OVERWRITEPROMPT;
 
-	if ( GetSaveFileName( &ofn ) )
+	while ( GetSaveFileName( &ofn ) )
 	{
+		if ( IsIniPath( file ) != g_iniSource )
+		{
+			MessageBox( g_hMain, g_iniSource
+				? "A configuration read from an .ini file can only be saved as an .ini file."
+				: "Only a configuration read from an .ini file can be saved as an .ini file.",
+				"sendgui", MB_ICONWARNING );
+			continue;
+		}
 		strncpy( outPath, file, outSize - 1 );
 		outPath[outSize - 1] = '\0';
 		return true;
