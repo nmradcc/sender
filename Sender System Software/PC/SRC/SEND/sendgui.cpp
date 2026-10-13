@@ -1018,6 +1018,96 @@ BrowseSave( char *outPath, DWORD outSize )
 }
 
 /*---------------------------------------------------------------------------
+ * Migrate the current settings, read from an .ini file, to a .cfg file with
+ * the same base name (send.ini becomes migrated_send.cfg). The send.cfg in
+ * the program's home directory is the template; it is never overwritten.
+ *-------------------------------------------------------------------------*/
+static bool
+MigrateIniToCfg( HWND hwnd )
+{
+	std::string iniPath = g_cfgPath;
+	size_t slash = iniPath.find_last_of( "\\/" );
+	std::string dir = ( slash == std::string::npos ) ? "" : iniPath.substr( 0, slash + 1 );
+	std::string name = iniPath.substr( slash == std::string::npos ? 0 : slash + 1 );
+	name = name.substr( 0, name.size() - 4 );
+	if ( _stricmp( name.c_str(), "send" ) == 0 )
+	{
+		name = "migrated_send";
+	}
+	std::string cfgPath = dir + name + ".cfg";
+
+	/* The template is always the send.cfg beside sendgui.exe; it is only read. */
+	char exePath[MAX_PATH];
+	GetModuleFileName( NULL, exePath, MAX_PATH );
+	char *exeSlash = strrchr( exePath, '\\' );
+	if ( exeSlash != NULL )
+	{
+		exeSlash[1] = '\0';
+	}
+	else
+	{
+		exePath[0] = '\0';
+	}
+	std::string basePath = std::string( exePath ) + "send.cfg";
+
+	FILE *fp = fopen( basePath.c_str(), "r" );
+	if ( fp == NULL )
+	{
+		std::string msg = "Baseline file not found:\n" + basePath;
+		MessageBox( hwnd, msg.c_str(), "sendgui", MB_ICONERROR );
+		return false;
+	}
+	std::vector<std::string> baseline;
+	char line[256];
+	while ( fgets( line, sizeof( line ), fp ) )
+	{
+		std::string raw( line );
+		while ( !raw.empty() && ( raw.back() == '\n' || raw.back() == '\r' ) )
+		{
+			raw.pop_back();
+		}
+		baseline.push_back( raw );
+	}
+	fclose( fp );
+
+	if ( GetFileAttributes( cfgPath.c_str() ) != INVALID_FILE_ATTRIBUTES )
+	{
+		std::string msg = cfgPath + " already exists.\nOverwrite it?";
+		if ( MessageBox( hwnd, msg.c_str(), "sendgui",
+			MB_YESNO | MB_ICONQUESTION ) != IDYES )
+		{
+			return false;
+		}
+	}
+
+	std::vector<std::string> savedLines = g_origLines;
+	g_origLines = baseline;
+	if ( !SaveCfgFile( cfgPath.c_str() ) )
+	{
+		g_origLines = savedLines;
+		MessageBox( hwnd, "Failed to save the file.", "sendgui", MB_ICONERROR );
+		return false;
+	}
+
+	strncpy( g_cfgPath, cfgPath.c_str(), sizeof( g_cfgPath ) - 1 );
+	g_cfgPath[sizeof( g_cfgPath ) - 1] = '\0';
+	g_iniSource = false;
+	UpdatePathLabel();
+	return true;
+}
+
+/* Returns IDYES to save as .ini, IDNO to migrate to .cfg, else IDCANCEL. */
+static int
+AskIniSaveMode( HWND hwnd )
+{
+	return MessageBox( hwnd,
+		"This configuration was read from an .ini file.\n\n"
+		"Yes: save as the modified .ini file\n"
+		"No: migrate to a .cfg file with the same name",
+		"sendgui", MB_YESNOCANCEL | MB_ICONQUESTION );
+}
+
+/*---------------------------------------------------------------------------
  * Save the current settings (prompting for a path if needed) and launch
  * send.exe against them via the SEND_CFG environment variable, since send.exe
  * only auto-loads a literal "SEND.CFG" from its own directory otherwise.
@@ -1738,6 +1828,19 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 						PostMessage( hwnd, WM_COMMAND, ID_BTN_SAVEAS, 0 );
 						return 0;
 					}
+					if ( g_iniSource )
+					{
+						int mode = AskIniSaveMode( hwnd );
+						if ( mode == IDCANCEL )
+						{
+							return 0;
+						}
+						if ( mode == IDNO )
+						{
+							MigrateIniToCfg( hwnd );
+							return 0;
+						}
+					}
 					if ( !SaveCfgFile( g_cfgPath ) )
 					{
 						MessageBox( hwnd, "Failed to save the file.",
@@ -1749,6 +1852,19 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 				case ID_BTN_SAVEAS:
 				{
 					char path[MAX_PATH];
+					if ( g_iniSource && g_cfgPath[0] != '\0' )
+					{
+						int mode = AskIniSaveMode( hwnd );
+						if ( mode == IDCANCEL )
+						{
+							return 0;
+						}
+						if ( mode == IDNO )
+						{
+							MigrateIniToCfg( hwnd );
+							return 0;
+						}
+					}
 					if ( BrowseSave( path, sizeof( path ) ) )
 					{
 						if ( SaveCfgFile( path ) )
