@@ -28,6 +28,8 @@
 #include "sender_hw_if.h"
 
 #include <string.h>
+#include <chrono>
+#include <thread>
 
 /*
  * Baseline packet arrays.
@@ -53,7 +55,55 @@ Send_reg::get_gen( void ) const
 	{
 		BYTE gen1 = 0;
 		BYTE gen2 = 0;
-		if ( m_hw_if->get_gen_in( gen1, gen2 ) )
+
+		/*
+		 * The MCU queues bits well ahead of the track output (seconds for
+		 * long 0 clocks), so wait for the queue to drain before sampling
+		 * decoder feedback.  The status reply carries both queue_depth and
+		 * the input pins, so the final status read supplies the inputs.
+		 * After the queue empties, the last half period is still on the
+		 * track, so re-read once it has finished.
+		 */
+		bool				have_gen		= false;
+		{
+			const int			MAX_DRAIN_MS	= 15000;
+			const int			LAST_HP_MS		= 12;	// Longest half period.
+			Sender_hw_status	hw_status;
+			int					waited_ms		= 0;
+			bool				saw_queued		= false;
+
+			std::this_thread::sleep_for(
+				std::chrono::milliseconds( LAST_HP_MS ) );
+
+			while ( m_hw_if->get_status( hw_status ) )
+			{
+				if ( hw_status.queue_depth != 0 )
+				{
+					saw_queued = true;
+					if ( waited_ms++ >= MAX_DRAIN_MS )
+					{
+						break;
+					}
+					std::this_thread::sleep_for(
+						std::chrono::milliseconds( 1 ) );
+				}
+				else if ( saw_queued )
+				{
+					saw_queued = false;
+					std::this_thread::sleep_for(
+						std::chrono::milliseconds( LAST_HP_MS ) );
+				}
+				else
+				{
+					gen1		= hw_status.gen1;
+					gen2		= hw_status.gen2;
+					have_gen	= true;
+					break;
+				}
+			}
+		}
+
+		if ( have_gen || m_hw_if->get_gen_in( gen1, gen2 ) )
 		{
 			if ( m_log_io )
 			{

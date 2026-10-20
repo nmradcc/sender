@@ -89,7 +89,7 @@ enum
 	ID_BTN_FUNCBITS_DEFAULT,
 
 	ID_CHK_LOGBIT_BASE,
-	ID_BTN_LOGBITS_ALL = ID_CHK_LOGBIT_BASE + 5,
+	ID_BTN_LOGBITS_ALL = ID_CHK_LOGBIT_BASE + 6,
 	ID_BTN_LOGBITS_NONE,
 	ID_BTN_LOGBITS_DEFAULT
 };
@@ -189,7 +189,7 @@ static const char *g_funcBitLabels[FUNCBIT_COUNT] =
 	"FL",
 };
 
-static const int LOGBIT_COUNT = 5;
+static const int LOGBIT_COUNT = 6;
 
 static const char *g_logBitLabels[LOGBIT_COUNT] =
 {
@@ -198,6 +198,7 @@ static const char *g_logBitLabels[LOGBIT_COUNT] =
 	"Packet data logging",
 	"IO data logging",
 	"Squelch idle packets",
+	"Reduce pass count (5)",
 };
 
 /*---------------------------------------------------------------------------

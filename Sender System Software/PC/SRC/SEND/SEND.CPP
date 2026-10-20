@@ -740,6 +740,52 @@ get_log_file(
 		buf[ strlen( buf ) - 1 ] = '\0';
 	}
 
+	/*
+	 *	A blank answer or a bare directory (relative path with no file
+	 *	name) gets the cfg file's prefix as the file name, e.g.
+	 *	"lokSEND.CFG" gives "lok".
+	 */
+	{
+		size_t	len = strlen( buf );
+		bool	dir_only =
+			len == 0 ||
+			buf[ len - 1 ] == '\\' || buf[ len - 1 ] == '/' ||
+			strcmp( buf, "." ) == 0 || strcmp( buf, ".." ) == 0;
+
+		if ( dir_only )
+		{
+			char	cfg_name[ MAXLINE ] = "";
+			size_t	nlen;
+
+			_splitpath( Args.get_cfg_path(), NULL, NULL, cfg_name, NULL );
+			nlen = strlen( cfg_name );
+			if ( nlen >= 4 && _stricmp( cfg_name + nlen - 4, "SEND" ) == 0 )
+			{
+				cfg_name[ nlen - 4 ] = '\0';
+			}
+			if ( cfg_name[0] == '\0' )
+			{
+				strcpy( cfg_name, "SEND" );
+			}
+
+			if ( len > 0 && strcmp( buf, "." ) != 0 && strcmp( buf, ".." ) != 0 )
+			{
+				strncat( buf, cfg_name, MAXLINE - len - 1 );
+			}
+			else if ( len > 0 )
+			{
+				strncat( buf, "\\", MAXLINE - len - 1 );
+				strncat( buf, cfg_name, MAXLINE - strlen( buf ) - 1 );
+			}
+			else
+			{
+				strncpy( buf, cfg_name, MAXLINE - 1 );
+				buf[ MAXLINE - 1 ] = '\0';
+			}
+			printf( "Using log and statistics base name <%s>\n", buf );
+		}
+	}
+
 	if ( ( Args.get_log_mask() & LOG_FILE_BIT ) != 0 )
 	{
 		strcpy( fname, buf );

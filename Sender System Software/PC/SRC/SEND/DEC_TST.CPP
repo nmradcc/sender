@@ -19,8 +19,10 @@
 *	Than a 1% chance of not seeing at least 1 failure assuming the
 *	average pass rate is 95%.  100 tests gives a miss rate of .59%.
 */
-//TODO:shorter test!!const int       PERCENT100      = 3;              // 100 percent value.
-const int       PERCENT100      = 100;              // 100 percent value.
+const int       PERCENT100_FULL    = 100;           // Normal pass count.
+const int       PERCENT100_REDUCED = 5;             // Reduced pass count.
+static int      PERCENT100      = PERCENT100_FULL;  // 100 percent value;
+                                                    //   set from the LOG mask.
 
 const int		SP_TEST_MIN		= 14;				// Min. test speed.
 													// (Step 7 + light 14 step
@@ -699,6 +701,9 @@ Dec_tst::decoder_test(
 	const char		*func_msg;				// Function init message.
     int 			ver_rel_tmp = Ver_rel;	// Tmp to hold Ver_rel to get
     										//   around compiler warning.
+
+	PERCENT100	=	( Args.get_log_mask() & LOG_REDUCE_PASS_BIT ) != 0
+					? PERCENT100_REDUCED : PERCENT100_FULL;
 
 	if ( fsoc.get_obj_errs() )
 	{
