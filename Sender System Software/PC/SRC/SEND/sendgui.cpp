@@ -60,6 +60,7 @@ enum
 	ID_CHK_SAME_AMBIG_ADDR,
 	ID_CHK_KICK_START,
 	ID_CHK_MCU_BYPASS_TST,
+	ID_CHK_REDUCE_PASSCNT,
 
 	ID_BTN_LOAD,
 	ID_BTN_SAVE,
@@ -89,7 +90,7 @@ enum
 	ID_BTN_FUNCBITS_DEFAULT,
 
 	ID_CHK_LOGBIT_BASE,
-	ID_BTN_LOGBITS_ALL = ID_CHK_LOGBIT_BASE + 6,
+	ID_BTN_LOGBITS_ALL = ID_CHK_LOGBIT_BASE + 5,
 	ID_BTN_LOGBITS_NONE,
 	ID_BTN_LOGBITS_DEFAULT
 };
@@ -189,7 +190,7 @@ static const char *g_funcBitLabels[FUNCBIT_COUNT] =
 	"FL",
 };
 
-static const int LOGBIT_COUNT = 6;
+static const int LOGBIT_COUNT = 5;
 
 static const char *g_logBitLabels[LOGBIT_COUNT] =
 {
@@ -198,7 +199,6 @@ static const char *g_logBitLabels[LOGBIT_COUNT] =
 	"Packet data logging",
 	"IO data logging",
 	"Squelch idle packets",
-	"Reduce pass count (5)",
 };
 
 /*---------------------------------------------------------------------------
@@ -237,6 +237,7 @@ static const FlagCtrl g_flagCtrls[] =
 	{ ID_CHK_SAME_AMBIG_ADDR, "SAME_AMBIG_ADDR" },
 	{ ID_CHK_KICK_START,      "KICK_START" },
 	{ ID_CHK_MCU_BYPASS_TST,  "MCU_BYPASS_TST" },
+	{ ID_CHK_REDUCE_PASSCNT,  "REDUCE_PASSCNT" },
 };
 
 /*---------------------------------------------------------------------------
@@ -881,6 +882,7 @@ SaveCfgFile( const char *path )
 	addFlag( "KICK_START", IsChecked( ID_CHK_KICK_START ) );
 	addField( "EXTRA_TRG", GetEditText( ID_EDIT_EXTRA_TRG ) );
 	addFlag( "MCU_BYPASS_TST", IsChecked( ID_CHK_MCU_BYPASS_TST ) );
+	addFlag( "REDUCE_PASSCNT", IsChecked( ID_CHK_REDUCE_PASSCNT ) );
 	addField( "MCU_PORT", GetEditText( ID_EDIT_MCU_PORT ) );
 	addField( "MCU_BAUD", GetEditText( ID_EDIT_MCU_BAUD ) );
 
@@ -1555,6 +1557,7 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_SAME_AMBIG_ADDR, "SAME_AMBIG_ADDR - Same addr for ambig.", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_KICK_START, "KICK_START - Kick start motor", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MCU_BYPASS_TST, "MCU_BYPASS_TST - Skip MCU self test", xChk, yChk, chkW, 20 ) ); yChk += rowH;
+	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REDUCE_PASSCNT, "REDUCE_PASSCNT - Reduce pass count [5]", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 
 	/* Lowest content bottom seen so far, used to place the shared button bar
 	 * below every page instead of just the General page. */

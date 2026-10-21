@@ -702,7 +702,7 @@ Dec_tst::decoder_test(
     int 			ver_rel_tmp = Ver_rel;	// Tmp to hold Ver_rel to get
     										//   around compiler warning.
 
-	PERCENT100	=	( Args.get_log_mask() & LOG_REDUCE_PASS_BIT ) != 0
+	PERCENT100	=		Args.get_reduce_passcnt()
 					? PERCENT100_REDUCED : PERCENT100_FULL;
 
 	if ( fsoc.get_obj_errs() )

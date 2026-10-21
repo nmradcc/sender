@@ -81,6 +81,7 @@ Args_obj::Args_obj( void )
 	print_user			= false;			// Don't print user docs.
 	log_mask			= DEF_LOG_MASK;		// Logging enabled.
 	m_mcu_bypass_tst	= false;			// Run MCU self tests.
+	m_reduce_passcnt	= false;			// Full pass count.
 	m_no_abort			= false;			// Stop on error.
 	m_late_scope		= false;			// Use normal scope trigger.
 	m_ambig_addr_same  	= false;			// Use different address.
@@ -156,13 +157,12 @@ Args_obj::usage(
 	FILE		 *ofp )						// Output FILE stream.
 {
 	fprintf( ofp,
-		"Usage: %8s [-?] [-u] [-m] [-a addr] [-d l|f|a|s] [-n pre] [-N trig]\n"
-		"                [-l] [-f] [-r] [-t mask] [-c mask] [-E pre]\n",
+		"Usage: %8s [-?] [-u] [-m] [-a addr] [-d l|f|a|s] [-l] [-n pre] [-N trig]\n"
+		"                [-r] [-t test mask] [-c clock mask] [-g function mask] [-P log mask] [-E pre]\n",
 		cmd_name );			
     fprintf( ofp,
-		"                [-T] [-F fill] [-R reps] [-A] [-s] [-S] [-g mask] [-P mask]\n"
-		"                [-o pair] [-k] [-e trg] [-J port]\n"
-		"                [-Y baud]\n\n" );
+		"                [-T] [-L] [-F fill] [-R reps] [-A] [-s] [-f] [-S]\n"
+		"                [-o pair] [-k] [-e trg] [-B] [-Q] [-J port] [-Y baud]\n\n" );
 
 	if ( cfg_path[0] != '\0' )
 	{
@@ -170,11 +170,9 @@ Args_obj::usage(
 	}
 	
 	fprintf( ofp,
-		"  -?                    Print usage message and exit\n",
-		manual_flag		? "true" : "false" );
+		"  -?                    Print usage message and exit\n" );
 	fprintf( ofp,
-		"  -u                    Print user information to 's_user.txt' and exit\n",
-		manual_flag		? "true" : "false" );
+		"  -u                    Print user information to 's_user.txt' and exit\n" );
 	fprintf( ofp,
 		"  -m         MANUAL     Start in manual mode                 <value %s>\n",
 		manual_flag		? "true" : "false" );
@@ -206,11 +204,7 @@ Args_obj::usage(
 		"Signal decoder trigger aspect        <value %u>\n",
 		aspect_trigger );
 	fprintf( ofp,
-		"  -f         FRAGMENT   "
-		"Test all fragments                   <value %s>\n",
-		fragment_flag		? "true" : "false" );
-	fprintf( ofp,
-		"  -r         REPEAT     "
+		"  -r         REPEAT      "
 		"Repeat decoder tests                 <value %s>\n",
 		rep_flag		? "true" : "false" );
 	fprintf( ofp,
@@ -250,10 +244,6 @@ Args_obj::usage(
 		"Non packet acceptance test repeats   <value %u>\n",
 		test_repeats );
 	fprintf( ofp,
-		"  -B    MCU_BYPASS_TST  "
-		"Skip MCU startup self tests          <value %s>\n",
-		m_mcu_bypass_tst	? "true" : "false" );
-	fprintf( ofp,
 		"  -A         NO_ABORT   "
 		"Do not stop program on an error      <value %s>\n",
 		m_no_abort		? "true" : "false" );
@@ -261,6 +251,10 @@ Args_obj::usage(
 		"  -s         LATE_SCOPE "
 		"Put scope trigger after trigger      <value %s>\n",
 		m_late_scope   	? "true" : "false" );
+	fprintf( ofp,
+		"  -f         FRAGMENT   "
+		"Test all fragments                   <value %s>\n",
+		fragment_flag		? "true" : "false" );
 	fprintf( ofp,
 		"  -S    SAME_AMBIG_ADDR "
 		"Use same address for ambig tests     <value %s>\n",
@@ -279,6 +273,14 @@ Args_obj::usage(
 		"  -e <trg>   EXTRA_TRG  "
 		"Extra Ames test trigger packets      <value %u>\n",
 		extra_trg );
+	fprintf( ofp,
+		"  -B    MCU_BYPASS_TST  "
+		"Skip MCU startup self tests          <value %s>\n",
+		m_mcu_bypass_tst	? "true" : "false" );
+	fprintf( ofp,
+		"  -Q    REDUCE_PASSCNT  "
+		"Reduce pass count (5 instead of 100) <value %s>\n",
+		m_reduce_passcnt	? "true" : "false" );
 	fprintf( ofp,
 		"  -J <port>  MCU_PORT   "
 		"MCU serial port name                 <value %s>\n",
@@ -676,6 +678,10 @@ Args_obj::argscan(
 		else if ( strcmp( argv[i], "-B" ) == 0 )	// Bypass MCU self tests.
 		{
 			m_mcu_bypass_tst	= 	m_mcu_bypass_tst ? false  : true;
+		}
+		else if ( strcmp( argv[i], "-Q" ) == 0 )	// Reduce pass count.
+		{
+			m_reduce_passcnt	= 	m_reduce_passcnt ? false  : true;
 		}
 		else if ( strcmp( argv[i], "-A" ) == 0 )	// No abort flag.
 		{
@@ -1075,6 +1081,11 @@ Args_obj::cfgscan( void )
 		else if ( 	!strcmpi( cmd, 	"MCU_BYPASS_TST" ) )
 		{
 			targv[1]	= 	"-B";
+			targc		= 	2;
+		}
+		else if ( 	!strcmpi( cmd, 	"REDUCE_PASSCNT" ) )
+		{
+			targv[1]	= 	"-Q";
 			targc		= 	2;
 		}
 		else if ( 	!strcmpi( cmd,	"NO_ABORT" ) )
