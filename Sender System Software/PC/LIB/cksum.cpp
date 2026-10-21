@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: cksum.cpp $
- * Path:                 $Logfile: /NMRA/LIB/cksum.cpp $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 4 $
- * Last Modified on:     $Modtime: 7/24/19 9:22p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 7/24/19 9:26p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	cksum.cpp	-	Calculate POSIX checksum a file.
