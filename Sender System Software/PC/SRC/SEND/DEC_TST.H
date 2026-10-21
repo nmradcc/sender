@@ -150,6 +150,11 @@ class Dec_tst : public Z_core
 								u_short iclk0t, u_short iclk0h );
 	void	calc_filler( u_short clk0t, u_short clk1t );
 	Rslt_t	send_filler( void );
+	void	print_summary( const char *name, bool flagged = false );
+	void	put_preset_pkt( Bits &bits, u_short addr, int pre_cnt,
+							bool sig_ok = false );
+	void	put_trigger_pkt( Bits &bits, u_short addr, int pre_cnt,
+							bool sig_ok = false );
 	const char	*err_phrase(
 		bool pre_fail, bool trig_fail, bool rst_fail = false );
 	const char	*min_phrase( u_short t_min, u_short out_of_range );

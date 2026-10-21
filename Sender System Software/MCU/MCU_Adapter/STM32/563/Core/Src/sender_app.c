@@ -44,7 +44,6 @@ static void sender_app_handle_request(const sender_request_t* req,
         req->cmd != SHP_CMD_SET_TIMING &&
         req->cmd != SHP_CMD_START_CLK &&
         req->cmd != SHP_CMD_STOP_CLK &&
-        req->cmd != SHP_CMD_CLR_UNDERFLOW &&
         req->cmd != SHP_CMD_SET_SCOPE &&
         req->cmd != SHP_CMD_SEND_BYTES &&
         req->cmd != SHP_CMD_SEND_STRETCHED_BYTE &&
@@ -103,10 +102,6 @@ static void sender_app_handle_request(const sender_request_t* req,
 
         case SHP_CMD_STOP_CLK:
             rsp->status = sender_engine_stop(&g_engine);
-            break;
-
-        case SHP_CMD_CLR_UNDERFLOW:
-            rsp->status = sender_engine_clear_underflow(&g_engine);
             break;
 
         case SHP_CMD_SET_SCOPE:
@@ -320,11 +315,7 @@ static void sender_app_handle_request(const sender_request_t* req,
             rsp->payload[5] = (uint8_t)((stats.bytes_sent >> 8) & 0xFFu);
             rsp->payload[6] = (uint8_t)((stats.bytes_sent >> 16) & 0xFFu);
             rsp->payload[7] = (uint8_t)((stats.bytes_sent >> 24) & 0xFFu);
-            rsp->payload[8] = (uint8_t)(stats.underruns & 0xFFu);
-            rsp->payload[9] = (uint8_t)((stats.underruns >> 8) & 0xFFu);
-            rsp->payload[10] = (uint8_t)((stats.underruns >> 16) & 0xFFu);
-            rsp->payload[11] = (uint8_t)((stats.underruns >> 24) & 0xFFu);
-            rsp->payload_len = 12;
+            rsp->payload_len = 8;
             break;
 
         case SHP_CMD_RESET_STATS:

@@ -31,7 +31,6 @@ enum shp_cmd
     SHP_CMD_SET_TIMING = 0x02,
     SHP_CMD_START_CLK = 0x03,
     SHP_CMD_STOP_CLK = 0x04,
-    SHP_CMD_CLR_UNDERFLOW = 0x05,
     SHP_CMD_SET_SCOPE = 0x06,
 
     SHP_CMD_SEND_BYTES = 0x10,
@@ -93,7 +92,6 @@ typedef struct sender_stats_payload
 {
     uint32_t packets_sent;
     uint32_t bytes_sent;
-    uint32_t underruns;
 } sender_stats_payload_t;
 
 uint16_t sender_proto_crc16_ccitt(const uint8_t* data, uint16_t size);

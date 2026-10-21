@@ -82,54 +82,54 @@ const int		STRETCH_BITS	= BITS_IN_BYTE - (PRE_BITS % BITS_IN_BYTE);
 /*
  *	Byte and packet rates per second.
  */
-const u_int		ZERO_SEC_MIN	= (u_int)  		// 0 bytes per sec @ MIN.
-			((USEC_PER_SEC)/((u_long)DECODER_0T_MIN * (u_long)BITS_IN_BYTE));
-const u_int		ZERO_SEC_NOM	=	(u_int)		// 0 bytes per sec @ NOM.
-			((USEC_PER_SEC)/((u_long)DECODER_0T_NOM * (u_long)BITS_IN_BYTE));
-const u_int		ZERO_SEC_MAX	=	(u_int)		// 0 bytes per sec @ MAX.
-			((USEC_PER_SEC)/((u_long)DECODER_0T_MAX * (u_long)BITS_IN_BYTE));
-const u_int		ONE_SEC_MIN		=	(u_int)		// 1 bytes per sec @ MIN.
-			((USEC_PER_SEC)/((u_long)DECODER_1T_MIN * (u_long)BITS_IN_BYTE));
-const u_int		ONE_SEC_NOM		=	(u_int)		// 1 bytes per sec @ NOM.
-			((USEC_PER_SEC)/((u_long)DECODER_1T_NOM * (u_long)BITS_IN_BYTE));
-const u_int		ONE_SEC_MAX		=	(u_int)		// 1 bytes per sec @ MAX.
-			((USEC_PER_SEC)/((u_long)DECODER_1T_MAX * (u_long)BITS_IN_BYTE));
-const u_int		AVG_SEC_MIN		=	(u_int)		// Avg bytes per sec @ MIN.
-			((USEC_PER_SEC)/((u_long)DECODER_AVG_MIN * (u_long)BITS_IN_BYTE));
-const u_int		AVG_SEC_NOM		=	(u_int)		// Avg bytes per sec @ NOM.
-			((USEC_PER_SEC)/((u_long)DECODER_AVG_NOM * (u_long)BITS_IN_BYTE));
-const u_int		AVG_SEC_MAX		=	(u_int)		// Avg bytes per sec @ MAX.
-			((USEC_PER_SEC)/((u_long)DECODER_AVG_MAX * (u_long)BITS_IN_BYTE));
-const u_int		BASE_SEC_MIN	=	(u_int)		// Avg pkts per sec @ MIN.
-			((USEC_PER_SEC)/((u_long)DECODER_AVG_MIN * (u_long)BASE_BITS));
-const u_int		BASE_SEC_NOM	=	(u_int)		// Avg pkts per sec @ NOM.
-			((USEC_PER_SEC)/((u_long)DECODER_AVG_NOM * (u_long)BASE_BITS));
-const u_int		BASE_SEC_MAX	=	(u_int)		// Avg pkts per sec @ MAX.
-			((USEC_PER_SEC)/((u_long)DECODER_AVG_MAX * (u_long)BASE_BITS));
-const u_int		RESET_SEC_MIN	=	(u_int)		// Reset pkts per sec @ MIN.
-			((USEC_PER_SEC)/
-			((u_long)DECODER_0T_MIN*(u_long)RESET_0S
-			+ (u_long)DECODER_1T_MIN*(u_long)RESET_1S));
-const u_int		RESET_SEC_NOM	=	(u_int)		// Reset pkts per sec @ NOM.
-			((USEC_PER_SEC)/
-			((u_long)DECODER_0T_NOM*(u_long)RESET_0S
-			+ (u_long)DECODER_1T_NOM*(u_long)RESET_1S));
-const u_int		RESET_SEC_MAX	=	(u_int)		// Reset pkts per sec @ MAX.
-			((USEC_PER_SEC)/
-			((u_long)DECODER_0T_MAX*(u_long)RESET_0S
-			+ (u_long)DECODER_1T_MAX*(u_long)RESET_1S));
-const u_int		IDLE_SEC_MIN	=	(u_int)		// Idle pkts per sec @ MIN.
-			((USEC_PER_SEC)/
-			((u_long)DECODER_0T_MIN*(u_long)IDLE_0S
-			+ (u_long)DECODER_1T_MIN*(u_long)IDLE_1S));
-const u_int		IDLE_SEC_NOM	=	(u_int)		// Idle pkts per sec @ NOM.
-			((USEC_PER_SEC)/
-			((u_long)DECODER_0T_NOM*(u_long)IDLE_0S
-			+ (u_long)DECODER_1T_NOM*(u_long)IDLE_1S));
-const u_int		IDLE_SEC_MAX	=	(u_int)		// Idle pkts per sec @ MAX.
-			((USEC_PER_SEC)/
-			((u_long)DECODER_0T_MAX*(u_long)IDLE_0S
-			+ (u_long)DECODER_1T_MAX*(u_long)IDLE_1S));
+const u_int		ZERO_SEC_MIN	=	static_cast<u_int>(		// 0 bytes per sec @ MIN.
+			(USEC_PER_SEC)/(static_cast<u_long>(DECODER_0T_MIN) * static_cast<u_long>(BITS_IN_BYTE)));
+const u_int		ZERO_SEC_NOM	=	static_cast<u_int>(		// 0 bytes per sec @ NOM.
+			(USEC_PER_SEC)/(static_cast<u_long>(DECODER_0T_NOM) * static_cast<u_long>(BITS_IN_BYTE)));
+const u_int		ZERO_SEC_MAX	=	static_cast<u_int>(		// 0 bytes per sec @ MAX.
+			(USEC_PER_SEC)/(static_cast<u_long>(DECODER_0T_MAX) * static_cast<u_long>(BITS_IN_BYTE)));
+const u_int		ONE_SEC_MIN		=	static_cast<u_int>(		// 1 bytes per sec @ MIN.
+			(USEC_PER_SEC)/(static_cast<u_long>(DECODER_1T_MIN) * static_cast<u_long>(BITS_IN_BYTE)));
+const u_int		ONE_SEC_NOM		=	static_cast<u_int>(		// 1 bytes per sec @ NOM.
+			(USEC_PER_SEC)/(static_cast<u_long>(DECODER_1T_NOM) * static_cast<u_long>(BITS_IN_BYTE)));
+const u_int		ONE_SEC_MAX		=	static_cast<u_int>(		// 1 bytes per sec @ MAX.
+			(USEC_PER_SEC)/(static_cast<u_long>(DECODER_1T_MAX) * static_cast<u_long>(BITS_IN_BYTE)));
+const u_int		AVG_SEC_MIN		=	static_cast<u_int>(		// Avg bytes per sec @ MIN.
+			(USEC_PER_SEC)/(static_cast<u_long>(DECODER_AVG_MIN) * static_cast<u_long>(BITS_IN_BYTE)));
+const u_int		AVG_SEC_NOM		=	static_cast<u_int>(		// Avg bytes per sec @ NOM.
+			(USEC_PER_SEC)/(static_cast<u_long>(DECODER_AVG_NOM) * static_cast<u_long>(BITS_IN_BYTE)));
+const u_int		AVG_SEC_MAX		=	static_cast<u_int>(		// Avg bytes per sec @ MAX.
+			(USEC_PER_SEC)/(static_cast<u_long>(DECODER_AVG_MAX) * static_cast<u_long>(BITS_IN_BYTE)));
+const u_int		BASE_SEC_MIN	=	static_cast<u_int>(		// Avg pkts per sec @ MIN.
+			(USEC_PER_SEC)/(static_cast<u_long>(DECODER_AVG_MIN) * static_cast<u_long>(BASE_BITS)));
+const u_int		BASE_SEC_NOM	=	static_cast<u_int>(		// Avg pkts per sec @ NOM.
+			(USEC_PER_SEC)/(static_cast<u_long>(DECODER_AVG_NOM) * static_cast<u_long>(BASE_BITS)));
+const u_int		BASE_SEC_MAX	=	static_cast<u_int>(		// Avg pkts per sec @ MAX.
+			(USEC_PER_SEC)/(static_cast<u_long>(DECODER_AVG_MAX) * static_cast<u_long>(BASE_BITS)));
+const u_int		RESET_SEC_MIN	=	static_cast<u_int>(		// Reset pkts per sec @ MIN.
+			(USEC_PER_SEC)/
+			(static_cast<u_long>(DECODER_0T_MIN)*static_cast<u_long>(RESET_0S)
+			+ static_cast<u_long>(DECODER_1T_MIN)*static_cast<u_long>(RESET_1S)));
+const u_int		RESET_SEC_NOM	=	static_cast<u_int>(		// Reset pkts per sec @ NOM.
+			(USEC_PER_SEC)/
+			(static_cast<u_long>(DECODER_0T_NOM)*static_cast<u_long>(RESET_0S)
+			+ static_cast<u_long>(DECODER_1T_NOM)*static_cast<u_long>(RESET_1S)));
+const u_int		RESET_SEC_MAX	=	static_cast<u_int>(		// Reset pkts per sec @ MAX.
+			(USEC_PER_SEC)/
+			(static_cast<u_long>(DECODER_0T_MAX)*static_cast<u_long>(RESET_0S)
+			+ static_cast<u_long>(DECODER_1T_MAX)*static_cast<u_long>(RESET_1S)));
+const u_int		IDLE_SEC_MIN	=	static_cast<u_int>(		// Idle pkts per sec @ MIN.
+			(USEC_PER_SEC)/
+			(static_cast<u_long>(DECODER_0T_MIN)*static_cast<u_long>(IDLE_0S)
+			+ static_cast<u_long>(DECODER_1T_MIN)*static_cast<u_long>(IDLE_1S)));
+const u_int		IDLE_SEC_NOM	=	static_cast<u_int>(		// Idle pkts per sec @ NOM.
+			(USEC_PER_SEC)/
+			(static_cast<u_long>(DECODER_0T_NOM)*static_cast<u_long>(IDLE_0S)
+			+ static_cast<u_long>(DECODER_1T_NOM)*static_cast<u_long>(IDLE_1S)));
+const u_int		IDLE_SEC_MAX	=	static_cast<u_int>(		// Idle pkts per sec @ MAX.
+			(USEC_PER_SEC)/
+			(static_cast<u_long>(DECODER_0T_MAX)*static_cast<u_long>(IDLE_0S)
+			+ static_cast<u_long>(DECODER_1T_MAX)*static_cast<u_long>(IDLE_1S)));
 
 /*
  *	Speed related values.

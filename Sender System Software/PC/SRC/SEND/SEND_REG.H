@@ -88,7 +88,7 @@ class Send_reg : public Sr_core
 		clk0t( DCC_CLK_ERR ), clk0h( DCC_CLK_ERR ), clk1t( DCC_CLK_ERR ),
 		err_cnt( 0 ), m_pc_delay_1usec( PC_DELAY_INIT ),
 		m_swap_0_1( false ), m_no_hw_sim( false ), m_log_pkts( false ),
-		m_log_data( false ), m_log_io( false ), m_squelch_idle( false ), m_hw_if( NULL )
+		m_log_data( false ), m_log_io( false ), m_squelch_idle( false ), m_hw_if( nullptr )
 	{
 		rst_stats();
 	}
@@ -125,7 +125,6 @@ class Send_reg : public Sr_core
 	void	set_scope( bool scope_on );
 
 	/* Packet sending routines */
-	void	clr_under( void );
 	void	clr_err_cnt( void ) { err_cnt = 0; }
 	Rslt_t	start_clk( void );
 	Rslt_t	stop_clk( void );

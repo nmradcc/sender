@@ -40,7 +40,7 @@ static const char *shp_status_name(uint8_t status)
 
 #define SHP_LOG_FAILURE( cmd_, seq_, phase_, detail_ ) \
     DBGLOG("MCU transport failure: cmd=%s(0x%02X), seq=%u, phase=%s, %s", \
-           shp_cmd_name(cmd_), (unsigned int)(cmd_), (unsigned int)(seq_), \
+           shp_cmd_name(cmd_), static_cast<unsigned int>(cmd_), static_cast<unsigned int>(seq_), \
            phase_, detail_)
 
 Sender_hw_mcu_usb::Sender_hw_mcu_usb(const char* port_name, uint32_t baud_rate)
@@ -48,7 +48,7 @@ Sender_hw_mcu_usb::Sender_hw_mcu_usb(const char* port_name, uint32_t baud_rate)
       m_baud_rate(baud_rate),
       m_seq(0),
     m_open(false),
-    m_handle(NULL)
+    m_handle(nullptr)
 {
 }
 
@@ -85,22 +85,22 @@ bool Sender_hw_mcu_usb::init()
         full_port = "\\\\.\\" + m_port_name;
     }
 
-    m_handle = (void*)CreateFileA(full_port.c_str(),
+    m_handle = reinterpret_cast<void*>(CreateFileA(full_port.c_str(),
                                   GENERIC_READ | GENERIC_WRITE,
                                   0,
-                                  NULL,
+                                  nullptr,
                                   OPEN_EXISTING,
                                   0,
-                                  NULL);
-    if (m_handle == (void*)INVALID_HANDLE_VALUE)
+                                  nullptr));
+    if (m_handle == reinterpret_cast<void*>(INVALID_HANDLE_VALUE))
     {
-        m_handle = NULL;
+        m_handle = nullptr;
         return false;
     }
 
     memset(&dcb, 0, sizeof(dcb));
     dcb.DCBlength = sizeof(dcb);
-    if (!GetCommState((HANDLE)m_handle, &dcb))
+    if (!GetCommState(static_cast<HANDLE>(m_handle), &dcb))
     {
         close();
         return false;
@@ -119,7 +119,7 @@ bool Sender_hw_mcu_usb::init()
     dcb.fOutX = FALSE;
     dcb.fInX = FALSE;
 
-    if (!SetCommState((HANDLE)m_handle, &dcb))
+    if (!SetCommState(static_cast<HANDLE>(m_handle), &dcb))
     {
         close();
         return false;
@@ -131,18 +131,18 @@ bool Sender_hw_mcu_usb::init()
     cto.ReadTotalTimeoutConstant = 20;
     cto.WriteTotalTimeoutMultiplier = 0;
     cto.WriteTotalTimeoutConstant = 100;
-    if (!SetCommTimeouts((HANDLE)m_handle, &cto))
+    if (!SetCommTimeouts(static_cast<HANDLE>(m_handle), &cto))
     {
         close();
         return false;
     }
 
-    PurgeComm((HANDLE)m_handle,
+    PurgeComm(static_cast<HANDLE>(m_handle),
               PURGE_RXABORT | PURGE_RXCLEAR | PURGE_TXABORT | PURGE_TXCLEAR);
 
     m_open = true;
 
-    if (!send_command_wait_response(SHP_CMD_GET_INFO, NULL, 0, rsp, status))
+    if (!send_command_wait_response(SHP_CMD_GET_INFO, nullptr, 0, rsp, status))
     {
         close();
         return false;
@@ -157,10 +157,10 @@ bool Sender_hw_mcu_usb::init()
 bool Sender_hw_mcu_usb::close()
 {
 #if defined(_WIN32)
-    if (m_handle != NULL)
+    if (m_handle != nullptr)
     {
-        CloseHandle((HANDLE)m_handle);
-        m_handle = NULL;
+        CloseHandle(static_cast<HANDLE>(m_handle));
+        m_handle = nullptr;
     }
 #endif
     m_open = false;
@@ -172,7 +172,7 @@ bool Sender_hw_mcu_usb::write_all(const uint8_t* data, size_t size)
 #if defined(_WIN32)
     size_t off = 0;
 
-    if (!m_open || m_handle == NULL || data == NULL)
+    if (!m_open || m_handle == nullptr || data == nullptr)
     {
         return false;
     }
@@ -180,8 +180,8 @@ bool Sender_hw_mcu_usb::write_all(const uint8_t* data, size_t size)
     while (off < size)
     {
         DWORD written = 0;
-        DWORD chunk = (DWORD)(size - off);
-        if (!WriteFile((HANDLE)m_handle, data + off, chunk, &written, NULL))
+        DWORD chunk = static_cast<DWORD>(size - off);
+        if (!WriteFile(static_cast<HANDLE>(m_handle), data + off, chunk, &written, nullptr))
         {
             return false;
         }
@@ -206,7 +206,7 @@ bool Sender_hw_mcu_usb::read_exact(uint8_t* data, size_t size, uint32_t timeout_
     DWORD start_ms;
     size_t off = 0;
 
-    if (!m_open || m_handle == NULL || data == NULL)
+    if (!m_open || m_handle == nullptr || data == nullptr)
     {
         return false;
     }
@@ -215,7 +215,7 @@ bool Sender_hw_mcu_usb::read_exact(uint8_t* data, size_t size, uint32_t timeout_
     while (off < size)
     {
         DWORD got = 0;
-        if (!ReadFile((HANDLE)m_handle, data + off, (DWORD)(size - off), &got, NULL))
+        if (!ReadFile(static_cast<HANDLE>(m_handle), data + off, static_cast<DWORD>(size - off), &got, nullptr))
         {
             return false;
         }
@@ -246,39 +246,31 @@ bool Sender_hw_mcu_usb::set_timing(uint16_t clk0t_us, uint16_t clk0h_us,
                                    uint16_t clk1t_us)
 {
     uint8_t payload[6];
-    payload[0] = (uint8_t)(clk0t_us & 0xFF);
-    payload[1] = (uint8_t)((clk0t_us >> 8) & 0xFF);
-    payload[2] = (uint8_t)(clk0h_us & 0xFF);
-    payload[3] = (uint8_t)((clk0h_us >> 8) & 0xFF);
-    payload[4] = (uint8_t)(clk1t_us & 0xFF);
-    payload[5] = (uint8_t)((clk1t_us >> 8) & 0xFF);
+    payload[0] = static_cast<uint8_t>(clk0t_us & 0xFF);
+    payload[1] = static_cast<uint8_t>((clk0t_us >> 8) & 0xFF);
+    payload[2] = static_cast<uint8_t>(clk0h_us & 0xFF);
+    payload[3] = static_cast<uint8_t>((clk0h_us >> 8) & 0xFF);
+    payload[4] = static_cast<uint8_t>(clk1t_us & 0xFF);
+    payload[5] = static_cast<uint8_t>((clk1t_us >> 8) & 0xFF);
 
     std::vector<uint8_t> out;
     uint8_t status = SHP_STATUS_INTERNAL_ERROR;
     return send_command_wait_response(SHP_CMD_SET_TIMING, payload,
-                                      (uint16_t)sizeof(payload), out, status);
+                                      static_cast<uint16_t>(sizeof(payload)), out, status);
 }
 
 bool Sender_hw_mcu_usb::start_clock()
 {
     std::vector<uint8_t> out;
     uint8_t status = SHP_STATUS_INTERNAL_ERROR;
-    return send_command_wait_response(SHP_CMD_START_CLK, NULL, 0, out, status);
+    return send_command_wait_response(SHP_CMD_START_CLK, nullptr, 0, out, status);
 }
 
 bool Sender_hw_mcu_usb::stop_clock()
 {
     std::vector<uint8_t> out;
     uint8_t status = SHP_STATUS_INTERNAL_ERROR;
-    return send_command_wait_response(SHP_CMD_STOP_CLK, NULL, 0, out, status);
-}
-
-bool Sender_hw_mcu_usb::clear_underflow()
-{
-    std::vector<uint8_t> out;
-    uint8_t status = SHP_STATUS_INTERNAL_ERROR;
-    return send_command_wait_response(SHP_CMD_CLR_UNDERFLOW, NULL, 0, out,
-                                      status);
+    return send_command_wait_response(SHP_CMD_STOP_CLK, nullptr, 0, out, status);
 }
 
 bool Sender_hw_mcu_usb::set_scope(bool on)
@@ -296,14 +288,14 @@ bool Sender_hw_mcu_usb::send_bytes(uint16_t repeat_count, uint8_t byte_value,
     (void)info_tag;
 
     uint8_t payload[3];
-    payload[0] = (uint8_t)(repeat_count & 0xFF);
-    payload[1] = (uint8_t)((repeat_count >> 8) & 0xFF);
+    payload[0] = static_cast<uint8_t>(repeat_count & 0xFF);
+    payload[1] = static_cast<uint8_t>((repeat_count >> 8) & 0xFF);
     payload[2] = byte_value;
 
     std::vector<uint8_t> out;
     uint8_t status = SHP_STATUS_INTERNAL_ERROR;
     return send_command_wait_response(SHP_CMD_SEND_BYTES, payload,
-                                      (uint16_t)sizeof(payload), out, status);
+                                      static_cast<uint16_t>(sizeof(payload)), out, status);
 }
 
 bool Sender_hw_mcu_usb::send_packet(const uint8_t* data, size_t size,
@@ -337,16 +329,16 @@ bool Sender_hw_mcu_usb::send_raw_bytes_stretched(
         return false;
     }
 
-    payload[0] = (uint8_t)(stretch_byte_index & 0xFFu);
-    payload[1] = (uint8_t)((stretch_byte_index >> 8) & 0xFFu);
-    payload[2] = (uint8_t)(clk0t_us & 0xFFu);
-    payload[3] = (uint8_t)((clk0t_us >> 8) & 0xFFu);
-    payload[4] = (uint8_t)(clk0h_us & 0xFFu);
-    payload[5] = (uint8_t)((clk0h_us >> 8) & 0xFFu);
+    payload[0] = static_cast<uint8_t>(stretch_byte_index & 0xFFu);
+    payload[1] = static_cast<uint8_t>((stretch_byte_index >> 8) & 0xFFu);
+    payload[2] = static_cast<uint8_t>(clk0t_us & 0xFFu);
+    payload[3] = static_cast<uint8_t>((clk0t_us >> 8) & 0xFFu);
+    payload[4] = static_cast<uint8_t>(clk0h_us & 0xFFu);
+    payload[5] = static_cast<uint8_t>((clk0h_us >> 8) & 0xFFu);
 
     return send_chunked_commit(data, size, SHP_CMD_APPEND_RAW_CHUNK,
                                SHP_CMD_COMMIT_RAW_STRETCHED_BYTE,
-                               payload, (uint16_t)sizeof(payload));
+                               payload, static_cast<uint16_t>(sizeof(payload)));
 }
 
 bool Sender_hw_mcu_usb::send_raw_bytes_timed(
@@ -364,22 +356,22 @@ bool Sender_hw_mcu_usb::send_raw_bytes_timed(
         return false;
     }
 
-    payload[0] = (uint8_t)(bit_index1 & 0xFFu);
-    payload[1] = (uint8_t)(bit_index1 >> 8);
-    payload[2] = (uint8_t)(clk0t1_us & 0xFFu);
-    payload[3] = (uint8_t)(clk0t1_us >> 8);
-    payload[4] = (uint8_t)(clk0h1_us & 0xFFu);
-    payload[5] = (uint8_t)(clk0h1_us >> 8);
-    payload[6] = (uint8_t)(bit_index2 & 0xFFu);
-    payload[7] = (uint8_t)(bit_index2 >> 8);
-    payload[8] = (uint8_t)(clk0t2_us & 0xFFu);
-    payload[9] = (uint8_t)(clk0t2_us >> 8);
-    payload[10] = (uint8_t)(clk0h2_us & 0xFFu);
-    payload[11] = (uint8_t)(clk0h2_us >> 8);
+    payload[0] = static_cast<uint8_t>(bit_index1 & 0xFFu);
+    payload[1] = static_cast<uint8_t>(bit_index1 >> 8);
+    payload[2] = static_cast<uint8_t>(clk0t1_us & 0xFFu);
+    payload[3] = static_cast<uint8_t>(clk0t1_us >> 8);
+    payload[4] = static_cast<uint8_t>(clk0h1_us & 0xFFu);
+    payload[5] = static_cast<uint8_t>(clk0h1_us >> 8);
+    payload[6] = static_cast<uint8_t>(bit_index2 & 0xFFu);
+    payload[7] = static_cast<uint8_t>(bit_index2 >> 8);
+    payload[8] = static_cast<uint8_t>(clk0t2_us & 0xFFu);
+    payload[9] = static_cast<uint8_t>(clk0t2_us >> 8);
+    payload[10] = static_cast<uint8_t>(clk0h2_us & 0xFFu);
+    payload[11] = static_cast<uint8_t>(clk0h2_us >> 8);
 
     return send_chunked_commit(data, size, SHP_CMD_APPEND_RAW_CHUNK,
                                SHP_CMD_COMMIT_RAW_TIMED_BITS,
-                               payload, (uint16_t)sizeof(payload));
+                               payload, static_cast<uint16_t>(sizeof(payload)));
 }
 
 bool Sender_hw_mcu_usb::send_chunked_commit(const uint8_t* data, size_t size,
@@ -390,7 +382,7 @@ bool Sender_hw_mcu_usb::send_chunked_commit(const uint8_t* data, size_t size,
 {
     const uint32_t busy_wait_timeout_ms = 15000;
 
-    if (data == NULL || size == 0 || size > 0xFFFF)
+    if (data == nullptr || size == 0 || size > 0xFFFF)
     {
         return false;
     }
@@ -410,7 +402,7 @@ bool Sender_hw_mcu_usb::send_chunked_commit(const uint8_t* data, size_t size,
         while (off < size)
         {
             uint16_t chunk_len =
-                (uint16_t)((size - off) > SHP_PACKET_CHUNK_MAX
+                static_cast<uint16_t>((size - off) > SHP_PACKET_CHUNK_MAX
                                ? SHP_PACKET_CHUNK_MAX
                                : (size - off));
 
@@ -486,16 +478,16 @@ bool Sender_hw_mcu_usb::send_stretched_byte(uint16_t clk0t_us,
     (void)info_tag;
 
     uint8_t payload[5];
-    payload[0] = (uint8_t)(clk0t_us & 0xFF);
-    payload[1] = (uint8_t)((clk0t_us >> 8) & 0xFF);
-    payload[2] = (uint8_t)(clk0h_us & 0xFF);
-    payload[3] = (uint8_t)((clk0h_us >> 8) & 0xFF);
+    payload[0] = static_cast<uint8_t>(clk0t_us & 0xFF);
+    payload[1] = static_cast<uint8_t>((clk0t_us >> 8) & 0xFF);
+    payload[2] = static_cast<uint8_t>(clk0h_us & 0xFF);
+    payload[3] = static_cast<uint8_t>((clk0h_us >> 8) & 0xFF);
     payload[4] = byte_value;
 
     std::vector<uint8_t> out;
     uint8_t status = SHP_STATUS_INTERNAL_ERROR;
     return send_command_wait_response(SHP_CMD_SEND_STRETCHED_BYTE, payload,
-                                      (uint16_t)sizeof(payload), out, status);
+                                      static_cast<uint16_t>(sizeof(payload)), out, status);
 }
 
 bool Sender_hw_mcu_usb::send_special(uint8_t special_id)
@@ -519,7 +511,7 @@ bool Sender_hw_mcu_usb::get_gen_in(uint8_t& gen1, uint8_t& gen2)
     std::vector<uint8_t> out;
     uint8_t status = SHP_STATUS_INTERNAL_ERROR;
 
-    if (!send_command_wait_response(SHP_CMD_GET_GEN_IN, NULL, 0, out, status))
+    if (!send_command_wait_response(SHP_CMD_GET_GEN_IN, nullptr, 0, out, status))
     {
         return false;
     }
@@ -545,7 +537,7 @@ bool Sender_hw_mcu_usb::get_status(Sender_hw_status& status)
     std::vector<uint8_t> out;
     uint8_t rsp_status = SHP_STATUS_INTERNAL_ERROR;
 
-    if (!send_command_wait_response(SHP_CMD_GET_STATUS, NULL, 0, out,
+    if (!send_command_wait_response(SHP_CMD_GET_STATUS, nullptr, 0, out,
                                     rsp_status))
     {
         return false;
@@ -558,9 +550,9 @@ bool Sender_hw_mcu_usb::get_status(Sender_hw_status& status)
 
     status.running = (out[0] != 0);
     status.underflow = (out[1] != 0);
-    status.err_flags = ((uint32_t)out[2]) | ((uint32_t)out[3] << 8) |
-                       ((uint32_t)out[4] << 16) | ((uint32_t)out[5] << 24);
-    status.queue_depth = (uint16_t)out[6] | ((uint16_t)out[7] << 8);
+    status.err_flags = static_cast<uint32_t>(out[2]) | (static_cast<uint32_t>(out[3]) << 8) |
+                       (static_cast<uint32_t>(out[4]) << 16) | (static_cast<uint32_t>(out[5]) << 24);
+    status.queue_depth = static_cast<uint16_t>(out[6] | (out[7] << 8));
     status.gen1 = out[8];
     status.gen2 = out[9];
 
@@ -572,23 +564,21 @@ bool Sender_hw_mcu_usb::get_stats(Sender_hw_stats& stats)
     std::vector<uint8_t> out;
     uint8_t rsp_status = SHP_STATUS_INTERNAL_ERROR;
 
-    if (!send_command_wait_response(SHP_CMD_GET_STATS, NULL, 0, out,
+    if (!send_command_wait_response(SHP_CMD_GET_STATS, nullptr, 0, out,
                                     rsp_status))
     {
         return false;
     }
 
-    if (out.size() < 12)
+    if (out.size() < 8)
     {
         return false;
     }
 
-    stats.packets_sent = ((uint32_t)out[0]) | ((uint32_t)out[1] << 8) |
-                         ((uint32_t)out[2] << 16) | ((uint32_t)out[3] << 24);
-    stats.bytes_sent = ((uint32_t)out[4]) | ((uint32_t)out[5] << 8) |
-                       ((uint32_t)out[6] << 16) | ((uint32_t)out[7] << 24);
-    stats.underruns = ((uint32_t)out[8]) | ((uint32_t)out[9] << 8) |
-                      ((uint32_t)out[10] << 16) | ((uint32_t)out[11] << 24);
+    stats.packets_sent = static_cast<uint32_t>(out[0]) | (static_cast<uint32_t>(out[1]) << 8) |
+                         (static_cast<uint32_t>(out[2]) << 16) | (static_cast<uint32_t>(out[3]) << 24);
+    stats.bytes_sent = static_cast<uint32_t>(out[4]) | (static_cast<uint32_t>(out[5]) << 8) |
+                       (static_cast<uint32_t>(out[6]) << 16) | (static_cast<uint32_t>(out[7]) << 24);
 
     return true;
 }
@@ -597,7 +587,7 @@ bool Sender_hw_mcu_usb::reset_stats()
 {
     std::vector<uint8_t> out;
     uint8_t rsp_status = SHP_STATUS_INTERNAL_ERROR;
-    return send_command_wait_response(SHP_CMD_RESET_STATS, NULL, 0, out,
+    return send_command_wait_response(SHP_CMD_RESET_STATS, nullptr, 0, out,
                                       rsp_status);
 }
 
@@ -605,7 +595,7 @@ bool Sender_hw_mcu_usb::reset_device()
 {
     std::vector<uint8_t> out;
     uint8_t rsp_status = SHP_STATUS_INTERNAL_ERROR;
-    return send_command_wait_response(SHP_CMD_RESET_DEVICE, NULL, 0, out,
+    return send_command_wait_response(SHP_CMD_RESET_DEVICE, nullptr, 0, out,
                                       rsp_status);
 }
 
@@ -613,7 +603,7 @@ bool Sender_hw_mcu_usb::get_info(std::vector<uint8_t>& info_payload)
 {
     uint8_t rsp_status = SHP_STATUS_INTERNAL_ERROR;
     info_payload.clear();
-    return send_command_wait_response(SHP_CMD_GET_INFO, NULL, 0, info_payload,
+    return send_command_wait_response(SHP_CMD_GET_INFO, nullptr, 0, info_payload,
                                       rsp_status);
 }
 
@@ -623,14 +613,14 @@ bool Sender_hw_mcu_usb::get_mcu_version(uint32_t& version)
     uint8_t rsp_status = SHP_STATUS_INTERNAL_ERROR;
 
     version = 0;
-    if (!send_command_wait_response(SHP_CMD_GET_MCU_VERSION, NULL, 0, out,
+    if (!send_command_wait_response(SHP_CMD_GET_MCU_VERSION, nullptr, 0, out,
                                     rsp_status) || out.size() != 4)
     {
         return false;
     }
 
-    version = (uint32_t)out[0] | ((uint32_t)out[1] << 8) |
-              ((uint32_t)out[2] << 16) | ((uint32_t)out[3] << 24);
+    version = static_cast<uint32_t>(out[0]) | (static_cast<uint32_t>(out[1]) << 8) |
+              (static_cast<uint32_t>(out[2]) << 16) | (static_cast<uint32_t>(out[3]) << 24);
     return true;
 }
 
@@ -639,7 +629,7 @@ uint16_t Sender_hw_mcu_usb::crc16_ccitt(const uint8_t* data, size_t size)
     uint16_t crc = 0xFFFF;
     size_t i;
 
-    if (data == NULL)
+    if (data == nullptr)
     {
         return crc;
     }
@@ -649,16 +639,16 @@ uint16_t Sender_hw_mcu_usb::crc16_ccitt(const uint8_t* data, size_t size)
         uint8_t b = data[i];
         int bit;
 
-        crc ^= (uint16_t)b << 8;
+        crc ^= static_cast<uint16_t>(b << 8);
         for (bit = 0; bit < 8; ++bit)
         {
             if ((crc & 0x8000U) != 0U)
             {
-                crc = (uint16_t)((crc << 1) ^ 0x1021U);
+                crc = static_cast<uint16_t>((crc << 1) ^ 0x1021U);
             }
             else
             {
-                crc = (uint16_t)(crc << 1);
+                crc = static_cast<uint16_t>(crc << 1);
             }
         }
     }
@@ -673,17 +663,17 @@ std::vector<uint8_t> Sender_hw_mcu_usb::build_frame(uint8_t sof, uint8_t cmd,
 {
     std::vector<uint8_t> out;
     const size_t fixed_len = 1 + 1 + 1 + 1 + 2 + 2;
-    size_t payload_size = (size_t)payload_len;
+    size_t payload_size = static_cast<size_t>(payload_len);
 
     out.reserve(fixed_len + payload_size);
     out.push_back(sof);
     out.push_back(SHP_VERSION);
     out.push_back(cmd);
     out.push_back(seq);
-    out.push_back((uint8_t)(payload_len & 0xFF));
-    out.push_back((uint8_t)((payload_len >> 8) & 0xFF));
+    out.push_back(static_cast<uint8_t>(payload_len & 0xFF));
+    out.push_back(static_cast<uint8_t>((payload_len >> 8) & 0xFF));
 
-    if (payload != NULL && payload_len > 0)
+    if (payload != nullptr && payload_len > 0)
     {
         out.insert(out.end(), payload, payload + payload_len);
     }
@@ -691,8 +681,8 @@ std::vector<uint8_t> Sender_hw_mcu_usb::build_frame(uint8_t sof, uint8_t cmd,
     /* CRC excludes SOF by protocol definition. */
     {
         uint16_t crc = crc16_ccitt(&out[1], out.size() - 1);
-        out.push_back((uint8_t)(crc & 0xFF));
-        out.push_back((uint8_t)((crc >> 8) & 0xFF));
+        out.push_back(static_cast<uint8_t>(crc & 0xFF));
+        out.push_back(static_cast<uint8_t>((crc >> 8) & 0xFF));
     }
 
     return out;
@@ -749,16 +739,16 @@ bool Sender_hw_mcu_usb::send_command_wait_response(uint8_t cmd,
     }
 
     out_status = hdr[4];
-    rsp_len = (uint16_t)hdr[5] | ((uint16_t)hdr[6] << 8);
+    rsp_len = static_cast<uint16_t>(hdr[5] | (hdr[6] << 8));
 
-    tail.resize((size_t)rsp_len + 2);
+    tail.resize(static_cast<size_t>(rsp_len) + 2);
     if (!read_exact(&tail[0], tail.size(), 1000))
     {
         SHP_LOG_FAILURE(cmd, seq, "response-payload", "no complete payload within 1000 ms");
         return false;
     }
 
-    crc_rx = (uint16_t)tail[rsp_len] | ((uint16_t)tail[rsp_len + 1] << 8);
+    crc_rx = static_cast<uint16_t>(tail[rsp_len] | (tail[rsp_len + 1] << 8));
 
     crc_buf.reserve(6 + rsp_len);
     crc_buf.push_back(hdr[1]);

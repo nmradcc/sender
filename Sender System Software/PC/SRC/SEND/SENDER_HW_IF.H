@@ -27,9 +27,8 @@ struct Sender_hw_stats
 {
     uint32_t packets_sent;
     uint32_t bytes_sent;
-    uint32_t underruns;
 
-    Sender_hw_stats() : packets_sent(0), bytes_sent(0), underruns(0)
+    Sender_hw_stats() : packets_sent(0), bytes_sent(0)
     {
     }
 };
@@ -46,7 +45,6 @@ class Sender_hw_if
                             uint16_t clk1t_us) = 0;
     virtual bool start_clock() = 0;
     virtual bool stop_clock() = 0;
-    virtual bool clear_underflow() = 0;
     virtual bool set_scope(bool on) = 0;
 
     virtual bool send_bytes(uint16_t repeat_count, uint8_t byte_value,

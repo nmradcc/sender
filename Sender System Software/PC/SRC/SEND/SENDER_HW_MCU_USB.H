@@ -22,7 +22,6 @@ class Sender_hw_mcu_usb : public Sender_hw_if
                             uint16_t clk1t_us);
     virtual bool start_clock();
     virtual bool stop_clock();
-    virtual bool clear_underflow();
     virtual bool set_scope(bool on);
 
     virtual bool send_bytes(uint16_t repeat_count, uint8_t byte_value,
@@ -73,7 +72,7 @@ class Sender_hw_mcu_usb : public Sender_hw_if
                                     uint8_t& out_status);
     bool send_chunked_commit(const uint8_t* data, size_t size,
                  uint8_t append_cmd, uint8_t commit_cmd,
-                 const uint8_t* commit_payload = NULL,
+                 const uint8_t* commit_payload = nullptr,
                  uint16_t commit_payload_len = 0);
 
   private:

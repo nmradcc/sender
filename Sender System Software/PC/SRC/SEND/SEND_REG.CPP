@@ -30,6 +30,7 @@
 #include <string.h>
 #include <chrono>
 #include <thread>
+#include <vector>
 
 /*
  * Baseline packet arrays.
@@ -51,7 +52,7 @@ const int		MAX_PKT_LINE	= 24;			// Max packet bytes per line.
 BYTE
 Send_reg::get_gen( void ) const
 {
-	if ( m_hw_if != NULL )
+	if ( m_hw_if != nullptr )
 	{
 		BYTE gen1 = 0;
 		BYTE gen2 = 0;
@@ -122,7 +123,7 @@ bool
 Send_reg::get_gen_fb(
 	Dec_types	idec_type ) const
 {
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
 		return ( false );
 	}
@@ -152,24 +153,11 @@ Send_reg::set_scope(
 	}
 	else
 	{
-		if ( m_hw_if != NULL )
+		if ( m_hw_if != nullptr )
 		{
 			m_hw_if->set_scope( false );
 		}
 		scope	=	SCOPE_IDLE;
-	}
-}
-
-void
-Send_reg::clr_under( void )
-{
-	if ( m_hw_if != NULL )
-	{
-		m_hw_if->clear_underflow();
-	}
-	else if ( m_log_pkts )
-	{
-		DBGLOG( "Skipping hw underclr." );
 	}
 }
 
@@ -211,7 +199,7 @@ Send_reg::set_clk(
 		stop_clk();
 	}
 
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
 		if ( m_no_hw_sim )
 		{
@@ -331,7 +319,7 @@ Send_reg::start_clk( void )
 		return ( FAIL );
 	}
 
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
 		if ( m_no_hw_sim )
 		{
@@ -401,7 +389,7 @@ Send_reg::stop_clk( void )
 		return ( FAIL );
 	}
 
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
 		if ( m_no_hw_sim )
 		{
@@ -473,7 +461,7 @@ Send_reg::send_bytes(
 		return ( FAIL );
 	}
 
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
 		if ( m_no_hw_sim )
 		{
@@ -519,8 +507,8 @@ Send_reg::send_bytes(
 		break;
 	}
 
-	BYTE out_byte = m_swap_0_1 ? (BYTE)~ibyte : ibyte;
-	if ( !m_hw_if->send_bytes( (u_short)icnt, out_byte, info ) )
+	BYTE out_byte = m_swap_0_1 ? static_cast<BYTE>( ~ibyte ) : ibyte;
+	if ( !m_hw_if->send_bytes( static_cast<u_short>( icnt ), out_byte, info ) )
 	{
 		ERRPRINT( my_name, LOG_ERR,
 			"send_bytes() FAILED, b_cnt %lu, p_cnt %lu", b_cnt, p_cnt );
@@ -563,7 +551,7 @@ Send_reg::send_stretched_byte(
 	const char		*info )					// Packet log info.
 {
 	const char		*my_name = "Send_reg::send_stretched_byte";
-	register u_long	san_cnt;		   		// Sanity timeout.
+	u_long			san_cnt; 		   		// Sanity timeout.
 	u_short			tclk0t;					// clk0t for stretched 0.
 
 	if ( ibyte & 0x80 )
@@ -598,7 +586,7 @@ Send_reg::send_stretched_byte(
 		return ( FAIL );
 	}
 
-	if ( m_no_hw_sim && m_hw_if == NULL )
+	if ( m_no_hw_sim && m_hw_if == nullptr )
 	{
 		if ( m_log_pkts )
 		{
@@ -614,7 +602,7 @@ Send_reg::send_stretched_byte(
 		return ( OK );
 	}
 
-	if ( m_hw_if != NULL )
+	if ( m_hw_if != nullptr )
 	{
 		if ( m_log_pkts )
 		{
@@ -640,7 +628,7 @@ Send_reg::send_stretched_byte(
 			break;
 		}
 
-		BYTE out_byte = m_swap_0_1 ? (BYTE)~ibyte : ibyte;
+		BYTE out_byte = m_swap_0_1 ? static_cast<BYTE>( ~ibyte ) : ibyte;
 		if ( !m_hw_if->send_stretched_byte( iclk0t, iclk0h, out_byte, info ) )
 		{
 			ERRPRINT( my_name, LOG_ERR,
@@ -670,13 +658,13 @@ Send_reg::send_raw_bytes_stretched(
 {
 	const char	*my_name = "Send_reg::send_raw_bytes_stretched";
 
-	if ( ibytes == NULL || isize == 0 || stretch_byte_index >= isize )
+	if ( ibytes == nullptr || isize == 0 || stretch_byte_index >= isize )
 	{
 		ERRPRINT( my_name, LOG_ERR, "Invalid raw stretched-byte arguments" );
 		return ( FAIL );
 	}
 
-	if ( m_no_hw_sim && m_hw_if == NULL )
+	if ( m_no_hw_sim && m_hw_if == nullptr )
 	{
 		if ( m_log_pkts )
 		{
@@ -688,7 +676,7 @@ Send_reg::send_raw_bytes_stretched(
 		return ( OK );
 	}
 
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
 		ERRPRINT( my_name, LOG_ERR, "MCU hardware interface not initialized" );
 		return ( FAIL );
@@ -769,14 +757,14 @@ Send_reg::send_raw_bytes_timed(
 {
 	const char	*my_name = "Send_reg::send_raw_bytes_timed";
 
-	if ( ibytes == NULL || isize == 0 || bit_index1 >= isize * BITS_IN_BYTE ||
+	if ( ibytes == nullptr || isize == 0 || bit_index1 >= isize * BITS_IN_BYTE ||
 		 (bit_index2 != 0xFFFF && bit_index2 >= isize * BITS_IN_BYTE) )
 	{
 		ERRPRINT( my_name, LOG_ERR, "Invalid raw timed-bit arguments" );
 		return ( FAIL );
 	}
 
-	if ( m_no_hw_sim && m_hw_if == NULL )
+	if ( m_no_hw_sim && m_hw_if == nullptr )
 	{
 		if ( m_log_pkts )
 		{
@@ -787,7 +775,7 @@ Send_reg::send_raw_bytes_timed(
 		return ( OK );
 	}
 
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
 		ERRPRINT( my_name, LOG_ERR, "MCU hardware interface not initialized" );
 		return ( FAIL );
@@ -887,7 +875,7 @@ Send_reg::send_pkt(
 	const char		*info )					// Packet log info.
 {
 	const char		*my_name = "Send_reg::send_pkt(BYTE)";
-	register u_int	count;					// Count of BYTES sent.
+	u_int			count;					// Count of BYTES sent.
 	bool				is_idle_pkt = isize == PKT_SIZE &&
 					memcmp( ibytes, idle_bytes, PKT_SIZE ) == 0;
 
@@ -898,7 +886,7 @@ Send_reg::send_pkt(
 		return ( FAIL );
 	}
 
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
 		if ( m_no_hw_sim )
 		{
@@ -950,29 +938,20 @@ Send_reg::send_pkt(
 	}
 	else
 	{
-		BYTE *swap_bytes = new BYTE[ isize ];
-		if ( swap_bytes == NULL )
-		{
-			ERRPRINT( my_name, LOG_ERR,
-				"Failed to allocate swap_bytes, isize %u", isize );
-			return ( FAIL );
-		}
+		std::vector<BYTE> swap_bytes( isize );
 
 		for ( count = 0; count < isize; ++count )
 		{
-			swap_bytes[count] = (BYTE)~ibytes[count];
+			swap_bytes[count] = static_cast<BYTE>( ~ibytes[count] );
 		}
 
-		if ( !m_hw_if->send_raw_bytes( swap_bytes, isize, info ) )
+		if ( !m_hw_if->send_raw_bytes( swap_bytes.data(), isize, info ) )
 		{
-			delete [] swap_bytes;
 			ERRPRINT( my_name, LOG_ERR,
 				"send_raw_bytes() FAILED in swap mode, b_cnt %lu, p_cnt %lu",
 				b_cnt, p_cnt );
 			return ( FAIL );
 		}
-
-		delete [] swap_bytes;
 	}
 
 	clr_err_cnt();
@@ -1007,7 +986,7 @@ Send_reg::send_pkt(
 	const char		*info )					// Packet log info.
 {
 	const char		*my_name = "Send_reg::send_pkt(Bits)";
-	register u_int	count = 0;				// Count of BYTES sent.
+	u_int			count = 0;				// Count of BYTES sent.
 	BYTE			pbyte;					// Present BYTE.
 
 	if ( ibits.get_obj_errs() )
@@ -1025,7 +1004,7 @@ Send_reg::send_pkt(
 	const BYTE *pkt_bytes = ibits.get_byte_array();
 	u_int pkt_size = ibits.get_byte_size();
 
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
 		if ( m_no_hw_sim )
 		{
@@ -1084,30 +1063,21 @@ Send_reg::send_pkt(
 	}
 	else
 	{
-		BYTE *swap_bytes = new BYTE[ pkt_size ];
-		if ( swap_bytes == NULL )
-		{
-			ERRPRINT( my_name, LOG_ERR,
-				"Failed to allocate swap_bytes, pkt_size %u", pkt_size );
-			return ( FAIL );
-		}
+		std::vector<BYTE> swap_bytes( pkt_size );
 
 		for ( count = 0, ibits.rst_out();
 				ibits.get_byte( pbyte ) == OK; ++count )
 		{
-			swap_bytes[count] = (BYTE)~pbyte;
+			swap_bytes[count] = static_cast<BYTE>( ~pbyte );
 		}
 
-		if ( !m_hw_if->send_raw_bytes( swap_bytes, pkt_size, info ) )
+		if ( !m_hw_if->send_raw_bytes( swap_bytes.data(), pkt_size, info ) )
 		{
-			delete [] swap_bytes;
 			ERRPRINT( my_name, LOG_ERR,
 				"send_raw_bytes() FAILED in swap mode, b_cnt %lu, p_cnt %lu",
 				b_cnt, p_cnt );
 			return ( FAIL );
 		}
-
-		delete [] swap_bytes;
 	}
 
 	clr_err_cnt();
@@ -1201,7 +1171,7 @@ Send_reg::print_stats( void )
 void
 Send_reg::update( void )
 {
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
 		if ( m_log_pkts )
 		{
@@ -1297,10 +1267,10 @@ Send_reg::fill_idles (
 {
 	u_short			reps;					// Reps to delay calculated time.
 
-	reps	=	(int)( ifill_usec /
-						(	(u_long)iclk0t * (u_long)(		IDLE_0S
+	reps	=	static_cast<int>( ifill_usec /
+						(	static_cast<u_long>( iclk0t ) * static_cast<u_long>(		IDLE_0S
 														+	FILL_1_0S )
-						+ 	(u_long)iclk1t * (u_long)(		IDLE_1S
+						+ 	static_cast<u_long>( iclk1t ) * static_cast<u_long>(		IDLE_1S
 														+	FILL_1_1S ) ) );
 	if ( reps < PKT_REP_MIN )
 	{
@@ -1322,11 +1292,11 @@ Send_reg::fill_cmds_1 (
 {
 	u_short			reps;					// Reps to delay calculated time.
 
-	reps		=	(int)( ifill_usec /
-						(	(u_long)iclk0t * (u_long)(		IDLE_0S
+	reps		=	static_cast<int>( ifill_usec /
+						(	static_cast<u_long>( iclk0t ) * static_cast<u_long>(		IDLE_0S
 														+	CMD_0S
 														+	FILL_2_0S )
-						+ 	(u_long)iclk1t * (u_long)(		IDLE_1S
+						+ 	static_cast<u_long>( iclk1t ) * static_cast<u_long>(		IDLE_1S
 														+	CMD_1S
 														+	FILL_2_1S ) ) );
 	if ( reps < PKT_REP_MIN )
@@ -1349,11 +1319,11 @@ Send_reg::fill_cmds_2 (
 {
 	u_short			reps;					// Reps to delay calculated time.
 
-	reps		=	(int)( ifill_usec /
-						(	(u_long)iclk0t * (u_long)(		( 2 * IDLE_0S )
+	reps		=	static_cast<int>( ifill_usec /
+						(	static_cast<u_long>( iclk0t ) * static_cast<u_long>(		( 2 * IDLE_0S )
 														+	( 2 * CMD_0S )
 														+	FILL_4_0S )
-						+ 	(u_long)iclk1t * (u_long)(		( 2 * IDLE_1S )
+						+ 	static_cast<u_long>( iclk1t ) * static_cast<u_long>(		( 2 * IDLE_1S )
 														+	( 2 * CMD_1S )
 														+	FILL_4_1S ) ) );
 	if ( reps < PKT_REP_MIN )
@@ -1411,7 +1381,7 @@ Send_reg::kick_start(
 	u_short				dots		=		// Dot time 4 pkt sequences.
 								fill_cmds_2() / 2;
 	u_short				reps;				// Number of command repeats.
-    register u_short	i;					// Index variabble.
+    u_short				i;					// Index variabble.
 
      if ( running == false )
 	{
@@ -1455,7 +1425,6 @@ Send_reg::kick_start(
 	reps = fill_cmds_2( 5 * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
 	STATPRINT( "%s Sending %3u power up pkts.",   my_name, reps );
 	printf(    "%s Sending %3u power up pkts.\n", my_name, reps );
-	clr_under();
 	for ( i = 0; i < reps; i++ )
 	{
 		Dcc_reg.set_scope( true );
@@ -1463,7 +1432,6 @@ Send_reg::kick_start(
 	   	if ( (i % dots) == 0 )
 	   	{
 	   		putchar( '.' );
-			clr_under();
 	   	}
 	}
 	putchar( '\n' );
@@ -1482,7 +1450,6 @@ Send_reg::kick_start(
 	reps = fill_cmds_2( 1 * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
 	STATPRINT( "%s Sending %3u loco start pkts.",   my_name, reps );
 	printf(    "%s Sending %3u loco start pkts.\n", my_name, reps );
-	clr_under();
 	for ( i = 0; i < reps; i++ )
 	{
 		Dcc_reg.set_scope( true );
@@ -1490,7 +1457,6 @@ Send_reg::kick_start(
 	   	if ( (i % dots) == 0 )
 	   	{
 	   		putchar( '.' );
-			clr_under();
 	   	}
 	}
 	putchar( '\n' );
@@ -1509,7 +1475,6 @@ Send_reg::kick_start(
 	reps = fill_cmds_2( 10 * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
 	STATPRINT( "%s Sending %3u function on pkts.",   my_name, reps );
 	printf(    "%s Sending %3u function on pkts.\n", my_name, reps );
-	clr_under();
 	for ( i = 0; i < reps; i++ )
 	{
 		Dcc_reg.set_scope( true );
@@ -1517,7 +1482,6 @@ Send_reg::kick_start(
 	   	if ( (i % dots) == 0 )
 	   	{
 	   		putchar( '.' );
-			clr_under();
 	   	}
 	}
 	putchar( '\n' );

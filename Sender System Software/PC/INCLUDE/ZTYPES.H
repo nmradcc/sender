@@ -50,21 +50,6 @@ typedef unsigned short  u_short;
 typedef unsigned long   u_long;
 
 /*
- *  Process exit() values.
- */
-const int       EXIT_OK             = 0;        // Exit() OK.
-const int       EXIT_USER_ERROR     = 1;        // Exit() user error.
-const int       EXIT_INTERNAL_ERROR = 2;        // Exit() internal error.
-
-/*
- *  File descriptors.
- */
-const int       STDIN               = 0;        // stdin file descriptor.
-const int       STDOUT              = 1;        // stdout file descriptor.
-const int       STDERR              = 2;        // stderr file descriptor.
-const int       FD_INV              = -1;       // Invalid file descriptor.
-
-/*
  *  Init_state indicates which state an object is in.
  *  An object may be initialized once and and terminated once.
  */

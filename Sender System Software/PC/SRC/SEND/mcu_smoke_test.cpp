@@ -59,9 +59,9 @@ static void dump_version_info(void)
            Ver_min,
            Ver_pat,
            Ver_bld,
-           (char)Ver_rel,
+           static_cast<char>( Ver_rel ),
            release_level_name(Ver_rel));
-    printf("  host protocol ver   : %u\n", (unsigned int)SHP_VERSION);
+    printf("  host protocol ver   : %u\n", static_cast<unsigned int>( SHP_VERSION ) );
     printf("  build timestamp     : %s %s\n", __DATE__, __TIME__);
 #if defined(_MSC_VER)
     printf("  compiler            : MSVC %d\n", _MSC_VER);
@@ -80,13 +80,13 @@ static void dump_mcu_version_info(Sender_hw_mcu_usb& dev)
     }
 
     printf("  mcu info payload    : %u byte(s)",
-           (unsigned int)info.size());
+           static_cast<unsigned int>(info.size()));
     if (!info.empty())
     {
         printf(" [");
         for (size_t i = 0; i < info.size(); ++i)
         {
-            printf("%s%02X", (i == 0) ? "" : " ", (unsigned int)info[i]);
+            printf("%s%02X", (i == 0) ? "" : " ", static_cast<unsigned int>(info[i]));
         }
         printf("]");
     }
@@ -95,15 +95,15 @@ static void dump_mcu_version_info(Sender_hw_mcu_usb& dev)
     if (info.size() >= 3)
     {
         printf("  mcu fw version      : %u.%u.%u (bytes 0..2)\n",
-               (unsigned int)info[0],
-               (unsigned int)info[1],
-               (unsigned int)info[2]);
+               static_cast<unsigned int>(info[0]),
+               static_cast<unsigned int>(info[1]),
+               static_cast<unsigned int>(info[2]));
     }
 
     if (info.size() >= 4)
     {
         printf("  mcu protocol ver    : %u (byte 3)\n",
-               (unsigned int)info[3]);
+               static_cast<unsigned int>(info[3]));
     }
 
     printf("----------------------------------------\n");
@@ -183,7 +183,6 @@ int main(int argc, char *argv[])
         {
             check("6d. bytes_sent == 4", stats.bytes_sent == 4);
             check("6e. packets_sent == 1", stats.packets_sent == 1);
-            check("6f. underruns == 0", stats.underruns == 0);
         }
     }
 
@@ -207,7 +206,6 @@ int main(int argc, char *argv[])
         {
             check("9a. bytes_sent == 3", stats.bytes_sent == 3);
             check("9b. packets_sent == 1", stats.packets_sent == 1);
-            check("9c. underruns == 0", stats.underruns == 0);
         }
     }
 

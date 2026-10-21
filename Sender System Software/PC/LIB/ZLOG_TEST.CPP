@@ -91,7 +91,7 @@ test_cmd_name( void )
 	Deflog.set_cmd_name( "C:\\dir\\Prog.exe" );
 	CHECK( std::string( Deflog.get_cmd_name() ) == "prog" );
 
-	Deflog.set_cmd_name( NULL );
+	Deflog.set_cmd_name( nullptr );
 	CHECK( std::string( Deflog.get_cmd_name() ) == "" );
 
 	Deflog.set_cmd_name( "zlog_test" );
@@ -103,22 +103,22 @@ test_open_close( void )
 {
 	Deflog.set_no_abort_flag( true );
 
-	CHECK( Deflog.open_log( NULL ) == FAIL );
+	CHECK( Deflog.open_log( nullptr ) == FAIL );
 	CHECK( Deflog.open_log( "" ) == FAIL );
-	CHECK( Deflog.open_stat( NULL ) == FAIL );
+	CHECK( Deflog.open_stat( nullptr ) == FAIL );
 	CHECK( Deflog.open_stat( "" ) == FAIL );
 	CHECK( Deflog.open_log( "no_such_dir/zlog_test.log" ) == FAIL );
-	CHECK( Deflog.get_fp_log() == NULL );
-	CHECK( Deflog.get_fp_stat() == NULL );
+	CHECK( Deflog.get_fp_log() == nullptr );
+	CHECK( Deflog.get_fp_stat() == nullptr );
 
 	CHECK( Deflog.get_stderr_too() );
 	CHECK( Deflog.open_log( LOG_FILE ) == OK );
-	CHECK( Deflog.get_fp_log() != NULL );
+	CHECK( Deflog.get_fp_log() != nullptr );
 	CHECK( !Deflog.get_stderr_too() );
 	CHECK( Deflog.open_log( LOG_FILE ) == FAIL );		// Already open.
 
 	CHECK( Deflog.open_stat( STAT_FILE ) == OK );
-	CHECK( Deflog.get_fp_stat() != NULL );
+	CHECK( Deflog.get_fp_stat() != nullptr );
 	CHECK( Deflog.open_stat( STAT_FILE ) == FAIL );		// Already open.
 
 	Deflog.set_no_abort_flag( false );
@@ -164,7 +164,7 @@ test_errprint_priorities( void )
 		char		msg[64];
 		std::string	expect;
 
-		sprintf( msg, "priority message %d", (int)i );
+		snprintf( msg, sizeof( msg ), "priority message %d", static_cast<int>( i ) );
 		Deflog.errprint( "test_fn", pris[i].pri, "%s", msg );
 
 		expect = std::string( pris[i].name );
@@ -203,7 +203,7 @@ test_abort_behavior( void )
 	CHECK( g_abort_calls == 1 );
 	Deflog.set_no_abort_flag( false );
 
-	Deflog.set_abort_handler( NULL );
+	Deflog.set_abort_handler( nullptr );
 }
 
 static void
@@ -270,22 +270,10 @@ test_headerless_output( void )
 }
 
 static void
-test_masks( void )
-{
-	Deflog.set_log_mask( 0x5 );
-	CHECK( Deflog.get_log_mask() == 0x5 );
-	Deflog.set_lib_log_mask( 0x3 );
-	CHECK( Deflog.get_lib_log_mask() == 0x3 );
-
-	Deflog.set_log_mask( LOG_MASK_INIT );
-	Deflog.set_lib_log_mask( LOG_MASK_INIT );
-}
-
-static void
 test_close( void )
 {
 	Deflog.close_log();
-	CHECK( Deflog.get_fp_log() == NULL );
+	CHECK( Deflog.get_fp_log() == nullptr );
 	CHECK( Deflog.get_stderr_too() );
 
 	// With the log closed, stat only output still reaches the stat file.
@@ -295,7 +283,7 @@ test_close( void )
 	CHECK( !contains( read_file( LOG_FILE ), "after_log_close_marker" ) );
 
 	Deflog.close_stat();
-	CHECK( Deflog.get_fp_stat() == NULL );
+	CHECK( Deflog.get_fp_stat() == nullptr );
 
 	Deflog.to_stat( "after_stat_close_marker\n" );
 	CHECK( !contains( read_file( STAT_FILE ), "after_stat_close_marker" ) );
@@ -316,7 +304,6 @@ main( void )
 	test_abort_behavior();
 	test_debug_output();
 	test_headerless_output();
-	test_masks();
 	test_close();
 
 	remove( LOG_FILE );

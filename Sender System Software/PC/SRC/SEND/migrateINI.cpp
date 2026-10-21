@@ -45,7 +45,7 @@ static bool
 ReadLines( const std::string &path, std::vector<std::string> &lines )
 {
 	FILE *fp = fopen( path.c_str(), "r" );
-	if ( fp == NULL )
+	if ( fp == nullptr )
 	{
 		return false;
 	}
@@ -120,10 +120,10 @@ BuildLine( const std::string &key, const std::string &val,
 	std::string body = key;
 	if ( !val.empty() )
 	{
-		int start = 20 - (int)val.size();
-		if ( start < (int)key.size() + 1 )
+		int start = 20 - static_cast<int>( val.size() );
+		if ( start < static_cast<int>( key.size() ) + 1 )
 		{
-			start = (int)key.size() + 1;
+			start = static_cast<int>( key.size() ) + 1;
 		}
 		body.append( start - key.size(), ' ' );
 		body += val;
@@ -166,7 +166,7 @@ Migrate( const std::string &iniPath, const std::string &cfgPath,
 		{
 			for ( size_t c = 0; c < e.val.size(); c++ )
 			{
-				e.val[c] = (char)toupper( (unsigned char)e.val[c] );
+				e.val[c] = static_cast<char>( toupper( static_cast<unsigned char>( e.val[c] ) ) );
 			}
 		}
 		if ( KeyEq( key, "LOG_PKTS" ) )
@@ -201,7 +201,7 @@ Migrate( const std::string &iniPath, const std::string &cfgPath,
 	}
 
 	FILE *fp = fopen( cfgPath.c_str(), "w" );
-	if ( fp == NULL )
+	if ( fp == nullptr )
 	{
 		fprintf( stderr, "  cannot write %s\n", cfgPath.c_str() );
 		return false;
@@ -239,9 +239,9 @@ main( int argc, char *argv[] )
 
 	/* Template is always the send.cfg beside migrateINI.exe, read only. */
 	char exePath[MAX_PATH];
-	GetModuleFileNameA( NULL, exePath, MAX_PATH );
+	GetModuleFileNameA( nullptr, exePath, MAX_PATH );
 	char *exeSlash = strrchr( exePath, '\\' );
-	if ( exeSlash != NULL )
+	if ( exeSlash != nullptr )
 	{
 		exeSlash[1] = '\0';
 	}

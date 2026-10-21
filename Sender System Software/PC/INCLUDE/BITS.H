@@ -51,25 +51,25 @@ class Bits : public Z_core
 	 
 	// Get static variables at runtime.
 	static bool
-	get_trig_rev( void )
+	get_trig_rev( void ) noexcept
 	{
 		return ( trig_rev );
 	}
 	
 	static bool
-	get_loco_first( void )
+	get_loco_first( void ) noexcept
 	{
 		return ( loco_first );
 	}
 	
 	static bool
-	get_lamp_rear( void )
+	get_lamp_rear( void ) noexcept
 	{
 		return ( lamp_rear );
 	}
 	
 	static BYTE
-	get_func_mask( void )
+	get_func_mask( void ) noexcept
 	{
 		return ( func_mask );
 	}
@@ -100,13 +100,13 @@ class Bits : public Z_core
 	u_int
 	get_isize( void ) const
 	{
-		return ( (u_int)(last_byte - bytes)+1);
+		return ( static_cast<u_int>(last_byte - bytes)+1);
 	}
 
 	u_int
 	get_bit_size( void ) const
 	{
-		return ( (u_int)	(	(in_byte - bytes) * BITS_IN_BYTE )
+		return ( static_cast<u_int>(	(in_byte - bytes) * BITS_IN_BYTE )
 							+	MAX_BIT_POS - in_bit );
 	}
 
@@ -119,7 +119,7 @@ class Bits : public Z_core
 	u_int
 	get_byte_size( void ) const
 	{
-		return ( (u_int)(in_byte - bytes) );
+		return ( static_cast<u_int>(in_byte - bytes) );
 	}
 
 	Rslt_t

@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 project(SenderV4System LANGUAGES C CXX)
 
 option(BUILD_TEST_TOOLS "Build and register unit test tools" OFF)
+option(ENABLE_EXTRA_WARNINGS "Enable extra compiler warnings (/W4 or -Wall -Wextra)" OFF)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -40,6 +41,19 @@ add_compile_definitions(
   PC_VER_BUILD=${PC_VERSION_BUILD}u
 )
 
+if (MSVC)
+  add_compile_definitions(_CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_WARNINGS)
+endif()
+
+# Opt-in extra compiler diagnostics (off by default so existing builds are unchanged).
+if (ENABLE_EXTRA_WARNINGS)
+  if (MSVC)
+    add_compile_options(/W4)
+  else()
+    add_compile_options(-Wall -Wextra)
+  endif()
+endif()
+
 add_library(nmra_lib
   ${LIB_DIR}/BITS.CPP
   ${LIB_DIR}/ZLOG.CPP
@@ -47,10 +61,6 @@ add_library(nmra_lib
 )
 
 target_include_directories(nmra_lib PUBLIC ${INC_DIR})
-
-if (MSVC)
-  target_compile_definitions(nmra_lib PRIVATE _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_WARNINGS)
-endif()
 
 if (BUILD_TEST_TOOLS)
   enable_testing()
@@ -84,26 +94,16 @@ add_executable(send
 target_include_directories(send PRIVATE ${INC_DIR} ${SEND_DIR})
 target_link_libraries(send PRIVATE nmra_lib)
 
-if (MSVC)
-  target_compile_definitions(send PRIVATE _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_WARNINGS)
-endif()
-
 add_executable(mcu_smoke_test
   ${SEND_DIR}/mcu_smoke_test.cpp
   ${SEND_DIR}/SENDER_HW_MCU_USB.CPP
 )
 target_include_directories(mcu_smoke_test PRIVATE ${INC_DIR} ${SEND_DIR})
 target_link_libraries(mcu_smoke_test PRIVATE nmra_lib)
-if (MSVC)
-  target_compile_definitions(mcu_smoke_test PRIVATE _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_WARNINGS)
-endif()
 
 add_executable(migrateINI
   ${SEND_DIR}/migrateINI.cpp
 )
-if (MSVC)
-  target_compile_definitions(migrateINI PRIVATE _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_WARNINGS)
-endif()
 
 if (WIN32)
   add_executable(sendgui WIN32
@@ -111,7 +111,4 @@ if (WIN32)
   )
   target_include_directories(sendgui PRIVATE ${INC_DIR})
   target_link_libraries(sendgui PRIVATE comdlg32 comctl32)
-  if (MSVC)
-    target_compile_definitions(sendgui PRIVATE _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_WARNINGS)
-  endif()
 endif()

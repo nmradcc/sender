@@ -26,10 +26,50 @@ const int		TIME_STR				= 32;		// Time string length.
 const int		ERR_T_STR_SIZE			= 8;		// Max length of type.
 const int		LOG_ABORT_PRIORITY		= LOG_ERR;	// Level to abort program.
 
-const char		Zlog::tab_array[MAX_INDENT+1] =
+/*
+ *	Build "<time> LABEL cmd: func - message\n" in a bounded buffer.
+ *	Over-long messages are truncated but always end in a newline.
+ */
+static void
+format_message(
+	char			*mess,					// Output buffer.
+	size_t			size,					// Output buffer size.
+	const char		*label,					// Message type label.
+	const char		*cmd,					// Command name, may be empty.
+	const char		*func,					// Calling function, may be null.
+	const char		*fmt,					// vprintf(3) style format string.
+	va_list			ap )					// vprintf(3) arguments.
 {
-	"\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
-};
+	time_t			raw_time;				// Seconds from epoch
+	char			t_buf[TIME_STR];		// Buffer for time string
+	bool			has_cmd = ( *cmd != '\0' );
+	bool			has_func = ( func != nullptr && *func != '\0' );
+	int				hdr_len;				// Header length.
+	size_t			len;					// Message length.
+
+	(void)time( &raw_time );
+	snprintf( t_buf, sizeof( t_buf ), "%.24s", ctime( &raw_time ) );
+
+	hdr_len = snprintf( mess, size, "<%s> %-*s%s%s%s%s",
+		t_buf, ERR_T_STR_SIZE, label,
+		has_cmd ? cmd : "", has_cmd ? ": " : "",
+		has_func ? func : "", has_func ? " - " : "" );
+
+	if ( hdr_len < 0 || static_cast<size_t>( hdr_len ) >= size )
+	{
+		hdr_len = static_cast<int>( size ) - 1;
+	}
+
+	(void)vsnprintf( mess + hdr_len, size - hdr_len, fmt, ap );
+
+	len = strlen( mess );
+	if ( len > size - 2 )
+	{
+		len = size - 2;
+	}
+	mess[len]		= '\n';
+	mess[len + 1]	= '\0';
+}
 
 /*
  *	Names for each priority from <syslog.h>.
@@ -75,12 +115,10 @@ Zlog::Zlog( void )
 	cmd_name[0]		=	'\0';
 	fp_log			=	(FILE *)0;
 	fp_stat			=	(FILE *)0;
-	log_mask		=	LOG_MASK_INIT;
-	lib_log_mask	=	LOG_MASK_INIT;
 	no_abort_flag	=	false;
 	stderr_too		=	true;
 	dbg_on			=	false;
-	abort_handler	= NULL;
+	abort_handler	= nullptr;
 
 }
 
@@ -129,8 +167,8 @@ void
 Zlog::set_cmd_name(
 	const char			*icmd )			 // New command name.
 {
-	register int		i;				// Index variable.
-	register const char	*sptr;			// Pointer to command part of string.
+	int					i;				// Index variable.
+	const char			*sptr;				// Pointer to command part of string.
 	if ( !icmd )
 	{
 		cmd_name[0]	=	'\0';
@@ -415,34 +453,9 @@ Zlog::verrprint(
 	va_list			ap )					// vprintf(3) arguments.
 {
 	char			mess [LOG_STRING_SIZE];	// message buffer.
-	char			*tptr;					// Temp string pointer.
-	time_t          raw_time;               // Seconds from epoch
-	char            t_buf[TIME_STR];        // Buffer for time string
 
-	(void)time( &raw_time );
-	(void)strcpy( t_buf, ctime( &raw_time ) );
-	t_buf[strlen( t_buf ) - 1] = '\0';      // Kill trailing '\n'
-
-	sprintf(mess, "<%s> %-*s",
-		t_buf, ERR_T_STR_SIZE, get_err_pri_str( priority) );
-
-	if ( *cmd_name != '\0' )
-	{
-		(void)strcat( mess, cmd_name );
-		(void)strcat( mess, ": " );
-	}
-
-	if ( func != (char *)NULL && *func != '\0' )
-	{
-		(void)strcat( mess, func );
-		(void)strcat( mess, " - " );
-	}
-
-	tptr	=	mess + strlen( mess );
-
-	(void)vsprintf( tptr, fmt, ap );
-
-	strcat(tptr, "\n");
+	format_message( mess, sizeof( mess ), get_err_pri_str( priority ),
+		cmd_name, func, fmt, ap );
 
 	if ( fp_log )
 	{
@@ -460,7 +473,7 @@ Zlog::verrprint(
 	 */
 	if ( !no_abort_flag && (priority <= LOG_ABORT_PRIORITY) )
 	{
-		if ( abort_handler != NULL )
+		if ( abort_handler != nullptr )
 		{
 			abort_handler();
 		}
@@ -498,30 +511,10 @@ Zlog::statprint(
 {
 	va_list			ap;						// Variable argument list
 	char			mess [LOG_STRING_SIZE];	// message buffer
-	char			*tptr;					// Temp string pointer.
-	time_t          raw_time;               // Seconds from epoch
-	char            t_buf[TIME_STR];        // Buffer for time string
 
 	va_start( ap, fmt );
 
-	(void)time( &raw_time );
-	(void)strcpy( t_buf, ctime( &raw_time ) );
-	t_buf[strlen( t_buf ) - 1] = '\0';      // Kill trailing '\n'
-
-	sprintf(mess, "<%s> %-*s",
-		t_buf, ERR_T_STR_SIZE, "STATUS" );
-
-	if ( *cmd_name != '\0' )
-	{
-		(void)strcat( mess, cmd_name );
-		(void)strcat( mess, ": " );
-	}
-
-	tptr	=	mess + strlen( mess );
-
-	(void)vsprintf( tptr, fmt, ap );
-
-	strcat(tptr, "\n");
+	format_message( mess, sizeof( mess ), "STATUS", cmd_name, nullptr, fmt, ap );
 
 	va_end( ap );
 
@@ -543,205 +536,6 @@ Zlog::statprint(
 	}
 }
 
- 
-// ----------------------------------------------------------------------------
-/*
- *	NAME
- *
- *			logprint()						- Log a message.
- *
- *	RETURN VALUE
- *
- *			None.
- *
- *	DESCRIPTION
- *
- *			logprint() prints a message to the log if logging is enabled
- *			by the bits in the log mask.
- *
- */
-
-void
-Zlog::logprint(
-	const char			*func,			// Name of calling function
-	Bits_t				mask,			// Print mask
-	const char			*fmt,			// printf(3) style format string
-	... )							   	// printf(3) arguments
-{
-	va_list			  	ap;			   	// Variable argument list
-
-	if ( !(mask & log_mask) )
-	{
-		return;
-	}
-
-	(void)fputs( "Log msg ", stderr );
-
-	if ( *cmd_name != '\0' )
-	{
-		(void)fprintf( stderr, "%s: ", cmd_name );
-	}
-
-	if ( func != (char *)NULL && *func != '\0' )
-	{
-		(void)fprintf( stderr, "%s - ", func );
-	}
-
-	va_start( ap, fmt );
-
-	(void)vfprintf( stderr, fmt, ap );
-
-	va_end( ap );
-
-	(void)putc( '\n', stderr );
-}
-
- 
-// ----------------------------------------------------------------------------
-/*
- *	NAME
- *
- *			vlogprint()						- Log a message.
- *
- *	RETURN VALUE
- *
- *			None.
- *
- *	DESCRIPTION
- *
- *			vlogprint() prints a message to the log if logging is enabled
- *			by the bits in the log mask.
- *
- */
-
-void
-Zlog::vlogprint(
-	const char			*func,			// Name of calling function
-	Bits_t				mask,			// Print mask
-	const char			*fmt,			// vprintf(3) style format string
-	va_list				ap )			// vprintf(3) arguments.
-{
-	if ( !(mask & log_mask) )
-	{
-		return;
-	}
-
-	(void)fputs( "Log msg ", stderr );
-
-	if ( *cmd_name != '\0' )
-	{
-		(void)fprintf( stderr, "%s: ", cmd_name );
-	}
-
-	if ( func != (char *)NULL && *func != '\0' )
-	{
-		(void)fprintf( stderr, "%s - ", func );
-	}
-
-	(void)vfprintf( stderr, fmt, ap );
-
-	(void)putc( '\n', stderr );
-}
-
- 
-// ----------------------------------------------------------------------------
-/*
- *	NAME
- *
- *			lib_logprint()					- Log a message from a library.
- *
- *	RETURN VALUE
- *
- *			None.
- *
- *	DESCRIPTION
- *
- *			lib_logprint() prints a message to the log if logging is enabled
- *			by the bits in the log mask.
- *
- */
-
-void
-Zlog::lib_logprint(
-	const char			*func,			// Name of calling function
-	Bits_t				mask,			// Print mask
-	const char			*fmt,			// printf(3) style format string
-	... )							 	// printf(3) arguments
-{
-	va_list			 	ap;				// Variable argument list
-
-	if ( !(mask & lib_log_mask) )
-	{
-		return;
-	}
-
-	(void)fputs( "Lib msg ", stderr );
-
-	if ( *cmd_name != '\0' )
-	{
-		(void)fprintf( stderr, "%s: ", cmd_name );
-	}
-
-	if ( func != (char *)NULL && *func != '\0' )
-	{
-		(void)fprintf( stderr, "%s - ", func );
-	}
-
-	va_start( ap, fmt );
-
-	(void)vfprintf( stderr, fmt, ap );
-
-	va_end( ap );
-
-	(void)putc( '\n', stderr );
-}
-
- 
-// ----------------------------------------------------------------------------
-/*
- *	NAME
- *
- *			vlib_logprint()					- Log a message from a library.
- *
- *	RETURN VALUE
- *
- *			None.
- *
- *	DESCRIPTION
- *
- *			vlib_logprint() prints a message to the log if logging is enabled
- *			by the bits in the log mask.
- */
-
-void
-Zlog::vlib_logprint(
-	const char			*func,			// Name of calling function
-	Bits_t				mask,			// Print mask
-	const char			*fmt,			// vprintf(3) style format string
-	va_list				ap )			// vprintf(3) arguments.
-{
-	if ( !(mask & lib_log_mask) )
-	{
-		return;
-	}
-
-	(void)fputs( "Lib msg ", stderr );
-
-	if ( *cmd_name != '\0' )
-	{
-		(void)fprintf( stderr, "%s: ", cmd_name );
-	}
-
-	if ( func != (char *)NULL && *func != '\0' )
-	{
-		(void)fprintf( stderr, "%s - ", func );
-	}
-
-	(void)vfprintf( stderr, fmt, ap );
-
-	(void)putc( '\n', stderr );
-}
-	
  
 // ----------------------------------------------------------------------------
 /*
@@ -978,7 +772,7 @@ Zlog::vdbgprint(
 	
 	if ( fp_log )
 	{
-		(void)fprintf(  fp_log, "!%c ", (char)hdr );
+		(void)fprintf(  fp_log, "!%c ", static_cast<char>( hdr ) );
 		(void)vfprintf( fp_log, fmt, ap );
 		(void)fputc( '\n', fp_log );
 		fflush( fp_log );
@@ -986,174 +780,11 @@ Zlog::vdbgprint(
 
 	if ( stderr_too )
 	{
-		(void)fprintf(  stderr, "!%c ", (char)hdr );
+		(void)fprintf(  stderr, "!%c ", static_cast<char>( hdr ) );
 		(void)vfprintf( stderr, fmt, ap );
 		(void)fputc( '\n', stderr );
 		fflush( stderr );
 	}	
-}
-
- 
-// ----------------------------------------------------------------------------
-/*
- *	NAME
- *
- *			logdump()						-	Format and print the dump msg.
- *
- *	RETURN VALUE
- *
- *			None.
- *
- *	DESCRIPTION
- *
- *			logdump() writes a dump message to the error log (usually
- *			stderr).  It first prints the command name if cmd_name is set,
- *			followed by the dump message given by the fmt string and its
- *			arguments.
- */
-
-void
-Zlog::logdump(
-	const char		*func,		  		// name of calling function.
-	const char	  	*fmt,		 		// printf(3) style fmt string.
-	... )							 		// printf(3) arguments.
-{
-	va_list			ap;					// Variable argument list.
-
-	va_start( ap, fmt );
-
-	vlogdump( 0, func, fmt, ap );
-
-	va_end( ap );
-}
-
- 
-// ----------------------------------------------------------------------------
-/*
- *	NAME
- *
- *			logdump()						-	Format and print the dump msg.
- *
- *	RETURN VALUE
- *
- *			None.
- *
- *	DESCRIPTION
- *
- *			logdump() writes a dump message to the error log (usually
- *			stderr).  It first prints the command name if cmd_name is set,
- *			followed by the dump message given by the fmt string and its
- *			arguments.
- */
-
-void
-Zlog::logdump(
-	int				indent,				// Indent level.
-	const char		*func,		  		// name of calling function.
-	const char	  	*fmt,		 		// printf(3) style fmt string.
-	... )							  	// printf(3) arguments.
-{
-	va_list			ap;					// Variable argument list.
-
-	va_start( ap, fmt );
-
-	vlogdump( indent, func, fmt, ap );
-
-	va_end( ap );
-}
-
- 
-// ----------------------------------------------------------------------------
-/*
- *	NAME
- *
- *			vlogdump()						-	Format and print the dump msg.
- *
- *	RETURN VALUE
- *
- *			None.
- *
- *	DESCRIPTION
- *
- *			vlogdump() writes a dump message to the error log (usually
- *			stderr).  It first prints the command name if cmd_name is set,
- *			followed by the dump message given by the fmt string and its
- *			arguments.
- *
- */
-
-void
-Zlog::vlogdump(
-	const char			*func,		   	// name of calling function.
-	const char			*fmt,		   	// vprintf(3) style fmt string.
-	va_list				ap )		   	// vprintf(3) arguments.
-{
-	vlogdump( 0, func, fmt, ap );
-}
-
- 
-// ----------------------------------------------------------------------------
-/*
- *	NAME
- *
- *			vlogdump()						-	Format and print the dump msg.
- *
- *	RETURN VALUE
- *
- *			None.
- *
- *	DESCRIPTION
- *
- *			vlogdump() writes a dump message to the error log (usually
- *			stderr).  It first prints the command name if Cmd is set, followed
- *			by the dump message given by the fmt string and its arguments.
- *
- */
-
-void
-Zlog::vlogdump(
-	int				indent,				// Indent level.
-	const char		*func,				// name of calling function.
-	const char		*fmt,				// vprintf(3) style fmt string.
-	va_list			ap )				// vprintf(3) arguments.
-{
-	const char		*my_name = "vlogdump";
-	time_t         	raw_time;		 	// Seconds from epoch.
-	char           	t_buf[TIME_STR];  	// Buffer for time string.
-
-	if ( indent < 0 || indent > MAX_INDENT )
-	{
-		errprint( my_name,
-			"Called with out of range indent %d", indent );
-		indent = 0;
-	}
-
-	if ( indent == 0 )
-	{
-		(void)time( &raw_time );
-		(void)strcpy( t_buf, ctime( &raw_time ) );
-		t_buf[strlen( t_buf ) - 1] = '\0';      	// Kill trailing '\n'.
-
-		(void)fprintf( stderr, "<%s> %-*s", t_buf, ERR_T_STR_SIZE, "DUMP" );
-
-		if ( *cmd_name != '\0' )
-		{
-			(void)fprintf( stderr, "%s: ", cmd_name );
-		}
-	}
-	else
-	{
-		(void)fprintf( stderr, "%.*s", indent, tab_array );
-	}
-
-	if ( func != (char *)NULL && *func != '\0' )
-	{
-		(void)fprintf( stderr, "%s - ", func );
-	}
-
-	(void)vfprintf( stderr, fmt, ap );
-
-	(void)putc( '\n', stderr );
 }
 
  

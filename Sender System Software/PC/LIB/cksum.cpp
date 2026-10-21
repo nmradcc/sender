@@ -126,7 +126,7 @@ nCheckSumBuf(
 {
 	while (nBytes--)
 	{
-		nCRC = (nCRC << 8) ^ crctab[(unsigned char)((nCRC >> 24) ^ *(pszBuf++)) & 0xFF];
+		nCRC = (nCRC << 8) ^ crctab[static_cast<unsigned char>((nCRC >> 24) ^ *(pszBuf++)) & 0xFF];
 	}
 
 	
@@ -148,18 +148,21 @@ nCheckSumFile(
 	unsigned long	nCRC = 0;
 	long			nLength = 0;
 	long			nBytesRead;
-	register FILE			*fp;
+	FILE					*fp;
 	char			caFullPath[_MAX_PATH];
 
 	caFullPath[0] = '\0';
-	if ( pszDirectory != NULL )
+	if ( pszDirectory != nullptr )
 	{
-		strcpy( caFullPath, pszDirectory );
-		strcat( caFullPath, "\\" );
+		snprintf( caFullPath, sizeof( caFullPath ), "%s\\%s",
+			pszDirectory, pszFile );
 	}
-	strcat( caFullPath, pszFile );
+	else
+	{
+		snprintf( caFullPath, sizeof( caFullPath ), "%s", pszFile );
+	}
 	fp = fopen (caFullPath, "rb");
-	if (fp == NULL)
+	if (fp == nullptr)
 	{
 		return -1;
 	}
@@ -186,7 +189,7 @@ nCheckSumFile(
 	nBytesRead	= nLength;
 	while (nBytesRead > 0)
 	{
-		nCRC	= (nCRC << 8) ^ crctab[(unsigned char)((nCRC >> 24) ^ nBytesRead) & 0xFF];
+		nCRC	= (nCRC << 8) ^ crctab[static_cast<unsigned char>((nCRC >> 24) ^ nBytesRead) & 0xFF];
 		nBytesRead >>= 8;
 	}
 

@@ -104,8 +104,8 @@ test_fill(
 	}
 
 	CHECK( b.get_obj_errs() == 0 );
-	CHECK( b.get_bit_size() == (u_int)(BITS_SIZE * BITS_IN_BYTE) );
-	CHECK( b.get_byte_size() == (u_int)BITS_SIZE );
+	CHECK( b.get_bit_size() == static_cast<u_int>(BITS_SIZE * BITS_IN_BYTE) );
+	CHECK( b.get_byte_size() == static_cast<u_int>(BITS_SIZE) );
 
 	for ( int i = 0; i < BITS_SIZE; i++ )
 	{
@@ -227,14 +227,14 @@ main( void )
 	Idle.print();
 
 	CHECK( my_bits.get_obj_errs() == 0 );
-	CHECK( my_bits.get_isize() == (u_int)BITS_SIZE );
+	CHECK( my_bits.get_isize() == static_cast<u_int>(BITS_SIZE) );
 	CHECK( my_bits.get_bit_size() == 0 );
 
 	printf( "my_bits: size %u Bytes, %u bits\n",
 		my_bits.get_isize(), my_bits.get_bit_size() );
 
 	CHECK( flip_tst.get_obj_errs() == 0 );
-	CHECK( flip_tst.get_isize() == (u_int)FLIP_TST_SIZE );
+	CHECK( flip_tst.get_isize() == static_cast<u_int>(FLIP_TST_SIZE) );
 
 	printf( "flip_tst: size %u\n", flip_tst.get_isize() );
 
@@ -432,7 +432,7 @@ main( void )
 
 		my_bits.print();
 
-		CHECK( my_bits.get_byte_size() == (u_int)Dcc_vects[i].v_size );
+		CHECK( my_bits.get_byte_size() == static_cast<u_int>(Dcc_vects[i].v_size) );
 
 		for ( j = 0; j < Dcc_vects[i].v_size; j++ )
 		{
@@ -480,7 +480,7 @@ main( void )
 			}
 
 			CHECK( flip_tst.get_obj_errs() == 0 );
-			CHECK( flip_tst.get_bit_size() == (u_int)i );
+			CHECK( flip_tst.get_bit_size() == static_cast<u_int>(i) );
 
 			for ( j = 0; j < i; j++ )
 			{
@@ -526,7 +526,7 @@ main( void )
 		my_bits.clr_in().put_1s( BASE_BITS );
 
 		CHECK( my_bits.truncate( i ) == OK );
-		CHECK( my_bits.get_bit_size() == (u_int)i );
+		CHECK( my_bits.get_bit_size() == static_cast<u_int>(i) );
 
 		printf( "%3u bits - ", my_bits.get_bit_size() );
 
@@ -536,7 +536,7 @@ main( void )
 		CHECK( my_bits.get_byte_size() == bits_to_bytes( i ) );
 
 		// Kept bits are 1s and done() pads the last Byte with 0s.
-		for ( j = 0; j < (int)my_bits.get_byte_size() * BITS_IN_BYTE; j++ )
+		for ( j = 0; j < static_cast<int>(my_bits.get_byte_size()) * BITS_IN_BYTE; j++ )
 		{
 			CHECK( bit_at( my_bits, j ) == ( j < i ) );
 		}

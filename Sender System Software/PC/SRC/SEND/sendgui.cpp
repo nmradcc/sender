@@ -206,8 +206,8 @@ static const char *g_logBitLabels[LOGBIT_COUNT] =
  *-------------------------------------------------------------------------*/
 static HWND	g_hMain;
 static char	g_cfgPath[MAX_PATH] = "";
-static HANDLE	g_mcuTestProcess = NULL;
-static HANDLE	g_mcuTestOutputRead = NULL;
+static HANDLE	g_mcuTestProcess = nullptr;
+static HANDLE	g_mcuTestOutputRead = nullptr;
 static std::string	g_mcuTestOutput;
 static const UINT_PTR MCU_TEST_TIMER_ID = 1;
 static std::vector<std::string>	g_origLines;	// Raw lines of the last loaded/saved cfg file, preserved across saves.
@@ -247,7 +247,7 @@ static HWND
 MakeStatic( HWND parent, const char *text, int x, int y, int w, int h )
 {
 	return CreateWindowEx( 0, "STATIC", text, WS_CHILD | WS_VISIBLE,
-		x, y, w, h, parent, NULL, NULL, NULL );
+		x, y, w, h, parent, nullptr, nullptr, nullptr );
 }
 
 static HWND
@@ -255,7 +255,7 @@ MakeEdit( HWND parent, int id, int x, int y, int w, int h )
 {
 	return CreateWindowEx( WS_EX_CLIENTEDGE, "EDIT", "",
 		WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_AUTOHSCROLL,
-		x, y, w, h, parent, (HMENU)(INT_PTR)id, NULL, NULL );
+		x, y, w, h, parent, (HMENU)(INT_PTR)id, nullptr, nullptr );
 }
 
 static HWND
@@ -263,7 +263,7 @@ MakeCheck( HWND parent, int id, const char *text, int x, int y, int w, int h )
 {
 	return CreateWindowEx( 0, "BUTTON", text,
 		WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX,
-		x, y, w, h, parent, (HMENU)(INT_PTR)id, NULL, NULL );
+		x, y, w, h, parent, (HMENU)(INT_PTR)id, nullptr, nullptr );
 }
 
 static HWND
@@ -271,7 +271,7 @@ MakeButton( HWND parent, int id, const char *text, int x, int y, int w, int h )
 {
 	return CreateWindowEx( 0, "BUTTON", text,
 		WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-		x, y, w, h, parent, (HMENU)(INT_PTR)id, NULL, NULL );
+		x, y, w, h, parent, (HMENU)(INT_PTR)id, nullptr, nullptr );
 }
 
 static void
@@ -286,11 +286,11 @@ SetEditUInt( int id, unsigned long value, bool hex )
 	char buf[32];
 	if ( hex )
 	{
-		sprintf( buf, "0x%08lX", value );
+		snprintf( buf, sizeof( buf ), "0x%08lX", value );
 	}
 	else
 	{
-		sprintf( buf, "%lu", value );
+		snprintf( buf, sizeof( buf ), "%lu", value );
 	}
 	SetEditText( id, buf );
 }
@@ -321,7 +321,7 @@ static unsigned long
 GetEditULong( int id )
 {
 	std::string s = GetEditText( id );
-	return strtoul( s.c_str(), NULL, 0 );
+	return strtoul( s.c_str(), nullptr, 0 );
 }
 
 static void
@@ -427,8 +427,8 @@ EnumComPorts( void )
 			DWORD dataSize = sizeof( data );
 			DWORD type;
 
-			if ( RegEnumValue( hKey, index, valueName, &valueNameSize, NULL,
-				&type, (BYTE *)data, &dataSize ) != ERROR_SUCCESS )
+			if ( RegEnumValue( hKey, index, valueName, &valueNameSize, nullptr,
+				&type, reinterpret_cast<BYTE *>( data ), &dataSize ) != ERROR_SUCCESS )
 			{
 				break;
 			}
@@ -624,7 +624,7 @@ static bool
 IsIniPath( const char *path )
 {
 	const char *dot = strrchr( path, '.' );
-	return dot != NULL && _stricmp( dot, ".ini" ) == 0;
+	return dot != nullptr && _stricmp( dot, ".ini" ) == 0;
 }
 
 /*---------------------------------------------------------------------------
@@ -634,7 +634,7 @@ static bool
 LoadCfgFile( const char *path )
 {
 	FILE *fp = fopen( path, "r" );
-	if ( fp == NULL )
+	if ( fp == nullptr )
 	{
 		return false;
 	}
@@ -748,7 +748,7 @@ LoadCfgFile( const char *path )
 		}
 		else if ( _stricmp( key.c_str(), "LOG" ) == 0 )
 		{
-			unsigned long mask = val.empty() ? 0x01 : strtoul( val.c_str(), NULL, 0 );
+			unsigned long mask = val.empty() ? 0x01 : strtoul( val.c_str(), nullptr, 0 );
 			SetMaskUInt( ID_EDIT_LOG, ID_EDIT_LOG_GENERAL, mask );
 		}
 		else if ( _stricmp( key.c_str(), "EXTRA_PRE" ) == 0 )
@@ -822,34 +822,34 @@ SaveCfgFile( const char *path )
 
 	auto addField = [&]( const char *key, const std::string &val )
 	{
-		int valueStart = 20 - (int)val.size();
-		if ( valueStart < (int)strlen( key ) + 1 )
+		int valueStart = 20 - static_cast<int>( val.size() );
+		if ( valueStart < static_cast<int>( strlen( key ) ) + 1 )
 		{
-			valueStart = (int)strlen( key ) + 1;
+			valueStart = static_cast<int>( strlen( key ) ) + 1;
 		}
 		snprintf( buf, sizeof( buf ), "%s%*s%s", key,
-			valueStart - (int)strlen( key ), "", val.c_str() );
+			valueStart - static_cast<int>( strlen( key ) ), "", val.c_str() );
 		fields.push_back( { key, buf } );
 	};
 
 	auto addMaskField = [&]( const char *key, const std::string &val )
 	{
-		unsigned long mask = strtoul( val.c_str(), NULL, 16 );
+		unsigned long mask = strtoul( val.c_str(), nullptr, 16 );
 		char maskText[32];
 		snprintf( maskText, sizeof( maskText ), "0x%08lx", mask );
-		int valueStart = 20 - (int)strlen( maskText );
-		if ( valueStart < (int)strlen( key ) + 1 )
+		int valueStart = 20 - static_cast<int>( strlen( maskText ) );
+		if ( valueStart < static_cast<int>( strlen( key ) ) + 1 )
 		{
-			valueStart = (int)strlen( key ) + 1;
+			valueStart = static_cast<int>( strlen( key ) ) + 1;
 		}
 		snprintf( buf, sizeof( buf ), "%s%*s%s", key,
-			valueStart - (int)strlen( key ), "", maskText );
+			valueStart - static_cast<int>( strlen( key ) ), "", maskText );
 		fields.push_back( { key, buf } );
 	};
 
 	addFlag( "MANUAL", IsChecked( ID_CHK_MANUAL ) );
 
-	int typeSel = (int)SendDlgItemMessage( g_hMain, ID_COMBO_TYPE, CB_GETCURSEL, 0, 0 );
+	int typeSel = static_cast<int>( SendDlgItemMessage( g_hMain, ID_COMBO_TYPE, CB_GETCURSEL, 0, 0 ) );
 	const char *typeChar = "L";
 	switch ( typeSel )
 	{
@@ -937,7 +937,7 @@ SaveCfgFile( const char *path )
 	}
 
 	FILE *fp = fopen( path, "w" );
-	if ( fp == NULL )
+	if ( fp == nullptr )
 	{
 		return false;
 	}
@@ -990,7 +990,7 @@ BrowseSave( char *outPath, DWORD outSize )
 	char file[MAX_PATH];
 
 	/* An .ini source may only be saved as .ini; anything else only as .cfg. */
-	strcpy( file, g_iniSource ? "SEND.INI" : "SEND.CFG" );
+	snprintf( file, sizeof( file ), "%s", g_iniSource ? "SEND.INI" : "SEND.CFG" );
 
 	ZeroMemory( &ofn, sizeof( ofn ) );
 	ofn.lStructSize     = sizeof( ofn );
@@ -1041,9 +1041,9 @@ MigrateIniToCfg( HWND hwnd )
 
 	/* The template is always the send.cfg beside sendgui.exe; it is only read. */
 	char exePath[MAX_PATH];
-	GetModuleFileName( NULL, exePath, MAX_PATH );
+	GetModuleFileName( nullptr, exePath, MAX_PATH );
 	char *exeSlash = strrchr( exePath, '\\' );
-	if ( exeSlash != NULL )
+	if ( exeSlash != nullptr )
 	{
 		exeSlash[1] = '\0';
 	}
@@ -1054,7 +1054,7 @@ MigrateIniToCfg( HWND hwnd )
 	std::string basePath = std::string( exePath ) + "send.cfg";
 
 	FILE *fp = fopen( basePath.c_str(), "r" );
-	if ( fp == NULL )
+	if ( fp == nullptr )
 	{
 		std::string msg = "Baseline file not found:\n" + basePath;
 		MessageBox( hwnd, msg.c_str(), "sendgui", MB_ICONERROR );
@@ -1137,9 +1137,9 @@ LaunchSendExe( HWND hwnd )
 	}
 
 	char exeDir[MAX_PATH];
-	GetModuleFileName( NULL, exeDir, MAX_PATH );
+	GetModuleFileName( nullptr, exeDir, MAX_PATH );
 	char *slash = strrchr( exeDir, '\\' );
-	if ( slash != NULL )
+	if ( slash != nullptr )
 	{
 		slash[1] = '\0';
 	}
@@ -1159,7 +1159,7 @@ LaunchSendExe( HWND hwnd )
 	SetEnvironmentVariable( "SEND_CFG", g_cfgPath );
 
 	char cmdLine[MAX_PATH + 16];
-	sprintf( cmdLine, "\"%s\"", sendExe.c_str() );
+	snprintf( cmdLine, sizeof( cmdLine ), "\"%s\"", sendExe.c_str() );
 
 	STARTUPINFO si;
 	PROCESS_INFORMATION pi;
@@ -1171,21 +1171,21 @@ LaunchSendExe( HWND hwnd )
 	strncpy( workDir, g_cfgPath, sizeof( workDir ) - 1 );
 	workDir[sizeof( workDir ) - 1] = '\0';
 	char *cfgSlash = strrchr( workDir, '\\' );
-	if ( cfgSlash == NULL )
+	if ( cfgSlash == nullptr )
 	{
 		cfgSlash = strrchr( workDir, '/' );
 	}
-	if ( cfgSlash != NULL )
+	if ( cfgSlash != nullptr )
 	{
 		*cfgSlash = '\0';
 	}
 	else
 	{
-		strcpy( workDir, exeDir );
+		snprintf( workDir, sizeof( workDir ), "%s", exeDir );
 	}
 
-	if ( CreateProcess( sendExe.c_str(), cmdLine, NULL, NULL, FALSE, 0,
-		NULL, workDir, &si, &pi ) )
+	if ( CreateProcess( sendExe.c_str(), 	cmdLine, nullptr, nullptr, FALSE, 0,
+			nullptr, workDir, &si, &pi ) )
 	{
 		CloseHandle( pi.hThread );
 		CloseHandle( pi.hProcess );
@@ -1199,14 +1199,14 @@ LaunchSendExe( HWND hwnd )
 static void
 ReadMcuSmokeTestOutput( void )
 {
-	if ( g_mcuTestOutputRead == NULL )
+	if ( g_mcuTestOutputRead == nullptr )
 	{
 		return;
 	}
 
 	DWORD bytesAvailable = 0;
-	if ( !PeekNamedPipe( g_mcuTestOutputRead, NULL, 0, NULL,
-		&bytesAvailable, NULL ) )
+	if ( !PeekNamedPipe( g_mcuTestOutputRead, nullptr, 0, nullptr,
+		&bytesAvailable, nullptr ) )
 	{
 		return;
 	}
@@ -1218,7 +1218,7 @@ ReadMcuSmokeTestOutput( void )
 		DWORD bytesToRead = bytesAvailable < sizeof( buffer )
 			? bytesAvailable : sizeof( buffer );
 		if ( !ReadFile( g_mcuTestOutputRead, buffer, bytesToRead,
-			&bytesRead, NULL ) || bytesRead == 0 )
+			&bytesRead, nullptr ) || bytesRead == 0 )
 		{
 			break;
 		}
@@ -1230,8 +1230,8 @@ ReadMcuSmokeTestOutput( void )
 				bytesRead < keep ? bytesRead : keep );
 		}
 
-		if ( !PeekNamedPipe( g_mcuTestOutputRead, NULL, 0, NULL,
-			&bytesAvailable, NULL ) )
+		if ( !PeekNamedPipe( g_mcuTestOutputRead, nullptr, 0, nullptr,
+			&bytesAvailable, nullptr ) )
 		{
 			break;
 		}
@@ -1267,15 +1267,15 @@ GetMcuFirmwareVersion( void )
 static void
 FinishMcuSmokeTest( HWND hwnd, bool passed )
 {
-	if ( g_mcuTestProcess != NULL )
+	if ( g_mcuTestProcess != nullptr )
 	{
 		CloseHandle( g_mcuTestProcess );
-		g_mcuTestProcess = NULL;
+		g_mcuTestProcess = nullptr;
 	}
-	if ( g_mcuTestOutputRead != NULL )
+	if ( g_mcuTestOutputRead != nullptr )
 	{
 		CloseHandle( g_mcuTestOutputRead );
-		g_mcuTestOutputRead = NULL;
+		g_mcuTestOutputRead = nullptr;
 	}
 	KillTimer( hwnd, MCU_TEST_TIMER_ID );
 	EnableWindow( GetDlgItem( hwnd, ID_BTN_MCU_TEST ), TRUE );
@@ -1304,7 +1304,7 @@ FinishMcuSmokeTest( HWND hwnd, bool passed )
 static void
 LaunchMcuSmokeTest( HWND hwnd )
 {
-	if ( g_mcuTestProcess != NULL )
+	if ( g_mcuTestProcess != nullptr )
 	{
 		return;
 	}
@@ -1320,7 +1320,7 @@ LaunchMcuSmokeTest( HWND hwnd )
 	}
 
 	char exePath[MAX_PATH];
-	DWORD pathLength = GetModuleFileName( NULL, exePath, MAX_PATH );
+	DWORD pathLength = 	GetModuleFileName( nullptr, exePath, MAX_PATH );
 	if ( pathLength == 0 || pathLength >= MAX_PATH )
 	{
 		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS, "MCU test: FAIL (cannot locate executable)" );
@@ -1328,7 +1328,7 @@ LaunchMcuSmokeTest( HWND hwnd )
 	}
 
 	char *slash = strrchr( exePath, '\\' );
-	if ( slash == NULL )
+	if ( slash == nullptr )
 	{
 		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS, "MCU test: FAIL (cannot locate executable)" );
 		return;
@@ -1355,16 +1355,16 @@ LaunchMcuSmokeTest( HWND hwnd )
 	pipeSecurity.nLength = sizeof( pipeSecurity );
 	pipeSecurity.bInheritHandle = TRUE;
 
-	HANDLE outputRead = NULL;
-	HANDLE outputWrite = NULL;
+	HANDLE outputRead = nullptr;
+	HANDLE outputWrite = nullptr;
 	if ( !CreatePipe( &outputRead, &outputWrite, &pipeSecurity, 0 )
 		|| !SetHandleInformation( outputRead, HANDLE_FLAG_INHERIT, 0 ) )
 	{
-		if ( outputRead != NULL )
+		if ( outputRead != nullptr )
 		{
 			CloseHandle( outputRead );
 		}
-		if ( outputWrite != NULL )
+		if ( outputWrite != nullptr )
 		{
 			CloseHandle( outputWrite );
 		}
@@ -1382,7 +1382,7 @@ LaunchMcuSmokeTest( HWND hwnd )
 	si.hStdError = outputWrite;
 
 	if ( !CreateProcess( smokeExe.c_str(), mutableCommandLine.data(),
-		NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, exeDir.c_str(), &si, &pi ) )
+		nullptr, nullptr, TRUE, CREATE_NO_WINDOW, nullptr, exeDir.c_str(), &si, &pi ) )
 	{
 		CloseHandle( outputRead );
 		CloseHandle( outputWrite );
@@ -1398,7 +1398,7 @@ LaunchMcuSmokeTest( HWND hwnd )
 	SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS, "MCU test: running..." );
 	EnableWindow( GetDlgItem( hwnd, ID_BTN_MCU_TEST ), FALSE );
 
-	if ( SetTimer( hwnd, MCU_TEST_TIMER_ID, 100, NULL ) == 0 )
+	if ( SetTimer( hwnd, MCU_TEST_TIMER_ID, 100, nullptr ) == 0 )
 	{
 		ReadMcuSmokeTestOutput();
 		DWORD waitResult;
@@ -1430,7 +1430,7 @@ CreateControls( HWND hwnd )
 	/* Tab strip switches between the general options page and the
 	 * individual TESTS/CLOCKS mask bit pages. */
 	CreateWindowEx( 0, WC_TABCONTROL, "", WS_CHILD | WS_VISIBLE | WS_TABSTOP,
-		10, 10, 1020, 30, hwnd, (HMENU)(INT_PTR)ID_TAB, NULL, NULL );
+		10, 10, 1020, 30, hwnd, (HMENU)(INT_PTR)ID_TAB, nullptr, nullptr );
 	HWND tab = GetDlgItem( hwnd, ID_TAB );
 
 	TCITEM tie;
@@ -1460,7 +1460,7 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( MakeStatic( hwnd, "Decoder Type:", xLabel, y, labelW, 18 ) );
 	HWND combo = CreateWindowEx( WS_EX_CLIENTEDGE, "COMBOBOX", "",
 		WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST,
-		xEdit, y - 2, editW, 200, hwnd, (HMENU)(INT_PTR)ID_COMBO_TYPE, NULL, NULL );
+		xEdit, y - 2, editW, 200, hwnd, (HMENU)(INT_PTR)ID_COMBO_TYPE, nullptr, nullptr );
 	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"LOCO (L)" );
 	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"FUNC (F)" );
 	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"ACC (A)" );
@@ -1499,7 +1499,7 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( MakeStatic( hwnd, "MCU Port:", xLabel, y, labelW, 18 ) );
 	HWND portCombo = CreateWindowEx( WS_EX_CLIENTEDGE, "COMBOBOX", "",
 		WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWN | CBS_AUTOHSCROLL,
-		xEdit, y - 2, editW, 200, hwnd, (HMENU)(INT_PTR)ID_EDIT_MCU_PORT, NULL, NULL );
+		xEdit, y - 2, editW, 200, hwnd, (HMENU)(INT_PTR)ID_EDIT_MCU_PORT, nullptr, nullptr );
 	std::vector<std::string> comPorts = EnumComPorts();
 	for ( size_t i = 0; i < comPorts.size(); i++ )
 	{
@@ -1511,7 +1511,7 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( MakeStatic( hwnd, "MCU Baud:", xLabel, y, labelW, 18 ) );
 	HWND baudCombo = CreateWindowEx( WS_EX_CLIENTEDGE, "COMBOBOX", "",
 		WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWN | CBS_AUTOHSCROLL,
-		xEdit, y - 2, editW, 200, hwnd, (HMENU)(INT_PTR)ID_EDIT_MCU_BAUD, NULL, NULL );
+		xEdit, y - 2, editW, 200, hwnd, (HMENU)(INT_PTR)ID_EDIT_MCU_BAUD, nullptr, nullptr );
 	static const char *commonBauds[] =
 	{
 		"9600", "19200", "38400", "57600", "115200",
@@ -1577,7 +1577,7 @@ CreateControls( HWND hwnd )
 		for ( int i = 0; i < TESTBIT_COUNT; i++ )
 		{
 			char text[64];
-			sprintf( text, "Bit %2d (0x%08lX) - %s", i, 1UL << i, g_testBitLabels[i] );
+			snprintf( text, sizeof( text ), "Bit %2d (0x%08lX) - %s", i, 1UL << i, g_testBitLabels[i] );
 
 			int col = i / bitsPerCol;
 			int row = i % bitsPerCol;
@@ -1613,7 +1613,7 @@ CreateControls( HWND hwnd )
 			for ( int i = 0; i < LOGBIT_COUNT; i++ )
 			{
 				char text[64];
-				sprintf( text, "Bit %2d (0x%02lX) - %s", i, 1UL << i, g_logBitLabels[i] );
+				snprintf( text, sizeof( text ), "Bit %2d (0x%02lX) - %s", i, 1UL << i, g_logBitLabels[i] );
 				g_page4Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LOGBIT_BASE + i, text,
 					xLabel, pageTop + 32 + i * bitRowH, bitColW - 10, 20 ) );
 			}
@@ -1645,7 +1645,7 @@ CreateControls( HWND hwnd )
 		for ( int i = 0; i < FUNCBIT_COUNT; i++ )
 		{
 			char text[64];
-			sprintf( text, "Bit %2d (0x%02lX) - %s", i, 1UL << i, g_funcBitLabels[i] );
+			snprintf( text, sizeof( text ), "Bit %2d (0x%02lX) - %s", i, 1UL << i, g_funcBitLabels[i] );
 
 			HWND chk = MakeCheck( hwnd, ID_CHK_FUNCBIT_BASE + i, text,
 				xLabel, pageTop + 32 + i * bitRowH,
@@ -1681,7 +1681,7 @@ CreateControls( HWND hwnd )
 		for ( int i = 0; i < CLOCKBIT_COUNT; i++ )
 		{
 			char text[64];
-			sprintf( text, "Bit %2d (0x%08lX) - %s", i, 1UL << i, g_clockBitLabels[i] );
+			snprintf( text, sizeof( text ), "Bit %2d (0x%08lX) - %s", i, 1UL << i, g_clockBitLabels[i] );
 
 			int col = i / bitsPerCol;
 			int row = i % bitsPerCol;
@@ -1722,9 +1722,9 @@ CreateControls( HWND hwnd )
 	MakeButton( hwnd, ID_BTN_SAVEAS, "Save As...", xBtn, yBtn, btnW, 26 );
 
 	CreateWindowEx( 0, "STATIC", "", WS_CHILD | WS_VISIBLE | SS_PATHELLIPSIS | SS_NOPREFIX,
-		20, yBtn + 30, 1020, 20, hwnd, (HMENU)(INT_PTR)ID_STATIC_PATH, NULL, NULL );
+		20, yBtn + 30, 1020, 20, hwnd, (HMENU)(INT_PTR)ID_STATIC_PATH, nullptr, nullptr );
 	CreateWindowEx( 0, "STATIC", "MCU test: Not run", WS_CHILD | WS_VISIBLE | SS_NOPREFIX,
-		20, yBtn + 52, 1020, 20, hwnd, (HMENU)(INT_PTR)ID_STATIC_MCU_STATUS, NULL, NULL );
+		20, yBtn + 52, 1020, 20, hwnd, (HMENU)(INT_PTR)ID_STATIC_MCU_STATUS, nullptr, nullptr );
 
 	/* Start on the General page. */
 	for ( size_t i = 0; i < g_page1Ctrls.size(); i++ )
@@ -2049,13 +2049,13 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 
 				/* Force a repaint so no stale label/checkbox text lingers
 				 * from the previously visible page. */
-				InvalidateRect( hwnd, NULL, TRUE );
+				InvalidateRect( hwnd, nullptr, TRUE );
 			}
 			return 0;
 		}
 
 		case WM_TIMER:
-			if ( wParam == MCU_TEST_TIMER_ID && g_mcuTestProcess != NULL )
+			if ( wParam == MCU_TEST_TIMER_ID && g_mcuTestProcess != nullptr )
 			{
 				ReadMcuSmokeTestOutput();
 				DWORD waitResult = WaitForSingleObject( g_mcuTestProcess, 0 );
@@ -2076,15 +2076,15 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 
 		case WM_DESTROY:
 			KillTimer( hwnd, MCU_TEST_TIMER_ID );
-			if ( g_mcuTestProcess != NULL )
+			if ( g_mcuTestProcess != nullptr )
 			{
 				CloseHandle( g_mcuTestProcess );
-				g_mcuTestProcess = NULL;
+				g_mcuTestProcess = nullptr;
 			}
-			if ( g_mcuTestOutputRead != NULL )
+			if ( g_mcuTestOutputRead != nullptr )
 			{
 				CloseHandle( g_mcuTestOutputRead );
-				g_mcuTestOutputRead = NULL;
+				g_mcuTestOutputRead = nullptr;
 			}
 			PostQuitMessage( 0 );
 			return 0;
@@ -2106,10 +2106,10 @@ WinMain( HINSTANCE hInstance, HINSTANCE, LPSTR lpCmdLine, int nCmdShow )
 	wc.cbSize        = sizeof( wc );
 	wc.lpfnWndProc   = WndProc;
 	wc.hInstance     = hInstance;
-	wc.hCursor       = LoadCursor( NULL, IDC_ARROW );
+	wc.hCursor       = LoadCursor( nullptr, IDC_ARROW );
 	wc.hbrBackground = (HBRUSH)( COLOR_BTNFACE + 1 );
 	wc.lpszClassName = "SendGuiWndClass";
-	wc.hIcon         = LoadIcon( NULL, IDI_APPLICATION );
+	wc.hIcon         = LoadIcon( nullptr, IDI_APPLICATION );
 
 	if ( !RegisterClassEx( &wc ) )
 	{
@@ -2124,15 +2124,15 @@ WinMain( HINSTANCE hInstance, HINSTANCE, LPSTR lpCmdLine, int nCmdShow )
 	g_hMain = CreateWindowEx( 0, wc.lpszClassName, windowTitle,
 		WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME,
 		CW_USEDEFAULT, CW_USEDEFAULT, 1060, 680,
-		NULL, NULL, hInstance, NULL );
+		nullptr, nullptr, hInstance, nullptr );
 
-	if ( g_hMain == NULL )
+	if ( g_hMain == nullptr )
 	{
 		return 1;
 	}
 
 	/* If a cfg file path was passed on the command line, load it. */
-	if ( lpCmdLine != NULL && lpCmdLine[0] != '\0' )
+	if ( lpCmdLine != nullptr && lpCmdLine[0] != '\0' )
 	{
 		std::string arg( lpCmdLine );
 		Trim( arg );
@@ -2151,7 +2151,7 @@ WinMain( HINSTANCE hInstance, HINSTANCE, LPSTR lpCmdLine, int nCmdShow )
 		/* Otherwise try SEND.CFG next to the executable / in the cwd. */
 		if ( LoadCfgFile( "SEND.CFG" ) )
 		{
-			GetFullPathName( "SEND.CFG", sizeof( g_cfgPath ), g_cfgPath, NULL );
+			GetFullPathName( "SEND.CFG", sizeof( g_cfgPath ), g_cfgPath, nullptr );
 			UpdatePathLabel();
 		}
 	}
@@ -2160,11 +2160,11 @@ WinMain( HINSTANCE hInstance, HINSTANCE, LPSTR lpCmdLine, int nCmdShow )
 	UpdateWindow( g_hMain );
 
 	MSG msg;
-	while ( GetMessage( &msg, NULL, 0, 0 ) )
+	while ( GetMessage( &msg, nullptr, 0, 0 ) )
 	{
 		TranslateMessage( &msg );
 		DispatchMessage( &msg );
 	}
 
-	return (int)msg.wParam;
+	return static_cast<int>( msg.wParam );
 }

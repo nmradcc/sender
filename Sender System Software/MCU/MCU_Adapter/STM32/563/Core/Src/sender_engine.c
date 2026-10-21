@@ -469,17 +469,6 @@ uint8_t sender_engine_stop(sender_engine_t *eng)
     return SHP_STATUS_OK;
 }
 
-uint8_t sender_engine_clear_underflow(sender_engine_t *eng)
-{
-    if (eng == 0)
-    {
-        return SHP_STATUS_INTERNAL_ERROR;
-    }
-
-    eng->underflow = false;
-    return SHP_STATUS_OK;
-}
-
 uint8_t sender_engine_set_scope(sender_engine_t *eng, bool scope_on)
 {
     if (eng == 0)
@@ -774,7 +763,6 @@ void sender_engine_reset_stats(sender_engine_t *eng)
 
     eng->packets_sent = 0u;
     eng->bytes_sent = 0u;
-    eng->underruns = 0u;
 }
 
 void sender_engine_get_status(const sender_engine_t *eng,
@@ -805,7 +793,6 @@ void sender_engine_get_stats(const sender_engine_t *eng,
 
     out->packets_sent = eng->packets_sent;
     out->bytes_sent   = eng->bytes_sent;
-    out->underruns    = eng->underruns;
 }
 
 void sender_engine_get_non_idle_packet_event(uint32_t *event_count,

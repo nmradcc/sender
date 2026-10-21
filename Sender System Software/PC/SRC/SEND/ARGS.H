@@ -59,41 +59,41 @@ class Args_obj : public Z_core
 
 	/* Simple get methods */
 	const char	*get_key_help( void ) const
-				{ return ( key_help ); }
+				{ return ( m_key_help ); }
 	const char	*get_cmd_name( void ) const
-				{ return ( cmd_name ); }
+				{ return ( m_cmd_name ); }
 	const char	*get_cfg_path( void ) const
-				{ return ( cfg_path ); }
+				{ return ( m_cfg_path ); }
 	FILE		*get_cfg_fp( void ) const
-				{ return ( cfg_fp ); }
+				{ return ( m_cfg_fp ); }
 	u_short		get_decoder_address( void ) const
-				{ return ( decoder_address ); }
+				{ return ( m_decoder_address ); }
 	Dec_types  	get_decoder_type( void ) const
-				{ return ( decoder_type ); }
+				{ return ( m_decoder_type ); }
 	bool	   	get_fragment_flag( void ) const
-				{ return ( fragment_flag ); }
+				{ return ( m_fragment_flag ); }
 	bool	   	get_rep_flag( void ) const
-				{ return ( rep_flag ); }
+				{ return ( m_rep_flag ); }
 	Bits_t	 	get_run_mask( void ) const
-				{ return ( run_mask ); }
+				{ return ( m_run_mask ); }
 	Bits_t		get_clk_mask( void ) const
-				{ return ( clk_mask ); }
+				{ return ( m_clk_mask ); }
 	bool	   	get_manual_flag( void ) const
-				{ return ( manual_flag ); }
+				{ return ( m_manual_flag ); }
 	u_int	   	get_extra_preamble( void ) const
-				{ return ( extra_preamble ); }
+				{ return ( m_extra_preamble ); }
 	bool	  	get_trig_rev( void ) const
-				{ return ( trig_rev ); }
+				{ return ( m_trig_rev ); }
 	bool	  	get_loco_first( void ) const
-				{ return ( loco_first ); }
+				{ return ( m_loco_first ); }
 	u_int	   	get_fill_msec( void ) const
-				{ return ( fill_msec ); }
+				{ return ( m_fill_msec ); }
 	u_int	   	get_test_repeats( void ) const
-				{ return ( test_repeats ); }
+				{ return ( m_test_repeats ); }
 	bool	  	get_print_user( void ) const
-				{ return ( print_user ); }
+				{ return ( m_print_user ); }
 	u_int		get_log_mask( void ) const
-				{ return ( log_mask ); }
+				{ return ( m_log_mask ); }
 	bool	  		get_mcu_bypass_tst( void ) const
 				{ return ( m_mcu_bypass_tst ); }
 	bool	  		get_reduce_passcnt( void ) const
@@ -105,23 +105,23 @@ class Args_obj : public Z_core
 	bool	  	get_ambig_addr_same( void ) const
 				{ return ( m_ambig_addr_same ); }
 	BYTE	   	get_aspect_preset( void ) const
-				{ return ( aspect_preset ); }
+				{ return ( m_aspect_preset ); }
 	BYTE	   	get_aspect_trigger( void ) const
-				{ return ( aspect_trigger ); }
+				{ return ( m_aspect_trigger ); }
 	bool	  	get_lamp_rear( void ) const
 				{ return ( m_lamp_rear ); }
 	BYTE	   	get_func_mask( void ) const
-				{ return ( func_mask ); }
+				{ return ( m_func_mask ); }
     BYTE        get_acc_pair( void ) const
-                { return ( ( acc_pre + 1 ) / 2 ); }
+                { return ( ( m_acc_pre + 1 ) / 2 ); }
     BYTE		get_acc_pre( void ) const
-                { return ( acc_pre ); }
+                { return ( m_acc_pre ); }
     BYTE		get_acc_trg( void ) const
-                { return ( acc_pre - 1 ); }
+                { return ( m_acc_pre - 1 ); }
     bool	  	get_kick_start( void ) const
 				{ return ( m_kick_start ); }
 	u_int	   	get_extra_trg( void ) const
-				{ return ( extra_trg ); }
+				{ return ( m_extra_trg ); }
 	const char	*get_mcu_port( void ) const
 				{ return ( m_mcu_port ); }
 	u_int		get_mcu_baud( void ) const
@@ -134,39 +134,39 @@ class Args_obj : public Z_core
 
   protected:
 	/* Data section */
-	char					cmd_name[MAXROOT];	// Command name.
-	char					cfg_path[MAXPATH];	// cfg file path name.
-	FILE					*cfg_fp;			// cfg file pointer.
-	u_short	  				decoder_address;   	// Decoder address.
-	bool					address_set;		// Address was set by user.
-	Dec_types				decoder_type;	  	// Decoder type.
-	bool					fragment_flag;	 	// Test all fragments.
-	bool					rep_flag;		 	// Repeat decoder tests.
-	Bits_t					run_mask;	 		// Tests to run.
-	Bits_t					clk_mask;			// Clocks to try.
-	bool					manual_flag;		// Run tests manually.
-	u_int					extra_preamble;		// Extra margin test preambles.
-	bool					trig_rev;			// Use reverse as trigger cmd.
-	bool					loco_first;			// Put loco pkt + func pkt.
-	u_int					fill_msec;			// Fill time (msec).
-	u_int					test_repeats;		// Number of times to do tests.
-	bool					print_user;			// If true, print user docs.
-	u_int					log_mask;			// LOG mode: 0..3.
+	char					m_cmd_name[MAXROOT];	// Command name.
+	char					m_cfg_path[MAXPATH];	// cfg file path name.
+	FILE					*m_cfg_fp;			// cfg file pointer.
+	u_short	  				m_decoder_address;   	// Decoder address.
+	bool					m_address_set;		// Address was set by user.
+	Dec_types				m_decoder_type;	  	// Decoder type.
+	bool					m_fragment_flag;	 	// Test all fragments.
+	bool					m_rep_flag;		 	// Repeat decoder tests.
+	Bits_t					m_run_mask;	 		// Tests to run.
+	Bits_t					m_clk_mask;			// Clocks to try.
+	bool					m_manual_flag;		// Run tests manually.
+	u_int					m_extra_preamble;		// Extra margin test preambles.
+	bool					m_trig_rev;			// Use reverse as trigger cmd.
+	bool					m_loco_first;			// Put loco pkt + func pkt.
+	u_int					m_fill_msec;			// Fill time (msec).
+	u_int					m_test_repeats;		// Number of times to do tests.
+	bool					m_print_user;			// If true, print user docs.
+	u_int					m_log_mask;			// LOG mode: 0..3.
 	bool				    m_mcu_bypass_tst;	// If true, skip MCU self tests.
 	bool				    m_reduce_passcnt;	// If true, use reduced pass count.
 	bool					m_no_abort;			// If true, no stop on error.
 	bool					m_late_scope;		// If true, use late scope.
 	bool					m_ambig_addr_same;	// If true, use same address.
-    BYTE					aspect_preset;		// Sig decoder aspect preset.
-    BYTE					aspect_trigger;		// Sig decoder aspect trigger.
+    BYTE					m_aspect_preset;		// Sig decoder aspect preset.
+    BYTE					m_aspect_trigger;		// Sig decoder aspect trigger.
     bool					m_lamp_rear;		// Use rear lamp.
-    BYTE					func_mask;			// Function group bit mask.
-    BYTE                    acc_pre;			// Acc. out preset (1,3,5,7);
+    BYTE					m_func_mask;			// Function group bit mask.
+    BYTE                    m_acc_pre;			// Acc. out preset (1,3,5,7);
     bool					m_kick_start;		// Briefly start loco.
-	u_int					extra_trg;		    // Extra Ames tst trig packets.	
+	u_int					m_extra_trg;		    // Extra Ames tst trig packets.	
 	char					m_mcu_port[MAX_MCU_PORT]; // MCU COM port name.
 	u_int					m_mcu_baud;		// MCU serial baud rate.
-	const char 				*key_help;			// Keyboard commands help msg.
+	const char 				*m_key_help;			// Keyboard commands help msg.
 
 	/* Method section */
 	Rslt_t		argscan(	int			argc,

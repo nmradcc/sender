@@ -35,6 +35,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <vector>
+#include <memory>
 
 #define CMD_MSG		( printf( "Command mode (h for help, q to quit) >>" ) )
 
@@ -86,7 +87,6 @@ enum Key_val
 	KEY_HEADER		= 'h',						// Print header.
 	KEY_CLOCK		= 'c',						// Toggle clock.
 	KEY_MCLK		= 'C', 						// Toggle many clocks.
-	KEY_UNDER		= 'u',						// Clear underflow.
 	KEY_ZERO		= '0',						// Send 0 stream.
 	KEY_ONE			= '1',						// Send 1 stream.
 	KEY_SCOPE_A		= 'a',						// Scope test A.
@@ -116,7 +116,7 @@ enum Key_val
 const char *Key_help	=
 "ESC - Return to command line       h - Print header\n"
 "  c - Send single clock phase      C - Send series of clock phases\n"
-"  u - Clear underflow              0 - Send zeros\n"
+"                                   0 - Send zeros\n"
 "  1 - Send ones                    a - Send scope A pattern\n"
 "  b - Send scope B pattern         o - Send scope timing packet\n"
 "  w - Send warble packets          S - Send stretched 0 pattern\n"
@@ -141,7 +141,6 @@ static bool		hw_is_running();
 static Rslt_t	hw_set_clk( u_short clk0t, u_short clk0h, u_short clk1t );
 static Rslt_t	hw_start_clk();
 static Rslt_t	hw_stop_clk();
-static void		hw_clr_under();
 static void		hw_set_scope( bool on );
 static Rslt_t	hw_send_bytes( u_int count, BYTE val, const char *info );
 static Rslt_t	hw_send_stretched_byte(
@@ -162,8 +161,8 @@ Send_reg 			Dcc_reg;
  */
 static Dec_tst		Ldec_tst;
 
-static Sender_hw_mcu_usb *Lmcu_hw = NULL;
-static Sender_hw_if		 *Lhw_if = NULL;
+static std::unique_ptr<Sender_hw_mcu_usb> Lmcu_hw;
+static Sender_hw_if		 *Lhw_if = nullptr;
 static bool				  Lhw_running = false;
 
 /*
@@ -213,20 +212,15 @@ init_hw_backend( void )
 {
 	uint32_t mcu_version;
 
-	Lmcu_hw = new Sender_hw_mcu_usb( Args.get_mcu_port(), Args.get_mcu_baud() );
-	if ( Lmcu_hw == NULL )
-	{
-		return ( false );
-	}
+	Lmcu_hw.reset( new Sender_hw_mcu_usb( Args.get_mcu_port(), Args.get_mcu_baud() ) );
 
 	if ( !Lmcu_hw->init() )
 	{
-		delete Lmcu_hw;
-		Lmcu_hw	= NULL;
+		Lmcu_hw.reset();
 		return ( false );
 	}
 
-	Lhw_if = Lmcu_hw;
+	Lhw_if = Lmcu_hw.get();
 	Lhw_running = false;
 
 	printf( "Using MCU backend on port <%s> at %u baud\n",
@@ -234,10 +228,10 @@ init_hw_backend( void )
 	if ( Lmcu_hw->get_mcu_version( mcu_version ) )
 	{
 		printf( "MCU firmware version %u.%u.%u.%u\n",
-			(unsigned int)((mcu_version >> 24) & 0xFF),
-			(unsigned int)((mcu_version >> 16) & 0xFF),
-			(unsigned int)((mcu_version >> 8) & 0xFF),
-			(unsigned int)(mcu_version & 0xFF) );
+			static_cast<unsigned int>((mcu_version >> 24) & 0xFF),
+			static_cast<unsigned int>((mcu_version >> 16) & 0xFF),
+			static_cast<unsigned int>((mcu_version >> 8) & 0xFF),
+			static_cast<unsigned int>(mcu_version & 0xFF) );
 	}
 	else
 	{
@@ -249,25 +243,21 @@ init_hw_backend( void )
 static void
 close_hw_backend( void )
 {
-	if ( Lhw_if != NULL )
+	if ( Lhw_if != nullptr )
 	{
 		Lhw_if->close();
 	}
 
-	if ( Lmcu_hw != NULL )
-	{
-		delete Lmcu_hw;
-		Lmcu_hw = NULL;
-	}
+	Lmcu_hw.reset();
 
-	Lhw_if = NULL;
+	Lhw_if = nullptr;
 	Lhw_running = false;
 }
 
 static void
 reset_mcu_before_abort( void )
 {
-	if ( Lhw_if == NULL )
+	if ( Lhw_if == nullptr )
 	{
 		return;
 	}
@@ -284,7 +274,7 @@ reset_mcu_before_abort( void )
 static bool
 hw_is_running( void )
 {
-	if ( Lhw_if == NULL )
+	if ( Lhw_if == nullptr )
 	{
 		return ( false );
 	}
@@ -304,7 +294,7 @@ hw_set_clk(
 	u_short		clk0h,
 	u_short		clk1t )
 {
-	if ( Lhw_if == NULL )
+	if ( Lhw_if == nullptr )
 	{
 		return ( FAIL );
 	}
@@ -314,7 +304,7 @@ hw_set_clk(
 static Rslt_t
 hw_start_clk( void )
 {
-	if ( Lhw_if == NULL )
+	if ( Lhw_if == nullptr )
 	{
 		return ( FAIL );
 	}
@@ -331,7 +321,7 @@ hw_start_clk( void )
 static Rslt_t
 hw_stop_clk( void )
 {
-	if ( Lhw_if == NULL )
+	if ( Lhw_if == nullptr )
 	{
 		return ( FAIL );
 	}
@@ -346,19 +336,10 @@ hw_stop_clk( void )
 }
 
 static void
-hw_clr_under( void )
-{
-	if ( Lhw_if != NULL )
-	{
-		Lhw_if->clear_underflow();
-	}
-}
-
-static void
 hw_set_scope(
 	bool		on )
 {
-	if ( Lhw_if != NULL )
+	if ( Lhw_if != nullptr )
 	{
 		Lhw_if->set_scope( on );
 	}
@@ -370,7 +351,7 @@ hw_send_bytes(
 	BYTE		val,
 	const char	*info )
 {
-	if ( Lhw_if == NULL )
+	if ( Lhw_if == nullptr )
 	{
 		return ( FAIL );
 	}
@@ -379,7 +360,7 @@ hw_send_bytes(
 		return ( FAIL );
 	}
 
-	return ( Lhw_if->send_bytes( (u_short)count, val, info ) ? OK : FAIL );
+	return ( Lhw_if->send_bytes( static_cast<u_short>( count ), val, info ) ? OK : FAIL );
 }
 
 static Rslt_t
@@ -389,7 +370,7 @@ hw_send_stretched_byte(
 	BYTE		val,
 	const char	*info )
 {
-	if ( Lhw_if == NULL )
+	if ( Lhw_if == nullptr )
 	{
 		return ( FAIL );
 	}
@@ -400,7 +381,7 @@ static Rslt_t
 hw_send_special(
 	BYTE		special_id )
 {
-	if ( Lhw_if == NULL )
+	if ( Lhw_if == nullptr )
 	{
 		return ( FAIL );
 	}
@@ -415,7 +396,7 @@ hw_send_bits_pkt(
 {
 	BYTE			pbyte;
 	std::vector<BYTE>	buf;
-	if ( Lhw_if == NULL )
+	if ( Lhw_if == nullptr )
 	{
 		return ( FAIL );
 	}
@@ -511,7 +492,7 @@ main(
 	Dcc_reg.set_log_data( ( Args.get_log_mask() & LOG_PACKET_BIT ) != 0 );
 	Dcc_reg.set_log_io( ( Args.get_log_mask() & LOG_IO_BIT ) != 0 );
 	Dcc_reg.set_squelch_idle( ( Args.get_log_mask() & LOG_SQUELCH_IDLE_BIT ) != 0 );
-	Dcc_reg.set_hw_if( use_hw_backend ? Lhw_if : NULL );
+	Dcc_reg.set_hw_if( use_hw_backend ? Lhw_if : nullptr );
 
 	if ( Args.get_manual_flag() == true )	// Manual mode.
 	{
@@ -569,7 +550,7 @@ main(
 		hw_stop_clk();
 	}
 
-	Dcc_reg.set_hw_if( NULL );
+	Dcc_reg.set_hw_if( nullptr );
 	close_hw_backend();
 
 	exit_send( 0 );
@@ -640,7 +621,7 @@ print_user_docs( void )
 {
 	FILE		*fp;						// FILE pointer.
 
-	if ( (fp = fopen( DOCS_FILE, "w" )) == NULL )
+	if ( (fp = fopen( DOCS_FILE, "w" )) == nullptr )
 	{
 		fprintf( stderr,
 			"User documentation file <%s> could not be opened", DOCS_FILE );
@@ -702,7 +683,7 @@ get_log_file(
 	const char	*checksum_path;				// Path to use for checksum.
 	DWORD			path_len;
 
-	path_len = GetModuleFileNameA( NULL, full_path, MAX_PATH );
+	path_len = GetModuleFileNameA( nullptr, full_path, MAX_PATH );
 	if ( path_len == 0 || path_len >= MAX_PATH )
 	{
 		checksum_path = cmd_name;
@@ -712,7 +693,7 @@ get_log_file(
 		checksum_path = full_path;
 	}
 
-	rslt = nCheckSumFile( NULL, checksum_path, &nCRC, &nLength );
+	rslt = nCheckSumFile( nullptr, checksum_path, &nCRC, &nLength );
 
     if ( rslt != 0 )
     {
@@ -757,7 +738,7 @@ get_log_file(
 			char	cfg_name[ MAXLINE ] = "";
 			size_t	nlen;
 
-			_splitpath( Args.get_cfg_path(), NULL, NULL, cfg_name, NULL );
+			_splitpath( Args.get_cfg_path(), nullptr, nullptr, cfg_name, nullptr );
 			nlen = strlen( cfg_name );
 			if ( nlen >= 4 && _stricmp( cfg_name + nlen - 4, "SEND" ) == 0 )
 			{
@@ -765,7 +746,7 @@ get_log_file(
 			}
 			if ( cfg_name[0] == '\0' )
 			{
-				strcpy( cfg_name, "SEND" );
+				snprintf( cfg_name, sizeof( cfg_name ), "%s", "SEND" );
 			}
 
 			if ( len > 0 && strcmp( buf, "." ) != 0 && strcmp( buf, ".." ) != 0 )
@@ -788,8 +769,7 @@ get_log_file(
 
 	if ( ( Args.get_log_mask() & LOG_FILE_BIT ) != 0 )
 	{
-		strcpy( fname, buf );
-		strcat( fname, ".log" );
+		snprintf( fname, sizeof( fname ), "%s.log", buf );
 		if ( Deflog.open_log( fname ) != OK )
 		{
 			ERRPRINT( my_name, LOG_CRIT,
@@ -798,8 +778,7 @@ get_log_file(
 		}
 	}
 
-	strcpy( fname, buf );
-	strcat( fname, ".sum" );
+	snprintf( fname, sizeof( fname ), "%s.sum", buf );
 	if ( Deflog.open_stat( fname ) != OK )
 	{
 		ERRPRINT( my_name, LOG_CRIT,
@@ -861,7 +840,7 @@ get_log_file(
 
 	// Log summary of command line switches and .CFG file
 	if ( ( Args.get_log_mask() & LOG_FILE_BIT ) != 0 &&
-		 (fp = Deflog.get_fp_log()) != NULL )
+		 (fp = Deflog.get_fp_log()) != nullptr )
 	{
     	fputs(
 			"Summary of command line and 'SEND.CFG' switches:\n\n",
@@ -871,7 +850,7 @@ get_log_file(
 		fflush( fp );
 	}
 
-	if ( (fp = Deflog.get_fp_stat()) != NULL )
+	if ( (fp = Deflog.get_fp_stat()) != nullptr )
 	{
     	fputs(
 			"Summary of command line and 'SEND.CFG' switches:\n\n",
@@ -940,18 +919,18 @@ do_mcu_self_tests( void )
 
 	STATPRINT( "MCU self test" );
 	printf( "MCU self test\n" );
-	if ( Lmcu_hw != NULL && Lmcu_hw->get_mcu_version( mcu_version ) )
+	if ( Lmcu_hw && Lmcu_hw->get_mcu_version( mcu_version ) )
 	{
 		STATPRINT( "MCU firmware version %u.%u.%u.%u",
-			(unsigned int)((mcu_version >> 24) & 0xFF),
-			(unsigned int)((mcu_version >> 16) & 0xFF),
-			(unsigned int)((mcu_version >> 8) & 0xFF),
-			(unsigned int)(mcu_version & 0xFF) );
+			static_cast<unsigned int>((mcu_version >> 24) & 0xFF),
+			static_cast<unsigned int>((mcu_version >> 16) & 0xFF),
+			static_cast<unsigned int>((mcu_version >> 8) & 0xFF),
+			static_cast<unsigned int>(mcu_version & 0xFF) );
 		printf( "MCU firmware version %u.%u.%u.%u\n",
-			(unsigned int)((mcu_version >> 24) & 0xFF),
-			(unsigned int)((mcu_version >> 16) & 0xFF),
-			(unsigned int)((mcu_version >> 8) & 0xFF),
-			(unsigned int)(mcu_version & 0xFF) );
+			static_cast<unsigned int>((mcu_version >> 24) & 0xFF),
+			static_cast<unsigned int>((mcu_version >> 16) & 0xFF),
+			static_cast<unsigned int>((mcu_version >> 8) & 0xFF),
+			static_cast<unsigned int>(mcu_version & 0xFF) );
 	}
 	else
 	{
@@ -1002,7 +981,6 @@ do_mcu_self_tests( void )
 		{
 			SELF_CHECK( "5d. bytes_sent == 4",   stats.bytes_sent   == 4 );
 			SELF_CHECK( "5e. packets_sent == 1", stats.packets_sent == 1 );
-			SELF_CHECK( "5f. underruns == 0",    stats.underruns    == 0 );
 		}
 	}
 
@@ -1027,7 +1005,6 @@ do_mcu_self_tests( void )
 		{
 			SELF_CHECK( "8a. bytes_sent == 3",    stats.bytes_sent   == 3 );
 			SELF_CHECK( "8b. packets_sent == 1",  stats.packets_sent == 1 );
-			SELF_CHECK( "8c. underruns == 0",     stats.underruns    == 0 );
 		}
 	}
 
@@ -1190,10 +1167,6 @@ Key_val			init_key )					// Initial key value.
 		case KEY_HEADER:					// Print the help message header.
 			printf( "%s", Args.get_key_help() );
 			Dcc_reg.up_print( true );  		// Print out hardware state.
-			if ( hw_is_running() == true )
-			{
-				hw_clr_under();
-			}
 			break;
 
 		/*
@@ -1226,23 +1199,8 @@ Key_val			init_key )					// Initial key value.
 			Dcc_reg.up_print();
 			break;
 
-		case KEY_UNDER:						// Clear the underflow flag.
-			rep_type	=	SEND_NONE;
-			if ( hw_is_running() == true )
-			{
-				hw_stop_clk();
-			}
-			hw_clr_under();
-			printf( "Underflow reset\n" );
-			Dcc_reg.up_print();
-			break;
-
 		case KEY_GEN	:					// Toggle GEN_2, read inputs.
 			printf( "Generic port test is not supported in MCU mode\n" );
-			if ( hw_is_running() == true )
-			{
-				hw_clr_under();
-			}
 			break;
 
 		/*
@@ -1256,7 +1214,6 @@ Key_val			init_key )					// Initial key value.
 				hw_start_clk();
 			}
 			printf( "Sending 2 Zero Bytes\n" );
-			hw_clr_under();
 			break;
 
 		case KEY_ONE:						// Send one bytes.
@@ -1266,7 +1223,6 @@ Key_val			init_key )					// Initial key value.
 				hw_start_clk();
 			}
 			printf( "Sending 2 One Bytes\n" );
-			hw_clr_under();
 			break;
 
 		case KEY_SCOPE_A:					// Send the scope A test.
@@ -1276,7 +1232,6 @@ Key_val			init_key )					// Initial key value.
 				hw_start_clk();
 			}
 			printf( "Sending scope test A (0 then 1)\n" );
-			hw_clr_under();
 			break;
 
 		case KEY_SCOPE_B:					// Send the scope B test.
@@ -1286,7 +1241,6 @@ Key_val			init_key )					// Initial key value.
 				hw_start_clk();
 			}
 			printf( "Sending scope test B (1 then 0)\n" );
-			hw_clr_under();
 			break;
 
 		case KEY_SCOPE_O:					// Send the scope timing test.
@@ -1315,7 +1269,6 @@ Key_val			init_key )					// Initial key value.
 						DECODER_1T_NOM );
 //						70 );
 			hw_start_clk();
-			hw_clr_under();
 			break;
 
 		case KEY_WARBLE:				  	// Send warble packets.
@@ -1325,7 +1278,6 @@ Key_val			init_key )					// Initial key value.
 				hw_start_clk();
 			}
 			printf( "Sending warble packets\n" );
-			hw_clr_under();
 			break;
 
 		case KEY_STRETCHED:					// Send the stretched 0 test.
@@ -1335,7 +1287,6 @@ Key_val			init_key )					// Initial key value.
 				hw_start_clk();
 			}
 			printf( "Sending stretched 0s (0xff then 0x02)\n" );
-			hw_clr_under();
 			break;
 
 		/*
@@ -1348,7 +1299,6 @@ Key_val			init_key )					// Initial key value.
 				hw_start_clk();
 			}
 			printf( "Sending Reset packets\n" );
-			hw_clr_under();
 			break;
 
 		case KEY_HARD:						// Send hard reset packets.
@@ -1358,7 +1308,6 @@ Key_val			init_key )					// Initial key value.
 				hw_start_clk();
 			}
 			printf( "Sending HARD Reset packets\n" );
-			hw_clr_under();
 			break;
 
 		case KEY_IDLE:						// Send idle packets.
@@ -1368,7 +1317,6 @@ Key_val			init_key )					// Initial key value.
 				hw_start_clk();
 			}
 			printf( "Sending Idle packets\n" );
-			hw_clr_under();
 			break;
 
 		/*
@@ -1410,7 +1358,6 @@ Key_val			init_key )					// Initial key value.
 			}
 			Dcc_reg.gen_print();
 			putchar( '\n' );
-			hw_clr_under();
 			break;
 
 		case KEY_SPEED:						// Change loco speed, acc. output.
@@ -1464,7 +1411,6 @@ Key_val			init_key )					// Initial key value.
 				printf(
 					"Press 'd' or 'D' key first to use this command\n" );
 			}
-			hw_clr_under();
 			break;
 
 		case KEY_E_STOP:					// Send DCC emergency stop.
@@ -1488,7 +1434,6 @@ Key_val			init_key )					// Initial key value.
 				printf(
 					"Press 'd' key first to use this command\n" );
 			}
-			hw_clr_under();
 			break;
 
 		case KEY_E_STOP_I:					// Send DCC emergency stop I.
@@ -1512,7 +1457,6 @@ Key_val			init_key )					// Initial key value.
 				printf(
 					"Press 'd' key first to use this command\n" );
 			}
-			hw_clr_under();
 			break;
 
 		case KEY_FW:						// Change DCC packet direction.
@@ -1551,7 +1495,6 @@ Key_val			init_key )					// Initial key value.
 				printf(
 					"Press 'd' key first to use this command\n" );
 			}
-			hw_clr_under();
 			break;
 
 		/*
@@ -1573,7 +1516,6 @@ Key_val			init_key )					// Initial key value.
 			rep_type	=	SEND_DEC_TST;
 			printf(
 				"Starting Decoder tests, type '<ESC> q' to stop tests\n" );
-			hw_clr_under();
 			break;
 
 		case KEY_KICK:					// Run kickstart followed by idles.
@@ -1587,7 +1529,6 @@ Key_val			init_key )					// Initial key value.
 					hw_start_clk();
 				}
 				Dcc_reg.kick_start( Dcc_bits, Args );
-				hw_clr_under();
             }
 			else
 			{
@@ -1601,7 +1542,6 @@ Key_val			init_key )					// Initial key value.
 			}
 			printf(
 				"Starting Decoder tests, type '<ESC> q' to stop tests\n" );
-			Dcc_reg.clr_under();
 			*/
 			break;
 
@@ -1611,7 +1551,7 @@ Key_val			init_key )					// Initial key value.
 			{
 				hw_stop_clk();
 			}
-			printf( "Unknown key <%c>\n", (char)key_val );
+			printf( "Unknown key <%c>\n", static_cast<char>( key_val ) );
 			break;
 		}
 

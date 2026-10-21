@@ -19,18 +19,12 @@
  * Defines
  */
 
-#ifndef LOG_MASK_INIT
-#define LOG_MASK_INIT	((Bits_t)0L)		// Initial logging mask.
-#endif
-
 typedef void (*Zlog_abort_handler)( void );
 
 /*
  *	Constants
  */
-const int		MAX_INDENT		= 31;		// Maximum logdump indent level.
 const int		MAX_ROOT		= 31;		// Maximum command name.
-const char		DFLT_HDR		= '>';		// Default header char after '!'.
 
 /*
  *	Error log priority values.
@@ -58,25 +52,6 @@ enum Dbg_hdr
 };
 	
 
-/*
- * Log bits reserved for library logging using EITHER logprint or lib_logprint.
- * These bits should NOT be used for new code.  New code should use the bits
- * reserved for lib_logprint.  Do not use these bits !!!
- */
-#define ZLIB_LOG_TRACE		l_bit( 28 )		// Library trace logging
-#define ZLIB_LOG_ACTION		l_bit( 29 )		// Library action logging
-#define ZLIB_LOG_IO			l_bit( 30 )		// Library I/O logging
-#define ZLIB_LOG_MISC		l_bit( 31 )		// Library misc. logging
-#define ZLIB_LOG_ANY	( ZLIB_LOG_TRACE | ZLIB_LOG_ACTION | ZLIB_LOG_IO | \
-						ZLIB_LOG_MISC )
-
-/*
- * Log bits for use with lib_logprint ONLY.  Do NOT use these bits for
- * logprint.  lib_logprint should be used only in libraries.
- */
-#define LIB_Z_LOG_TRACE		l_bit( 0 )		// Trace Logging in libz
-#define LIB_Z_LOG_ACTION	l_bit( 1 )		// Action Logging in libz
-
 class Zlog
 {
   public:
@@ -86,25 +61,21 @@ class Zlog
 	~Zlog();
 
 	/* Simple get methods */
-	const char	*get_cmd_name( void ) const { return ( cmd_name ); }
-	Bits_t		get_log_mask( void ) const { return ( log_mask ); }
-	Bits_t		get_lib_log_mask( void ) const { return ( lib_log_mask ); }
-	bool		get_no_abort_flag( void ) const { return ( no_abort_flag ); }
-	bool		get_stderr_too( void ) const { return ( stderr_too ); }
+	const char	*get_cmd_name( void ) const noexcept { return ( cmd_name ); }
+	bool		get_no_abort_flag( void ) const noexcept { return ( no_abort_flag ); }
+	bool		get_stderr_too( void ) const noexcept { return ( stderr_too ); }
 	const char	*
 	get_err_pri_str(
-		Zlog_pri			ipri ) const
+		Zlog_pri			ipri ) const noexcept
 	{
 		return ( err_pri_str[ ipri ] );
 	}
-	FILE *get_fp_log( void ) const { return ( fp_log ); }
-	FILE *get_fp_stat( void ) const { return ( fp_stat ); }
-	bool  get_dbg_on( void) { return dbg_on; } 
+	FILE *get_fp_log( void ) const noexcept { return ( fp_log ); }
+	FILE *get_fp_stat( void ) const noexcept { return ( fp_stat ); }
+	bool  get_dbg_on( void ) const noexcept { return dbg_on; }
 
 	/* Simple set methods */
 	void set_stderr_too( bool istderr_too ) { stderr_too = istderr_too; }
-	void set_log_mask( Bits_t mask ) { log_mask = mask; }
-	void set_lib_log_mask( Bits_t imask ) { lib_log_mask = imask; }
 	void set_no_abort_flag( bool iabort ) { no_abort_flag = iabort; }
 	void set_dbg_on( bool idbg) { dbg_on = idbg;} 
 	void set_abort_handler( Zlog_abort_handler handler )
@@ -152,34 +123,6 @@ class Zlog
 	statprint(
 		const char			*fmt,
 		... );
-
-	void
-	logprint(
-		const char			*func,
-		Bits_t				mask,
-		const char			*fmt,
-		... );
-
-	void
-	vlogprint(
-		const char			*func,
-		Bits_t				mask,
-		const char			*fmt,
-		va_list				ap );
-
-	void
-	lib_logprint(
-		const char			*func,
-		Bits_t				mask,
-		const char			*fmt,
-		... );
-
-	void
-	vlib_logprint(
-		const char			*func,
-		Bits_t				mask,
-		const char			*fmt,
-		va_list		 		ap );
 
 	void
 	dbgprint(
@@ -234,32 +177,6 @@ class Zlog
 		va_list				ap );
 
 	void
-	logdump(
-		const char			*func,
-		const char			*fmt,
-		... );
-
-	void
-	logdump(
-		int					indent,
-		const char			*func,
-		const char			*fmt,
-		... );
-
-	void
-	vlogdump(
-		const char			*func,
-		const char			*fmt,
-		va_list		  		ap );
-
-	void
-	vlogdump(
-		int					indent,
-		const char			*func,
-		const char			*fmt,
-		va_list				ap );
-
-	void
 	to_dump(
 		const char			*fmt,
 		... );
@@ -276,13 +193,10 @@ class Zlog
 
   protected:
 	/* Data section */
-	static const char	tab_array[MAX_INDENT+1];	// Array of \t chars.
 	static const char	*err_pri_str[PRI_SIZE];		// Priority strings.
 	char				cmd_name[MAX_ROOT+1];	  	// Command name.
 	FILE				*fp_log;				 	// Log file pointer.
 	FILE				*fp_stat;					// Stat only file pointer.
-	Bits_t				log_mask;					// Logging mask.
-	Bits_t				lib_log_mask;				// Lib logging mask.
 	bool				no_abort_flag;				// If true, don't abort.
 	bool				stderr_too;					// Log to stderr also
 	bool				dbg_on;						// If true, log dbg msgs.
@@ -294,16 +208,10 @@ extern Zlog		Deflog;						// Default error log.
 #define	ERRPRINT		(Deflog.errprint)
 #define VERRPRINT		(Deflog.verrprint)
 #define STATPRINT		(Deflog.statprint)
-#define LOGPRINT		(Deflog.logprint)
 #define DBGPRINT		(Deflog.dbgprint)
 #define DBGALL			(Deflog.dbgall)
 #define DBGLOG			(Deflog.dbglog)
 #define DBGPKT			(Deflog.dbgpkt)
-#define VLOGPRINT		(Deflog.vlogprint)
-#define LIB_LOGPRINT	(Deflog.lib_logprint)
-#define LIB_VLOGPRINT	(Deflog.lib_vlogprint)
-#define LOGDUMP			(Deflog.logdump)
-#define VLOGDUMP		(Deflog.vlogdump)
 #define TO_LOG			(Deflog.to_log)
 #define TO_DUMP			(Deflog.to_dump)
 #define TO_STAT			(Deflog.to_stat)
