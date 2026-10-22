@@ -948,13 +948,8 @@ Args_obj::cfgscan( void )
 		}
 		else if (	!strcmpi( cmd,	"LAMP" ) )
 		{
-					if ( (itmp = get_str( itmp, targv[2] )) == nullptr )
-			{
-				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
-				return ( FAIL );
-			}
 			targv[1]	=	"-l";
-			targc	=3;
+			targc		=	2;
 		}
 		else if (	!strcmpi( cmd,	"PRESET" ) )
 		{
