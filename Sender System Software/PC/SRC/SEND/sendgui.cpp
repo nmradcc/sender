@@ -141,8 +141,8 @@ static const char *g_testBitLabels[TESTBIT_COUNT] =
 static const int CLOCKBIT_COUNT = 32;
 
 /* Name of each CLOCKS mask bit's clock timing variant (see DEC_TST.CPP
- * Dec_tst::dclk_tbl[] for the authoritative bit ordering). Valid bits are 0-16;
- * bits 17-31 are reserved and must stay clear. */
+ * Dec_tst::dclk_tbl[] for the authoritative bit ordering). Valid bits are 0-17;
+ * bits 18-31 are reserved and must stay clear. */
 static const char *g_clockBitLabels[CLOCKBIT_COUNT] =
 {
 	"All nominal",
@@ -162,7 +162,7 @@ static const char *g_clockBitLabels[CLOCKBIT_COUNT] =
 	"Very positive 0",
 	"Max Decoder Neg 0",
 	"Max Decoder Pos 0",
-	"Reserved bit 17",
+	"Out of spec fast (negative test)",
 	"Reserved bit 18",
 	"Reserved bit 19",
 	"Reserved bit 20",
@@ -554,7 +554,7 @@ SyncLogFromBits( void )
 	SetMaskUInt( ID_EDIT_LOG, ID_EDIT_LOG_GENERAL, mask );
 }
 
-/* Default masks: TESTS valid bits are 0-19 (20-31 reserved), CLOCKS valid bits are 0-16 (17-31 reserved). */
+/* Default masks: TESTS valid bits are 0-19 (20-31 reserved), CLOCKS valid bits are 0-17 (18-31 reserved); bit 17 is an opt-in out-of-spec negative test, excluded from the default. */
 static const unsigned long DEF_TESTS_MASK = 0x000FFFFFUL;
 static const unsigned long DEF_CLOCKS_MASK = 0xFFFFFFFFUL & ~0x8 & ~0x10 & ~0x100 & ~0x200 & 0x0001FFFFUL;
 

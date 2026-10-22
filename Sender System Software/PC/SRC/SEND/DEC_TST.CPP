@@ -133,6 +133,12 @@ build_cmd_28_byte(
 
 
 /*
+ *	Percent below the decoder minimum timings used by the out-of-spec
+ *	negative-test clock (clock mask bit 17).
+ */
+const u_int	OUT_OF_SPEC_PCT	= 35;
+
+/*
  *	Array of clock value to use for decoder tests.
  */
 const Dec_clk	Dec_tst::dclk_tbl[] = {
@@ -153,7 +159,12 @@ const Dec_clk	Dec_tst::dclk_tbl[] = {
 	{           2560,                100,   116,  	"Very negative 0"	   },
 	{           2560,               2460,   116,  	"Very positive 0"      },
 	{ DECODER_0T_MAX, DECODER_0T_MAX-DECODER_0H_MAX, 116, "Max Decoder Neg 0"},
-	{ DECODER_0T_MAX,     DECODER_0H_MAX,   116,  	"Max Decoder Pos 0"	   }
+	{ DECODER_0T_MAX,     DECODER_0H_MAX,   116,  	"Max Decoder Pos 0"	   },
+	// Deliberately out of spec (OUT_OF_SPEC_PCT below decoder minimum); decoder should fail.
+	{ DECODER_0T_MIN * (100 - OUT_OF_SPEC_PCT) / 100,
+	  DECODER_0H_MIN * (100 - OUT_OF_SPEC_PCT) / 100,
+	  DECODER_1T_MIN * (100 - OUT_OF_SPEC_PCT) / 100,
+	  "Out of spec fast (negative test)" }
 };
 
 const u_int	Dec_tst::dclk_size		=	sizeof(Dec_tst::dclk_tbl) /
