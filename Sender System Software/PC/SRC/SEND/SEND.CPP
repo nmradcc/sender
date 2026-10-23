@@ -1805,10 +1805,18 @@ Key_val			init_key )					// Initial key value.
 					{
 						if ( tst_rslt == OK )
 						{
-							STATPRINT(
-								"Tests COMPLETED, All tests passed" );
-							printf(
-								"Tests COMPLETED, All tests passed\n" );
+							if ( Args.get_clk_mask() == 0 )
+							{
+								STATPRINT( "Tests COMPLETED" );
+								printf( "Tests COMPLETED\n" );
+							}
+							else
+							{
+								STATPRINT(
+									"Tests COMPLETED, All clock tests passed" );
+								printf(
+									"Tests COMPLETED, All clock tests passed\n" );
+							}
 						}
 						else
 						{

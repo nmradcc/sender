@@ -2526,6 +2526,29 @@ Dec_tst::decoder_margin_1( void )
 	printf(		"Margin test for 1T clock, %3u preambles\n", margin_pre );
 
 	/*
+	 *	Verify nominal timing before searching for the margin.
+	 */
+	tclk1t	=	DECODER_1T_NOM;
+	f_cnt	=	0;
+	if ( quick_ames(	f_cnt, "Nominal 1T:",
+						tclk0t, tclk0h, tclk1t, margin_pre, false )
+						!= OK )
+	{
+		return ( FAIL );
+	}
+	if ( f_cnt != 0 )
+	{
+		ERRPRINT( my_name, LOG_WARNING,
+			"Nominal 1T timing %u us failed with %u failures; skipping 1T margin search.",
+			tclk1t, f_cnt );
+		printf(	"Nominal 1T timing %u us failed with %u failures; "
+				"skipping 1T margin search.\n", tclk1t, f_cnt );
+		return ( OK );
+	}
+	STATPRINT(	"Nominal 1T timing %u us passed.", tclk1t );
+	printf(		"Nominal 1T timing %u us passed.\n", tclk1t );
+
+	/*
 	 *	Test for minimum 1T value.
 	 */
 	tl	=	TL1_MIN;
@@ -2645,6 +2668,31 @@ Dec_tst::decoder_duty_1( void )
 	printf(		"Duty cycle test for 1 clock, %3u preambles\n", margin_pre );
 
 	/*
+	 *	Verify nominal timing before searching for the duty-cycle margins.
+	 */
+	tclk1t	=	DECODER_1T_NOM;
+	tclk1h	=	DECODER_1H_NOM;
+	f_cnt	=	0;
+	if ( quick_ames(	f_cnt, "Nominal 1 Duty:",
+						tclk1t, tclk1h, tclk0t, margin_pre, true )
+						!= OK )
+	{
+		return ( FAIL );
+	}
+	if ( f_cnt != 0 )
+	{
+		ERRPRINT( my_name, LOG_WARNING,
+			"Nominal 1 timing %u us, 1H %u us failed with %u failures; "
+			"skipping duty-cycle search.",
+			tclk1t, tclk1h, f_cnt );
+		printf(	"Nominal 1 timing %u us, 1H %u us failed with %u failures; "
+				"skipping duty-cycle search.\n", tclk1t, tclk1h, f_cnt );
+		return ( OK );
+	}
+	STATPRINT(	"Nominal 1 timing %u us, 1H %u us passed.", tclk1t, tclk1h );
+	printf(		"Nominal 1 timing %u us, 1H %u us passed.\n", tclk1t, tclk1h );
+
+	/*
 	 *	Test for minimum 1H value.
 	 */
 	tclk1t	=	DECODER_1T_NOM;
@@ -2755,6 +2803,8 @@ Dec_tst::quick_ames(
 {
 	int				i;			  			// Index variable.
 	int				j;						// Index variable.
+	u_int			k;						// Trigger packet repeat index.
+	u_int			trig_pkt_cnt = Args.get_extra_trg() + 1;
 	Rslt_t			retval = OK;			// Return value.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
@@ -2843,7 +2893,10 @@ Dec_tst::quick_ames(
 			Dcc_reg.set_scope( true );
 		}
 
-		Dcc_reg.send_pkt( dcc_bits2, "Send trigger for quick test." );
+		for ( k = 0; k < trig_pkt_cnt; ++k )
+		{
+			Dcc_reg.send_pkt( dcc_bits2, "Send trigger for quick test." );
+		}
 
 		/*
 		 * The following code sends another idle filler, turns
