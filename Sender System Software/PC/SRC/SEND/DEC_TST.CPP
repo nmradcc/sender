@@ -2531,7 +2531,7 @@ Dec_tst::decoder_margin_1( void )
 	tclk1t	=	DECODER_1T_NOM;
 	f_cnt	=	0;
 	if ( quick_ames(	f_cnt, "Nominal 1T:",
-						tclk0t, tclk0h, tclk1t, margin_pre, false )
+						tclk0t, tclk0h, tclk1t, margin_pre, false, 2 )
 						!= OK )
 	{
 		return ( FAIL );
@@ -2543,6 +2543,8 @@ Dec_tst::decoder_margin_1( void )
 			tclk1t, f_cnt );
 		printf(	"Nominal 1T timing %u us failed with %u failures; "
 				"skipping 1T margin search.\n", tclk1t, f_cnt );
+		STATPRINT(	"Nominal 1T timing %u us failed with %u failures; "
+					"skipping 1T margin search.", tclk1t, f_cnt );
 		return ( OK );
 	}
 	STATPRINT(	"Nominal 1T timing %u us passed.", tclk1t );
@@ -2674,7 +2676,7 @@ Dec_tst::decoder_duty_1( void )
 	tclk1h	=	DECODER_1H_NOM;
 	f_cnt	=	0;
 	if ( quick_ames(	f_cnt, "Nominal 1 Duty:",
-						tclk1t, tclk1h, tclk0t, margin_pre, true )
+						tclk1t, tclk1h, tclk0t, margin_pre, true, 2 )
 						!= OK )
 	{
 		return ( FAIL );
@@ -2687,6 +2689,8 @@ Dec_tst::decoder_duty_1( void )
 			tclk1t, tclk1h, f_cnt );
 		printf(	"Nominal 1 timing %u us, 1H %u us failed with %u failures; "
 				"skipping duty-cycle search.\n", tclk1t, tclk1h, f_cnt );
+		STATPRINT(	"Nominal 1 timing %u us, 1H %u us failed with %u failures; "
+					"skipping duty-cycle search.", tclk1t, tclk1h, f_cnt );
 		return ( OK );
 	}
 	STATPRINT(	"Nominal 1 timing %u us, 1H %u us passed.", tclk1t, tclk1h );
@@ -2799,11 +2803,13 @@ Dec_tst::quick_ames(
 	u_short			tclk0h,					// Clk 0H.
 	u_short			tclk1t,				  	// Clk 1T.
 	u_int			margin_pre,				// Preamble bits to use.
-	bool			swap_0_1 )				// If true, swap meaning of 1 & 0.
+	bool			swap_0_1,				// If true, swap meaning of 1 & 0.
+	int				pass_cnt )				// Pass count; 0 uses configured.
 {
 	int				i;			  			// Index variable.
 	int				j;						// Index variable.
 	u_int			k;						// Trigger packet repeat index.
+	int				cycles = ( pass_cnt > 0 ) ? pass_cnt : PERCENT100;
 	u_int			trig_pkt_cnt = Args.get_extra_trg() + 1;
 	Rslt_t			retval = OK;			// Return value.
 	bool			pre_fail;	  			// Preset failed.
@@ -2855,7 +2861,7 @@ Dec_tst::quick_ames(
 	dcc_bits2.put_idle_pkt( 1 );
 	dcc_bits2.put_1s(1).done();
 
-	for ( i = 0; i < PERCENT100; i++ )
+	for ( i = 0; i < cycles; i++ )
 	{
 		pre_fail	=	false;
 		trig_fail	=	false;

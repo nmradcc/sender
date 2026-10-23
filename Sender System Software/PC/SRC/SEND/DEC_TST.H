@@ -140,7 +140,7 @@ class Dec_tst : public Z_core
 	Rslt_t	decoder_duty_1( void );
 	Rslt_t	quick_ames(	u_int &f_cnt, const char *tst_name, u_short tclk0t,
 						u_short tclk0h, u_short tclk1t, u_int margin_pre,
-						bool swap_0_1 );
+						bool swap_0_1, int pass_cnt = 0 );
   	Rslt_t	decoder_truncate( Rslt_t &tst_rslt );
 	Rslt_t	decoder_prior( Rslt_t &tst_rslt );
 	Rslt_t	decoder_6_byte( Rslt_t &tst_rslt );
