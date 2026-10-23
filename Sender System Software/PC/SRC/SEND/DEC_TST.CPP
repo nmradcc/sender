@@ -2899,6 +2899,33 @@ Dec_tst::quick_ames(
 			Dcc_reg.set_scope( true );
 		}
 
+		/*
+		 * Send about 1 second of continuous 1 bits (0xFF bytes) before the
+		 * trigger.  Decoders need this gap and valid idle packets do not
+		 * work in its place.
+		 */
+		{
+			const u_int		GAP_CHUNK = 32;			// Bytes per MCU command.
+			BYTE			gap_buf[GAP_CHUNK];
+			u_short			one_t = swap_0_1 ? tclk0t : tclk1t;
+			u_long			gap_bytes = fill_usec / ( 8UL * one_t );
+
+			memset( gap_buf, 0xFF, sizeof( gap_buf ) );
+			while ( gap_bytes > 0 )
+			{
+				u_int		n = ( gap_bytes > GAP_CHUNK )
+								? GAP_CHUNK : static_cast<u_int>( gap_bytes );
+
+				if ( Dcc_reg.send_pkt( gap_buf, n, "Gap of 1s." ) != OK )
+				{
+					retval = FAIL;
+					break;
+				}
+				gap_bytes -= n;
+			}
+		}
+
+
 		for ( k = 0; k < trig_pkt_cnt; ++k )
 		{
 			Dcc_reg.send_pkt( dcc_bits2, "Send trigger for quick test." );
