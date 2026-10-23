@@ -2538,7 +2538,7 @@ Dec_tst::decoder_margin_1( void )
 	}
 	if ( f_cnt != 0 )
 	{
-		ERRPRINT( my_name, LOG_WARNING,
+		ERRPRINT( tst_name, LOG_WARNING,
 			"Nominal 1T timing %u us failed with %u failures; skipping 1T margin search.",
 			tclk1t, f_cnt );
 		printf(	"Nominal 1T timing %u us failed with %u failures; "
@@ -2681,7 +2681,7 @@ Dec_tst::decoder_duty_1( void )
 	}
 	if ( f_cnt != 0 )
 	{
-		ERRPRINT( my_name, LOG_WARNING,
+		ERRPRINT( tst_name, LOG_WARNING,
 			"Nominal 1 timing %u us, 1H %u us failed with %u failures; "
 			"skipping duty-cycle search.",
 			tclk1t, tclk1h, f_cnt );
