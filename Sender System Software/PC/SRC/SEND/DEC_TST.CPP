@@ -2808,9 +2808,7 @@ Dec_tst::quick_ames(
 {
 	int				i;			  			// Index variable.
 	int				j;						// Index variable.
-	u_int			k;						// Trigger packet repeat index.
 	int				cycles = ( pass_cnt > 0 ) ? pass_cnt : PERCENT100;
-	u_int			trig_pkt_cnt = Args.get_extra_trg() + 1;
 	Rslt_t			retval = OK;			// Return value.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
@@ -2861,6 +2859,18 @@ Dec_tst::quick_ames(
 	dcc_bits2.put_idle_pkt( 1 );
 	dcc_bits2.put_1s(1).done();
 
+	/*
+	 *	Place an idle packet between the final preset and first trigger.
+	 */
+	dcc_bits3.clr_in();
+	dcc_bits3.put_0s(1);
+	put_preset_pkt( dcc_bits3, Args.get_decoder_address(), margin_pre, true );
+	dcc_bits3.put_idle_pkt( 1 );
+	dcc_bits3.put_0s(1);
+	put_trigger_pkt( dcc_bits3, Args.get_decoder_address(), margin_pre, true );
+	dcc_bits3.put_idle_pkt( 1 );
+	dcc_bits3.put_1s(1).done();
+
 	for ( i = 0; i < cycles; i++ )
 	{
 		pre_fail	=	false;
@@ -2882,13 +2892,21 @@ Dec_tst::quick_ames(
 		fsoc_send( "quick_ames() loop" );
 		for ( j = 0; j < pkt_rep_cnt;  j++ )   	// Preset decoder reverse.
 		{
-			Dcc_reg.send_pkt( dcc_bits, "Send preset for quick test." );
+			if ( j == pkt_rep_cnt - 1 )
+			{
+				if (!Dcc_reg.get_gen_fb( Args.get_decoder_type() ))
+				{
+					pre_fail	=	true;
+				}
+				Dcc_reg.send_pkt( dcc_bits3,
+					"Send final preset and trigger for quick test." );
+			}
+			else
+			{
+				Dcc_reg.send_pkt( dcc_bits, "Send preset for quick test." );
+			}
 		}
 		
-		if (!Dcc_reg.get_gen_fb( Args.get_decoder_type() ))
-		{
-			pre_fail	=	true;
-		}
 
 		/*
 		 * Send a scope trigger at start of trigger packet
@@ -2898,39 +2916,6 @@ Dec_tst::quick_ames(
 		{
 			Dcc_reg.set_scope( true );
 		}
-
-		/*
-		 * Send about 1 second of continuous 1 bits (0xFF bytes) before the
-		 * trigger.  Decoders need this gap and valid idle packets do not
-		 * work in its place.
-		 */
-		{
-			const u_int		GAP_CHUNK = 32;			// Bytes per MCU command.
-			BYTE			gap_buf[GAP_CHUNK];
-			u_short			one_t = swap_0_1 ? tclk0t : tclk1t;
-			u_long			gap_bytes = fill_usec / ( 8UL * one_t );
-
-			memset( gap_buf, 0xFF, sizeof( gap_buf ) );
-			while ( gap_bytes > 0 )
-			{
-				u_int		n = ( gap_bytes > GAP_CHUNK )
-								? GAP_CHUNK : static_cast<u_int>( gap_bytes );
-
-				if ( Dcc_reg.send_pkt( gap_buf, n, "Gap of 1s." ) != OK )
-				{
-					retval = FAIL;
-					break;
-				}
-				gap_bytes -= n;
-			}
-		}
-
-
-		for ( k = 0; k < trig_pkt_cnt; ++k )
-		{
-			Dcc_reg.send_pkt( dcc_bits2, "Send trigger for quick test." );
-		}
-
 		/*
 		 * The following code sends another idle filler, turns
 		 * on the scope trigger, and then sends one second of idle filler.
@@ -2945,6 +2930,8 @@ Dec_tst::quick_ames(
 		}
 
 		send_filler();							// Send filler.
+		send_filler();							// Send filler.
+//		send_filler();							// Send filler.
 
 		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
