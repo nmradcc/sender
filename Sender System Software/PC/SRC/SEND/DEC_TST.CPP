@@ -2866,10 +2866,28 @@ Dec_tst::quick_ames(
 	dcc_bits3.put_0s(1);
 	put_preset_pkt( dcc_bits3, Args.get_decoder_address(), margin_pre, true );
 	dcc_bits3.put_idle_pkt( 5 );
-	dcc_bits3.put_0s(1);
+	dcc_bits3.put_1s(1);	// End bit of the last idle packet.
 	put_trigger_pkt( dcc_bits3, Args.get_decoder_address(), margin_pre, true );
-	dcc_bits3.put_idle_pkt( 1 );
+	dcc_bits3.put_idle_pkt( 5 );
 	dcc_bits3.put_1s(1).done();
+
+	/*
+	 *	The fsoc reset clears the direction of a function decoder, so
+	 *	restore the forward (or LAMP rear) direction before each preset.
+	 *	Not needed when the preset itself sends a loco packet first.
+	 */
+	const bool		dir_restore =	( Args.get_decoder_type() == DEC_FUNC )
+								&&	!trig_rev && !Bits::get_loco_first();
+	Bits			dir_bits( 64 );
+
+	if ( dir_restore )
+	{
+		dir_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+		dir_bits.put_cmd_pkt_28( Args.get_decoder_address(),
+								 !Args.get_lamp_rear(), 0, margin_pre );
+		dir_bits.put_idle_pkt( 5 );
+		dir_bits.put_1s(1).done();
+	}
 
 	for ( i = 0; i < cycles; i++ )
 	{
@@ -2890,7 +2908,16 @@ Dec_tst::quick_ames(
 		}
 
 		fsoc_send( "quick_ames() loop" );
-		for ( j = 0; j < pkt_rep_cnt;  j++ )   	// Preset decoder reverse.
+
+		if ( dir_restore )
+		{
+			for ( j = 0; j < pkt_rep_cnt; j++ )
+			{
+				Dcc_reg.send_pkt( dir_bits, "Restore direction for quick test." );
+			}
+		}
+
+		for ( j = 0; j < pkt_rep_cnt;  j++ )   	// Preset decoder preset.
 		{
 			if ( j == pkt_rep_cnt - 1 )
 			{
@@ -2907,30 +2934,6 @@ Dec_tst::quick_ames(
 			}
 		}
 		
-
-		/*
-		 * Send a scope trigger at start of trigger packet
-		 * if the normal (early) scope trigger is desired.
-		 */
-		if ( Args.get_late_scope() != true )
-		{
-			Dcc_reg.set_scope( true );
-		}
-		/*
-		 * The following code sends another idle filler, turns
-		 * on the scope trigger, and then sends one second of idle filler.
-		 * This results in scope trigger starting 2 idles after the trigger
-		 * command.
-		 */
-		Dcc_reg.send_idle();					// Send one idle space.
-
-		if ( Args.get_late_scope() == true )
-		{
-			Dcc_reg.set_scope( true );
-		}
-
-		send_filler();							// Send filler.
-
 		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			trig_fail	=	true;

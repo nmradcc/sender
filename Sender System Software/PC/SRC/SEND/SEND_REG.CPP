@@ -137,7 +137,7 @@ Send_reg::get_gen_fb(
 	}
 	else
 	{
-		mask	=	GEN_FL_BIT;
+		mask	=	GEN_LP_MASK ;
 	}
 
 	return ( ( gen & mask ) != 0 );

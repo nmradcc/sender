@@ -37,6 +37,9 @@ const BYTE		GEN_MOTOR_P_BIT 		= 0x01; // Motor positive feedback bit.
 const BYTE		GEN_MOTOR_N_BIT 		= 0x02; // Motor negative feedback bit.
 const BYTE		GEN_FL_MASK	            = 0x04;	// Front Light mask bit.
 const BYTE		GEN_FL_BIT 		        = 0x04; // Front Light bit.
+const BYTE		GEN_RL_MASK	            = 0x08;	// Rear Light mask bit.
+const BYTE		GEN_RL_BIT 		        = 0x08; // Rear Light bit.
+const BYTE		GEN_LP_MASK 	        = 0x0C; // Light mask bit.
 
 
 const u_int		PC_DELAY_INIT	= 5;		// Initial 1 usec delay count.
