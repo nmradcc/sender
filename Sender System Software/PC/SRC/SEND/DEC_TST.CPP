@@ -2539,16 +2539,16 @@ Dec_tst::decoder_margin_1( void )
 	if ( f_cnt != 0 )
 	{
 		ERRPRINT( tst_name, LOG_WARNING,
-			"Nominal 1T timing %u us failed with %u failures; skipping 1T margin search.",
+			"Nominal timing 1T %u us failed with %u failures; skipping 1T margin search.",
 			tclk1t, f_cnt );
-		printf(	"Nominal 1T timing %u us failed with %u failures; "
+		printf(	"Nominal timing 1T %u us failed with %u failures; "
 				"skipping 1T margin search.\n", tclk1t, f_cnt );
-		STATPRINT(	"Nominal 1T timing %u us failed with %u failures; "
+		STATPRINT(	"Nominal timing 1T %u us failed with %u failures; "
 					"skipping 1T margin search.", tclk1t, f_cnt );
 		return ( OK );
 	}
-	STATPRINT(	"Nominal 1T timing %u us passed.", tclk1t );
-	printf(		"Nominal 1T timing %u us passed.\n", tclk1t );
+	STATPRINT(	"Nominal timing 1T %u us passed.", tclk1t );
+	printf(		"Nominal timing 1T %u us passed.\n", tclk1t );
 
 	/*
 	 *	Test for minimum 1T value.
@@ -2684,17 +2684,17 @@ Dec_tst::decoder_duty_1( void )
 	if ( f_cnt != 0 )
 	{
 		ERRPRINT( tst_name, LOG_WARNING,
-			"Nominal 1 timing %u us, 1H %u us failed with %u failures; "
+			"Nominal timing 1T %u us, 1H %u us failed with %u failures; "
 			"skipping duty-cycle search.",
 			tclk1t, tclk1h, f_cnt );
-		printf(	"Nominal 1 timing %u us, 1H %u us failed with %u failures; "
+		printf(	"Nominal timing 1T %u us, 1H %u us failed with %u failures; "
 				"skipping duty-cycle search.\n", tclk1t, tclk1h, f_cnt );
-		STATPRINT(	"Nominal 1 timing %u us, 1H %u us failed with %u failures; "
+		STATPRINT(	"Nominal timing 1T %u us, 1H %u us failed with %u failures; "
 					"skipping duty-cycle search.", tclk1t, tclk1h, f_cnt );
 		return ( OK );
 	}
-	STATPRINT(	"Nominal 1 timing %u us, 1H %u us passed.", tclk1t, tclk1h );
-	printf(		"Nominal 1 timing %u us, 1H %u us passed.\n", tclk1t, tclk1h );
+	STATPRINT(	"Nominal timing 1T %u us, 1H %u us passed.", tclk1t, tclk1h );
+	printf(		"Nominal timing 1T %u us, 1H %u us passed.\n", tclk1t, tclk1h );
 
 	/*
 	 *	Test for minimum 1H value.
