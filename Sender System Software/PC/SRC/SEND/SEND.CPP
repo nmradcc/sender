@@ -1096,6 +1096,7 @@ Key_val			init_key )					// Initial key value.
 	bool		fw;							// Go forward if true.
 	int			speed;						// Speed.
 	bool		ramp;						// Ramp up if true.
+	bool		gen_after_pending = false;	// Print GEN after next SEND_DCC pkt.
 	Rslt_t		ret_decoder;		  		// decoder_test() return value.
 	Rslt_t		tst_rslt;					// Decoder test result.
 	int			sp_max;						// Maximum speed or output id.
@@ -1358,6 +1359,7 @@ Key_val			init_key )					// Initial key value.
 			}
 			Dcc_reg.gen_print();
 			putchar( '\n' );
+			gen_after_pending	=	( key_val == KEY_DCC );
 			break;
 
 		case KEY_SPEED:						// Change loco speed, acc. output.
@@ -1463,6 +1465,7 @@ Key_val			init_key )					// Initial key value.
 			if ( rep_type == SEND_DCC || rep_type == SEND_DCC_S )
 			{
             	fw			=	!( fw );
+				gen_after_pending	=	( rep_type == SEND_DCC );
 				if (      Args.get_decoder_type() == DEC_LOCO )
 				{
 					printf( "Setting direction <%s>, GEN ",
@@ -1696,9 +1699,15 @@ Key_val			init_key )					// Initial key value.
                     Dcc_bits.put_idle_pkt( 5 );
 					Dcc_bits.put_1s( 1 ).done();
 
-					Dcc_reg.send_bytes( 1, 0x00, "SEND_DCC Send 0." );
-					Dcc_reg.set_scope( true );
 					Dcc_reg.send_pkt( Dcc_bits, "SEND_DCC Send pkt." );
+
+					if ( gen_after_pending )	// Once per d or f command.
+					{
+						gen_after_pending	=	false;
+						printf( "After SEND_DCC pkt, GEN " );
+						Dcc_reg.gen_print();
+						putchar( '\n' );
+					}
 					break;
 
 				case SEND_DCC_S:   			// Repeat stretched 0 test.
