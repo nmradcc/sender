@@ -175,6 +175,15 @@ class Bits : public Z_core
 	put_1s(
 		u_int	count );
 
+	// Pad with 1s to the next Byte boundary (no-op if already aligned).
+	Bits &
+	align_1s( void )
+	{
+		u_int	rem = get_bit_size() % BITS_IN_BYTE;
+
+		return ( rem ? put_1s( BITS_IN_BYTE - rem ) : *this );
+	}
+
 	Bits &
 	put_0s(
 		u_int	count );

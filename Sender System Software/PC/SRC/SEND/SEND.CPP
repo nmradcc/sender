@@ -1680,7 +1680,7 @@ Key_val			init_key )					// Initial key value.
 						// See NMRA\put_........_pktx Info.txt
                    	    Dcc_bits.put_func_grp_pktx( 	Args.get_decoder_address(),
                                         GRP_1, fw ? Args.get_func_mask() : 0 );
- 						Dcc_bits.put_1s( 1 ).put_byte( 0x00 );	// Align next packet on Byte boundary.
+						Dcc_bits.put_1s( 1 ).align_1s();	// End bit, then pad with 1s to Byte boundary.
                    }
                     else if ( Args.get_decoder_type() == DEC_SIG )
                     {
@@ -1693,7 +1693,7 @@ Key_val			init_key )					// Initial key value.
                         					  		fw, speed );
                     }
 
-                    Dcc_bits.put_idle_pkt( 1 );
+                    Dcc_bits.put_idle_pkt( 5 );
 					Dcc_bits.put_1s( 1 ).done();
 
 					Dcc_reg.send_bytes( 1, 0x00, "SEND_DCC Send 0." );
@@ -1717,7 +1717,7 @@ Key_val			init_key )					// Initial key value.
                     	// Set the direction based on the lamp rear value.
                     	Dcc_bits.put_cmd_pkt_28( 	Args.get_decoder_address(),
                         							!Args.get_lamp_rear(), 0 );
-                    	Dcc_bits.put_idle_pkt( 1 );
+                    	Dcc_bits.put_idle_pkt( 5 );
                         Dcc_bits.put_func_grp_pktx(	Args.get_decoder_address(),
                         	GRP_1, fw ? Args.get_func_mask() : 0);
                     }
@@ -1732,7 +1732,7 @@ Key_val			init_key )					// Initial key value.
 													fw, speed );
 					}
 
-					Dcc_bits.put_idle_pkt( 1 );
+					Dcc_bits.put_idle_pkt( 5 );
 					Dcc_bits.put_1s( 1 ).done();
         			/*
         			 * Send BYTES immediately before single stretched 0.

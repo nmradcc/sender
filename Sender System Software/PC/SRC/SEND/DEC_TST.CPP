@@ -808,10 +808,10 @@ Dec_tst::decoder_test(
 			dcc_bits.clr_in();
 			dcc_bits.put_cmd_pkt_28(	Args.get_decoder_address(),
 										fwd, 0, BEST_PRE );
-			dcc_bits.put_idle_pkt( 1 );
+			dcc_bits.put_idle_pkt( 5 );
 			dcc_bits.put_func_grp_pkt(	Args.get_decoder_address(),
 									GRP_1, Args.get_func_mask(), BEST_PRE );
-			dcc_bits.put_idle_pkt( 1 );
+			dcc_bits.put_idle_pkt( 5 );
 			dcc_bits.put_1s(1).done();
 
 			func_msg	=	fwd ?	"Function decoder, Send Fwd Spd 0."
@@ -2846,7 +2846,7 @@ Dec_tst::quick_ames(
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 	put_preset_pkt( dcc_bits, Args.get_decoder_address(), margin_pre, true );
-	dcc_bits.put_idle_pkt( 1 );
+	dcc_bits.put_idle_pkt( 5 );
 	dcc_bits.put_1s(1).done();
 
 	/*
@@ -2856,7 +2856,7 @@ Dec_tst::quick_ames(
 	dcc_bits2.clr_in();
 	dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 	put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), margin_pre, true );
-	dcc_bits2.put_idle_pkt( 1 );
+	dcc_bits2.put_idle_pkt( 5 );
 	dcc_bits2.put_1s(1).done();
 
 	/*
@@ -2865,7 +2865,7 @@ Dec_tst::quick_ames(
 	dcc_bits3.clr_in();
 	dcc_bits3.put_0s(1);
 	put_preset_pkt( dcc_bits3, Args.get_decoder_address(), margin_pre, true );
-	dcc_bits3.put_idle_pkt( 1 );
+	dcc_bits3.put_idle_pkt( 5 );
 	dcc_bits3.put_0s(1);
 	put_trigger_pkt( dcc_bits3, Args.get_decoder_address(), margin_pre, true );
 	dcc_bits3.put_idle_pkt( 1 );
@@ -2930,8 +2930,6 @@ Dec_tst::quick_ames(
 		}
 
 		send_filler();							// Send filler.
-		send_filler();							// Send filler.
-//		send_filler();							// Send filler.
 
 		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{

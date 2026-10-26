@@ -842,9 +842,9 @@ Bits::put_func_grp_pktx(
 		// Add a function packet with function bits on.
 		if ( loco_first == true )
         {
-			put_1s( 1 ).put_byte( 0x00 );	// Align next packet on Byte boundary.											
+			put_1s( 1 ).align_1s();			// End bit, pad with 1s to Byte boundary.
 			put_idle_pkt( 1 );
-			put_1s( 1 ).put_byte( 0x00 );	// Align next packet on Byte boundary.
+			put_1s( 1 ).align_1s();			// End bit, pad with 1s to Byte boundary.
 			// Then add a function packet with funcs set by func_mask.
 			put_func_grp_pkt( address, func_grp, func_mask, pre_bits );
         }
@@ -856,9 +856,9 @@ Bits::put_func_grp_pktx(
 			// First put a loco 0 speed packet in the !lamp_rear direction.
 			put_cmd_pkt_28( address, !lamp_rear,
 							0, pre_bits );
-			put_1s( 1 ).put_byte( 0x00 );	// Align next packet on Byte boundary.											
+			put_1s( 1 ).align_1s();			// End bit, pad with 1s to Byte boundary.
 			put_idle_pkt( 1 );
-			put_1s( 1 ).put_byte( 0x00 );	// Align next packet on Byte boundary.
+			put_1s( 1 ).align_1s();			// End bit, pad with 1s to Byte boundary.
 		}
     	// Then add a function packet with funcs set by func_bits.
 		put_func_grp_pkt( address, func_grp, func_bits, pre_bits );
