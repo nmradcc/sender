@@ -12,20 +12,11 @@ extern "C" {
 #define SHP_SOF_MCU  0x5Au
 #define SHP_VERSION  0x01u
 
-#ifndef SHP_MCU_FW_VERSION_MAJOR
-#define SHP_MCU_FW_VERSION_MAJOR 1u
-#endif
-
-#ifndef SHP_MCU_FW_VERSION_MINOR
-#define SHP_MCU_FW_VERSION_MINOR 0u
-#endif
-
-#ifndef SHP_MCU_FW_VERSION_PATCH
-#define SHP_MCU_FW_VERSION_PATCH 0u
-#endif
-
-#ifndef SHP_MCU_FW_VERSION_BUILD
-#define SHP_MCU_FW_VERSION_BUILD 0u
+/* The firmware version is defined once, in CMakeLists.txt, and passed in as
+ * compile definitions. */
+#if !defined(SHP_MCU_FW_VERSION_MAJOR) || !defined(SHP_MCU_FW_VERSION_MINOR) || \
+    !defined(SHP_MCU_FW_VERSION_PATCH) || !defined(SHP_MCU_FW_VERSION_BUILD)
+#error "SHP_MCU_FW_VERSION_* must be defined by CMakeLists.txt"
 #endif
 
 #define SHP_MCU_FW_VERSION_NUMBER                                        \
@@ -40,7 +31,6 @@ enum shp_cmd
     SHP_CMD_SET_TIMING = 0x02,
     SHP_CMD_START_CLK = 0x03,
     SHP_CMD_STOP_CLK = 0x04,
-    SHP_CMD_CLR_UNDERFLOW = 0x05,
     SHP_CMD_SET_SCOPE = 0x06,
 
     SHP_CMD_SEND_BYTES = 0x10,
@@ -102,7 +92,6 @@ typedef struct sender_stats_payload
 {
     uint32_t packets_sent;
     uint32_t bytes_sent;
-    uint32_t underruns;
 } sender_stats_payload_t;
 
 uint16_t sender_proto_crc16_ccitt(const uint8_t* data, uint16_t size);

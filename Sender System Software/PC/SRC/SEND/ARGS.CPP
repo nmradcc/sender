@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: ARGS.CPP $
- * Path:                 $Logfile: /NMRA/SRC/SEND/ARGS.CPP $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 33 $
- * Last Modified on:     $Modtime: 10/03/23 2:30p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 1/08/24 4:23p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	args.cpp	-	This file contains the command line and cfg file argument
@@ -22,7 +7,6 @@
  *
  *****************************************************************************/
 
-#include <zlog.h>
 #include <dcc.h>
  
 #include "args.h"
@@ -43,23 +27,23 @@ const u_int		MIN_TEST_REPS	= 1;					// Min test repeats.
 const u_int		MAX_TEST_REPS	= 1000;					// Max test repeats.
 const u_int		MIN_MCU_BAUD	= 9600;					// Min MCU baud rate.
 const u_int		MAX_MCU_BAUD	= 3000000;				// Max MCU baud rate.
+const u_int		DEF_LOG_MASK	= 1;					// Default LOG mask (1=file logging).
 
 const BYTE		DEF_FUNC_MASK	=	0x1f;				// Function Mask.
 
-const Bits_t	DEF_RUN_MASK	=	~0L;				// Default run mask.
+const Bits_t	DEF_RUN_MASK	=	(~0L) & 0x000FFFFFUL;	// Default run mask; bits 20-31 are reserved and kept clear.
 
-const Bits_t	DEF_CLK_MASK	=	~0L					// Default clock mask.
-								  & ~0x00000008 		// No min + 2.
-								  & ~0x00000010 		// No min + 1.
-								  & ~0x00000100 		// No max - 2.
-								  & ~0x00000200;		// No max - 1.
-
+// Default clock mask; bit 17 (out-of-spec negative test) is opt-in, bits 18-31 are reserved.
+const Bits_t	DEF_CLK_MASK	=	(~0L & 0x0001FFFFUL)
+							  & ~0x00000008 		// No min + 2.
+							  & ~0x00000010 		// No min + 1.
+							  & ~0x00000100 		// No max - 2.
+							  & ~0x00000200;		// No max - 1.
 
 /*
- *	Global Args_obj object for sender args.
+ * Global Args_obj instance for the sender application.
  */
 Args_obj	Args;
-
 
 /*--------------------------------------------------------------------------*/
 /*
@@ -79,41 +63,41 @@ Args_obj	Args;
 
 Args_obj::Args_obj( void )
 {
-	cmd_name[0]  		= '\0';				// Command name.
-	cfg_path[0]			= '\0';				// cfg file path name.
-	cfg_fp				= NULL;				// cfg file pointer.
-	decoder_address		= 0;				// Decoder address.
-	address_set			= false;			// Address was set by user.
-	decoder_type		= DEC_LOCO;	 		// Decoder type.
-	fragment_flag  		= false;			// Send all fragment sizes.
-	rep_flag			= false;	  		// Repeat decoder tests.
-	run_mask			= DEF_RUN_MASK;		// Tests to run.
-	clk_mask			= DEF_CLK_MASK;	  	// Clocks to try.
-	manual_flag			= false;			// Run tests manually.
-	extra_preamble		= 0;				// Extra margin test preambles.
-	trig_rev			= false;			// Use E_STOP as trigger command.
-	loco_first			= false;;			// Put loco pkt + func pkt.
-	fill_msec			= MSEC_PER_SEC;		// Use 1 second fill time.
-	test_repeats		= 2;				// Times to repeat misc. tests.
-	print_user			= false;			// Don't print user docs.
-	log_pkts			= false;			// Don't send packets to log.
+	m_cmd_name[0]  		= '\0';				// Command name.
+	m_cfg_path[0]			= '\0';				// cfg file path name.
+	m_cfg_fp				= nullptr;				// cfg file pointer.
+	m_decoder_address		= 0;				// Decoder address.
+	m_address_set			= false;			// Address was set by user.
+	m_decoder_type		= DEC_LOCO;	 		// Decoder type.
+	m_fragment_flag  		= false;			// Send all fragment sizes.
+	m_rep_flag			= false;	  		// Repeat decoder tests.
+	m_run_mask			= DEF_RUN_MASK;		// Tests to run.
+	m_clk_mask			= DEF_CLK_MASK;	  	// Clocks to try.
+	m_manual_flag			= false;			// Run tests manually.
+	m_extra_preamble		= 0;				// Extra margin test preambles.
+	m_trig_rev			= false;			// Use E_STOP as trigger command.
+	m_loco_first			= false;;			// Put loco pkt + func pkt.
+	m_fill_msec			= 100;				// Use 100 ms fill time.
+	m_test_repeats		= 2;				// Times to repeat misc. tests.
+	m_print_user			= false;			// Don't print user docs.
+	m_log_mask			= DEF_LOG_MASK;		// Logging enabled.
 	m_mcu_bypass_tst	= false;			// Run MCU self tests.
+	m_reduce_passcnt	= false;			// Full pass count.
 	m_no_abort			= false;			// Stop on error.
 	m_late_scope		= false;			// Use normal scope trigger.
 	m_ambig_addr_same  	= false;			// Use different address.
-    aspect_preset		= 0;				// Sig decoder aspect preset.
-    aspect_trigger		= 8;				// Sig decoder aspect trigger.
+    m_aspect_preset		= 0;				// Sig decoder aspect preset.
+    m_aspect_trigger		= 8;				// Sig decoder aspect trigger.
     m_lamp_rear			= false;			// Use forward lamp.
-    func_mask			= DEF_FUNC_MASK;	// Default to all on.
-    acc_pre				= 1;				// Default accessory out preset.
+    m_func_mask			= DEF_FUNC_MASK;	// Default to all on.
+    m_acc_pre				= 1;				// Default accessory out preset.
     m_kick_start		= false;			// Kick start motor.
-	extra_trg			= 0;				// Extra Ames tst trig packets.
-	strcpy( m_mcu_port, "COM3" );			// Default MCU COM port.
+	m_extra_trg			= 0;				// Extra Ames tst trig packets.
+	snprintf( m_mcu_port, sizeof( m_mcu_port ), "%s", "COM3" );			// Default MCU COM port.
 	m_mcu_baud			= 115200;			// Default MCU baud.
-	key_help			=					// Keyboard commands help msg.
+	m_key_help			=					// Keyboard commands help msg.
 		"ESC - Return to command line       h - Print header\n"
-		"  c - Send single clock phase      C - Send series of clock phases\n"
-		"  u - Clear underflow              0 - Send zeros\n"
+		"  c - Toggle idle clock            0 - Send zeros\n"
 		"  1 - Send ones                    a - Send scope A pattern\n"
 		"  b - Send scope B pattern         o - Send scope timing packet\n"
 		"  w - Send warble packets          S - Send stretched 0 pattern\n"
@@ -121,7 +105,7 @@ Args_obj::Args_obj( void )
 		"  D - Send stretched DCC packets   s - Change loco speed, acc. output\n"
 		"  e - Set speed to E-STOP          f - Change loco direction, acc. on/off\n"
 		"  E - Set speed to E_STOP(I)       t - Run self tests repeatedly\n"
-		"  k - Kickstart loco for funcs     i - Send DCC idle packets\n"
+		"  k - Kickstart loco for funcs\n"
 		"  R - Send hard resets             g - Test generic I/O\n"
 		"  z - Run decoder tests            q - Quit program\n";
 }
@@ -145,9 +129,9 @@ Args_obj::Args_obj( void )
 
 Args_obj::~Args_obj()
 {
-	if ( cfg_fp )
+	if ( m_cfg_fp )
 	{
-		fclose( cfg_fp );
+		fclose( m_cfg_fp );
 	}
 }
 
@@ -173,33 +157,30 @@ Args_obj::usage(
 	FILE		 *ofp )						// Output FILE stream.
 {
 	fprintf( ofp,
-		"Usage: %8s [-?] [-u] [-m] [-a addr] [-d l|f|a|s] [-n pre] [-N trig]\n"
-		"                [-l] [-f] [-r] [-t mask] [-c mask] [-E pre]\n",
-		cmd_name );			
+		"Usage: %8s [-?] [-u] [-m] [-a addr] [-d l|f|a|s] [-l] [-n pre] [-N trig]\n"
+		"                [-r] [-t test mask] [-c clock mask] [-g function mask] [-P log mask] [-E pre]\n",
+		m_cmd_name );			
     fprintf( ofp,
-		"                [-T] [-F fill] [-R reps] [-P] [-A] [-s] [-S] [-g mask]\n"
-		"                [-o pair] [-k] [-D] [-e trg] [-J port]\n"
-		"                [-Y baud]\n\n" );
+		"                [-T] [-L] [-F fill] [-R reps] [-A] [-s] [-f] [-S]\n"
+		"                [-o pair] [-k] [-e trg] [-B] [-Q] [-J port] [-Y baud]\n\n" );
 
-	if ( cfg_path[0] != '\0' )
+	if ( m_cfg_path[0] != '\0' )
 	{
-		fprintf( ofp, "Cfg file: <%s>\n\n", cfg_path );
+		fprintf( ofp, "Cfg file: <%s>\n\n", m_cfg_path );
 	}
 	
 	fprintf( ofp,
-		"  -?                    Print usage message and exit\n",
-		manual_flag		? "true" : "false" );
+		"  -?                    Print usage message and exit\n" );
 	fprintf( ofp,
-		"  -u                    Print user information to 's_user.txt' and exit\n",
-		manual_flag		? "true" : "false" );
+		"  -u                    Print user information to 's_user.txt' and exit\n" );
 	fprintf( ofp,
 		"  -m         MANUAL     Start in manual mode                 <value %s>\n",
-		manual_flag		? "true" : "false" );
-	if ( address_set )
+		m_manual_flag		? "true" : "false" );
+	if ( m_address_set )
 	{
 		fprintf( ofp,
 		"  -a <addr>  ADDRESS    Decoder address                      <value %u>\n",
-		decoder_address );
+		m_decoder_address );
 	}
 	else
 	{
@@ -207,9 +188,9 @@ Args_obj::usage(
 		"  -a <addr>  ADDRESS    Decoder address                      <value ???>\n" );
 	}
 	fprintf( ofp,
-		"  -d l|f|a|s TYPE       "
-		"Dec. type(l-LOC,f-FUNC,a-ACC,s-SIG)  <value %c>\n",
-		decoder_type );
+		"  -d L|F|A|S|l|f|a|s TYPE       "
+		"Dec. type(L-LOC,F-FUNC,A-ACC,S-SIG)  <value %c>\n",
+		m_decoder_type );
 	fprintf( ofp,
 		"  -l         LAMP       "
 		"Use rear lamp for function tests     <value %s>\n",
@@ -217,59 +198,51 @@ Args_obj::usage(
 	fprintf( ofp,
 		"  -n <pre>   PRESET     "
 		"Signal decoder preset aspect         <value %u>\n",
-		aspect_preset );
+		m_aspect_preset );
 	fprintf( ofp,
 		"  -N <trig>  TRIGGER    "
 		"Signal decoder trigger aspect        <value %u>\n",
-		aspect_trigger );
+		m_aspect_trigger );
 	fprintf( ofp,
-		"  -f         FRAGMENT   "
-		"Test all fragments                   <value %s>\n",
-		fragment_flag		? "true" : "false" );
-	fprintf( ofp,
-		"  -r         REPEAT     "
+		"  -r         REPEAT      "
 		"Repeat decoder tests                 <value %s>\n",
-		rep_flag		? "true" : "false" );
+		m_rep_flag		? "true" : "false" );
 	fprintf( ofp,
 		"  -t <mask>  TESTS      "
 		"Bit mask of tests to run             <value 0x%08lx>\n",
-		run_mask );
+		m_run_mask );
 	fprintf( ofp,
 		"  -c <mask>  CLOCKS     "
 		"Bit mask of clocks to try            <value 0x%08lx>\n",
-		clk_mask );
+		m_clk_mask );
 	fprintf( ofp,
 		"  -g <mask>  FUNCS      "
 		"Bit mask of active functions         <value 0x%02x>\n",
-		func_mask );
+		m_func_mask );
+	fprintf( ofp,
+		"  -P <mask>  LOG        "
+		"Bit mask for logging                 <value 0x%02X>\n",
+		 m_log_mask );
 	fprintf( ofp,
 		"  -E <pre>   EXTRA_PRE  "
 		"Extra margin test preamble bits      <value %u>\n",
-		extra_preamble );
+		m_extra_preamble );
 	fprintf( ofp,
 		"  -T         TRIG_REV   "
 		"Use loco reverse as trigger packet   <value %s>\n",
-		trig_rev	 	? "true" : "false" );
+		m_trig_rev	 	? "true" : "false" );
 	fprintf( ofp,
 		"  -L         LOCO_FIRST "
 		"Put loco packet before func packet   <value %s>\n",
-		loco_first	 	? "true" : "false" );
+		m_loco_first	 	? "true" : "false" );
 	fprintf( ofp,
 		"  -F <fill>  FILL_MSEC  "
 		"Fill time in milliseconds            <value %u>\n",
-		fill_msec );
+		m_fill_msec );
 	fprintf( ofp,
 		"  -R <reps>  TEST_REPS  "
 		"Non packet acceptance test repeats   <value %u>\n",
-		test_repeats );
-	fprintf( ofp,
-		"  -P         LOG        "
-		"Send packet info to log              <value %s>\n",
-		log_pkts		? "true" : "false" );
-	fprintf( ofp,
-		"  -B    MCU_BYPASS_TST  "
-		"Skip MCU startup self tests          <value %s>\n",
-		m_mcu_bypass_tst	? "true" : "false" );
+		m_test_repeats );
 	fprintf( ofp,
 		"  -A         NO_ABORT   "
 		"Do not stop program on an error      <value %s>\n",
@@ -278,6 +251,10 @@ Args_obj::usage(
 		"  -s         LATE_SCOPE "
 		"Put scope trigger after trigger      <value %s>\n",
 		m_late_scope   	? "true" : "false" );
+	fprintf( ofp,
+		"  -f         FRAGMENT   "
+		"Test all fragments                   <value %s>\n",
+		m_fragment_flag		? "true" : "false" );
 	fprintf( ofp,
 		"  -S    SAME_AMBIG_ADDR "
 		"Use same address for ambig tests     <value %s>\n",
@@ -295,11 +272,15 @@ Args_obj::usage(
 	fprintf( ofp,
 		"  -e <trg>   EXTRA_TRG  "
 		"Extra Ames test trigger packets      <value %u>\n",
-		extra_trg );
+		m_extra_trg );
 	fprintf( ofp,
-		"  -D        DEBUG_ON    "
-		"Log debug messages                   <value %s>\n",
-		Deflog.get_dbg_on() ? "true" : "false" );
+		"  -B    MCU_BYPASS_TST  "
+		"Skip MCU startup self tests          <value %s>\n",
+		m_mcu_bypass_tst	? "true" : "false" );
+	fprintf( ofp,
+		"  -Q    REDUCE_PASSCNT  "
+		"Reduce pass count (5 instead of 100) <value %s>\n",
+		m_reduce_passcnt	? "true" : "false" );
 	fprintf( ofp,
 		"  -J <port>  MCU_PORT   "
 		"MCU serial port name                 <value %s>\n",
@@ -309,7 +290,7 @@ Args_obj::usage(
 		"MCU serial baud rate                 <value %u>\n",
 		m_mcu_baud );
 				
-	fprintf( ofp, "\nManual keyboard commands >\n\n%s\n", key_help);
+	fprintf( ofp, "\nManual keyboard commands >\n\n%s\n", m_key_help);
 }
 
 
@@ -347,11 +328,11 @@ Args_obj::get_args(
 		cfgopen( argv[0], "SEND.INI", "SEND_INI" );
 	}
 
-	if ( cfg_fp != NULL )
+	if ( m_cfg_fp != nullptr )
 	{
 		retval	=	cfgscan();
-		fclose( cfg_fp );
-		cfg_fp	=	NULL;
+		fclose( m_cfg_fp );
+		m_cfg_fp	=	nullptr;
 		if ( retval != OK )
 		{
 			return ( FAIL );
@@ -366,26 +347,26 @@ Args_obj::get_args(
 	/*
 	 *	Set default address if necessary.
 	 */
-	if ( !address_set )
+	if ( !m_address_set )
 	{
-		if ( decoder_type == DEC_LOCO )
+		if ( m_decoder_type == DEC_LOCO )
 		{
-			decoder_address	=	DEF_LOCO_ADDR;
+			m_decoder_address	=	DEF_LOCO_ADDR;
 		}
-		else if ( decoder_type == DEC_FUNC )
+		else if ( m_decoder_type == DEC_FUNC )
 		{
-			decoder_address	=	DEF_FUNC_ADDR;
+			m_decoder_address	=	DEF_FUNC_ADDR;
 		}
-		else if ( decoder_type == DEC_SIG )
+		else if ( m_decoder_type == DEC_SIG )
 		{
-			decoder_address	=	DEF_SIG_ADDR;
+			m_decoder_address	=	DEF_SIG_ADDR;
 		}
 		else
 		{
-			decoder_address	=	DEF_ACC_ADDR;
+			m_decoder_address	=	DEF_ACC_ADDR;
 		}
 
-		address_set	=	true;
+		m_address_set	=	true;
 	}
 	
 	return ( OK );
@@ -427,19 +408,19 @@ Args_obj::argscan(
 		}
 		else if ( strcmp( argv[i], "-u" ) == 0 )    // Print user docs.
 		{
-			print_user	=	true;
+			m_print_user	=	true;
 			return ( FAIL );
 		}
 		else if ( strcmp( argv[i], "-m" ) == 0 )	// Manual mode.
 		{
-			manual_flag	=	manual_flag ? false : true;
+			m_manual_flag	=	m_manual_flag ? false : true;
 		}
 		else if ( strcmp( argv[i], "-a" ) == 0 )	// Decoder address.
 		{
 			if ( ++i < argc )
 			{
-				decoder_address	=	(u_short)strtoul( argv[i], NULL, 0 );
-				address_set		=	true;
+				m_decoder_address	=					static_cast<u_short>( strtoul( argv[i], nullptr, 0 ) );
+				m_address_set		=	true;
 			}
 			else
 			{
@@ -453,35 +434,35 @@ Args_obj::argscan(
 			{
 				if (		strcmp( argv[i], "l" ) == 0 )
 				{
-					decoder_type	=	DEC_LOCO;
+					m_decoder_type	=	DEC_LOCO;
 				}
 				else if (	strcmp( argv[i], "L" ) == 0 )
 				{
-					decoder_type	=	DEC_LOCO;
+					m_decoder_type	=	DEC_LOCO;
 				}
 				else if (	strcmp( argv[i], "a" ) == 0 )
 				{
-					decoder_type	=	DEC_ACC;
+					m_decoder_type	=	DEC_ACC;
 				}
 				else if (	strcmp( argv[i], "A" ) == 0 )
 				{
-					decoder_type	=	DEC_ACC;
+					m_decoder_type	=	DEC_ACC;
 				}
 				else if (	strcmp( argv[i], "s" ) == 0 )
 				{
-					decoder_type	=	DEC_SIG;
+					m_decoder_type	=	DEC_SIG;
 				}
 				else if (	strcmp( argv[i], "S" ) == 0 )
 				{
-					decoder_type	=	DEC_SIG;
+					m_decoder_type	=	DEC_SIG;
 				}
 				else if (	strcmp( argv[i], "f" ) == 0 )
 				{
-					decoder_type	=	DEC_FUNC;
+					m_decoder_type	=	DEC_FUNC;
 				}
 				else if (	strcmp( argv[i], "F" ) == 0 )
 				{
-					decoder_type	=	DEC_FUNC;
+					m_decoder_type	=	DEC_FUNC;
 				}
 				else
 				{
@@ -504,7 +485,7 @@ Args_obj::argscan(
 		{
 			if ( ++i < argc )
 			{
-				t_u_int		=	(u_int)strtoul( argv[i], NULL, 0 );
+						t_u_int		=	static_cast<u_int>( strtoul( argv[i], nullptr, 0 ) );
 				if ( t_u_int > ASPECT_MAX )
 				{
 					fprintf( stderr, "ERROR: -n %u too large, cannot exceed %u\n\n",
@@ -513,7 +494,7 @@ Args_obj::argscan(
 				}
 				else
 				{
-					aspect_preset	=	t_u_int;
+					m_aspect_preset	=	t_u_int;
 				}
 			}
 			else
@@ -527,7 +508,7 @@ Args_obj::argscan(
 		{
 			if ( ++i < argc )
 			{
-				t_u_int		=	(u_int)strtoul( argv[i], NULL, 0 );
+						t_u_int		=	static_cast<u_int>( strtoul( argv[i], nullptr, 0 ) );
 				if ( t_u_int > ASPECT_MAX )
 				{
 					fprintf( stderr, "ERROR: -N %u too large, cannot exceed %u\n\n",
@@ -536,7 +517,7 @@ Args_obj::argscan(
 				}
 				else
 				{
-					aspect_trigger	=	t_u_int;
+					m_aspect_trigger	=	t_u_int;
 				}
 			}
 			else
@@ -550,7 +531,7 @@ Args_obj::argscan(
 		{
 			if ( ++i < argc )
 			{
-				run_mask	=	strtoul( argv[i], NULL, 0 );
+				m_run_mask	=	strtoul( argv[i], nullptr, 0 );
 			}
 			else
 			{
@@ -562,7 +543,7 @@ Args_obj::argscan(
 		{
 			if ( ++i < argc )
 			{
-				clk_mask	=	strtoul( argv[i], NULL, 0 );
+				m_clk_mask	=	strtoul( argv[i], nullptr, 0 );
 			}
 			else
 			{
@@ -574,9 +555,9 @@ Args_obj::argscan(
 		{
 			if ( ++i < argc )
 			{
-				func_mask	=	(BYTE)(strtoul( argv[i], NULL, 0 )
-                               & DEF_FUNC_MASK);
-				if ( func_mask == 0 )
+				m_func_mask	=					static_cast<BYTE>( strtoul( argv[i], nullptr, 0 )
+				                               & DEF_FUNC_MASK );
+				if ( m_func_mask == 0 )
 				{
 					fprintf( stderr,
 						"ERROR: -g function mask must not be 0\n\n" );
@@ -591,21 +572,21 @@ Args_obj::argscan(
 		}
 		else if ( strcmp( argv[i], "-f" ) == 0 )	// Send all fragment sizes.
 		{
-			fragment_flag	=	fragment_flag ? false : true;
+			m_fragment_flag	=	m_fragment_flag ? false : true;
 		}
 		else if ( strcmp( argv[i], "-r" ) == 0 )	// Repeat tests flag.
 		{
-			rep_flag	=	rep_flag ? false  : true;
+			m_rep_flag	=	m_rep_flag ? false  : true;
 		}
 		else if ( strcmp( argv[i], "-E" ) == 0 )	// Extra preamble bits.
 		{
 			if ( ++i < argc )
 			{
-				extra_preamble	=	(u_int)strtoul( argv[i], NULL, 0 );
-				if ( extra_preamble > MAX_EXTRA_PREAMBLE )
+				m_extra_preamble	=					static_cast<u_int>( strtoul( argv[i], nullptr, 0 ) );
+				if ( m_extra_preamble > MAX_EXTRA_PREAMBLE )
 				{
 					fprintf( stderr, "ERROR: Extra preamble size of %u must be <= %u\n\n",
-							 extra_preamble, MAX_EXTRA_PREAMBLE );
+							 m_extra_preamble, MAX_EXTRA_PREAMBLE );
 					return ( FAIL );
 				}	
 			}
@@ -617,17 +598,17 @@ Args_obj::argscan(
 		}
 		else if ( strcmp( argv[i], "-T" ) == 0 )	// Trigger cmd is reverse.
 		{
-			trig_rev	=	trig_rev ? false  : true;
+			m_trig_rev	=	m_trig_rev ? false  : true;
 		}
 		else if ( strcmp( argv[i], "-L" ) == 0 )	// Put loco pkt + func pkt.
 		{
-			loco_first	=	loco_first ? false  : true;
+			m_loco_first	=	m_loco_first ? false  : true;
 		}
 		else if ( strcmp( argv[i], "-F" ) == 0 )	// Fill time in msec.
 		{
 			if ( ++i < argc )
 			{
-				t_u_int		=	(u_int)strtoul( argv[i], NULL, 0 );
+				t_u_int		=					static_cast<u_int>( strtoul( argv[i], nullptr, 0 ) );
 				if ( t_u_int > MAX_FILL_MSEC )
 				{
 					fprintf( stderr, "ERROR: -F %u too big, cannot exceed %u\n\n",
@@ -636,7 +617,7 @@ Args_obj::argscan(
 				}
 				else
 				{
-					fill_msec	=	t_u_int;
+					m_fill_msec	=	t_u_int;
 				}
 			}
 			else
@@ -650,7 +631,7 @@ Args_obj::argscan(
 		{
 			if ( ++i < argc )
 			{
-				t_u_int		=	(u_int)strtoul( argv[i], NULL, 0 );
+				t_u_int		=					static_cast<u_int>( strtoul( argv[i], nullptr, 0 ) );
 				if ( t_u_int < MIN_TEST_REPS )
 				{
 					fprintf( stderr, "ERROR: -R %u too small, must be at least %u\n\n",
@@ -665,7 +646,7 @@ Args_obj::argscan(
 				}
 				else
 				{
-					test_repeats	=	t_u_int;
+					m_test_repeats	=	t_u_int;
 				}
 			}
 			else
@@ -675,13 +656,32 @@ Args_obj::argscan(
 				return ( FAIL );
 			}
 		}
-		else if ( strcmp( argv[i], "-P" ) == 0 )	// Log packets.
+		else if ( strcmp( argv[i], "-P" ) == 0 )	// Logging mode.
 		{
-			log_pkts	=	log_pkts ? false  : true;
+			if ( i + 1 < argc && argv[i + 1][0] != '-' )
+			{
+				++i;
+				t_u_int = 				static_cast<u_int>( strtoul( argv[i], nullptr, 0 ) );
+				if ( t_u_int > LOG_MASK_MAX )
+				{
+					fprintf( stderr, 					"ERROR: -P mask %u contains unsupported bits; use 0 through %u\n\n",
+											t_u_int, LOG_MASK_MAX );
+					return ( FAIL );
+				}
+				m_log_mask = t_u_int;
+			}
+			else
+			{
+				m_log_mask = 1;
+			}
 		}
 		else if ( strcmp( argv[i], "-B" ) == 0 )	// Bypass MCU self tests.
 		{
 			m_mcu_bypass_tst	= 	m_mcu_bypass_tst ? false  : true;
+		}
+		else if ( strcmp( argv[i], "-Q" ) == 0 )	// Reduce pass count.
+		{
+			m_reduce_passcnt	= 	m_reduce_passcnt ? false  : true;
 		}
 		else if ( strcmp( argv[i], "-A" ) == 0 )	// No abort flag.
 		{
@@ -699,14 +699,14 @@ Args_obj::argscan(
 		{
 			if ( ++i < argc )
 			{
-				t_byte	=	(BYTE)strtoul( argv[i], NULL, 0 );
+				t_byte	=	static_cast<BYTE>( strtoul( argv[i], nullptr, 0 ) );
                 if ( t_byte < 1 || t_byte > 4 ) {
                     	fprintf( stderr,
                         "ERROR: \"-o %s\" invalid: Accessory output pair value must be between 1 and 4.\n\n",
                         	argv[i] );
                         return ( FAIL );
                 }
-                acc_pre = ( t_byte * 2 ) - 1;
+                m_acc_pre = ( t_byte * 2 ) - 1;
 			}
 			else
 			{
@@ -718,19 +718,15 @@ Args_obj::argscan(
 		{
 			m_kick_start	=	m_kick_start ? false  : true;
 		}
-		else if ( strcmp( argv[i], "-D" ) == 0 )	// Log dbg msgs flag.
-		{
-			Deflog.set_dbg_on( !Deflog.get_dbg_on() );
-		}
 		else if ( strcmp( argv[i], "-e" ) == 0 )	// Extra trigger packets.
 		{
 			if ( ++i < argc )
 			{
-				extra_trg	=	(u_int)strtoul( argv[i], NULL, 0 );
-				if ( extra_trg > MAX_EXTRA_TRG )
+				m_extra_trg	=					static_cast<u_int>( strtoul( argv[i], nullptr, 0 ) );
+				if ( m_extra_trg > MAX_EXTRA_TRG )
 				{
 					fprintf( stderr, "ERROR: Extra trigger packet size of %u must be <= %u\n\n",
-							 extra_trg, MAX_EXTRA_TRG );
+							 m_extra_trg, MAX_EXTRA_TRG );
 					return ( FAIL );
 				}	
 			}
@@ -751,7 +747,7 @@ Args_obj::argscan(
 						MAX_MCU_PORT - 1 );
 					return ( FAIL );
 				}
-				strcpy( m_mcu_port, argv[i] );
+				snprintf( m_mcu_port, sizeof( m_mcu_port ), "%s", argv[i] );
 			}
 			else
 			{
@@ -763,7 +759,7 @@ Args_obj::argscan(
 		{
 			if ( ++i < argc )
 			{
-				t_u_int = (u_int)strtoul( argv[i], NULL, 0 );
+				t_u_int = 				static_cast<u_int>( strtoul( argv[i], nullptr, 0 ) );
 				if ( t_u_int < MIN_MCU_BAUD || t_u_int > MAX_MCU_BAUD )
 				{
 					fprintf( stderr,
@@ -826,11 +822,11 @@ Args_obj::cfgopen(
 	/*
 	 *	First, check for an explicitly selected config file.
 	 */
-	if ( (sptr = getenv( inienv )) != NULL )
+	if ( (sptr = getenv( inienv )) != nullptr )
 	{
-		if ( (cfg_fp = fopen( sptr, "r" )) != NULL )
+		if ( (m_cfg_fp = fopen( sptr, "r" )) != nullptr )
 		{
-			strcpy( cfg_path, sptr );
+			snprintf( m_cfg_path, sizeof( m_cfg_path ), "%s", sptr );
 			return ( OK );					// Opened the inienv file.
 		}
 	}
@@ -838,11 +834,12 @@ Args_obj::cfgopen(
 	/*
 	 *	Next, try the local directory for the cfg file.
 	 */
-	if ( (cfg_fp = fopen( inifile, "r" )) != NULL  )
+	if ( (m_cfg_fp = fopen( inifile, "r" )) != nullptr  )
 	{
-		_getcwd( cfg_path, MAXPATH );
-		strcat( cfg_path, "\\" );
-		strcat( cfg_path, inifile );
+		_getcwd( m_cfg_path, MAXPATH );
+		size_t	cwd_len = strlen( m_cfg_path );
+		snprintf( m_cfg_path + cwd_len, sizeof( m_cfg_path ) - cwd_len,
+			"\\%s", inifile );
 		return ( OK );	   				// Opened the cfg file locally.
 	}
 
@@ -854,13 +851,13 @@ Args_obj::cfgopen(
 	fname[0]	=	'\0';
 	fext[0]		=	'\0';
 	_splitpath( cmdpath, fdrive, fdir, fname, fext );
-	sprintf( cfg_path, "%s%s%s", fdrive, fdir, inifile );
-	if ( (cfg_fp = fopen( cfg_path, "r" )) != NULL  )
+	snprintf( m_cfg_path, sizeof( m_cfg_path ), "%s%s%s", fdrive, fdir, inifile );
+	if ( (m_cfg_fp = fopen( m_cfg_path, "r" )) != nullptr  )
 	{
 		return ( OK );	   					// Opened the cfg file locally.
 	}
 
-	cfg_path[0]	=	'\0';
+	m_cfg_path[0]	=	'\0';
 	return ( FAIL );
 }
 
@@ -896,7 +893,7 @@ Args_obj::cfgscan( void )
 	char		*targv[3];					// Argument vector.
 	char		buf[MAX_CFG_LINE];			// Cfg line buffer.
 
-	while( fgets( buf, MAX_CFG_LINE, cfg_fp ) )
+	while( fgets( buf, MAX_CFG_LINE, m_cfg_fp ) )
 	{
 		itmp	=	buf;
 		line_len = strlen( buf );
@@ -911,7 +908,7 @@ Args_obj::cfgscan( void )
 			continue;
 		}
 
-		if ( (itmp = get_str( itmp, cmd )) == NULL )
+		if ( (itmp = get_str( itmp, cmd )) == nullptr )
 		{
 			fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
 			return ( FAIL );
@@ -928,7 +925,7 @@ Args_obj::cfgscan( void )
 		}
 		else if (	!strcmpi( cmd,	"ADDRESS" ) )
 		{
-			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+					if ( (itmp = get_str( itmp, targv[2] )) == nullptr )
 			{
 				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
 				return ( FAIL );
@@ -939,7 +936,7 @@ Args_obj::cfgscan( void )
 		}
 		else if ( 	!strcmpi( cmd,	"TYPE" ) )
 		{
-			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+					if ( (itmp = get_str( itmp, targv[2] )) == nullptr )
 			{
 				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
 				return ( FAIL );
@@ -955,7 +952,7 @@ Args_obj::cfgscan( void )
 		}
 		else if (	!strcmpi( cmd,	"PRESET" ) )
 		{
-			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+					if ( (itmp = get_str( itmp, targv[2] )) == nullptr )
 			{
 				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
 				return ( FAIL );
@@ -966,7 +963,7 @@ Args_obj::cfgscan( void )
 		}
 		else if (	!strcmpi( cmd,	"TRIGGER" ) )
 		{
-			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+					if ( (itmp = get_str( itmp, targv[2] )) == nullptr )
 			{
 				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
 				return ( FAIL );
@@ -977,7 +974,7 @@ Args_obj::cfgscan( void )
 		}
 		else if (	!strcmpi( cmd,	"TESTS" ) )
 		{
-			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+					if ( (itmp = get_str( itmp, targv[2] )) == nullptr )
 			{
 				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
 				return ( FAIL );
@@ -988,7 +985,7 @@ Args_obj::cfgscan( void )
 		}
 		else if (	!strcmpi( cmd,	"CLOCKS" ) )
 		{
-			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+					if ( (itmp = get_str( itmp, targv[2] )) == nullptr )
 			{
 				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
 				return ( FAIL );
@@ -999,7 +996,7 @@ Args_obj::cfgscan( void )
 		}
 		else if (	!strcmpi( cmd,	"FUNCS" ) )
 		{
-			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+					if ( (itmp = get_str( itmp, targv[2] )) == nullptr )
 			{
 				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
 				return ( FAIL );
@@ -1020,7 +1017,7 @@ Args_obj::cfgscan( void )
 		}
 		else if (	!strcmpi( cmd,	"EXTRA_PRE" ) )
 		{
-			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+					if ( (itmp = get_str( itmp, targv[2] )) == nullptr )
 			{
 				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
 				return ( FAIL );
@@ -1041,7 +1038,7 @@ Args_obj::cfgscan( void )
 		}
 		else if (	!strcmpi( cmd,	"FILL_MSEC" ) )
 		{
-			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+					if ( (itmp = get_str( itmp, targv[2] )) == nullptr )
 			{
 				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
 				return ( FAIL );
@@ -1052,7 +1049,7 @@ Args_obj::cfgscan( void )
 		}
 		else if (	!strcmpi( cmd,	"TEST_REPS" ) )
 		{
-			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+					if ( (itmp = get_str( itmp, targv[2] )) == nullptr )
 			{
 				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
 				return ( FAIL );
@@ -1063,12 +1060,28 @@ Args_obj::cfgscan( void )
 		}
 		else if ( 	!strcmpi( cmd,	"LOG" ) )
 		{
-			targv[1]	=	"-P";
-			targc		=	2;
+			targv[1]	= "-P";
+			if ( (itmp = get_str( itmp, targv[2] )) == nullptr )
+			{
+				targv[2]	= "1";
+			}
+			targc		= 3;
+		}
+		else if ( 	!strcmpi( cmd, 	"LOG_PKTS" ) )
+		{
+			/* Legacy .ini key: log general, command and packet info */
+			targv[1]	= "-P";
+			targv[2]	= "7";
+			targc		= 3;
 		}
 		else if ( 	!strcmpi( cmd, 	"MCU_BYPASS_TST" ) )
 		{
 			targv[1]	= 	"-B";
+			targc		= 	2;
+		}
+		else if ( 	!strcmpi( cmd, 	"REDUCE_PASSCNT" ) )
+		{
+			targv[1]	= 	"-Q";
 			targc		= 	2;
 		}
 		else if ( 	!strcmpi( cmd,	"NO_ABORT" ) )
@@ -1088,7 +1101,7 @@ Args_obj::cfgscan( void )
 		}
 		else if (	!strcmpi( cmd,	"ACC_PAIR" ) )
 		{
-			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+					if ( (itmp = get_str( itmp, targv[2] )) == nullptr )
 			{
 				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
 				return ( FAIL );
@@ -1102,14 +1115,9 @@ Args_obj::cfgscan( void )
 			targv[1]	=	"-k";
 			targc		=	2;
 		}
-		else if ( 	!strcmpi( cmd,	"DEBUG_ON" ) )
+		else if ( 	!strcmpi( cmd, "EXTRA_TRG" ) )
 		{
-			targv[1]	=	"-D";
-			targc		=	2;
-		}
-		else if (	!strcmpi( cmd,	"EXTRA_TRG" ) )
-		{
-			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+					if ( (itmp = get_str( itmp, targv[2] )) == nullptr )
 			{
 				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
 				return ( FAIL );
@@ -1120,7 +1128,7 @@ Args_obj::cfgscan( void )
 		}
 		else if (	!strcmpi( cmd,	"MCU_PORT" ) )
 		{
-			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+					if ( (itmp = get_str( itmp, targv[2] )) == nullptr )
 			{
 				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
 				return ( FAIL );
@@ -1131,7 +1139,7 @@ Args_obj::cfgscan( void )
 		}
 		else if (	!strcmpi( cmd,	"MCU_BAUD" ) )
 		{
-			if ( (itmp = get_str( itmp, targv[2] )) == NULL )
+					if ( (itmp = get_str( itmp, targv[2] )) == nullptr )
 			{
 				fprintf( stderr, "ERROR parsing cfg file line <%s>\n\n", buf );
 				return ( FAIL );
@@ -1178,10 +1186,10 @@ Rslt_t
 Args_obj::zcmd(
 	const char			*str )				// Ptr to Cmd (usually argv[0]).
 {
-	register const char	*sptr;				/* Pointer to input 'str' */
-	register int		j;					/* Index into 'cmd_name[]' array */
+	const char			*sptr;				/* Pointer to input 'str' */
+	int					j; 					/* Index into 'cmd_name[]' array */
 
-	if (str == NULL || *str == '\0')		/* No command passed */
+	if (str == nullptr || *str == '\0')		/* No command passed */
 	{
 		fprintf ( stderr, "ERROR zcmd: Invalid command name passed\n\n" );
 		return ( FAIL );
@@ -1199,9 +1207,9 @@ Args_obj::zcmd(
 
 	for (j=0; *sptr != '\0' && j<(MAXROOT-1) && *sptr != '.'; j++,sptr++)
 	{
-		cmd_name[j] = tolower(*sptr);
+		m_cmd_name[j] = tolower(*sptr);
 	}
-	cmd_name[j] = '\0';
+	m_cmd_name[j] = '\0';
 
 	return ( OK );
 }
@@ -1238,7 +1246,7 @@ Args_obj::get_str(
 
 	if ( !istr || !*istr )		 			// Error NULL pointer
 	{
-		return ( NULL );
+		return ( nullptr );
 	}
 
 	itmp = istr;
@@ -1251,7 +1259,7 @@ Args_obj::get_str(
 
 	if ( *itmp == '\0' )					// Error no characters
 	{
-		return ( NULL );
+		return ( nullptr );
 	}
 
 	// Is it quoted?
@@ -1267,7 +1275,7 @@ Args_obj::get_str(
 		}
 		if ( *itmp != '"' )					// Error didn't end with quote
 		{
-			return ( NULL );
+			return ( nullptr );
 		}
 		else
 		{

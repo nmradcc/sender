@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: ZTYPES.H $
- * Path:                 $Logfile: /NMRA/INCLUDE/ZTYPES.H $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 8 $
- * Last Modified on:     $Modtime: 8/21/23 5:55p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 8/21/23 5:57p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *  ztypes.h    -   Declares core system constants and types.
@@ -22,7 +7,7 @@
  *****************************************************************************/
 
 #ifndef ZTYPES_H_DECLARED
-#define ZTYPES_H_DECLARED   "@(#) $Workfile: ZTYPES.H $$ $Revision: 8 $$"
+#define ZTYPES_H_DECLARED
 
 /*
  *  Enum for a result type returning 2 possible results.
@@ -63,21 +48,6 @@ typedef unsigned char   u_char;
 typedef unsigned int    u_int;
 typedef unsigned short  u_short;
 typedef unsigned long   u_long;
-
-/*
- *  Process exit() values.
- */
-const int       EXIT_OK             = 0;        // Exit() OK.
-const int       EXIT_USER_ERROR     = 1;        // Exit() user error.
-const int       EXIT_INTERNAL_ERROR = 2;        // Exit() internal error.
-
-/*
- *  File descriptors.
- */
-const int       STDIN               = 0;        // stdin file descriptor.
-const int       STDOUT              = 1;        // stdout file descriptor.
-const int       STDERR              = 2;        // stderr file descriptor.
-const int       FD_INV              = -1;       // Invalid file descriptor.
 
 /*
  *  Init_state indicates which state an object is in.

@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: DEC_TST.H $
- * Path:                 $Logfile: /NMRA/SRC/SEND/DEC_TST.H $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 23 $
- * Last Modified on:     $Modtime: 8/14/23 2:42p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 8/16/23 3:40p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	dec_tst.h	-	Defines the Dec_tst class which performs the decoder
@@ -23,7 +8,7 @@
  *****************************************************************************/
 
 #ifndef DEC_TST_H_DECLARED
-#define DEC_TST_H_DECLARED	"@(#) $Workfile: DEC_TST.H $$ $Revision: 23 $$"
+#define DEC_TST_H_DECLARED
 
 #include "t_stat.h"
 #include "args.h"
@@ -101,7 +86,7 @@ class Dec_tst : public Z_core
 	void set_run_mask( Bits_t irun_mask )     { run_mask = irun_mask; }
 	void set_clk_mask( Bits_t iclk_mask )     { clk_mask = iclk_mask; }
 	void set_trig_rev( bool itrig_rev = false );
-	void set_fill_msec( u_long ifill_msec = MSEC_PER_SEC )
+	void set_fill_msec( u_long ifill_msec = 100 )
 	{
 		fill_usec	=	ifill_msec * 1000UL;
 	}
@@ -111,7 +96,6 @@ class Dec_tst : public Z_core
   protected:
   
 	/* Method section */
-	void debug_gen( const char *msg = "" );
 	void fsoc_send( const char *msg );
 
 	/* Data section */
@@ -156,7 +140,7 @@ class Dec_tst : public Z_core
 	Rslt_t	decoder_duty_1( void );
 	Rslt_t	quick_ames(	u_int &f_cnt, const char *tst_name, u_short tclk0t,
 						u_short tclk0h, u_short tclk1t, u_int margin_pre,
-						bool swap_0_1 );
+						bool swap_0_1, int pass_cnt = 0 );
   	Rslt_t	decoder_truncate( Rslt_t &tst_rslt );
 	Rslt_t	decoder_prior( Rslt_t &tst_rslt );
 	Rslt_t	decoder_6_byte( Rslt_t &tst_rslt );
@@ -166,6 +150,11 @@ class Dec_tst : public Z_core
 								u_short iclk0t, u_short iclk0h );
 	void	calc_filler( u_short clk0t, u_short clk1t );
 	Rslt_t	send_filler( void );
+	void	print_summary( const char *name, bool flagged = false );
+	void	put_preset_pkt( Bits &bits, u_short addr, int pre_cnt,
+							bool sig_ok = false );
+	void	put_trigger_pkt( Bits &bits, u_short addr, int pre_cnt,
+							bool sig_ok = false );
 	const char	*err_phrase(
 		bool pre_fail, bool trig_fail, bool rst_fail = false );
 	const char	*min_phrase( u_short t_min, u_short out_of_range );

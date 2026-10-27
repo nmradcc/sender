@@ -16,8 +16,13 @@
  *  - Thread pushes half-period values (in us) into g_hp_fifo.             *
  *  - TIM5 CC1 ISR pops one value per event and advances CCR1 by that      *
  *    amount; the output toggles automatically in hardware at the match.   *
- *  - When the FIFO is empty the ISR inserts DCC_IDLE_HP_US (58 us) so     *
- *    the output remains alive as a stream of one-bits.                    *
+ *  - The thread publishes whole sends to the ISR with dcc_commit(), so the *
+ *    ISR never sees a partially written bit or packet.                    *
+ *  - Like a DCC command station, the ISR streams back-to-back idle        *
+ *    packets (at the configured timing) whenever no sends are pending.    *
+ *    A queued send waits for the idle packet in progress to complete, is  *
+ *    then output until the FIFO is empty, and idle packets resume        *
+ *    immediately after.                                                   *
  * ----------------------------------------------------------------------- */
 
 #define DCC_TIM_INSTANCE    TIM5
@@ -46,7 +51,8 @@
 
 static volatile uint16_t g_hp_fifo[DCC_FIFO_SIZE];
 static volatile uint32_t g_hp_head;     /* ISR consumer  */
-static volatile uint32_t g_hp_tail;     /* thread producer */
+static volatile uint32_t g_hp_tail;     /* thread producer (write index) */
+static volatile uint32_t g_hp_commit;   /* tail published to the ISR */
 static volatile uint32_t g_hp_enqueued_total;
 static volatile uint32_t g_hp_dequeued_total;
 
@@ -80,6 +86,93 @@ extern TIM_HandleTypeDef htim5;
 #define DCC_HARD_RESET_BITS 50u
 #define DCC_IDLE_HP_US      58u         /* half-period for a DCC "1" bit */
 #define DCC_MON_MIN_PREAMBLE_ONES 10u
+
+/* Idle packet: 14 preamble 1s, 0, FF, 0, 00, 0, FF, end 1 = 42 bits. */
+#define DCC_IDLE_PKT_BITS   42u
+
+/* Timing seen by the ISR; written by init / set_timing. */
+static volatile uint16_t g_cfg_clk0t_us = 200u;
+static volatile uint16_t g_cfg_clk0h_us = 100u;
+static volatile uint16_t g_cfg_clk1t_us = 116u;
+
+/* Idle generator state (ISR only). Timing is latched per idle packet. */
+static bool g_idle_active;              /* true while idling, false while sending queued data */
+static uint8_t g_idle_bit;              /* bit index within the idle packet */
+static uint8_t g_idle_half;             /* 0 = first half-period of the bit */
+static uint16_t g_idle_one_hp;
+static uint16_t g_idle_zero_h;
+static uint16_t g_idle_zero_t;
+
+static void dcc_idle_reset(void)
+{
+    g_idle_active = false;
+    g_idle_bit = 0u;
+    g_idle_half = 0u;
+}
+
+static bool dcc_idle_bit_value(uint8_t idx)
+{
+    if (idx < 14u)
+    {
+        return true;                            /* preamble */
+    }
+    if (idx == 14u || idx == 23u || (idx >= 24u && idx <= 32u))
+    {
+        return false;                           /* start 0, sep 0, 00 data, sep 0 */
+    }
+    return true;                                /* FF data bytes, end bit */
+}
+
+static void dcc_idle_latch_timing(void)
+{
+    uint16_t clk0t = g_cfg_clk0t_us;
+    uint16_t clk0h = g_cfg_clk0h_us;
+    uint16_t clk1t = g_cfg_clk1t_us;
+
+    g_idle_one_hp = (uint16_t)(clk1t / 2u);
+    if (g_idle_one_hp == 0u)
+    {
+        g_idle_one_hp = DCC_IDLE_HP_US;
+    }
+    if (clk0h == 0u || clk0h >= clk0t)
+    {
+        clk0h = (uint16_t)(2u * DCC_IDLE_HP_US);
+        clk0t = (uint16_t)(2u * clk0h);
+    }
+    g_idle_zero_h = clk0h;
+    g_idle_zero_t = clk0t;
+}
+
+/* Next half-period of the idle packet being generated. */
+static uint16_t dcc_idle_next_hp(void)
+{
+    uint16_t hp;
+
+    if (dcc_idle_bit_value(g_idle_bit))
+    {
+        hp = g_idle_one_hp;
+    }
+    else
+    {
+        hp = (g_idle_half == 0u) ? g_idle_zero_h
+                                 : (uint16_t)(g_idle_zero_t - g_idle_zero_h);
+    }
+
+    if (g_idle_half == 0u)
+    {
+        g_idle_half = 1u;
+    }
+    else
+    {
+        g_idle_half = 0u;
+        g_idle_bit += 1u;
+        if (g_idle_bit >= DCC_IDLE_PKT_BITS)
+        {
+            g_idle_bit = 0u;
+        }
+    }
+    return hp;
+}
 
 static void dcc_monitor_reset(void)
 {
@@ -216,6 +309,13 @@ static void dcc_push_unchecked(uint16_t hp)
     g_hp_enqueued_total += 1u;
 }
 
+/* Publish everything pushed so far to the ISR (whole sends only). */
+static void dcc_commit(void)
+{
+    __DMB();                            /* fifo writes before publishing */
+    g_hp_commit = g_hp_tail;
+}
+
 /* Push both half-periods of one DCC bit.  Caller ensures >= 2 free slots. */
 static void dcc_push_bit_unchecked(const sender_engine_t *eng, bool one)
 {
@@ -270,6 +370,7 @@ static void dcc_hw_start(void)
     HAL_TIM_MspPostInit(&htim5);
 
     __HAL_TIM_SET_COUNTER(&htim5, 0u);
+    dcc_idle_reset();
     __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1, DCC_IDLE_HP_US + 10u);
     __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_CC1);
 
@@ -306,11 +407,11 @@ static void dcc_hw_stop(void)
 void sender_engine_tim_irq_handler(void)
 {
     uint32_t head;
-    uint32_t tail;
     uint16_t hp;
     uint32_t trigger_hp_index;
     uint8_t trigger_address;
     uint8_t trigger_action;
+    bool pop;
 
     if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_CC1) == 0)
     {
@@ -319,9 +420,41 @@ void sender_engine_tim_irq_handler(void)
     __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_CC1);
 
     head = g_hp_head;
-    tail = g_hp_tail;
 
-    if (head != tail)
+    /*
+     * Command station behaviour:
+     *  - Queued data is output until the FIFO is empty.
+     *  - When empty, back-to-back idle packets are generated.
+     *  - Queued data that arrives during an idle packet waits until that
+     *    idle packet is complete (idle bit 0, first half-period).
+     */
+    if (!g_idle_active)
+    {
+        pop = (head != g_hp_commit);
+        if (!pop)
+        {
+            g_idle_active = true;
+            dcc_idle_latch_timing();
+        }
+    }
+    else if (g_idle_bit == 0u && g_idle_half == 0u)
+    {
+        pop = (head != g_hp_commit);
+        if (pop)
+        {
+            g_idle_active = false;
+        }
+        else
+        {
+            dcc_idle_latch_timing();
+        }
+    }
+    else
+    {
+        pop = false;
+    }
+
+    if (pop)
     {
         hp = g_hp_fifo[head];
         __DMB();                        /* read fifo slot before advancing head */
@@ -352,8 +485,7 @@ void sender_engine_tim_irq_handler(void)
     }
     else
     {
-        /* FIFO empty: insert a "ones" half-period to keep output alive */
-        hp = DCC_IDLE_HP_US;
+        hp = dcc_idle_next_hp();
     }
 
     /* Advance the compare value; the timer toggles the output at the match. */
@@ -377,8 +509,13 @@ void sender_engine_init(sender_engine_t *eng)
     eng->clk1t_us = 116u;
     eng->scope_on = false;
 
+    g_cfg_clk0t_us = eng->clk0t_us;
+    g_cfg_clk0h_us = eng->clk0h_us;
+    g_cfg_clk1t_us = eng->clk1t_us;
+    dcc_idle_reset();
     g_hp_head = 0u;
     g_hp_tail = 0u;
+    g_hp_commit = 0u;
     g_hp_enqueued_total = 0u;
     g_hp_dequeued_total = 0u;
     g_adr_evt_head = 0u;
@@ -427,6 +564,9 @@ uint8_t sender_engine_set_timing(sender_engine_t *eng, uint16_t clk0t_us,
     eng->clk0t_us = clk0t_us;
     eng->clk0h_us = clk0h_us;
     eng->clk1t_us = clk1t_us;
+    g_cfg_clk0t_us = clk0t_us;
+    g_cfg_clk0h_us = clk0h_us;
+    g_cfg_clk1t_us = clk1t_us;
     return SHP_STATUS_OK;
 }
 
@@ -443,6 +583,7 @@ uint8_t sender_engine_start(sender_engine_t *eng)
 
     g_hp_head     = 0u;
     g_hp_tail     = 0u;
+    g_hp_commit   = 0u;
     g_hp_enqueued_total = 0u;
     g_hp_dequeued_total = 0u;
     g_adr_evt_head = 0u;
@@ -466,17 +607,6 @@ uint8_t sender_engine_stop(sender_engine_t *eng)
 
     dcc_hw_stop();
     eng->running = false;
-    return SHP_STATUS_OK;
-}
-
-uint8_t sender_engine_clear_underflow(sender_engine_t *eng)
-{
-    if (eng == 0)
-    {
-        return SHP_STATUS_INTERNAL_ERROR;
-    }
-
-    eng->underflow = false;
     return SHP_STATUS_OK;
 }
 
@@ -521,6 +651,7 @@ uint8_t sender_engine_send_bytes(sender_engine_t *eng, uint16_t repeat_count,
         dcc_push_byte_unchecked(eng, byte_value);
     }
 
+    dcc_commit();
     eng->bytes_sent   += repeat_count;
     eng->packets_sent += 1u;
     return SHP_STATUS_OK;
@@ -576,6 +707,7 @@ uint8_t sender_engine_send_packet(sender_engine_t *eng, const uint8_t *data,
     /* End bit */
     dcc_push_bit_unchecked(eng, true);
 
+    dcc_commit();
     eng->bytes_sent   += size;
     eng->packets_sent += 1u;
     return SHP_STATUS_OK;
@@ -621,6 +753,7 @@ uint8_t sender_engine_send_raw_bytes(sender_engine_t *eng, const uint8_t *data,
         }
     }
 
+    dcc_commit();
     eng->bytes_sent   += size;
     eng->packets_sent += 1u;
     return SHP_STATUS_OK;
@@ -666,6 +799,7 @@ uint8_t sender_engine_send_stretched_byte(sender_engine_t *eng,
         }
     }
 
+    dcc_commit();
     eng->bytes_sent += 1u;
     return SHP_STATUS_OK;
 }
@@ -695,6 +829,7 @@ uint8_t sender_engine_send_special(sender_engine_t *eng, uint8_t special_id)
             }
             dcc_push_bits(eng, DCC_PREAMBLE_BITS, true);
             dcc_push_bits(eng, DCC_RESET_BITS, false);
+            dcc_commit();
             eng->packets_sent += 1u;
             eng->bytes_sent   += 4u;
             return SHP_STATUS_OK;
@@ -707,6 +842,7 @@ uint8_t sender_engine_send_special(sender_engine_t *eng, uint8_t special_id)
             }
             dcc_push_bits(eng, DCC_PREAMBLE_BITS, true);
             dcc_push_bits(eng, DCC_HARD_RESET_BITS, false);
+            dcc_commit();
             eng->packets_sent += 1u;
             eng->bytes_sent   += 8u;
             return SHP_STATUS_OK;
@@ -735,23 +871,31 @@ uint8_t sender_engine_set_gen_out(sender_engine_t *eng, uint8_t value)
     return SHP_STATUS_OK;
 }
 
+/*
+ * Pack the input states in bits 0..3.
+ * The raw GPIO is active-low, so a LOW == active means the bit should be 1.
+ */
+static uint8_t dcc_read_gen_pins(void)
+{
+    uint8_t status = 0u;
+
+    status |= (HAL_GPIO_ReadPin(IN0_GPIO_Port, IN0_Pin) == GPIO_PIN_RESET) ? 0x01u : 0u;
+    status |= (HAL_GPIO_ReadPin(IN1_GPIO_Port, IN1_Pin) == GPIO_PIN_RESET) ? 0x02u : 0u;
+    status |= (HAL_GPIO_ReadPin(IN2_GPIO_Port, IN2_Pin) == GPIO_PIN_RESET) ? 0x04u : 0u;
+    status |= (HAL_GPIO_ReadPin(IN3_GPIO_Port, IN3_Pin) == GPIO_PIN_RESET) ? 0x08u : 0u;
+    return status;
+}
+
 void sender_engine_get_gen_in(sender_engine_t *eng, uint8_t *gen1,
                               uint8_t *gen2)
 {
-    bool in0_status;
-    bool in1_status;
-
     if (eng == 0 || gen1 == 0 || gen2 == 0)
     {
         return;
     }
- 
-    in0_status = (HAL_GPIO_ReadPin(IN0_GPIO_Port, IN0_Pin) == GPIO_PIN_SET);
-    in1_status = (HAL_GPIO_ReadPin(IN1_GPIO_Port, IN1_Pin) == GPIO_PIN_SET);
-    eng->gen_in1 = (uint8_t)((eng->gen_in1 & (uint8_t)~0x01u) |
-                             (in0_status ? 0x01u : 0x00u));
-    eng->gen_in2 = (uint8_t)((eng->gen_in2 & (uint8_t)~0x01u) |
-                             (in1_status ? 0x01u : 0x00u));
+
+    eng->gen_in1 = dcc_read_gen_pins();
+    eng->gen_in2 = 0u;
 
     *gen1 = eng->gen_in1;
     *gen2 = eng->gen_in2;
@@ -766,7 +910,6 @@ void sender_engine_reset_stats(sender_engine_t *eng)
 
     eng->packets_sent = 0u;
     eng->bytes_sent = 0u;
-    eng->underruns = 0u;
 }
 
 void sender_engine_get_status(const sender_engine_t *eng,
@@ -780,9 +923,9 @@ void sender_engine_get_status(const sender_engine_t *eng,
     out->running    = eng->running;
     out->underflow  = eng->underflow;
     out->err_flags  = eng->err_flags;
-    out->queue_depth = (uint16_t)((g_hp_tail - g_hp_head) & DCC_FIFO_MASK);
-    out->gen1 = eng->gen_in1;
-    out->gen2 = eng->gen_in2;
+    out->queue_depth = (uint16_t)((g_hp_commit - g_hp_head) & DCC_FIFO_MASK);
+    out->gen1 = dcc_read_gen_pins();
+    out->gen2 = 0u;
     out->non_idle_event_count = g_non_idle_packet_events;
     out->last_non_idle_address = g_last_non_idle_address;
 }
@@ -797,7 +940,6 @@ void sender_engine_get_stats(const sender_engine_t *eng,
 
     out->packets_sent = eng->packets_sent;
     out->bytes_sent   = eng->bytes_sent;
-    out->underruns    = eng->underruns;
 }
 
 void sender_engine_get_non_idle_packet_event(uint32_t *event_count,
@@ -865,6 +1007,7 @@ uint8_t sender_engine_send_raw_bytes_stretched(sender_engine_t *eng,
         }
     }
 
+    dcc_commit();
     eng->bytes_sent += size;
     eng->packets_sent += 1u;
     return SHP_STATUS_OK;
@@ -930,6 +1073,7 @@ uint8_t sender_engine_send_raw_bytes_timed(sender_engine_t *eng,
         }
     }
 
+    dcc_commit();
     eng->bytes_sent += size;
     eng->packets_sent += 1u;
     return SHP_STATUS_OK;

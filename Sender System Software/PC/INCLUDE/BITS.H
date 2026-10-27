@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: BITS.H $
- * Path:                 $Logfile: /NMRA/INCLUDE/BITS.H $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 13 $
- * Last Modified on:     $Modtime: 8/06/23 3:00p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 8/06/23 4:11p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	bits.h	-	Bit array handling class.  This class stores and manipulates
@@ -23,7 +8,7 @@
  *****************************************************************************/
 
 #ifndef BITS_H_DECLARED
-#define BITS_H_DECLARED	"@(#) $Workfile: BITS.H $$ $Revision: 13 $$"
+#define BITS_H_DECLARED
 
 #include <z_core.h>							// Define Z_core class.
 #include <dcc.h>							// Fundamental DCC constants.
@@ -66,25 +51,25 @@ class Bits : public Z_core
 	 
 	// Get static variables at runtime.
 	static bool
-	get_trig_rev( void )
+	get_trig_rev( void ) noexcept
 	{
 		return ( trig_rev );
 	}
 	
 	static bool
-	get_loco_first( void )
+	get_loco_first( void ) noexcept
 	{
 		return ( loco_first );
 	}
 	
 	static bool
-	get_lamp_rear( void )
+	get_lamp_rear( void ) noexcept
 	{
 		return ( lamp_rear );
 	}
 	
 	static BYTE
-	get_func_mask( void )
+	get_func_mask( void ) noexcept
 	{
 		return ( func_mask );
 	}
@@ -115,13 +100,13 @@ class Bits : public Z_core
 	u_int
 	get_isize( void ) const
 	{
-		return ( (u_int)(last_byte - bytes)+1);
+		return ( static_cast<u_int>(last_byte - bytes)+1);
 	}
 
 	u_int
 	get_bit_size( void ) const
 	{
-		return ( (u_int)	(	(in_byte - bytes) * BITS_IN_BYTE )
+		return ( static_cast<u_int>(	(in_byte - bytes) * BITS_IN_BYTE )
 							+	MAX_BIT_POS - in_bit );
 	}
 
@@ -134,7 +119,7 @@ class Bits : public Z_core
 	u_int
 	get_byte_size( void ) const
 	{
-		return ( (u_int)(in_byte - bytes) );
+		return ( static_cast<u_int>(in_byte - bytes) );
 	}
 
 	Rslt_t
@@ -189,6 +174,15 @@ class Bits : public Z_core
 	Bits &
 	put_1s(
 		u_int	count );
+
+	// Pad with 1s to the next Byte boundary (no-op if already aligned).
+	Bits &
+	align_1s( void )
+	{
+		u_int	rem = get_bit_size() % BITS_IN_BYTE;
+
+		return ( rem ? put_1s( BITS_IN_BYTE - rem ) : *this );
+	}
 
 	Bits &
 	put_0s(

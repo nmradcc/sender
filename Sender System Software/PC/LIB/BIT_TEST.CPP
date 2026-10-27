@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: BIT_TEST.CPP $
- * Path:                 $Logfile: /NMRA/LIB/BIT_TEST.CPP $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 8 $
- * Last Modified on:     $Modtime: 9/18/17 6:56p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 9/19/17 1:02p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	bit_test.cpp	-	Unit test program for Bits class.
@@ -72,6 +57,104 @@ static Dcc_vector Dcc_vects[]	=
 };
 const	int		DCC_VECTS_SIZE	=	sizeof( Dcc_vects )/sizeof( Dcc_vector );
 
+static int		g_checks		= 0;		// Checks run.
+static int		g_failures		= 0;		// Checks failed.
+
+#define RECORD_FAIL()	( ++g_checks, ++g_failures )
+
+#define CHECK( cond )														\
+	do																		\
+	{																		\
+		++g_checks;															\
+		if ( !(cond) )														\
+		{																	\
+			++g_failures;													\
+			printf( "FAIL line %d: %s\n", __LINE__, #cond );				\
+		}																	\
+	} while ( 0 )
+
+// Value of the bit at 'pos' in a Bits array, where bit 0 is the MSB of Byte 0.
+static bool
+bit_at(
+	const Bits		&b,
+	u_int			pos )
+{
+	return ( ((b.get_byte_array()[pos / BITS_IN_BYTE]
+				>> (MAX_BIT_POS - (pos % BITS_IN_BYTE))) & 1) != 0 );
+}
+
+// Fill a Bits object with 0s or 1s and verify the contents and range checks.
+static void
+test_fill(
+	Bits			&b,
+	bool			ones )
+{
+	const BYTE		expect	= ones ? 0xff : 0x00;
+	BYTE			obyte	= 0;
+
+	b.clr_in();
+
+	if ( ones )
+	{
+		b.put_1s( BITS_SIZE * BITS_IN_BYTE );
+	}
+	else
+	{
+		b.put_0s( BITS_SIZE * BITS_IN_BYTE );
+	}
+
+	CHECK( b.get_obj_errs() == 0 );
+	CHECK( b.get_bit_size() == static_cast<u_int>(BITS_SIZE * BITS_IN_BYTE) );
+	CHECK( b.get_byte_size() == static_cast<u_int>(BITS_SIZE) );
+
+	for ( int i = 0; i < BITS_SIZE; i++ )
+	{
+		CHECK( b.get_byte( obyte ) == OK );
+		CHECK( obyte == expect );
+	}
+
+	CHECK( b.get_byte( obyte ) == FAIL );
+
+	b.put_byte( expect );
+	CHECK( b.get_obj_errs() != 0 );
+
+	b.clr_in();
+	CHECK( b.get_obj_errs() == 0 );
+	CHECK( b.get_bit_size() == 0 );
+}
+
+static void
+test_misc(
+	Bits			&b )
+{
+	BYTE			obyte	= 0;
+
+	b.clr_in().clr_check();
+	CHECK( b.get_check() == CHECK_INIT );
+
+	b.put_byte( 0x0f ).put_byte( 0xf3 );
+	CHECK( b.get_check() == 0xfc );
+	b.clr_check();
+	CHECK( b.get_check() == CHECK_INIT );
+
+	CHECK( b.get_byte( obyte ) == OK && obyte == 0x0f );
+	CHECK( b.get_byte( obyte ) == OK && obyte == 0xf3 );
+	CHECK( b.get_byte( obyte ) == FAIL );
+	b.rst_out();
+	CHECK( b.get_byte( obyte ) == OK && obyte == 0x0f );
+
+	b.clr_in().put_1s( 16 );
+	CHECK( b.clr_bit( 3 ) == OK );
+	CHECK( b.clr_bit( 15 ) == OK );
+	CHECK( b.clr_bit( 16 ) == FAIL );
+
+	for ( u_int pos = 0; pos < 16; pos++ )
+	{
+		CHECK( bit_at( b, pos ) == (pos != 3 && pos != 15) );
+	}
+
+	b.clr_in();
+}
 Fsoc_bits	Fsoc;
 Idle_bits	Idle( 2 );
 
@@ -129,134 +212,40 @@ main( void )
 		"  PRE_BITS %u, BASE_BITS %u, SIG_BITS %u\n",
 		PRE_BITS, BASE_BITS, SIG_BITS );
 
-	if ( Fsoc.get_obj_errs() )
-	{
-		printf( "UNEXPECTED Fsoc had error 0x%08lx\n",
-			Fsoc.get_obj_errs() );
-		exit( 1 );
-	}
+	CHECK( Fsoc.get_obj_errs() == 0 );
+	CHECK( Fsoc.get_bit_size() > 0 );
 
 	printf( "Fsoc: size %u Bytes, %u bits, array -\n",
 		Fsoc.get_isize(), Fsoc.get_bit_size() );
 	Fsoc.print();
 
-	if ( Idle.get_obj_errs() )
-	{
-		printf( "UNEXPECTED Idle had error 0x%08lx\n",
-			Idle.get_obj_errs() );
-		exit( 1 );
-	}
+	CHECK( Idle.get_obj_errs() == 0 );
+	CHECK( Idle.get_bit_size() > 0 );
 
 	printf( "Idle: size %u Bytes, %u bits, array -\n",
 		Idle.get_isize(), Idle.get_bit_size() );
 	Idle.print();
 
-	if ( my_bits.get_obj_errs() )
-	{
-		printf( "UNEXPECTED my_bits had error 0x%08lx\n",
-			my_bits.get_obj_errs() );
-		exit( 1 );
-	}
+	CHECK( my_bits.get_obj_errs() == 0 );
+	CHECK( my_bits.get_isize() == static_cast<u_int>(BITS_SIZE) );
+	CHECK( my_bits.get_bit_size() == 0 );
 
 	printf( "my_bits: size %u Bytes, %u bits\n",
 		my_bits.get_isize(), my_bits.get_bit_size() );
 
-	if ( flip_tst.get_obj_errs() )
-	{
-		printf( "UNEXPECTED flip_tst had error 0x%08lx\n",
-			flip_tst.get_obj_errs() );
-		exit( 1 );
-	}
+	CHECK( flip_tst.get_obj_errs() == 0 );
+	CHECK( flip_tst.get_isize() == static_cast<u_int>(FLIP_TST_SIZE) );
 
 	printf( "flip_tst: size %u\n", flip_tst.get_isize() );
 
 	printf( "Test put_0s()\n" );
-
-	if ( my_bits.put_0s( BITS_SIZE * BITS_IN_BYTE ).get_obj_errs() )
-	{
-		printf( "UNEXPECTED error 0x%08lx, put_0s( max )\n",
-			my_bits.get_obj_errs() );
-		exit( 1 );
-	}
-
-	for ( i = 0; i < BITS_SIZE; i++ )
-	{
-		if ( my_bits.get_byte( obyte ) != OK )
-		{
-			printf( "UNEXPECTED 0s FAIL get_byte() index %d\n", i );
-			exit( 1 );
-		}
-
-		if ( obyte != 0x00 )
-		{
-			printf(
-				"UNEXPECTED 0s test obyte %d != 0, index %d\n", obyte, i );
-			exit( 1 );
-		}
-	}
-
-	if ( my_bits.get_byte( obyte ) != FAIL )
-	{
-		printf( "UNEXPECTED 0s get_byte() overrange test pass\n" );
-		exit( 1 );
-	}
-
-	if ( !my_bits.put_byte( 0x00 ).get_obj_errs() )
-	{
-		printf( "UNEXPECTED 0s put_byte() overrange test pass\n" );
-		exit( 1 );
-	}
-
-	if ( my_bits.clr_in().get_obj_errs() )
-	{
-		printf( "UNEXPECTED 0s error 0x%08lx, clr_in()\n",
-			my_bits.get_obj_errs() );
-		exit( 1 );
-	}
+	test_fill( my_bits, false );
 
 	printf( "Test put_1s()\n" );
+	test_fill( my_bits, true );
 
-	if ( my_bits.put_1s( BITS_SIZE * BITS_IN_BYTE ).get_obj_errs() )
-	{
-		printf( "UNEXPECTED error 0x%08lx, put_1s( max )\n",
-			my_bits.get_obj_errs() );
-		exit( 1 );
-	}
-
-	for ( i = 0; i < BITS_SIZE; i++ )
-	{
-		if ( my_bits.get_byte( obyte ) != OK )
-		{
-			printf( "UNEXPECTED 1s get_byte() FAIL index %d\n", i );
-			exit( 1 );
-		}
-
-		if ( obyte != 0xff )
-		{
-			printf(
-				"UNEXPECTED 1s test obyte %d != 0, index %d\n", obyte, i );
-			exit( 1 );
-		}
-	}
-
-	if ( my_bits.get_byte( obyte ) != FAIL )
-	{
-		printf( "UNEXPECTED 1s get_byte() overrange test pass\n" );
-		exit( 1 );
-	}
-
-	if ( !my_bits.put_byte( 0xff ).get_obj_errs() )
-	{
-		printf( "UNEXPECTED 1s put_byte() overrange test pass\n" );
-		exit( 1 );
-	}
-
-	if ( my_bits.clr_in().get_obj_errs() )
-	{
-		printf( "UNEXPECTED error 0x%08lx, clr_in()\n",
-			my_bits.get_obj_errs() );
-		exit( 1 );
-	}
+	printf( "Test get_check(), rst_out(), clr_bit()\n" );
+	test_misc( my_bits );
 
 	printf( "Begin test vectors\n" );
 
@@ -414,37 +403,44 @@ main( void )
 
 		default:
 			printf( "UNEXPECTED test index %d\n", i );
-			exit( 1 );
-			break;
+			RECORD_FAIL();
+			continue;
 		}
 
 		if ( my_bits.get_obj_errs() )
 		{
-        	if ( ignoreError )
-            {
+			if ( ignoreError )
+			{
 				printf( "Test %3d: Ignoring expected obj error 0x%08lx\n",
 											i, my_bits.get_obj_errs() );
-                    my_bits.clear_warn();
-            }
-            else
-            {
+				my_bits.clear_warn();
+			}
+			else
+			{
 				printf( "UNEXPECTED obj error 0x%08lx, Test %d\n",
 					my_bits.get_obj_errs(), i );
-				exit( 1 );
-            }
+				RECORD_FAIL();
+			}
+		}
+		else if ( ignoreError )
+		{
+			printf( "UNEXPECTED Test %d did not set expected obj error\n", i );
+			RECORD_FAIL();
 		}
 
 		printf( "Test %3d: Bytes - ", i );
 
 		my_bits.print();
 
+		CHECK( my_bits.get_byte_size() == static_cast<u_int>(Dcc_vects[i].v_size) );
+
 		for ( j = 0; j < Dcc_vects[i].v_size; j++ )
 		{
 			if ( my_bits.get_byte( obyte ) != OK )
 			{
-				printf(
-					"UNEXPECTED Test %d get_byte() FAIL, Byte %d", i, j );
-				exit( 1 );
+				printf( "UNEXPECTED Test %d get_byte() FAIL, Byte %d\n", i, j );
+				RECORD_FAIL();
+				break;
 			}
 
 			if ( obyte != Dcc_vects[i].v_array[j] )
@@ -453,12 +449,15 @@ main( void )
 					"UNEXPECTED Test %d, Byte %d, "
 					"Bits 0x%02x != expected 0x%02x\n",
 					i, j, obyte, Dcc_vects[i].v_array[j] );
-				exit( 1 );
 			}
+
+			CHECK( obyte == Dcc_vects[i].v_array[j] );
 		}
+
+		CHECK( my_bits.get_byte( obyte ) == FAIL );
 	}
 
-	printf( "Completed all %d test vectors\n", i );
+	printf( "Completed all %d test vectors\n", DCC_VECTS_SIZE );
 
 	for ( ftype = 0; ftype < 2; ftype++ )
 	{
@@ -466,52 +465,45 @@ main( void )
 
 		for ( i = 0; i <= BITS_IN_BYTE * FLIP_TST_SIZE; i++ )
 		{
-			if ( flip_tst.clr_in().get_obj_errs() )
-			{
-				printf(
-					"UNEXPECTED error 0x%08lx, %d test clr_in pass %d\n",
-					my_bits.get_obj_errs(), ftype, i );
-				exit( 1 );
-			}
+			const bool	fill	= (ftype != 0);	// Fill bit value.
 
-			if ( ftype == 0 )
-			{
-				flip_tst.put_0s( i );
-			}
-			else
+			flip_tst.clr_in();
+			CHECK( flip_tst.get_obj_errs() == 0 );
+
+			if ( fill )
 			{
 				flip_tst.put_1s( i );
 			}
-
-			if ( flip_tst.get_obj_errs() )
+			else
 			{
-				printf(
-					"UNEXPECTED error 0x%08lx, put_%ds( %d )\n",
-					my_bits.get_obj_errs(), ftype, i );
-				exit( 1 );
+				flip_tst.put_0s( i );
 			}
+
+			CHECK( flip_tst.get_obj_errs() == 0 );
+			CHECK( flip_tst.get_bit_size() == static_cast<u_int>(i) );
 
 			for ( j = 0; j < i; j++ )
 			{
-				if ( flip_tst.set_flip( j ) != OK )
-				{
-				printf(
-						"UNEXPECTED FAIL %d test flip_tst.set_flip( %d )\n",
-						ftype, j );
-					exit ( 1 );
-				}
+				CHECK( flip_tst.set_flip( j ) == OK );
 
 				printf( "%d flip test, bit length %2d, shift %2d - ",
 					ftype, i, j );
 				flip_tst.print();
+
+				// Only bit j differs from the fill value.
+				for ( int k = 0; k < i; k++ )
+				{
+					CHECK( bit_at( flip_tst, k ) == ( (k == j) ? !fill : fill ) );
+				}
 			}
 
-			if ( flip_tst.set_flip( j ) != FAIL )
+			CHECK( flip_tst.set_flip( i ) == FAIL );
+
+			flip_tst.clr_flip();
+
+			for ( int k = 0; k < i; k++ )
 			{
-				printf(
-					"UNEXPECTED PASS %d test flip_tst.set_flip( %d )\n",
-					ftype, j );
-				exit ( 1 );
+				CHECK( bit_at( flip_tst, k ) == fill );
 			}
 		}
 	}
@@ -520,20 +512,8 @@ main( void )
 	printf( "Starting truncated packet tests.\n" );
 	my_bits.clr_in().put_1s( BASE_BITS );
 
-	if ( my_bits.get_bit_size() != BASE_BITS )
-	{
-		printf(
-			"UNEXPECTED initial truncate bit size %u, exptected %u\n",
-			my_bits.get_bit_size(), BASE_BITS );
-			exit( 1 );
-	}
-
-	if ( my_bits.truncate( my_bits.get_bit_size() + 1 ) != FAIL )
-	{
-		printf(
-			"UNEXPECTED PASS of out of range truncate() call.\n" );
-		exit( 1 );
-	}
+	CHECK( my_bits.get_bit_size() == BASE_BITS );
+	CHECK( my_bits.truncate( my_bits.get_bit_size() + 1 ) == FAIL );
 
 	printf( "my_bits: size %u Bytes, %u bits, array -\n",
 		my_bits.get_isize(), my_bits.get_bit_size() );
@@ -544,21 +524,25 @@ main( void )
 	for ( i = BASE_BITS; i >= 0; i-- )
 	{
 		my_bits.clr_in().put_1s( BASE_BITS );
-		if ( my_bits.truncate( i ) != OK )
-		{
-			printf(
-				"UNEXPECTED truncate FAIL, bit position %u\n", i );
-			exit( 1 );
-		}
 
-		printf( "%3u bits - ",
-			my_bits.get_bit_size() );
+		CHECK( my_bits.truncate( i ) == OK );
+		CHECK( my_bits.get_bit_size() == static_cast<u_int>(i) );
+
+		printf( "%3u bits - ", my_bits.get_bit_size() );
 
 		// Finish up packet and print it out.
 		my_bits.done().print();
+
+		CHECK( my_bits.get_byte_size() == bits_to_bytes( i ) );
+
+		// Kept bits are 1s and done() pads the last Byte with 0s.
+		for ( j = 0; j < static_cast<int>(my_bits.get_byte_size()) * BITS_IN_BYTE; j++ )
+		{
+			CHECK( bit_at( my_bits, j ) == ( j < i ) );
+		}
 	}
 
-	//exit( 0 );
+	printf( "bit_test: %d checks, %d failures\n", g_checks, g_failures );
 
-	return ( 0 );
+	return ( g_failures == 0 ? 0 : 1 );
 }

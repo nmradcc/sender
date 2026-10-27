@@ -27,7 +27,6 @@ typedef struct sender_engine
 
     uint32_t packets_sent;
     uint32_t bytes_sent;
-    uint32_t underruns;
     uint32_t err_flags;
 } sender_engine_t;
 
@@ -38,7 +37,6 @@ uint8_t sender_engine_set_timing(sender_engine_t* eng, uint16_t clk0t_us,
                                  uint16_t clk0h_us, uint16_t clk1t_us);
 uint8_t sender_engine_start(sender_engine_t* eng);
 uint8_t sender_engine_stop(sender_engine_t* eng);
-uint8_t sender_engine_clear_underflow(sender_engine_t* eng);
 uint8_t sender_engine_set_scope(sender_engine_t* eng, bool scope_on);
 
 uint8_t sender_engine_send_bytes(sender_engine_t* eng, uint16_t repeat_count,

@@ -12,8 +12,10 @@
 #include <windows.h>
 #include <commdlg.h>
 #include <commctrl.h>
+#include "send.h"
 #include <string>
 #include <vector>
+#include <utility>
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
@@ -41,28 +43,34 @@ enum
 	ID_EDIT_TESTS,
 	ID_EDIT_CLOCKS,
 	ID_EDIT_FUNCS,
+	ID_EDIT_TESTS_GENERAL,
+	ID_EDIT_CLOCKS_GENERAL,
+	ID_EDIT_FUNCS_GENERAL,
+	ID_EDIT_LOG,
+	ID_EDIT_LOG_GENERAL,
 
-	ID_CHK_DEBUG_ON,
 	ID_CHK_MANUAL,
 	ID_CHK_LAMP,
 	ID_CHK_REPEAT,
 	ID_CHK_TRIG_REV,
 	ID_CHK_LOCO_FIRST,
-	ID_CHK_LOG,
 	ID_CHK_NO_ABORT,
 	ID_CHK_LATE_SCOPE,
 	ID_CHK_FRAGMENT,
 	ID_CHK_SAME_AMBIG_ADDR,
 	ID_CHK_KICK_START,
 	ID_CHK_MCU_BYPASS_TST,
+	ID_CHK_REDUCE_PASSCNT,
 
 	ID_BTN_LOAD,
 	ID_BTN_SAVE,
 	ID_BTN_SAVEAS,
 	ID_BTN_DEFAULTS,
 	ID_BTN_LAUNCH,
+	ID_BTN_MCU_TEST,
 
 	ID_STATIC_PATH,
+	ID_STATIC_MCU_STATUS,
 
 	ID_TAB,
 
@@ -74,14 +82,25 @@ enum
 	ID_CHK_CLOCKBIT_BASE,			// 32 sequential ids follow (bits 0..31).
 	ID_BTN_CLOCKBITS_ALL = ID_CHK_CLOCKBIT_BASE + 32,
 	ID_BTN_CLOCKBITS_NONE,
-	ID_BTN_CLOCKBITS_DEFAULT
+	ID_BTN_CLOCKBITS_DEFAULT,
+
+	ID_CHK_FUNCBIT_BASE,
+	ID_BTN_FUNCBITS_ALL = ID_CHK_FUNCBIT_BASE + 5,
+	ID_BTN_FUNCBITS_NONE,
+	ID_BTN_FUNCBITS_DEFAULT,
+
+	ID_CHK_LOGBIT_BASE,
+	ID_BTN_LOGBITS_ALL = ID_CHK_LOGBIT_BASE + 5,
+	ID_BTN_LOGBITS_NONE,
+	ID_BTN_LOGBITS_DEFAULT
 };
 
 /* Number of individual TESTS mask bit checkboxes. */
 static const int TESTBIT_COUNT = 32;
 
 /* Short description of what each TESTS mask bit selects (see DEC_TST.CPP
- * print_user_docs() for the authoritative bit ordering). */
+ * print_user_docs() for the authoritative bit ordering). Valid bits are 0-19;
+ * bits 20-31 are reserved and must stay clear. */
 static const char *g_testBitLabels[TESTBIT_COUNT] =
 {
 	"1T margin test",
@@ -122,7 +141,8 @@ static const char *g_testBitLabels[TESTBIT_COUNT] =
 static const int CLOCKBIT_COUNT = 32;
 
 /* Name of each CLOCKS mask bit's clock timing variant (see DEC_TST.CPP
- * Dec_tst::dclk_tbl[] for the authoritative bit ordering). */
+ * Dec_tst::dclk_tbl[] for the authoritative bit ordering). Valid bits are 0-17;
+ * bits 18-31 are reserved and must stay clear. */
 static const char *g_clockBitLabels[CLOCKBIT_COUNT] =
 {
 	"All nominal",
@@ -142,7 +162,7 @@ static const char *g_clockBitLabels[CLOCKBIT_COUNT] =
 	"Very positive 0",
 	"Max Decoder Neg 0",
 	"Max Decoder Pos 0",
-	"Reserved bit 17",
+	"Out of spec fast (negative test)",
 	"Reserved bit 18",
 	"Reserved bit 19",
 	"Reserved bit 20",
@@ -159,14 +179,43 @@ static const char *g_clockBitLabels[CLOCKBIT_COUNT] =
 	"Reserved bit 31",
 };
 
+static const int FUNCBIT_COUNT = 5;
+
+static const char *g_funcBitLabels[FUNCBIT_COUNT] =
+{
+	"AUX1",
+	"AUX2",
+	"AUX3",
+	"AUX4",
+	"FL",
+};
+
+static const int LOGBIT_COUNT = 4;
+
+static const char *g_logBitLabels[LOGBIT_COUNT] =
+{
+	"Log file",
+	"Command logging",
+	"Packet data logging",
+	"IO data logging",
+};
+
 /*---------------------------------------------------------------------------
  * Global state.
  *-------------------------------------------------------------------------*/
 static HWND	g_hMain;
 static char	g_cfgPath[MAX_PATH] = "";
+static HANDLE	g_mcuTestProcess = nullptr;
+static HANDLE	g_mcuTestOutputRead = nullptr;
+static std::string	g_mcuTestOutput;
+static const UINT_PTR MCU_TEST_TIMER_ID = 1;
+static std::vector<std::string>	g_origLines;	// Raw lines of the last loaded/saved cfg file, preserved across saves.
+static bool	g_iniSource = false;	// True when the last loaded file was an .ini; restricts Save As to .ini.
 static std::vector<HWND>	g_page0Ctrls;	// Controls shown on the "General" tab.
 static std::vector<HWND>	g_page1Ctrls;	// Controls shown on the "Test Mask Bits" tab.
 static std::vector<HWND>	g_page2Ctrls;	// Controls shown on the "Clock Mask Bits" tab.
+static std::vector<HWND>	g_page3Ctrls;	// Controls shown on the "Function Mask Bits" tab.
+static std::vector<HWND>	g_page4Ctrls;	// Controls shown on the "Log Mask Bits" tab.
 
 struct FlagCtrl
 {
@@ -176,19 +225,18 @@ struct FlagCtrl
 
 static const FlagCtrl g_flagCtrls[] =
 {
-	{ ID_CHK_DEBUG_ON,        "DEBUG_ON" },
 	{ ID_CHK_MANUAL,          "MANUAL" },
 	{ ID_CHK_LAMP,            "LAMP" },
 	{ ID_CHK_REPEAT,          "REPEAT" },
 	{ ID_CHK_TRIG_REV,        "TRIG_REV" },
 	{ ID_CHK_LOCO_FIRST,      "LOCO_FIRST" },
-	{ ID_CHK_LOG,             "LOG" },
 	{ ID_CHK_NO_ABORT,        "NO_ABORT" },
 	{ ID_CHK_LATE_SCOPE,      "LATE_SCOPE" },
 	{ ID_CHK_FRAGMENT,        "FRAGMENT" },
 	{ ID_CHK_SAME_AMBIG_ADDR, "SAME_AMBIG_ADDR" },
 	{ ID_CHK_KICK_START,      "KICK_START" },
 	{ ID_CHK_MCU_BYPASS_TST,  "MCU_BYPASS_TST" },
+	{ ID_CHK_REDUCE_PASSCNT,  "REDUCE_PASSCNT" },
 };
 
 /*---------------------------------------------------------------------------
@@ -198,7 +246,7 @@ static HWND
 MakeStatic( HWND parent, const char *text, int x, int y, int w, int h )
 {
 	return CreateWindowEx( 0, "STATIC", text, WS_CHILD | WS_VISIBLE,
-		x, y, w, h, parent, NULL, NULL, NULL );
+		x, y, w, h, parent, nullptr, nullptr, nullptr );
 }
 
 static HWND
@@ -206,7 +254,7 @@ MakeEdit( HWND parent, int id, int x, int y, int w, int h )
 {
 	return CreateWindowEx( WS_EX_CLIENTEDGE, "EDIT", "",
 		WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_AUTOHSCROLL,
-		x, y, w, h, parent, (HMENU)(INT_PTR)id, NULL, NULL );
+		x, y, w, h, parent, (HMENU)(INT_PTR)id, nullptr, nullptr );
 }
 
 static HWND
@@ -214,7 +262,7 @@ MakeCheck( HWND parent, int id, const char *text, int x, int y, int w, int h )
 {
 	return CreateWindowEx( 0, "BUTTON", text,
 		WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX,
-		x, y, w, h, parent, (HMENU)(INT_PTR)id, NULL, NULL );
+		x, y, w, h, parent, (HMENU)(INT_PTR)id, nullptr, nullptr );
 }
 
 static HWND
@@ -222,7 +270,7 @@ MakeButton( HWND parent, int id, const char *text, int x, int y, int w, int h )
 {
 	return CreateWindowEx( 0, "BUTTON", text,
 		WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-		x, y, w, h, parent, (HMENU)(INT_PTR)id, NULL, NULL );
+		x, y, w, h, parent, (HMENU)(INT_PTR)id, nullptr, nullptr );
 }
 
 static void
@@ -237,13 +285,27 @@ SetEditUInt( int id, unsigned long value, bool hex )
 	char buf[32];
 	if ( hex )
 	{
-		sprintf( buf, "0x%08lX", value );
+		snprintf( buf, sizeof( buf ), "0x%08lX", value );
 	}
 	else
 	{
-		sprintf( buf, "%lu", value );
+		snprintf( buf, sizeof( buf ), "%lu", value );
 	}
 	SetEditText( id, buf );
+}
+
+static void
+SetMaskText( int pageId, int generalId, const char *text )
+{
+	SetEditText( pageId, text );
+	SetEditText( generalId, text );
+}
+
+static void
+SetMaskUInt( int pageId, int generalId, unsigned long value )
+{
+	SetEditUInt( pageId, value, true );
+	SetEditUInt( generalId, value, true );
 }
 
 static std::string
@@ -258,7 +320,7 @@ static unsigned long
 GetEditULong( int id )
 {
 	std::string s = GetEditText( id );
-	return strtoul( s.c_str(), NULL, 0 );
+	return strtoul( s.c_str(), nullptr, 0 );
 }
 
 static void
@@ -288,6 +350,61 @@ Trim( std::string &s )
 	}
 }
 
+/* Pull the leading key token out of a cfg line, whether or not it is
+ * commented out with ';' or '#', so a saved field can be matched back to
+ * the line it originally came from. Returns false if the line has no key
+ * (blank or free-form comment text). */
+static bool
+ExtractLineKey( const std::string &rawLine, std::string &keyOut )
+{
+	std::string s( rawLine );
+	Trim( s );
+	if ( !s.empty() && ( s[0] == ';' || s[0] == '#' ) )
+	{
+		s = s.substr( 1 );
+		Trim( s );
+	}
+	if ( s.empty() )
+	{
+		return false;
+	}
+	size_t sp = s.find_first_of( " \t" );
+	keyOut = ( sp == std::string::npos ) ? s : s.substr( 0, sp );
+	return !keyOut.empty();
+}
+
+static std::string
+PreserveHashComment( const std::string &updatedLine, const std::string &originalLine )
+{
+	size_t hashPos = originalLine.find( '#' );
+	if ( hashPos == std::string::npos )
+	{
+		return updatedLine;
+	}
+
+	size_t firstText = originalLine.find_first_not_of( " \t" );
+	if ( firstText != std::string::npos && originalLine[firstText] == '#' )
+	{
+		return updatedLine;
+	}
+
+	std::string line( updatedLine );
+	size_t updatedHashPos = line.find( '#' );
+	if ( updatedHashPos != std::string::npos )
+	{
+		line.erase( updatedHashPos );
+	}
+	while ( !line.empty() && ( line.back() == ' ' || line.back() == '\t' ) )
+	{
+		line.pop_back();
+	}
+	if ( line.size() < 24 )
+	{
+		line.append( 24 - line.size(), ' ' );
+	}
+	return line + originalLine.substr( hashPos );
+}
+
 /*---------------------------------------------------------------------------
  * Enumerate the serial ports currently present on the PC (registry list of
  * ports Windows has assigned a COMx name to).
@@ -309,8 +426,8 @@ EnumComPorts( void )
 			DWORD dataSize = sizeof( data );
 			DWORD type;
 
-			if ( RegEnumValue( hKey, index, valueName, &valueNameSize, NULL,
-				&type, (BYTE *)data, &dataSize ) != ERROR_SUCCESS )
+			if ( RegEnumValue( hKey, index, valueName, &valueNameSize, nullptr,
+				&type, reinterpret_cast<BYTE *>( data ), &dataSize ) != ERROR_SUCCESS )
 			{
 				break;
 			}
@@ -355,7 +472,7 @@ SyncTestsFromBits( void )
 			mask |= ( 1UL << i );
 		}
 	}
-	SetEditUInt( ID_EDIT_TESTS, mask, true );
+	SetMaskUInt( ID_EDIT_TESTS, ID_EDIT_TESTS_GENERAL, mask );
 }
 
 /*---------------------------------------------------------------------------
@@ -382,25 +499,90 @@ SyncClocksFromBits( void )
 			mask |= ( 1UL << i );
 		}
 	}
-	SetEditUInt( ID_EDIT_CLOCKS, mask, true );
+	SetMaskUInt( ID_EDIT_CLOCKS, ID_EDIT_CLOCKS_GENERAL, mask );
 }
 
-/* Default mask values (mirrors ARGS.CPP Args_obj defaults). */
-static const unsigned long DEF_TESTS_MASK = 0xFFFFFFFFUL;
-static const unsigned long DEF_CLOCKS_MASK = 0xFFFFFFFFUL & ~0x8 & ~0x10 & ~0x100 & ~0x200;
+/*---------------------------------------------------------------------------
+ * Keep the FUNCS mask hex field and the per-bit checkboxes in sync.
+ *-------------------------------------------------------------------------*/
+static void
+SyncBitsFromFuncs( void )
+{
+	unsigned long mask = GetEditULong( ID_EDIT_FUNCS );
+	for ( int i = 0; i < FUNCBIT_COUNT; i++ )
+	{
+		SetChecked( ID_CHK_FUNCBIT_BASE + i, ( mask & ( 1UL << i ) ) != 0 );
+	}
+}
+
+static void
+SyncFuncsFromBits( void )
+{
+	unsigned long mask = 0;
+	for ( int i = 0; i < FUNCBIT_COUNT; i++ )
+	{
+		if ( IsChecked( ID_CHK_FUNCBIT_BASE + i ) )
+		{
+			mask |= ( 1UL << i );
+		}
+	}
+	SetMaskUInt( ID_EDIT_FUNCS, ID_EDIT_FUNCS_GENERAL, mask );
+}
+
+static void
+SyncBitsFromLog( void )
+{
+	unsigned long mask = GetEditULong( ID_EDIT_LOG );
+	for ( int i = 0; i < LOGBIT_COUNT; i++ )
+	{
+		SetChecked( ID_CHK_LOGBIT_BASE + i, ( mask & ( 1UL << i ) ) != 0 );
+	}
+}
+
+static void
+SyncLogFromBits( void )
+{
+	unsigned long mask = 0;
+	for ( int i = 0; i < LOGBIT_COUNT; i++ )
+	{
+		if ( IsChecked( ID_CHK_LOGBIT_BASE + i ) )
+		{
+			mask |= ( 1UL << i );
+		}
+	}
+	SetMaskUInt( ID_EDIT_LOG, ID_EDIT_LOG_GENERAL, mask );
+}
+
+/* Default masks: TESTS valid bits are 0-19 (20-31 reserved), CLOCKS valid bits are 0-17 (18-31 reserved); bit 17 is an opt-in out-of-spec negative test, excluded from the default. */
+static const unsigned long DEF_TESTS_MASK = 0x000FFFFFUL;
+static const unsigned long DEF_CLOCKS_MASK = 0xFFFFFFFFUL & ~0x8 & ~0x10 & ~0x100 & ~0x200 & 0x0001FFFFUL;
 
 static void
 ResetTestsMaskDefault( void )
 {
-	SetEditUInt( ID_EDIT_TESTS, DEF_TESTS_MASK, true );
+	SetMaskUInt( ID_EDIT_TESTS, ID_EDIT_TESTS_GENERAL, DEF_TESTS_MASK );
 	SyncBitsFromTests();
 }
 
 static void
 ResetClocksMaskDefault( void )
 {
-	SetEditUInt( ID_EDIT_CLOCKS, DEF_CLOCKS_MASK, true );
+	SetMaskUInt( ID_EDIT_CLOCKS, ID_EDIT_CLOCKS_GENERAL, DEF_CLOCKS_MASK );
 	SyncBitsFromClocks();
+}
+
+static void
+ResetFuncsMaskDefault( void )
+{
+	SetMaskUInt( ID_EDIT_FUNCS, ID_EDIT_FUNCS_GENERAL, 0x1F );
+	SyncBitsFromFuncs();
+}
+
+static void
+ResetLogMaskDefault( void )
+{
+	SetMaskUInt( ID_EDIT_LOG, ID_EDIT_LOG_GENERAL, 0x01 );
+	SyncBitsFromLog();
 }
 
 /*---------------------------------------------------------------------------
@@ -420,9 +602,10 @@ LoadDefaults( void )
 	SetEditUInt( ID_EDIT_EXTRA_TRG, 0, false );
 	SetEditText( ID_EDIT_MCU_PORT, "COM3" );
 	SetEditUInt( ID_EDIT_MCU_BAUD, 115200, false );
-	SetEditUInt( ID_EDIT_TESTS, DEF_TESTS_MASK, true );
-	SetEditUInt( ID_EDIT_CLOCKS, DEF_CLOCKS_MASK, true );
-	SetEditUInt( ID_EDIT_FUNCS, 0x1F, true );
+	SetMaskUInt( ID_EDIT_TESTS, ID_EDIT_TESTS_GENERAL, DEF_TESTS_MASK );
+	SetMaskUInt( ID_EDIT_CLOCKS, ID_EDIT_CLOCKS_GENERAL, DEF_CLOCKS_MASK );
+	SetMaskUInt( ID_EDIT_FUNCS, ID_EDIT_FUNCS_GENERAL, 0x1F );
+	SetMaskUInt( ID_EDIT_LOG, ID_EDIT_LOG_GENERAL, 0x01 );
 
 	for ( size_t i = 0; i < _countof( g_flagCtrls ); i++ )
 	{
@@ -431,6 +614,16 @@ LoadDefaults( void )
 
 	SyncBitsFromTests();
 	SyncBitsFromClocks();
+	SyncBitsFromFuncs();
+	SyncBitsFromLog();
+}
+
+/* True for legacy .ini files, which have no LOG mask of their own. */
+static bool
+IsIniPath( const char *path )
+{
+	const char *dot = strrchr( path, '.' );
+	return dot != nullptr && _stricmp( dot, ".ini" ) == 0;
 }
 
 /*---------------------------------------------------------------------------
@@ -440,17 +633,33 @@ static bool
 LoadCfgFile( const char *path )
 {
 	FILE *fp = fopen( path, "r" );
-	if ( fp == NULL )
+	if ( fp == nullptr )
 	{
 		return false;
 	}
 
-	LoadDefaults();
-
+	/* Keep the raw lines around so a later Save can patch just the changed
+	 * fields back into this file's original layout/comments. */
+	g_origLines.clear();
+	g_iniSource = IsIniPath( path );
 	char line[256];
 	while ( fgets( line, sizeof( line ), fp ) )
 	{
-		std::string s( line );
+		std::string raw( line );
+		while ( !raw.empty() && ( raw.back() == '\n' || raw.back() == '\r' ) )
+		{
+			raw.pop_back();
+		}
+		g_origLines.push_back( raw );
+	}
+	fclose( fp );
+
+	LoadDefaults();
+	bool logPkts = false;
+
+	for ( size_t li = 0; li < g_origLines.size(); li++ )
+	{
+		std::string s( g_origLines[li] );
 		Trim( s );
 
 		if ( s.empty() || s[0] == '#' || s[0] == ';' )
@@ -475,6 +684,14 @@ LoadCfgFile( const char *path )
 		}
 
 		bool matchedFlag = false;
+		if ( _stricmp( key.c_str(), "LOG_PKTS" ) == 0 )
+		{
+			logPkts = val.empty() || ( _stricmp( val.c_str(), "0" ) != 0
+				&& _stricmp( val.c_str(), "false" ) != 0
+				&& _stricmp( val.c_str(), "off" ) != 0
+				&& _stricmp( val.c_str(), "no" ) != 0 );
+			continue;
+		}
 		for ( size_t i = 0; i < _countof( g_flagCtrls ); i++ )
 		{
 			if ( _stricmp( key.c_str(), g_flagCtrls[i].key ) == 0 )
@@ -518,15 +735,20 @@ LoadCfgFile( const char *path )
 		}
 		else if ( _stricmp( key.c_str(), "TESTS" ) == 0 )
 		{
-			SetEditText( ID_EDIT_TESTS, val.c_str() );
+			SetMaskText( ID_EDIT_TESTS, ID_EDIT_TESTS_GENERAL, val.c_str() );
 		}
 		else if ( _stricmp( key.c_str(), "CLOCKS" ) == 0 )
 		{
-			SetEditText( ID_EDIT_CLOCKS, val.c_str() );
+			SetMaskText( ID_EDIT_CLOCKS, ID_EDIT_CLOCKS_GENERAL, val.c_str() );
 		}
 		else if ( _stricmp( key.c_str(), "FUNCS" ) == 0 )
 		{
-			SetEditText( ID_EDIT_FUNCS, val.c_str() );
+			SetMaskText( ID_EDIT_FUNCS, ID_EDIT_FUNCS_GENERAL, val.c_str() );
+		}
+		else if ( _stricmp( key.c_str(), "LOG" ) == 0 )
+		{
+			unsigned long mask = val.empty() ? 0x01 : strtoul( val.c_str(), nullptr, 0 );
+			SetMaskUInt( ID_EDIT_LOG, ID_EDIT_LOG_GENERAL, mask );
 		}
 		else if ( _stricmp( key.c_str(), "EXTRA_PRE" ) == 0 )
 		{
@@ -559,81 +781,172 @@ LoadCfgFile( const char *path )
 		/* Unknown keys are silently ignored so newer cfg files still load. */
 	}
 
-	fclose( fp );
+	/* Legacy .ini files have no LOG mask; derive it from LOG_PKTS. */
+	if ( IsIniPath( path ) )
+	{
+		SetMaskUInt( ID_EDIT_LOG, ID_EDIT_LOG_GENERAL, logPkts ? 0x07 : 0x01 );
+	}
+
 	SyncBitsFromTests();
 	SyncBitsFromClocks();
+	SyncBitsFromFuncs();
+	SyncBitsFromLog();
 	return true;
 }
 
 /*---------------------------------------------------------------------------
- * Write the controls out in SEND.CFG format.
+ * Write the controls out in SEND.CFG format. If a cfg file was previously
+ * loaded (or saved), its original lines/comments/ordering are preserved and
+ * only the value lines for known keys are patched in place; otherwise a
+ * fresh, fully formatted file is generated from scratch.
  *-------------------------------------------------------------------------*/
 static bool
 SaveCfgFile( const char *path )
 {
-	FILE *fp = fopen( path, "w" );
-	if ( fp == NULL )
-	{
-		return false;
-	}
+	std::vector<std::pair<std::string, std::string>> fields;
+	char buf[512];
 
-	fprintf( fp, "; SEND.CFG - generated by sendgui\n" );
-	fprintf( fp, ";\n" );
-	fprintf( fp, "; Flags below are active (uncommented) only when checked.\n" );
-	fprintf( fp, ";\n\n" );
-
-	auto writeFlag = [&]( int ctrlId, const char *key )
+	auto addFlag = [&]( const char *key, bool checked )
 	{
-		if ( IsChecked( ctrlId ) )
+		if ( checked )
 		{
-			fprintf( fp, "%-16s\n", key );
+			snprintf( buf, sizeof( buf ), "%-16s", key );
 		}
 		else
 		{
-			fprintf( fp, ";%-16s\n", key );
+			snprintf( buf, sizeof( buf ), ";%-16s", key );
 		}
+		fields.push_back( { key, buf } );
 	};
 
-	writeFlag( ID_CHK_MANUAL, "MANUAL" );
+	auto addField = [&]( const char *key, const std::string &val )
+	{
+		int valueStart = 20 - static_cast<int>( val.size() );
+		if ( valueStart < static_cast<int>( strlen( key ) ) + 1 )
+		{
+			valueStart = static_cast<int>( strlen( key ) ) + 1;
+		}
+		snprintf( buf, sizeof( buf ), "%s%*s%s", key,
+			valueStart - static_cast<int>( strlen( key ) ), "", val.c_str() );
+		fields.push_back( { key, buf } );
+	};
 
-	int typeSel = (int)SendDlgItemMessage( g_hMain, ID_COMBO_TYPE, CB_GETCURSEL, 0, 0 );
-	const char *typeChar = "l";
+	auto addMaskField = [&]( const char *key, const std::string &val )
+	{
+		unsigned long mask = strtoul( val.c_str(), nullptr, 16 );
+		char maskText[32];
+		snprintf( maskText, sizeof( maskText ), "0x%08lx", mask );
+		int valueStart = 20 - static_cast<int>( strlen( maskText ) );
+		if ( valueStart < static_cast<int>( strlen( key ) ) + 1 )
+		{
+			valueStart = static_cast<int>( strlen( key ) ) + 1;
+		}
+		snprintf( buf, sizeof( buf ), "%s%*s%s", key,
+			valueStart - static_cast<int>( strlen( key ) ), "", maskText );
+		fields.push_back( { key, buf } );
+	};
+
+	addFlag( "MANUAL", IsChecked( ID_CHK_MANUAL ) );
+
+	int typeSel = static_cast<int>( SendDlgItemMessage( g_hMain, ID_COMBO_TYPE, CB_GETCURSEL, 0, 0 ) );
+	const char *typeChar = "L";
 	switch ( typeSel )
 	{
-		case 0: typeChar = "l"; break;
-		case 1: typeChar = "f"; break;
-		case 2: typeChar = "a"; break;
-		case 3: typeChar = "s"; break;
+		case 0: typeChar = "L"; break;
+		case 1: typeChar = "F"; break;
+		case 2: typeChar = "A"; break;
+		case 3: typeChar = "S"; break;
 	}
 
-	fprintf( fp, "%-16s %s\n", "ADDRESS", GetEditText( ID_EDIT_ADDRESS ).c_str() );
-	fprintf( fp, "%-16s %s\n", "TYPE", typeChar );
-	writeFlag( ID_CHK_LAMP, "LAMP" );
-	fprintf( fp, "%-16s %s\n", "PRESET", GetEditText( ID_EDIT_PRESET ).c_str() );
-	fprintf( fp, "%-16s %s\n", "TRIGGER", GetEditText( ID_EDIT_TRIGGER ).c_str() );
-	writeFlag( ID_CHK_REPEAT, "REPEAT" );
-	fprintf( fp, "%-16s %s\n", "TESTS", GetEditText( ID_EDIT_TESTS ).c_str() );
-	fprintf( fp, "%-16s %s\n", "CLOCKS", GetEditText( ID_EDIT_CLOCKS ).c_str() );
-	fprintf( fp, "%-16s %s\n", "FUNCS", GetEditText( ID_EDIT_FUNCS ).c_str() );
-	fprintf( fp, "%-16s %s\n", "EXTRA_PRE", GetEditText( ID_EDIT_EXTRA_PRE ).c_str() );
-	writeFlag( ID_CHK_TRIG_REV, "TRIG_REV" );
-	writeFlag( ID_CHK_LOCO_FIRST, "LOCO_FIRST" );
-	fprintf( fp, "%-16s %s\n", "FILL_MSEC", GetEditText( ID_EDIT_FILL_MSEC ).c_str() );
-	fprintf( fp, "%-16s %s\n", "TEST_REPS", GetEditText( ID_EDIT_TEST_REPS ).c_str() );
-	writeFlag( ID_CHK_LOG, "LOG" );
-	writeFlag( ID_CHK_MCU_BYPASS_TST, "MCU_BYPASS_TST" );
-	writeFlag( ID_CHK_NO_ABORT, "NO_ABORT" );
-	writeFlag( ID_CHK_LATE_SCOPE, "LATE_SCOPE" );
-	writeFlag( ID_CHK_FRAGMENT, "FRAGMENT" );
-	writeFlag( ID_CHK_SAME_AMBIG_ADDR, "SAME_AMBIG_ADDR" );
-	fprintf( fp, "%-16s %s\n", "ACC_PAIR", GetEditText( ID_EDIT_ACC_PAIR ).c_str() );
-	writeFlag( ID_CHK_KICK_START, "KICK_START" );
-	writeFlag( ID_CHK_DEBUG_ON, "DEBUG_ON" );
-	fprintf( fp, "%-16s %s\n", "EXTRA_TRG", GetEditText( ID_EDIT_EXTRA_TRG ).c_str() );
-	fprintf( fp, "%-16s %s\n", "MCU_PORT", GetEditText( ID_EDIT_MCU_PORT ).c_str() );
-	fprintf( fp, "%-16s %s\n", "MCU_BAUD", GetEditText( ID_EDIT_MCU_BAUD ).c_str() );
+	addField( "ADDRESS", GetEditText( ID_EDIT_ADDRESS ) );
+	addField( "TYPE", typeChar );
+	addFlag( "LAMP", IsChecked( ID_CHK_LAMP ) );
+	addField( "PRESET", GetEditText( ID_EDIT_PRESET ) );
+	addField( "TRIGGER", GetEditText( ID_EDIT_TRIGGER ) );
+	addFlag( "REPEAT", IsChecked( ID_CHK_REPEAT ) );
+	addMaskField( "TESTS", GetEditText( ID_EDIT_TESTS ) );
+	addMaskField( "CLOCKS", GetEditText( ID_EDIT_CLOCKS ) );
+	addMaskField( "FUNCS", GetEditText( ID_EDIT_FUNCS ) );
+	addMaskField( "LOG", GetEditText( ID_EDIT_LOG ) );
+	addField( "EXTRA_PRE", GetEditText( ID_EDIT_EXTRA_PRE ) );
+	addFlag( "TRIG_REV", IsChecked( ID_CHK_TRIG_REV ) );
+	addFlag( "LOCO_FIRST", IsChecked( ID_CHK_LOCO_FIRST ) );
+	addField( "FILL_MSEC", GetEditText( ID_EDIT_FILL_MSEC ) );
+	addField( "TEST_REPS", GetEditText( ID_EDIT_TEST_REPS ) );
+	addFlag( "NO_ABORT", IsChecked( ID_CHK_NO_ABORT ) );
+	addFlag( "LATE_SCOPE", IsChecked( ID_CHK_LATE_SCOPE ) );
+	addFlag( "FRAGMENT", IsChecked( ID_CHK_FRAGMENT ) );
+	addFlag( "SAME_AMBIG_ADDR", IsChecked( ID_CHK_SAME_AMBIG_ADDR ) );
+	addField( "ACC_PAIR", GetEditText( ID_EDIT_ACC_PAIR ) );
+	addFlag( "KICK_START", IsChecked( ID_CHK_KICK_START ) );
+	addField( "EXTRA_TRG", GetEditText( ID_EDIT_EXTRA_TRG ) );
+	addFlag( "MCU_BYPASS_TST", IsChecked( ID_CHK_MCU_BYPASS_TST ) );
+	addFlag( "REDUCE_PASSCNT", IsChecked( ID_CHK_REDUCE_PASSCNT ) );
+	addField( "MCU_PORT", GetEditText( ID_EDIT_MCU_PORT ) );
+	addField( "MCU_BAUD", GetEditText( ID_EDIT_MCU_BAUD ) );
 
+	std::vector<std::string> output;
+
+	if ( g_origLines.empty() )
+	{
+		/* No previously loaded/saved file to preserve - emit a fresh file. */
+		output.push_back( "; SEND.CFG - generated by sendgui" );
+		output.push_back( ";" );
+		output.push_back( "; Flags below are active (uncommented) only when checked." );
+		output.push_back( ";" );
+		output.push_back( "" );
+		for ( size_t i = 0; i < fields.size(); i++ )
+		{
+			output.push_back( fields[i].second );
+		}
+	}
+	else
+	{
+		/* Patch each known key's line in place; leave everything else (other
+		 * lines, comments, ordering) untouched. Keys not already present are
+		 * appended at the end. */
+		output = g_origLines;
+		for ( size_t i = 0; i < fields.size(); i++ )
+		{
+			bool found = false;
+			for ( size_t li = 0; li < output.size(); li++ )
+			{
+				std::string existingKey;
+				if ( ExtractLineKey( output[li], existingKey ) &&
+					_stricmp( existingKey.c_str(), fields[i].first.c_str() ) == 0 )
+				{
+					output[li] = PreserveHashComment( fields[i].second, output[li] );
+					found = true;
+					break;
+				}
+			}
+			if ( !found )
+			{
+				output.push_back( fields[i].second );
+			}
+		}
+		for ( size_t li = 0; li < output.size(); li++ )
+		{
+			std::string existingKey;
+			if ( output[li].find( '#' ) != std::string::npos )
+			{
+				output[li] = PreserveHashComment( output[li], output[li] );
+			}
+		}
+	}
+
+	FILE *fp = fopen( path, "w" );
+	if ( fp == nullptr )
+	{
+		return false;
+	}
+	for ( size_t i = 0; i < output.size(); i++ )
+	{
+		fprintf( fp, "%s\n", output[i].c_str() );
+	}
 	fclose( fp );
+
+	g_origLines = output;
 	return true;
 }
 
@@ -673,24 +986,127 @@ static bool
 BrowseSave( char *outPath, DWORD outSize )
 {
 	OPENFILENAME ofn;
-	char file[MAX_PATH] = "SEND.CFG";
+	char file[MAX_PATH];
+
+	/* An .ini source may only be saved as .ini; anything else only as .cfg. */
+	snprintf( file, sizeof( file ), "%s", g_iniSource ? "SEND.INI" : "SEND.CFG" );
 
 	ZeroMemory( &ofn, sizeof( ofn ) );
 	ofn.lStructSize     = sizeof( ofn );
 	ofn.hwndOwner       = g_hMain;
-	ofn.lpstrFilter     = "Config Files (*.cfg;*.ini)\0*.cfg;*.ini\0All Files\0*.*\0";
+	ofn.lpstrFilter     = g_iniSource
+		? "Ini Files (*.ini)\0*.ini\0"
+		: "Config Files (*.cfg)\0*.cfg\0All Files\0*.*\0";
 	ofn.lpstrFile       = file;
 	ofn.nMaxFile        = sizeof( file );
-	ofn.lpstrDefExt     = "cfg";
+	ofn.lpstrDefExt     = g_iniSource ? "ini" : "cfg";
 	ofn.Flags           = OFN_OVERWRITEPROMPT;
 
-	if ( GetSaveFileName( &ofn ) )
+	while ( GetSaveFileName( &ofn ) )
 	{
+		if ( IsIniPath( file ) != g_iniSource )
+		{
+			MessageBox( g_hMain, g_iniSource
+				? "A configuration read from an .ini file can only be saved as an .ini file."
+				: "Only a configuration read from an .ini file can be saved as an .ini file.",
+				"sendgui", MB_ICONWARNING );
+			continue;
+		}
 		strncpy( outPath, file, outSize - 1 );
 		outPath[outSize - 1] = '\0';
 		return true;
 	}
 	return false;
+}
+
+/*---------------------------------------------------------------------------
+ * Migrate the current settings, read from an .ini file, to a .cfg file with
+ * the same base name (send.ini becomes migrated_send.cfg). The send.cfg in
+ * the program's home directory is the template; it is never overwritten.
+ *-------------------------------------------------------------------------*/
+static bool
+MigrateIniToCfg( HWND hwnd )
+{
+	std::string iniPath = g_cfgPath;
+	size_t slash = iniPath.find_last_of( "\\/" );
+	std::string dir = ( slash == std::string::npos ) ? "" : iniPath.substr( 0, slash + 1 );
+	std::string name = iniPath.substr( slash == std::string::npos ? 0 : slash + 1 );
+	name = name.substr( 0, name.size() - 4 );
+	if ( _stricmp( name.c_str(), "send" ) == 0 )
+	{
+		name = "migrated_send";
+	}
+	std::string cfgPath = dir + name + ".cfg";
+
+	/* The template is always the send.cfg beside sendgui.exe; it is only read. */
+	char exePath[MAX_PATH];
+	GetModuleFileName( nullptr, exePath, MAX_PATH );
+	char *exeSlash = strrchr( exePath, '\\' );
+	if ( exeSlash != nullptr )
+	{
+		exeSlash[1] = '\0';
+	}
+	else
+	{
+		exePath[0] = '\0';
+	}
+	std::string basePath = std::string( exePath ) + "send.cfg";
+
+	FILE *fp = fopen( basePath.c_str(), "r" );
+	if ( fp == nullptr )
+	{
+		std::string msg = "Baseline file not found:\n" + basePath;
+		MessageBox( hwnd, msg.c_str(), "sendgui", MB_ICONERROR );
+		return false;
+	}
+	std::vector<std::string> baseline;
+	char line[256];
+	while ( fgets( line, sizeof( line ), fp ) )
+	{
+		std::string raw( line );
+		while ( !raw.empty() && ( raw.back() == '\n' || raw.back() == '\r' ) )
+		{
+			raw.pop_back();
+		}
+		baseline.push_back( raw );
+	}
+	fclose( fp );
+
+	if ( GetFileAttributes( cfgPath.c_str() ) != INVALID_FILE_ATTRIBUTES )
+	{
+		std::string msg = cfgPath + " already exists.\nOverwrite it?";
+		if ( MessageBox( hwnd, msg.c_str(), "sendgui",
+			MB_YESNO | MB_ICONQUESTION ) != IDYES )
+		{
+			return false;
+		}
+	}
+
+	std::vector<std::string> savedLines = g_origLines;
+	g_origLines = baseline;
+	if ( !SaveCfgFile( cfgPath.c_str() ) )
+	{
+		g_origLines = savedLines;
+		MessageBox( hwnd, "Failed to save the file.", "sendgui", MB_ICONERROR );
+		return false;
+	}
+
+	strncpy( g_cfgPath, cfgPath.c_str(), sizeof( g_cfgPath ) - 1 );
+	g_cfgPath[sizeof( g_cfgPath ) - 1] = '\0';
+	g_iniSource = false;
+	UpdatePathLabel();
+	return true;
+}
+
+/* Returns IDYES to save as .ini, IDNO to migrate to .cfg, else IDCANCEL. */
+static int
+AskIniSaveMode( HWND hwnd )
+{
+	return MessageBox( hwnd,
+		"This configuration was read from an .ini file.\n\n"
+		"Yes: save as the modified .ini file\n"
+		"No: migrate to a .cfg file with the same name",
+		"sendgui", MB_YESNOCANCEL | MB_ICONQUESTION );
 }
 
 /*---------------------------------------------------------------------------
@@ -720,9 +1136,9 @@ LaunchSendExe( HWND hwnd )
 	}
 
 	char exeDir[MAX_PATH];
-	GetModuleFileName( NULL, exeDir, MAX_PATH );
+	GetModuleFileName( nullptr, exeDir, MAX_PATH );
 	char *slash = strrchr( exeDir, '\\' );
-	if ( slash != NULL )
+	if ( slash != nullptr )
 	{
 		slash[1] = '\0';
 	}
@@ -742,15 +1158,33 @@ LaunchSendExe( HWND hwnd )
 	SetEnvironmentVariable( "SEND_CFG", g_cfgPath );
 
 	char cmdLine[MAX_PATH + 16];
-	sprintf( cmdLine, "\"%s\"", sendExe.c_str() );
+	snprintf( cmdLine, sizeof( cmdLine ), "\"%s\"", sendExe.c_str() );
 
 	STARTUPINFO si;
 	PROCESS_INFORMATION pi;
 	ZeroMemory( &si, sizeof( si ) );
 	si.cb = sizeof( si );
 
-	if ( CreateProcess( sendExe.c_str(), cmdLine, NULL, NULL, FALSE, 0,
-		NULL, exeDir, &si, &pi ) )
+	/* Run in the cfg file's directory so the .log/.sum files land beside it. */
+	char workDir[MAX_PATH];
+	strncpy( workDir, g_cfgPath, sizeof( workDir ) - 1 );
+	workDir[sizeof( workDir ) - 1] = '\0';
+	char *cfgSlash = strrchr( workDir, '\\' );
+	if ( cfgSlash == nullptr )
+	{
+		cfgSlash = strrchr( workDir, '/' );
+	}
+	if ( cfgSlash != nullptr )
+	{
+		*cfgSlash = '\0';
+	}
+	else
+	{
+		snprintf( workDir, sizeof( workDir ), "%s", exeDir );
+	}
+
+	if ( CreateProcess( sendExe.c_str(), 	cmdLine, nullptr, nullptr, FALSE, 0,
+			nullptr, workDir, &si, &pi ) )
 	{
 		CloseHandle( pi.hThread );
 		CloseHandle( pi.hProcess );
@@ -758,6 +1192,226 @@ LaunchSendExe( HWND hwnd )
 	else
 	{
 		MessageBox( hwnd, "Failed to launch send.exe.", "sendgui", MB_ICONERROR );
+	}
+}
+
+static void
+ReadMcuSmokeTestOutput( void )
+{
+	if ( g_mcuTestOutputRead == nullptr )
+	{
+		return;
+	}
+
+	DWORD bytesAvailable = 0;
+	if ( !PeekNamedPipe( g_mcuTestOutputRead, nullptr, 0, nullptr,
+		&bytesAvailable, nullptr ) )
+	{
+		return;
+	}
+
+	while ( bytesAvailable > 0 )
+	{
+		char buffer[1024];
+		DWORD bytesRead = 0;
+		DWORD bytesToRead = bytesAvailable < sizeof( buffer )
+			? bytesAvailable : sizeof( buffer );
+		if ( !ReadFile( g_mcuTestOutputRead, buffer, bytesToRead,
+			&bytesRead, nullptr ) || bytesRead == 0 )
+		{
+			break;
+		}
+
+		if ( g_mcuTestOutput.size() < 8192 )
+		{
+			size_t keep = 8192 - g_mcuTestOutput.size();
+			g_mcuTestOutput.append( buffer,
+				bytesRead < keep ? bytesRead : keep );
+		}
+
+		if ( !PeekNamedPipe( g_mcuTestOutputRead, nullptr, 0, nullptr,
+			&bytesAvailable, nullptr ) )
+		{
+			break;
+		}
+	}
+}
+
+static std::string
+GetMcuFirmwareVersion( void )
+{
+	const char *versionLabel = "mcu fw version";
+	size_t labelPos = g_mcuTestOutput.find( versionLabel );
+	if ( labelPos == std::string::npos )
+	{
+		return "";
+	}
+
+	size_t versionStart = g_mcuTestOutput.find( ':', labelPos );
+	if ( versionStart == std::string::npos )
+	{
+		return "";
+	}
+	versionStart = g_mcuTestOutput.find_first_not_of( " \t",
+		versionStart + 1 );
+	if ( versionStart == std::string::npos )
+	{
+		return "";
+	}
+
+	size_t versionEnd = g_mcuTestOutput.find_first_of( " \r\n", versionStart );
+	return g_mcuTestOutput.substr( versionStart, versionEnd - versionStart );
+}
+
+static void
+FinishMcuSmokeTest( HWND hwnd, bool passed )
+{
+	if ( g_mcuTestProcess != nullptr )
+	{
+		CloseHandle( g_mcuTestProcess );
+		g_mcuTestProcess = nullptr;
+	}
+	if ( g_mcuTestOutputRead != nullptr )
+	{
+		CloseHandle( g_mcuTestOutputRead );
+		g_mcuTestOutputRead = nullptr;
+	}
+	KillTimer( hwnd, MCU_TEST_TIMER_ID );
+	EnableWindow( GetDlgItem( hwnd, ID_BTN_MCU_TEST ), TRUE );
+	if ( passed )
+	{
+		std::string version = GetMcuFirmwareVersion();
+		std::string status = "MCU test: PASS";
+		if ( version.empty() )
+		{
+			status += " - MCU version unavailable";
+		}
+		else
+		{
+			status += " - MCU ";
+			status += version;
+		}
+		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS, status.c_str() );
+	}
+	else
+	{
+		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS, "MCU test: FAIL" );
+	}
+	g_mcuTestOutput.clear();
+}
+
+static void
+LaunchMcuSmokeTest( HWND hwnd )
+{
+	if ( g_mcuTestProcess != nullptr )
+	{
+		return;
+	}
+
+	char port[MAX_PATH];
+	GetDlgItemText( hwnd, ID_EDIT_MCU_PORT, port, sizeof( port ) );
+	std::string portName( port );
+	Trim( portName );
+	if ( portName.empty() || portName.find_first_of( "\"\r\n" ) != std::string::npos )
+	{
+		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS, "MCU test: FAIL (invalid port)" );
+		return;
+	}
+
+	char exePath[MAX_PATH];
+	DWORD pathLength = 	GetModuleFileName( nullptr, exePath, MAX_PATH );
+	if ( pathLength == 0 || pathLength >= MAX_PATH )
+	{
+		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS, "MCU test: FAIL (cannot locate executable)" );
+		return;
+	}
+
+	char *slash = strrchr( exePath, '\\' );
+	if ( slash == nullptr )
+	{
+		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS, "MCU test: FAIL (cannot locate executable)" );
+		return;
+	}
+	slash[1] = '\0';
+
+	std::string exeDir( exePath );
+	std::string smokeExe = exeDir + "mcu_smoke_test.exe";
+	if ( GetFileAttributes( smokeExe.c_str() ) == INVALID_FILE_ATTRIBUTES )
+	{
+		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS,
+			"MCU test: FAIL (mcu_smoke_test.exe not found)" );
+		return;
+	}
+
+	std::string commandLine = "\"" + smokeExe + "\" \"" + portName + "\"";
+	std::vector<char> mutableCommandLine( commandLine.begin(), commandLine.end() );
+	mutableCommandLine.push_back( '\0' );
+
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+	SECURITY_ATTRIBUTES pipeSecurity;
+	ZeroMemory( &pipeSecurity, sizeof( pipeSecurity ) );
+	pipeSecurity.nLength = sizeof( pipeSecurity );
+	pipeSecurity.bInheritHandle = TRUE;
+
+	HANDLE outputRead = nullptr;
+	HANDLE outputWrite = nullptr;
+	if ( !CreatePipe( &outputRead, &outputWrite, &pipeSecurity, 0 )
+		|| !SetHandleInformation( outputRead, HANDLE_FLAG_INHERIT, 0 ) )
+	{
+		if ( outputRead != nullptr )
+		{
+			CloseHandle( outputRead );
+		}
+		if ( outputWrite != nullptr )
+		{
+			CloseHandle( outputWrite );
+		}
+		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS,
+			"MCU test: FAIL (could not capture test output)" );
+		return;
+	}
+
+	ZeroMemory( &si, sizeof( si ) );
+	ZeroMemory( &pi, sizeof( pi ) );
+	si.cb = sizeof( si );
+	si.dwFlags = STARTF_USESTDHANDLES;
+	si.hStdInput = GetStdHandle( STD_INPUT_HANDLE );
+	si.hStdOutput = outputWrite;
+	si.hStdError = outputWrite;
+
+	if ( !CreateProcess( smokeExe.c_str(), mutableCommandLine.data(),
+		nullptr, nullptr, TRUE, CREATE_NO_WINDOW, nullptr, exeDir.c_str(), &si, &pi ) )
+	{
+		CloseHandle( outputRead );
+		CloseHandle( outputWrite );
+		SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS, "MCU test: FAIL (launch failed)" );
+		return;
+	}
+
+	CloseHandle( outputWrite );
+	CloseHandle( pi.hThread );
+	g_mcuTestProcess = pi.hProcess;
+	g_mcuTestOutputRead = outputRead;
+	g_mcuTestOutput.clear();
+	SetDlgItemText( hwnd, ID_STATIC_MCU_STATUS, "MCU test: running..." );
+	EnableWindow( GetDlgItem( hwnd, ID_BTN_MCU_TEST ), FALSE );
+
+	if ( SetTimer( hwnd, MCU_TEST_TIMER_ID, 100, nullptr ) == 0 )
+	{
+		ReadMcuSmokeTestOutput();
+		DWORD waitResult;
+		do
+		{
+			waitResult = WaitForSingleObject( g_mcuTestProcess, 50 );
+			ReadMcuSmokeTestOutput();
+		} while ( waitResult == WAIT_TIMEOUT );
+
+		DWORD exitCode = 1;
+		bool passed = waitResult == WAIT_OBJECT_0
+			&& GetExitCodeProcess( g_mcuTestProcess, &exitCode )
+			&& exitCode == 0;
+		FinishMcuSmokeTest( hwnd, passed );
 	}
 }
 
@@ -775,7 +1429,7 @@ CreateControls( HWND hwnd )
 	/* Tab strip switches between the general options page and the
 	 * individual TESTS/CLOCKS mask bit pages. */
 	CreateWindowEx( 0, WC_TABCONTROL, "", WS_CHILD | WS_VISIBLE | WS_TABSTOP,
-		10, 10, 1020, 30, hwnd, (HMENU)(INT_PTR)ID_TAB, NULL, NULL );
+		10, 10, 1020, 30, hwnd, (HMENU)(INT_PTR)ID_TAB, nullptr, nullptr );
 	HWND tab = GetDlgItem( hwnd, ID_TAB );
 
 	TCITEM tie;
@@ -786,6 +1440,10 @@ CreateControls( HWND hwnd )
 	TabCtrl_InsertItem( tab, 1, &tie );
 	tie.pszText = (char *)"Clock Mask Bits";
 	TabCtrl_InsertItem( tab, 2, &tie );
+	tie.pszText = (char *)"Function Mask Bits";
+	TabCtrl_InsertItem( tab, 3, &tie );
+	tie.pszText = (char *)"Log Mask Bits";
+	TabCtrl_InsertItem( tab, 4, &tie );
 
 	const int pageTop = 50;	// Below the tab strip.
 
@@ -801,11 +1459,11 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( MakeStatic( hwnd, "Decoder Type:", xLabel, y, labelW, 18 ) );
 	HWND combo = CreateWindowEx( WS_EX_CLIENTEDGE, "COMBOBOX", "",
 		WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST,
-		xEdit, y - 2, editW, 200, hwnd, (HMENU)(INT_PTR)ID_COMBO_TYPE, NULL, NULL );
-	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"LOCO (l)" );
-	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"FUNC (f)" );
-	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"ACC (a)" );
-	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"SIG (s)" );
+		xEdit, y - 2, editW, 200, hwnd, (HMENU)(INT_PTR)ID_COMBO_TYPE, nullptr, nullptr );
+	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"LOCO (L)" );
+	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"FUNC (F)" );
+	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"ACC (A)" );
+	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"SIG (S)" );
 	g_page0Ctrls.push_back( combo );
 	y += rowH;
 
@@ -840,7 +1498,7 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( MakeStatic( hwnd, "MCU Port:", xLabel, y, labelW, 18 ) );
 	HWND portCombo = CreateWindowEx( WS_EX_CLIENTEDGE, "COMBOBOX", "",
 		WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWN | CBS_AUTOHSCROLL,
-		xEdit, y - 2, editW, 200, hwnd, (HMENU)(INT_PTR)ID_EDIT_MCU_PORT, NULL, NULL );
+		xEdit, y - 2, editW, 200, hwnd, (HMENU)(INT_PTR)ID_EDIT_MCU_PORT, nullptr, nullptr );
 	std::vector<std::string> comPorts = EnumComPorts();
 	for ( size_t i = 0; i < comPorts.size(); i++ )
 	{
@@ -852,7 +1510,7 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( MakeStatic( hwnd, "MCU Baud:", xLabel, y, labelW, 18 ) );
 	HWND baudCombo = CreateWindowEx( WS_EX_CLIENTEDGE, "COMBOBOX", "",
 		WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWN | CBS_AUTOHSCROLL,
-		xEdit, y - 2, editW, 200, hwnd, (HMENU)(INT_PTR)ID_EDIT_MCU_BAUD, NULL, NULL );
+		xEdit, y - 2, editW, 200, hwnd, (HMENU)(INT_PTR)ID_EDIT_MCU_BAUD, nullptr, nullptr );
 	static const char *commonBauds[] =
 	{
 		"9600", "19200", "38400", "57600", "115200",
@@ -865,16 +1523,20 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( baudCombo );
 	y += rowH + 6;
 
-	g_page0Ctrls.push_back( MakeStatic( hwnd, "Tests Mask (hex):", xLabel, y, labelW, 18 ) );
-	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_TESTS, xEdit, y - 2, editW, 22 ) );
+	g_page0Ctrls.push_back( MakeStatic( hwnd, "Tests Mask:", xLabel, y, labelW, 18 ) );
+	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_TESTS_GENERAL, xEdit, y - 2, editW, 22 ) );
 	y += rowH;
 
-	g_page0Ctrls.push_back( MakeStatic( hwnd, "Clocks Mask (hex):", xLabel, y, labelW, 18 ) );
-	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_CLOCKS, xEdit, y - 2, editW, 22 ) );
+	g_page0Ctrls.push_back( MakeStatic( hwnd, "Clocks Mask:", xLabel, y, labelW, 18 ) );
+	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_CLOCKS_GENERAL, xEdit, y - 2, editW, 22 ) );
 	y += rowH;
 
-	g_page0Ctrls.push_back( MakeStatic( hwnd, "Funcs Mask (hex):", xLabel, y, labelW, 18 ) );
-	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_FUNCS, xEdit, y - 2, editW, 22 ) );
+	g_page0Ctrls.push_back( MakeStatic( hwnd, "Funcs Mask:", xLabel, y, labelW, 18 ) );
+	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_FUNCS_GENERAL, xEdit, y - 2, editW, 22 ) );
+	y += rowH;
+
+	g_page0Ctrls.push_back( MakeStatic( hwnd, "Log Mask:", xLabel, y, labelW, 18 ) );
+	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_LOG_GENERAL, xEdit, y - 2, editW, 22 ) );
 	y += rowH;
 
 	/* Right column: boolean flag checkboxes. */
@@ -882,19 +1544,19 @@ CreateControls( HWND hwnd )
 	int yChk = pageTop;
 	const int chkW = 340;
 
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_DEBUG_ON, "DEBUG_ON - Log debug messages", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MANUAL, "MANUAL - Don't run tests automatically", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LAMP, "LAMP - Use rear lamp for func tests", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REPEAT, "REPEAT - Continuously repeat tests", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_TRIG_REV, "TRIG_REV - Use reverse as trigger cmd", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LOCO_FIRST, "LOCO_FIRST - Loco pkt before func pkt", xChk, yChk, chkW, 20 ) ); yChk += rowH;
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LOG, "LOG - Send packet data to log", xChk, yChk, chkW, 20 ) ); yChk += rowH;
+
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_NO_ABORT, "NO_ABORT - Do not stop on error", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LATE_SCOPE, "LATE_SCOPE - Scope trigger after cmd", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_FRAGMENT, "FRAGMENT - Test all fragment lengths", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_SAME_AMBIG_ADDR, "SAME_AMBIG_ADDR - Same addr for ambig.", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_KICK_START, "KICK_START - Kick start motor", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MCU_BYPASS_TST, "MCU_BYPASS_TST - Skip MCU self test", xChk, yChk, chkW, 20 ) ); yChk += rowH;
+	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REDUCE_PASSCNT, "REDUCE_PASSCNT - Reduce pass count [5]", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 
 	/* Lowest content bottom seen so far, used to place the shared button bar
 	 * below every page instead of just the General page. */
@@ -906,19 +1568,24 @@ CreateControls( HWND hwnd )
 		const int bitRowH = 24;
 		const int bitsPerCol = ( TESTBIT_COUNT + 1 ) / 2;
 
+		g_page1Ctrls.push_back( MakeStatic( hwnd, "Tests Mask (hex):",
+			xLabel, pageTop, labelW, 18 ) );
+		g_page1Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_TESTS,
+			xEdit, pageTop - 2, 150, 22 ) );
+
 		for ( int i = 0; i < TESTBIT_COUNT; i++ )
 		{
 			char text[64];
-			sprintf( text, "Bit %2d (0x%08lX) - %s", i, 1UL << i, g_testBitLabels[i] );
+			snprintf( text, sizeof( text ), "Bit %2d (0x%08lX) - %s", i, 1UL << i, g_testBitLabels[i] );
 
 			int col = i / bitsPerCol;
 			int row = i % bitsPerCol;
 			HWND chk = MakeCheck( hwnd, ID_CHK_TESTBIT_BASE + i, text,
-				xLabel + col * bitColW, pageTop + row * bitRowH, bitColW - 10, 20 );
+				xLabel + col * bitColW, pageTop + 32 + row * bitRowH, bitColW - 10, 20 );
 			g_page1Ctrls.push_back( chk );
 		}
 
-		int by = pageTop + bitsPerCol * bitRowH + 10;
+		int by = pageTop + 32 + ((CLOCKBIT_COUNT + 1) / 2) * bitRowH + 10;
 		g_page1Ctrls.push_back(
 			MakeButton( hwnd, ID_BTN_TESTBITS_ALL, "Select All", xLabel, by, 110, 26 ) );
 		g_page1Ctrls.push_back(
@@ -932,25 +1599,97 @@ CreateControls( HWND hwnd )
 		}
 	}
 
+		/* Log Mask Bits page: independent file, command, and packet logging bits. */
+		{
+			const int bitColW = 500;
+			const int bitRowH = 24;
+
+			g_page4Ctrls.push_back( MakeStatic( hwnd, "Log Mask",
+				xLabel, pageTop, labelW, 18 ) );
+			g_page4Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_LOG,
+				xEdit, pageTop - 2, 150, 22 ) );
+
+			for ( int i = 0; i < LOGBIT_COUNT; i++ )
+			{
+				char text[64];
+				snprintf( text, sizeof( text ), "Bit %2d (0x%02lX) - %s", i, 1UL << i, g_logBitLabels[i] );
+				g_page4Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LOGBIT_BASE + i, text,
+					xLabel, pageTop + 32 + i * bitRowH, bitColW - 10, 20 ) );
+			}
+
+			int by = pageTop + 32 + ((CLOCKBIT_COUNT + 1) / 2) * bitRowH + 10;
+			g_page4Ctrls.push_back(
+				MakeButton( hwnd, ID_BTN_LOGBITS_ALL, "Select All", xLabel, by, 110, 26 ) );
+			g_page4Ctrls.push_back(
+				MakeButton( hwnd, ID_BTN_LOGBITS_NONE, "Select None", xLabel + 120, by, 110, 26 ) );
+			g_page4Ctrls.push_back(
+				MakeButton( hwnd, ID_BTN_LOGBITS_DEFAULT, "Reset Mask Defaults", xLabel + 240, by, 160, 26 ) );
+
+			if ( by + 26 > contentBottom )
+			{
+				contentBottom = by + 26;
+			}
+		}
+
+	/* Function Mask Bits page: the five bits select functions F0-F4. */
+	{
+		const int bitColW = 500;
+		const int bitRowH = 24;
+
+		g_page3Ctrls.push_back( MakeStatic( hwnd, "Funcs Mask (hex):",
+			xLabel, pageTop, labelW, 18 ) );
+		g_page3Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_FUNCS,
+			xEdit, pageTop - 2, 150, 22 ) );
+
+		for ( int i = 0; i < FUNCBIT_COUNT; i++ )
+		{
+			char text[64];
+			snprintf( text, sizeof( text ), "Bit %2d (0x%02lX) - %s", i, 1UL << i, g_funcBitLabels[i] );
+
+			HWND chk = MakeCheck( hwnd, ID_CHK_FUNCBIT_BASE + i, text,
+				xLabel, pageTop + 32 + i * bitRowH,
+				bitColW - 10, 20 );
+			g_page3Ctrls.push_back( chk );
+		}
+
+		int by = pageTop + 32 + ((CLOCKBIT_COUNT + 1) / 2) * bitRowH + 10;
+		g_page3Ctrls.push_back(
+			MakeButton( hwnd, ID_BTN_FUNCBITS_ALL, "Select All", xLabel, by, 110, 26 ) );
+		g_page3Ctrls.push_back(
+			MakeButton( hwnd, ID_BTN_FUNCBITS_NONE, "Select None", xLabel + 120, by, 110, 26 ) );
+		g_page3Ctrls.push_back(
+			MakeButton( hwnd, ID_BTN_FUNCBITS_DEFAULT, "Reset Mask Defaults", xLabel + 240, by, 160, 26 ) );
+
+		if ( by + 26 > contentBottom )
+		{
+			contentBottom = by + 26;
+		}
+	}
+
 	/* Clock Mask Bits page: one checkbox per CLOCKS mask bit, 2 columns. */
 	{
 		const int bitColW = 500;
 		const int bitRowH = 24;
 		const int bitsPerCol = ( CLOCKBIT_COUNT + 1 ) / 2;
 
+		g_page2Ctrls.push_back( MakeStatic( hwnd, "Clocks Mask (hex):",
+			xLabel, pageTop, labelW, 18 ) );
+		g_page2Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_CLOCKS,
+			xEdit, pageTop - 2, 150, 22 ) );
+
 		for ( int i = 0; i < CLOCKBIT_COUNT; i++ )
 		{
 			char text[64];
-			sprintf( text, "Bit %2d (0x%08lX) - %s", i, 1UL << i, g_clockBitLabels[i] );
+			snprintf( text, sizeof( text ), "Bit %2d (0x%08lX) - %s", i, 1UL << i, g_clockBitLabels[i] );
 
 			int col = i / bitsPerCol;
 			int row = i % bitsPerCol;
 			HWND chk = MakeCheck( hwnd, ID_CHK_CLOCKBIT_BASE + i, text,
-				xLabel + col * bitColW, pageTop + row * bitRowH, bitColW - 10, 20 );
+				xLabel + col * bitColW, pageTop + 32 + row * bitRowH, bitColW - 10, 20 );
 			g_page2Ctrls.push_back( chk );
 		}
 
-		int by = pageTop + bitsPerCol * bitRowH + 10;
+		int by = pageTop + 32 + ((CLOCKBIT_COUNT + 1) / 2) * bitRowH + 10;
 		g_page2Ctrls.push_back(
 			MakeButton( hwnd, ID_BTN_CLOCKBITS_ALL, "Select All", xLabel, by, 110, 26 ) );
 		g_page2Ctrls.push_back(
@@ -966,11 +1705,13 @@ CreateControls( HWND hwnd )
 
 	/* Bottom: buttons + path label (shared, always visible). */
 	const int btnW = 110;
-	int yLaunch = contentBottom + 20;
+	int yLaunch = pageTop + 32 + ((CLOCKBIT_COUNT + 1) / 2) * 24 + 10;
 	g_page0Ctrls.push_back(
 		MakeButton( hwnd, ID_BTN_LAUNCH, "Launch send.exe", 20, yLaunch, btnW + 40, 26 ) );
 	g_page0Ctrls.push_back(
 		MakeButton( hwnd, ID_BTN_DEFAULTS, "Reset All Defaults", 20 + btnW + 50, yLaunch, btnW + 40, 26 ) );
+	g_page0Ctrls.push_back(
+		MakeButton( hwnd, ID_BTN_MCU_TEST, "MCU test", 20 + 2 * (btnW + 50), yLaunch, btnW, 26 ) );
 
 	int yBtn = yLaunch + 36;
 	int xBtn = 20;
@@ -979,8 +1720,10 @@ CreateControls( HWND hwnd )
 	MakeButton( hwnd, ID_BTN_SAVE, "Save", xBtn, yBtn, btnW, 26 ); xBtn += btnW + 10;
 	MakeButton( hwnd, ID_BTN_SAVEAS, "Save As...", xBtn, yBtn, btnW, 26 );
 
-	CreateWindowEx( 0, "STATIC", "", WS_CHILD | WS_VISIBLE,
-		20, yBtn + 36, 1000, 20, hwnd, (HMENU)(INT_PTR)ID_STATIC_PATH, NULL, NULL );
+	CreateWindowEx( 0, "STATIC", "", WS_CHILD | WS_VISIBLE | SS_PATHELLIPSIS | SS_NOPREFIX,
+		20, yBtn + 30, 1020, 20, hwnd, (HMENU)(INT_PTR)ID_STATIC_PATH, nullptr, nullptr );
+	CreateWindowEx( 0, "STATIC", "MCU test: Not run", WS_CHILD | WS_VISIBLE | SS_NOPREFIX,
+		20, yBtn + 52, 1020, 20, hwnd, (HMENU)(INT_PTR)ID_STATIC_MCU_STATUS, nullptr, nullptr );
 
 	/* Start on the General page. */
 	for ( size_t i = 0; i < g_page1Ctrls.size(); i++ )
@@ -990,6 +1733,14 @@ CreateControls( HWND hwnd )
 	for ( size_t i = 0; i < g_page2Ctrls.size(); i++ )
 	{
 		ShowWindow( g_page2Ctrls[i], SW_HIDE );
+	}
+	for ( size_t i = 0; i < g_page3Ctrls.size(); i++ )
+	{
+		ShowWindow( g_page3Ctrls[i], SW_HIDE );
+	}
+	for ( size_t i = 0; i < g_page4Ctrls.size(); i++ )
+	{
+		ShowWindow( g_page4Ctrls[i], SW_HIDE );
 	}
 }
 
@@ -1009,6 +1760,49 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 			return 0;
 
 		case WM_COMMAND:
+			if ( HIWORD( wParam ) == EN_CHANGE )
+			{
+				static bool syncingMasks = false;
+				if ( !syncingMasks )
+				{
+					int changedId = LOWORD( wParam );
+					int sourceId = 0;
+					int targetId = 0;
+					if ( changedId == ID_EDIT_TESTS || changedId == ID_EDIT_TESTS_GENERAL )
+					{
+						sourceId = changedId;
+						targetId = changedId == ID_EDIT_TESTS
+							? ID_EDIT_TESTS_GENERAL : ID_EDIT_TESTS;
+					}
+					else if ( changedId == ID_EDIT_CLOCKS || changedId == ID_EDIT_CLOCKS_GENERAL )
+					{
+						sourceId = changedId;
+						targetId = changedId == ID_EDIT_CLOCKS
+							? ID_EDIT_CLOCKS_GENERAL : ID_EDIT_CLOCKS;
+					}
+					else if ( changedId == ID_EDIT_FUNCS || changedId == ID_EDIT_FUNCS_GENERAL )
+					{
+						sourceId = changedId;
+						targetId = changedId == ID_EDIT_FUNCS
+							? ID_EDIT_FUNCS_GENERAL : ID_EDIT_FUNCS;
+					}
+					else if ( changedId == ID_EDIT_LOG || changedId == ID_EDIT_LOG_GENERAL )
+					{
+						sourceId = changedId;
+						targetId = changedId == ID_EDIT_LOG
+							? ID_EDIT_LOG_GENERAL : ID_EDIT_LOG;
+					}
+
+					if ( targetId != 0 )
+					{
+						std::string value = GetEditText( sourceId );
+						syncingMasks = true;
+						SetEditText( targetId, value.c_str() );
+						syncingMasks = false;
+					}
+				}
+			}
+
 			switch ( LOWORD( wParam ) )
 			{
 				case ID_BTN_LOAD:
@@ -1037,6 +1831,19 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 						PostMessage( hwnd, WM_COMMAND, ID_BTN_SAVEAS, 0 );
 						return 0;
 					}
+					if ( g_iniSource )
+					{
+						int mode = AskIniSaveMode( hwnd );
+						if ( mode == IDCANCEL )
+						{
+							return 0;
+						}
+						if ( mode == IDNO )
+						{
+							MigrateIniToCfg( hwnd );
+							return 0;
+						}
+					}
 					if ( !SaveCfgFile( g_cfgPath ) )
 					{
 						MessageBox( hwnd, "Failed to save the file.",
@@ -1048,6 +1855,19 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 				case ID_BTN_SAVEAS:
 				{
 					char path[MAX_PATH];
+					if ( g_iniSource && g_cfgPath[0] != '\0' )
+					{
+						int mode = AskIniSaveMode( hwnd );
+						if ( mode == IDCANCEL )
+						{
+							return 0;
+						}
+						if ( mode == IDNO )
+						{
+							MigrateIniToCfg( hwnd );
+							return 0;
+						}
+					}
 					if ( BrowseSave( path, sizeof( path ) ) )
 					{
 						if ( SaveCfgFile( path ) )
@@ -1070,6 +1890,10 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 
 				case ID_BTN_LAUNCH:
 					LaunchSendExe( hwnd );
+					return 0;
+
+				case ID_BTN_MCU_TEST:
+					LaunchMcuSmokeTest( hwnd );
 					return 0;
 
 				case ID_BTN_TESTBITS_ALL:
@@ -1111,6 +1935,46 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 				case ID_BTN_CLOCKBITS_DEFAULT:
 					ResetClocksMaskDefault();
 					return 0;
+
+				case ID_BTN_FUNCBITS_ALL:
+					for ( int i = 0; i < FUNCBIT_COUNT; i++ )
+					{
+						SetChecked( ID_CHK_FUNCBIT_BASE + i, true );
+					}
+					SyncFuncsFromBits();
+					return 0;
+
+				case ID_BTN_FUNCBITS_NONE:
+					for ( int i = 0; i < FUNCBIT_COUNT; i++ )
+					{
+						SetChecked( ID_CHK_FUNCBIT_BASE + i, false );
+					}
+					SyncFuncsFromBits();
+					return 0;
+
+				case ID_BTN_FUNCBITS_DEFAULT:
+					ResetFuncsMaskDefault();
+					return 0;
+
+				case ID_BTN_LOGBITS_ALL:
+					for ( int i = 0; i < LOGBIT_COUNT; i++ )
+					{
+						SetChecked( ID_CHK_LOGBIT_BASE + i, true );
+					}
+					SyncLogFromBits();
+					return 0;
+
+				case ID_BTN_LOGBITS_NONE:
+					for ( int i = 0; i < LOGBIT_COUNT; i++ )
+					{
+						SetChecked( ID_CHK_LOGBIT_BASE + i, false );
+					}
+					SyncLogFromBits();
+					return 0;
+
+				case ID_BTN_LOGBITS_DEFAULT:
+					ResetLogMaskDefault();
+					return 0;
 			}
 
 			if ( LOWORD( wParam ) >= ID_CHK_TESTBIT_BASE
@@ -1124,6 +1988,18 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 				&& HIWORD( wParam ) == BN_CLICKED )
 			{
 				SyncClocksFromBits();
+			}
+			else if ( LOWORD( wParam ) >= ID_CHK_FUNCBIT_BASE
+				&& LOWORD( wParam ) < ID_CHK_FUNCBIT_BASE + FUNCBIT_COUNT
+				&& HIWORD( wParam ) == BN_CLICKED )
+			{
+				SyncFuncsFromBits();
+			}
+			else if ( LOWORD( wParam ) >= ID_CHK_LOGBIT_BASE
+				&& LOWORD( wParam ) < ID_CHK_LOGBIT_BASE + LOGBIT_COUNT
+				&& HIWORD( wParam ) == BN_CLICKED )
+			{
+				SyncLogFromBits();
 			}
 			return 0;
 
@@ -1141,6 +2017,14 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 				{
 					SyncBitsFromClocks();
 				}
+				else if ( sel == 3 )
+				{
+					SyncBitsFromFuncs();
+				}
+				else if ( sel == 4 )
+				{
+					SyncBitsFromLog();
+				}
 				for ( size_t i = 0; i < g_page0Ctrls.size(); i++ )
 				{
 					ShowWindow( g_page0Ctrls[i], sel == 0 ? SW_SHOW : SW_HIDE );
@@ -1153,15 +2037,54 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 				{
 					ShowWindow( g_page2Ctrls[i], sel == 2 ? SW_SHOW : SW_HIDE );
 				}
+				for ( size_t i = 0; i < g_page3Ctrls.size(); i++ )
+				{
+					ShowWindow( g_page3Ctrls[i], sel == 3 ? SW_SHOW : SW_HIDE );
+				}
+				for ( size_t i = 0; i < g_page4Ctrls.size(); i++ )
+				{
+					ShowWindow( g_page4Ctrls[i], sel == 4 ? SW_SHOW : SW_HIDE );
+				}
 
 				/* Force a repaint so no stale label/checkbox text lingers
 				 * from the previously visible page. */
-				InvalidateRect( hwnd, NULL, TRUE );
+				InvalidateRect( hwnd, nullptr, TRUE );
 			}
 			return 0;
 		}
 
+		case WM_TIMER:
+			if ( wParam == MCU_TEST_TIMER_ID && g_mcuTestProcess != nullptr )
+			{
+				ReadMcuSmokeTestOutput();
+				DWORD waitResult = WaitForSingleObject( g_mcuTestProcess, 0 );
+				if ( waitResult == WAIT_OBJECT_0 )
+				{
+					DWORD exitCode = 1;
+					bool passed = GetExitCodeProcess( g_mcuTestProcess, &exitCode )
+						&& exitCode == 0;
+					FinishMcuSmokeTest( hwnd, passed );
+				}
+				else if ( waitResult == WAIT_FAILED )
+				{
+					FinishMcuSmokeTest( hwnd, false );
+				}
+				return 0;
+			}
+			break;
+
 		case WM_DESTROY:
+			KillTimer( hwnd, MCU_TEST_TIMER_ID );
+			if ( g_mcuTestProcess != nullptr )
+			{
+				CloseHandle( g_mcuTestProcess );
+				g_mcuTestProcess = nullptr;
+			}
+			if ( g_mcuTestOutputRead != nullptr )
+			{
+				CloseHandle( g_mcuTestOutputRead );
+				g_mcuTestOutputRead = nullptr;
+			}
 			PostQuitMessage( 0 );
 			return 0;
 	}
@@ -1182,28 +2105,33 @@ WinMain( HINSTANCE hInstance, HINSTANCE, LPSTR lpCmdLine, int nCmdShow )
 	wc.cbSize        = sizeof( wc );
 	wc.lpfnWndProc   = WndProc;
 	wc.hInstance     = hInstance;
-	wc.hCursor       = LoadCursor( NULL, IDC_ARROW );
+	wc.hCursor       = LoadCursor( nullptr, IDC_ARROW );
 	wc.hbrBackground = (HBRUSH)( COLOR_BTNFACE + 1 );
 	wc.lpszClassName = "SendGuiWndClass";
-	wc.hIcon         = LoadIcon( NULL, IDI_APPLICATION );
+	wc.hIcon         = LoadIcon( nullptr, IDI_APPLICATION );
 
 	if ( !RegisterClassEx( &wc ) )
 	{
 		return 1;
 	}
 
-	g_hMain = CreateWindowEx( 0, wc.lpszClassName, "Send Config Editor (sendgui)",
-		WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME,
-		CW_USEDEFAULT, CW_USEDEFAULT, 1060, 640,
-		NULL, NULL, hInstance, NULL );
+	char windowTitle[128];
+	snprintf( windowTitle, sizeof( windowTitle ),
+		"Send Config Editor (sendgui) %c.%u.%u.%u.%u",
+		Ver_rel, Ver_maj, Ver_min, Ver_pat, Ver_bld );
 
-	if ( g_hMain == NULL )
+	g_hMain = CreateWindowEx( 0, wc.lpszClassName, windowTitle,
+		WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME,
+		CW_USEDEFAULT, CW_USEDEFAULT, 1060, 680,
+		nullptr, nullptr, hInstance, nullptr );
+
+	if ( g_hMain == nullptr )
 	{
 		return 1;
 	}
 
 	/* If a cfg file path was passed on the command line, load it. */
-	if ( lpCmdLine != NULL && lpCmdLine[0] != '\0' )
+	if ( lpCmdLine != nullptr && lpCmdLine[0] != '\0' )
 	{
 		std::string arg( lpCmdLine );
 		Trim( arg );
@@ -1222,7 +2150,7 @@ WinMain( HINSTANCE hInstance, HINSTANCE, LPSTR lpCmdLine, int nCmdShow )
 		/* Otherwise try SEND.CFG next to the executable / in the cwd. */
 		if ( LoadCfgFile( "SEND.CFG" ) )
 		{
-			GetFullPathName( "SEND.CFG", sizeof( g_cfgPath ), g_cfgPath, NULL );
+			GetFullPathName( "SEND.CFG", sizeof( g_cfgPath ), g_cfgPath, nullptr );
 			UpdatePathLabel();
 		}
 	}
@@ -1231,11 +2159,11 @@ WinMain( HINSTANCE hInstance, HINSTANCE, LPSTR lpCmdLine, int nCmdShow )
 	UpdateWindow( g_hMain );
 
 	MSG msg;
-	while ( GetMessage( &msg, NULL, 0, 0 ) )
+	while ( GetMessage( &msg, nullptr, 0, 0 ) )
 	{
 		TranslateMessage( &msg );
 		DispatchMessage( &msg );
 	}
 
-	return (int)msg.wParam;
+	return static_cast<int>( msg.wParam );
 }

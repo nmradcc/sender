@@ -12,13 +12,13 @@ struct Sender_hw_status
     uint16_t queue_depth;
     uint8_t gen1;
     uint8_t gen2;
-  uint32_t non_idle_event_count;
-  uint8_t last_non_idle_address;
+    uint32_t non_idle_event_count;
+    uint8_t last_non_idle_address;
 
     Sender_hw_status()
         : running(false), underflow(false), err_flags(0), queue_depth(0),
-      gen1(0), gen2(0), non_idle_event_count(0),
-      last_non_idle_address(0xFF)
+          gen1(0), gen2(0), non_idle_event_count(0),
+          last_non_idle_address(0xFF)
     {
     }
 };
@@ -27,9 +27,8 @@ struct Sender_hw_stats
 {
     uint32_t packets_sent;
     uint32_t bytes_sent;
-    uint32_t underruns;
 
-    Sender_hw_stats() : packets_sent(0), bytes_sent(0), underruns(0)
+    Sender_hw_stats() : packets_sent(0), bytes_sent(0)
     {
     }
 };
@@ -46,7 +45,6 @@ class Sender_hw_if
                             uint16_t clk1t_us) = 0;
     virtual bool start_clock() = 0;
     virtual bool stop_clock() = 0;
-    virtual bool clear_underflow() = 0;
     virtual bool set_scope(bool on) = 0;
 
     virtual bool send_bytes(uint16_t repeat_count, uint8_t byte_value,

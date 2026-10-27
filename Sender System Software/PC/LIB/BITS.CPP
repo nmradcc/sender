@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: BITS.CPP $
- * Path:                 $Logfile: /NMRA/LIB/BITS.CPP $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 15 $
- * Last Modified on:     $Modtime: 8/07/23 5:33p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 8/12/23 8:23p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	bits.cpp	-	Methods for Bits class.
@@ -89,14 +74,15 @@ const BYTE	SDCC_STOP		= 0x00;			// Normal stop.
 
 Bits::Bits(
 	u_int			isize )					// Size of bytes array.
+: bytes( new BYTE[ isize ] ),
+  last_byte( bytes + isize - 1 ),
+  in_byte( bytes ),
+  in_bit( MAX_BIT_POS ),
+  out_byte( bytes ),
+  check_byte( CHECK_INIT ),
+  flip_byte( nullptr ),
+  flip_bit( MAX_BIT_POS )
 {
-	if ( (bytes = new BYTE[ isize ]) == (BYTE *)0 )
-	{
-		SET_ERROR( CONSTRUCTOR_OBJ_ERR );
-	}
-
-	last_byte	=	&bytes[ isize - 1];
-
 	clr_in();
 
 }
@@ -163,7 +149,7 @@ Bits::print( void ) const
 
 	for ( pbyte = bytes;; )
 	{
-		printf( "%02x", (u_int)*pbyte );
+		printf( "%02x", static_cast<u_int>( *pbyte ) );
 
 		if ( ++pbyte < in_byte )
 		{
@@ -697,12 +683,12 @@ Bits::put_acc_pkt(
 	BYTE			byte2;					// Second command byte.
 
 	// First byte - 10 <address 5-0>
-	byte1	=	0x80 | (BYTE)( 0x3f & address );
+	byte1	=	static_cast<BYTE>( 0x80 | ( 0x3f & address ) );
 	// Second byte - <1> ~<address 8-6> <dev_state> <out_id>
-	byte2	=   	(BYTE) 0x80
-				|	(BYTE)( 0x70 & ~( address >> 2 ) )
-				|	(BYTE)(active ? 0x8 : 0x00 )
-				|	(BYTE)( 0x07 & out_id );
+	byte2	=	static_cast<BYTE>(	0x80
+				|	( 0x70 & ~( address >> 2 ) )
+				|	( active ? 0x8 : 0x00 )
+				|	( 0x07 & out_id ) );
 
 	clr_check();
 	put_1s( pre_bits ).put_0s( 1 ).put_byte( byte1 ).put_0s( 1 );
@@ -751,11 +737,11 @@ Bits::put_sig_pkt(
     address += 3;
 
 	// First byte - <10> <address 7-2 starting with 1>
-	byte1	=	0x80 | (BYTE)( 0x3f & ( address >> 2 ) );
+	byte1	=	static_cast<BYTE>( 0x80 | ( 0x3f & ( address >> 2 ) ) );
 	// Second byte - <0> ~<address 10-8> <0> <adress 1-0> <1>
-	byte2	=   	(BYTE)  0x01
-				|	(BYTE)( 0x70 & ~( address >> 4 ) )
-				|	(BYTE)( 0x06 &  ( address << 1 ) );
+	byte2	=	static_cast<BYTE>(	0x01
+				|	( 0x70 & ~( address >> 4 ) )
+				|	( 0x06 &  ( address << 1 ) ) );
 	// Third byte - 5 bit aspect number
 	byte3	=	aspect & 0x1f;
 
@@ -801,13 +787,11 @@ Bits::put_func_grp_pkt(
     // Command byte <cmd> <func_bits>
     if ( func_grp == GRP_1 )
     {
-    	byte1	=		(BYTE) 0x80
-        			|	(BYTE) ( 0x1f & func_bits );
+    	byte1	=	static_cast<BYTE>( 0x80 | ( 0x1f & func_bits ) );
     }
     else if ( func_grp == GRP_2 )
     {
-    	byte1	=		(BYTE) 0xA0
-        			|	(BYTE) ( 0x1f & func_bits );
+    	byte1	=	static_cast<BYTE>( 0xA0 | ( 0x1f & func_bits ) );
     }
     else
     {
@@ -858,9 +842,9 @@ Bits::put_func_grp_pktx(
 		// Add a function packet with function bits on.
 		if ( loco_first == true )
         {
-			put_1s( 1 ).put_byte( 0x00 );	// Align next packet on Byte boundary.											
+			put_1s( 1 ).align_1s();			// End bit, pad with 1s to Byte boundary.
 			put_idle_pkt( 1 );
-			put_1s( 1 ).put_byte( 0x00 );	// Align next packet on Byte boundary.
+			put_1s( 1 ).align_1s();			// End bit, pad with 1s to Byte boundary.
 			// Then add a function packet with funcs set by func_mask.
 			put_func_grp_pkt( address, func_grp, func_mask, pre_bits );
         }
@@ -872,9 +856,9 @@ Bits::put_func_grp_pktx(
 			// First put a loco 0 speed packet in the !lamp_rear direction.
 			put_cmd_pkt_28( address, !lamp_rear,
 							0, pre_bits );
-			put_1s( 1 ).put_byte( 0x00 );	// Align next packet on Byte boundary.											
+			put_1s( 1 ).align_1s();			// End bit, pad with 1s to Byte boundary.
 			put_idle_pkt( 1 );
-			put_1s( 1 ).put_byte( 0x00 );	// Align next packet on Byte boundary.
+			put_1s( 1 ).align_1s();			// End bit, pad with 1s to Byte boundary.
 		}
     	// Then add a function packet with funcs set by func_bits.
 		put_func_grp_pkt( address, func_grp, func_bits, pre_bits );
@@ -994,7 +978,7 @@ Bits::clr_flip( void )
 		*flip_byte	^=	bit_flips[ flip_bit ];
 	}
 
-	flip_byte	=	(BYTE *)0;
+	flip_byte	=	nullptr;
 	flip_bit	=	MAX_BIT_POS;
 }
 

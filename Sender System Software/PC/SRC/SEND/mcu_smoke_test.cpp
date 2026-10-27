@@ -54,13 +54,14 @@ static const char *release_level_name(Rel_levels level)
 static void dump_version_info(void)
 {
     printf("Version info:\n");
-    printf("  sender host version : %u.%u.%u (%c, %s)\n",
+    printf("  sender host version : %u.%u.%u.%u (%c, %s)\n",
            Ver_maj,
            Ver_min,
+           Ver_pat,
            Ver_bld,
-           (char)Ver_rel,
+           static_cast<char>( Ver_rel ),
            release_level_name(Ver_rel));
-    printf("  host protocol ver   : %u\n", (unsigned int)SHP_VERSION);
+    printf("  host protocol ver   : %u\n", static_cast<unsigned int>( SHP_VERSION ) );
     printf("  build timestamp     : %s %s\n", __DATE__, __TIME__);
 #if defined(_MSC_VER)
     printf("  compiler            : MSVC %d\n", _MSC_VER);
@@ -69,41 +70,19 @@ static void dump_version_info(void)
 
 static void dump_mcu_version_info(Sender_hw_mcu_usb& dev)
 {
-    std::vector<uint8_t> info;
-
-    if (!dev.get_info(info))
+    uint32_t version;
+    if (!dev.get_mcu_version(version))
     {
-        printf("  mcu info payload    : unavailable (GET_INFO failed)\n");
+        printf("  mcu fw version      : unavailable (GET_MCU_VERSION failed)\n");
         printf("----------------------------------------\n");
         return;
     }
 
-    printf("  mcu info payload    : %u byte(s)",
-           (unsigned int)info.size());
-    if (!info.empty())
-    {
-        printf(" [");
-        for (size_t i = 0; i < info.size(); ++i)
-        {
-            printf("%s%02X", (i == 0) ? "" : " ", (unsigned int)info[i]);
-        }
-        printf("]");
-    }
-    printf("\n");
-
-    if (info.size() >= 3)
-    {
-        printf("  mcu fw version      : %u.%u.%u (bytes 0..2)\n",
-               (unsigned int)info[0],
-               (unsigned int)info[1],
-               (unsigned int)info[2]);
-    }
-
-    if (info.size() >= 4)
-    {
-        printf("  mcu protocol ver    : %u (byte 3)\n",
-               (unsigned int)info[3]);
-    }
+    printf("  mcu fw version      : %u.%u.%u.%u\n",
+           static_cast<unsigned int>((version >> 24) & 0xFF),
+           static_cast<unsigned int>((version >> 16) & 0xFF),
+           static_cast<unsigned int>((version >> 8) & 0xFF),
+           static_cast<unsigned int>(version & 0xFF));
 
     printf("----------------------------------------\n");
 }
@@ -182,7 +161,6 @@ int main(int argc, char *argv[])
         {
             check("6d. bytes_sent == 4", stats.bytes_sent == 4);
             check("6e. packets_sent == 1", stats.packets_sent == 1);
-            check("6f. underruns == 0", stats.underruns == 0);
         }
     }
 
@@ -206,7 +184,6 @@ int main(int argc, char *argv[])
         {
             check("9a. bytes_sent == 3", stats.bytes_sent == 3);
             check("9b. packets_sent == 1", stats.packets_sent == 1);
-            check("9c. underruns == 0", stats.underruns == 0);
         }
     }
 

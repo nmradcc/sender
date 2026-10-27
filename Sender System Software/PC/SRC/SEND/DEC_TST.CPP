@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: DEC_TST.CPP $
- * Path:                 $Logfile: /NMRA/SRC/SEND/DEC_TST.CPP $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 66 $
- * Last Modified on:     $Modtime: 3/28/24 9:21p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 4/01/24 3:53p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	dec_tst.cpp	-	Methods for Dec_tst decoder test class.
@@ -27,13 +12,19 @@
 
 #include <conio.h>
 #include <string.h>
+#include <chrono>
+#include <thread>
 #include <vector>
 
 /*
- * Uncomment PKT_REP_DEBUG to show all 3 fill packet counts when
- * LOG is uncommented to log packets.
- */
-//#define PKT_REP_DEBUG
+*	Note: Test is repeated 100 times to make sure there is less
+*	Than a 1% chance of not seeing at least 1 failure assuming the
+*	average pass rate is 95%.  100 tests gives a miss rate of .59%.
+*/
+const int       PERCENT100_FULL    = 100;           // Normal pass count.
+const int       PERCENT100_REDUCED = 5;             // Reduced pass count.
+static int      PERCENT100      = PERCENT100_FULL;  // 100 percent value;
+                                                    //   set from the LOG mask.
 
 const int		SP_TEST_MIN		= 14;				// Min. test speed.
 													// (Step 7 + light 14 step
@@ -124,7 +115,7 @@ build_cmd_28_byte(
 	}
 	else
 	{
-		cmd	=	(BYTE)((speed + 3) >> 1);
+		cmd	=	static_cast<BYTE>((speed + 3) >> 1);
 
 		if ( !(speed & 0x01) )
 		{
@@ -142,6 +133,12 @@ build_cmd_28_byte(
 	return ( cmd );
 }
 
+
+/*
+ *	Percent below the decoder minimum timings used by the out-of-spec
+ *	negative-test clock (clock mask bit 17).
+ */
+const u_int	OUT_OF_SPEC_PCT	= 35;
 
 /*
  *	Array of clock value to use for decoder tests.
@@ -164,7 +161,12 @@ const Dec_clk	Dec_tst::dclk_tbl[] = {
 	{           2560,                100,   116,  	"Very negative 0"	   },
 	{           2560,               2460,   116,  	"Very positive 0"      },
 	{ DECODER_0T_MAX, DECODER_0T_MAX-DECODER_0H_MAX, 116, "Max Decoder Neg 0"},
-	{ DECODER_0T_MAX,     DECODER_0H_MAX,   116,  	"Max Decoder Pos 0"	   }
+	{ DECODER_0T_MAX,     DECODER_0H_MAX,   116,  	"Max Decoder Pos 0"	   },
+	// Deliberately out of spec (OUT_OF_SPEC_PCT below decoder minimum); decoder should fail.
+	{ DECODER_0T_MIN * (100 - OUT_OF_SPEC_PCT) / 100,
+	  DECODER_0H_MIN * (100 - OUT_OF_SPEC_PCT) / 100,
+	  DECODER_1T_MIN * (100 - OUT_OF_SPEC_PCT) / 100,
+	  "Out of spec fast (negative test)" }
 };
 
 const u_int	Dec_tst::dclk_size		=	sizeof(Dec_tst::dclk_tbl) /
@@ -458,37 +460,6 @@ static const char *err_msg[] =
  * should be skipped.
  */
 #define FSOC_SKIP ((decoder_type) == DEC_FUNC && (trig_rev))
-
- 
-/*--------------------------------------------------------------------------*/
-/*
- *	NAME
- *
- *		debug_gen()						-	 Print GEN input states.
- *
- *	RETURN VALUE
- *
- *		None.
- *
- *	DESCRIPTION
- *
- *		debug_gen() prints the 'msg' variable followed by the GEN input.states.
- *		Note: This is a temporary DEBUG method that can be removed at some
- *      point.
- */
-/*--------------------------------------------------------------------------*/
-
-void
-Dec_tst::debug_gen( const char *msg ) // DEBUG
-{
-	if ( Deflog.get_dbg_on() == true )
-	{
-		DBGPRINT( DBG_DFLT, "%s: Gen %s.", msg,
-				  (Dcc_reg.get_gen() & 0x1) ? "HiGH" : " LOW" );
-		Dcc_reg.clr_under();
-	}
-}
-
  
 /*--------------------------------------------------------------------------*/
 /*
@@ -514,13 +485,12 @@ Dec_tst::fsoc_send( const char *msg )
 	if ( FSOC_SKIP == true )
 	{
 		DBGPRINT( DBG_DFLT, "Skipping fsoc for %s.", msg );
-		Dcc_reg.clr_under();
 	}
 	else
 	{
 		DBGPRINT( DBG_DFLT, "Sending fsoc for %s.", msg );
-		Dcc_reg.clr_under();
 		Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence." );
+		std::this_thread::sleep_for( std::chrono::seconds( 1 ) );	// Wake up the booster.
 	}
 }
 
@@ -549,7 +519,7 @@ Dec_tst::Dec_tst( void )
 	run_mask		= ~0L;				// Run all tests.
 	clk_mask		= ~0L;				// Use all clock values.
 	trig_cmd_speed	= SP_E_STOP;		// Use emeergency stop as trigger.
-	fill_usec		= USEC_PER_SEC;		// Default to 1 second of filler.
+	fill_usec		= 100000UL;			// Default to 100 ms of filler.
 	filler_idles	= PKT_REP_MIN;		// Default to minimum.
 	pkt_rep_cnt		= PKT_REP_MIN;		// Default to minimum.
     m_tst_name[0]	= '\0';				// Clear test name buffer.
@@ -628,7 +598,7 @@ Dec_tst::print_user_docs(
 	// Packet acceptance test.
 	for ( i = 0; i < ames_tbl_size; i++, bit_msk <<= 1 )
 	{
-		sprintf( m_tst_name, "Pre %d Idle %d",
+		snprintf( m_tst_name, sizeof( m_tst_name ), "Pre %d Idle %d",
 			ames_tbl[i].pre_cnt, ames_tbl[i].idle_cnt );
 		fprintf( ofp,
 			"0x%08lx  %-28s %2u: Packet acceptance test.\n",
@@ -744,6 +714,9 @@ Dec_tst::decoder_test(
     int 			ver_rel_tmp = Ver_rel;	// Tmp to hold Ver_rel to get
     										//   around compiler warning.
 
+	PERCENT100	=		Args.get_reduce_passcnt()
+					? PERCENT100_REDUCED : PERCENT100_FULL;
+
 	if ( fsoc.get_obj_errs() )
 	{
 		fprintf( stderr,
@@ -774,11 +747,11 @@ Dec_tst::decoder_test(
     }
 	STATPRINT(  "Beginning booster warm up." );
 	printf(		"Beginning booster warm up.\n" );
+	Dcc_reg.set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
 	if ( !Dcc_reg.get_running() )
 	{
 		Dcc_reg.start_clk();
 	}
-	Dcc_reg.set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
 	calc_filler( DECODER_0T_NOM, DECODER_1T_NOM );
 
  
@@ -791,22 +764,23 @@ Dec_tst::decoder_test(
 	{
 		STATPRINT( "sending 2 fail safe operation sequences." );
 		printf(    "sending 2 fail safe operation sequences.\n" );
-		Dcc_reg.clr_under();
 		Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence." );
-		j = Send_reg::fill_cmds_1( FSOC_DELAY * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
-		Dcc_reg.clr_under();
-		for ( i = 0; i < j; i++ )
+//		j = Send_reg::fill_cmds_1( FSOC_DELAY * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
+		std::this_thread::sleep_for( FSOC_DELAY * std::chrono::seconds( 1 ) );
+		if ( Dcc_reg.get_log_pkts() )
 		{
-			Dcc_reg.send_idle();
+			DBGLOG( "Delay  %d seconds",
+				( FSOC_DELAY * std::chrono::seconds( 1 ) ) );
 		}
 		
 		Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence again." );
 	
-		j = Send_reg::fill_cmds_1( FSOC_DELAY * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
-		Dcc_reg.clr_under();
-		for ( i = 0; i < j; i++ )
+//		j = Send_reg::fill_cmds_1( FSOC_DELAY * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
+		std::this_thread::sleep_for( FSOC_DELAY * std::chrono::seconds( 1 ) );
+		if ( Dcc_reg.get_log_pkts() )
 		{
-			Dcc_reg.send_idle();
+			DBGLOG( "Delay  %d seconds",
+				( FSOC_DELAY * std::chrono::seconds( 1 ) ) );
 		}
 	}
 
@@ -816,7 +790,7 @@ Dec_tst::decoder_test(
     if ( Args.get_decoder_type() == DEC_FUNC )
     {
 		/*	Setup the function decoder so the function is on
-		 *	and the motor is set  for the correct direction.
+		 *	and the motor is set for the correct direction.
 		 */
 		if ( Args.get_kick_start() == true )
 		{
@@ -841,10 +815,10 @@ Dec_tst::decoder_test(
 			dcc_bits.clr_in();
 			dcc_bits.put_cmd_pkt_28(	Args.get_decoder_address(),
 										fwd, 0, BEST_PRE );
-			dcc_bits.put_idle_pkt( 1 );
+			dcc_bits.put_idle_pkt( 5 );
 			dcc_bits.put_func_grp_pkt(	Args.get_decoder_address(),
 									GRP_1, Args.get_func_mask(), BEST_PRE );
-			dcc_bits.put_idle_pkt( 1 );
+			dcc_bits.put_idle_pkt( 5 );
 			dcc_bits.put_1s(1).done();
 
 			func_msg	=	fwd ?	"Function decoder, Send Fwd Spd 0."
@@ -853,7 +827,6 @@ Dec_tst::decoder_test(
 			j = Send_reg::fill_cmds_2( 5 * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
 			DBGPRINT( "Sending %d loco %s speed 0 + function on packets.",
 			           j, fwd ? "Fwd" : "Rev" );
-			Dcc_reg.clr_under();
 			for ( i = 0; i < j; i++ )
 			{
 				Dcc_reg.send_pkt( dcc_bits, func_msg );
@@ -876,8 +849,6 @@ Dec_tst::decoder_test(
 	
 	STATPRINT( "Starting decoder tests." );
 	printf(    "Starting decoder tests.\n" );
-
-	Dcc_reg.clr_under();
 	
 	/*
 	 *	Do 1T margin test.
@@ -910,7 +881,7 @@ Dec_tst::decoder_test(
 			clk_idx < dclk_size;
 			clk_idx++, l_clk_msk <<= 1 )
 	{
-		if ( Deflog.get_fp_log() != NULL )
+		if ( Dcc_reg.get_log_pkts() )
 		{
 			DBGLOG( "Clock mask check: index %d, bit 0x%08lx, mask 0x%08lx, "
 				"clock <%s>, selected %s",
@@ -937,7 +908,6 @@ Dec_tst::decoder_test(
 			Dcc_reg.set_clk( tclk0t, tclk0h, tclk1t );
 			calc_filler( tclk0t, tclk1t );
 
-			Dcc_reg.clr_under();
 			send_filler();						// Reset the decoder.
 			fsoc_send( "each clock value" );
 		}
@@ -1270,7 +1240,7 @@ Dec_tst::decoder_ramp(
 
 			if ( speed == SP_E_STOP )
 			{
-				sprintf( ramp_msg,
+				snprintf( ramp_msg, sizeof( ramp_msg ),
 	            		"  %-18s Pre %2d, Addr %5u, Speed E-STOP, "
 					"Dir. %c, Fails %4lu",
 					tst_name, pre_cnt, Args.get_decoder_address(),
@@ -1279,7 +1249,7 @@ Dec_tst::decoder_ramp(
 			}
 			else
 			{
-				sprintf( ramp_msg,
+				snprintf( ramp_msg, sizeof( ramp_msg ),
 	            		"  %-18s Pre %2d, Addr %5u, Speed %2d, "
 					"Dir. %c, Fails %4lu",
 					tst_name, pre_cnt, Args.get_decoder_address(), speed,
@@ -1304,7 +1274,6 @@ Dec_tst::decoder_ramp(
 		 	}
 		 	dcc_bits.put_1s(1).done();
 
-		 	Dcc_reg.clr_under();
             Dcc_reg.set_scope( true );
 
 		 	Dcc_reg.send_pkt( dcc_bits, "Send loco ramp test packet." );
@@ -1319,17 +1288,41 @@ Dec_tst::decoder_ramp(
              *	decoders, and will show 100% failures if no decoder is
              *	connected.
 			 */
-			if ( speed >= SP_TEST_MIN && fw ==  false && !(speed & 0x01) )
+			if ( speed >= SP_TEST_MIN && !fw && !(speed & 0x01) )
 			{
 				t_stat.incr_t_cnt();
 				tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != fw )
+
+				if ( Dcc_reg.get_log_pkts() )
 				{
-					t_stat.incr_f_cnt();
-					tst_rslt	=	FAIL;
-					ERRPRINT( my_name, LOG_WARNING,
-						"Test FAILED: Speed %2d, Dir. %c",
-						speed, fw ? 'F' :  'R' );
+					snprintf( ramp_msg, sizeof( ramp_msg ),
+							"  %-18s At speed gen1 %02X",
+						tst_name, tgen );
+
+					DBGLOG( "%s() %s", my_name, ramp_msg );
+				}
+				
+				if (fw)
+				{
+					if ( (tgen & 0x03) != 0x02 )
+					{
+						t_stat.incr_f_cnt();
+						tst_rslt	=	FAIL;
+						ERRPRINT( my_name, LOG_WARNING,
+							"Test FAILED: Speed %2d, Dir. %c",
+							speed, fw ? 'F' :  'R' );
+					}
+				}
+				else
+				{
+					if ( (tgen & 0x03) != 0x01 )
+					{
+						t_stat.incr_f_cnt();
+						tst_rslt	=	FAIL;
+						ERRPRINT( my_name, LOG_WARNING,
+							"Test FAILED: Speed %2d, Dir. %c",
+							speed, fw ? 'F' :  'R' );
+					}
 				}
 			}
 		}
@@ -1342,12 +1335,7 @@ Dec_tst::decoder_ramp(
 	}
 
 	CLR_LINE;
-	TO_STAT(	"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-		tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-		t_stat.get_percent() );
-	printf(		"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-		tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-		t_stat.get_percent() );
+	print_summary( tst_name );
 
 	return ( retval );
 }
@@ -1377,6 +1365,7 @@ Dec_tst::func_ramp(
 {
 	const char		*my_name = "Func";
 	const char		*tst_name = "Func:";   	// Test name.
+	char ramp_msg[128];
 	int				i;						// Function variable.
     int				func;					// Function state.
 	Rslt_t			retval = OK;	   		// Return value.
@@ -1401,16 +1390,31 @@ Dec_tst::func_ramp(
 		dcc_bits.put_1s( 1 ).put_byte( 0x00 );	// Align next packet on Byte boundary.
 		dcc_bits.put_idle_pkt( 1 );
 		dcc_bits.put_1s( 1 ).done();	// Align next packet on Byte boundary.
-	  	Dcc_reg.clr_under();
 
         Dcc_reg.set_scope( true );
-		DBGLOG( "Dce_tst::func_ramp() Sending %d function ramp packets.", pkt_rep_cnt );
-		debug_gen( "Dce_tst::func_ramp() Just before send function sequence" );
+		if ( Dcc_reg.get_log_pkts() )
+		{
+			DBGLOG( "Dce_tst::func_ramp() Sending %d function ramp packets.", pkt_rep_cnt );
+	 		tgen	=	Dcc_reg.get_gen();
+			snprintf( ramp_msg, sizeof( ramp_msg ),
+					"  %-18s Just before send function sequence gen1 %02X",
+				tst_name, tgen );
+
+			DBGLOG( "%s() %s", my_name, ramp_msg );
+		}
 	  	for ( i = 0; i < pkt_rep_cnt; i++ )
 	  	{
 			Dcc_reg.send_pkt( dcc_bits, "Send function ramp test packet." );
 	   	}
-		debug_gen( "Dce_tst::func_ramp() Just after send function sequence" );
+		if ( Dcc_reg.get_log_pkts() )
+		{
+	 		tgen	=	Dcc_reg.get_gen();
+			snprintf( ramp_msg, sizeof( ramp_msg ),
+					"  %-18s Just after send function sequence gen1 %02X",
+				tst_name, tgen );
+
+			DBGLOG( "%s() %s", my_name, ramp_msg );
+		}
 
 	  	/*
 	  	 *	Test the function input to verify it matches the
@@ -1418,7 +1422,7 @@ Dec_tst::func_ramp(
 	 	 */
 	 	t_stat.incr_t_cnt();
 	 	tgen	=	Dcc_reg.get_gen();
-	 	if ( (tgen & 0x01) != (func == 0 ? 0x01 : 0) )
+	 	if ( (tgen & 0x04) != (func == 1 ? 0x04 : 0) )
 	 	{
 	 		t_stat.incr_f_cnt();
 	 		tst_rslt	=	FAIL;
@@ -1426,7 +1430,15 @@ Dec_tst::func_ramp(
 	 			"Test FAILED: Function <%s>",
 	 			func == 0 ? "OFF" : "ON" );
 	 	}
-		debug_gen( "Dce_tst::func_ramp() Just after input test" );
+		if ( Dcc_reg.get_log_pkts() )
+		{
+	 		tgen	=	Dcc_reg.get_gen();
+			snprintf( ramp_msg, sizeof( ramp_msg ),
+					"  %-18s Just after input test gen1 %02X",
+				tst_name, tgen );
+
+			DBGLOG( "%s() %s", my_name, ramp_msg );
+		}
 
 		if ( get_test_break() )
 		{
@@ -1436,12 +1448,7 @@ Dec_tst::func_ramp(
 	}
 
 	CLR_LINE;
-	TO_STAT(	"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-		tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-		t_stat.get_percent() );
-	printf(		"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-		tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-		t_stat.get_percent() );
+	print_summary( tst_name );
 
 	return ( retval );
 }
@@ -1507,7 +1514,6 @@ Dec_tst::acc_ramp(
 			}
 			dcc_bits.put_1s(1).done();
 				
-			Dcc_reg.clr_under();
             Dcc_reg.set_scope( true );
 
 			Dcc_reg.send_pkt( dcc_bits, "Send accessory ramp test packet." );
@@ -1528,14 +1534,15 @@ Dec_tst::acc_ramp(
 					test_expect	=	true;
 				}
 
-				if ( (tgen & 0x01) != test_expect )
+				bool feedback = ( tgen & 0x04 ) ? true : false;
+				if ( feedback != test_expect )
 				{
 					t_stat.incr_f_cnt();
 					tst_rslt	=	FAIL;
 					ERRPRINT( my_name, LOG_WARNING,
 						"Test FAILED: Out_id %1d, Active %3s, Input %3s",
 						out_id, active ? "ON" : "OFF",
-                        (tgen & 0x01) ? "ON" : "OFF" );
+                        (tgen & 0x04) ? "ON" : "OFF" );
 				}
 			}
 		}
@@ -1548,12 +1555,7 @@ Dec_tst::acc_ramp(
 	}
 
 	CLR_LINE;
-	TO_STAT(	"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-		tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-		t_stat.get_percent() );
-	printf(		"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-		tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-		t_stat.get_percent() );
+	print_summary( tst_name );
 
 	return ( retval );
 }
@@ -1614,7 +1616,6 @@ Dec_tst::sig_ramp(
 	   	}
 	   	dcc_bits.put_1s(1).done();
 
-	  	Dcc_reg.clr_under();
         Dcc_reg.set_scope( true );
 
 	  	Dcc_reg.send_pkt( dcc_bits, "Send signal ramp test packet." );
@@ -1631,8 +1632,8 @@ Dec_tst::sig_ramp(
 	 		t_stat.incr_t_cnt();
 	 		tgen	=	Dcc_reg.get_gen();
 
-	 		if ( 	(tgen & 0x01)
-            	!= (aspect == Args.get_aspect_preset() ? 0 : 0x01) )
+	 		if ( 	(tgen & 0x04)
+            	!= (aspect == Args.get_aspect_preset() ? 0 : 0x04) )
 	 		{
 	 			t_stat.incr_f_cnt();
 	 			tst_rslt	=	FAIL;
@@ -1649,12 +1650,7 @@ Dec_tst::sig_ramp(
 	}
 
 	CLR_LINE;
-	TO_STAT(	"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-		tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-		t_stat.get_percent() );
-	printf(		"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-		tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-		t_stat.get_percent() );
+	print_summary( tst_name );
 
 	return ( retval );
 }
@@ -1688,7 +1684,6 @@ Dec_tst::decoder_ames(
 	int				i;			  			// Index variable.
 	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
 	bool			pre_fail = false;	  	// Preset failed.
 	bool			trig_fail = false;	  	// Trigger failed.
 	int				t_pkt_cnt;				// Temp repeat count.
@@ -1704,7 +1699,7 @@ Dec_tst::decoder_ames(
 	bool			trig_has_decode = false;	// True if trigger decode is valid.
 	const char		*trig_pkt_type = "unknown";// Trigger packet type string.
 
-	sprintf( m_tst_name, "pre %d idle %d:", pre_cnt, idle_cnt );
+	snprintf( m_tst_name, sizeof( m_tst_name ), "pre %d idle %d:", pre_cnt, idle_cnt );
 	Dcc_reg.clr_err_cnt();					// Restart error counter.
 	t_stat.reset();
 
@@ -1721,27 +1716,7 @@ Dec_tst::decoder_ames(
 	 */
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	if ( Args.get_decoder_type() == DEC_LOCO )
-	{
-		dcc_bits.put_cmd_pkt_28(	Args.get_decoder_address(),
-									false, SP_TEST_MIN, pre_cnt );
-	}
-	else if ( Args.get_decoder_type() == DEC_FUNC )
-	{
-		// See .\NMRA\put_........_pktx Info.txt
-		dcc_bits.put_func_grp_pktx(	Args.get_decoder_address(),
-									GRP_1, Args.get_func_mask(), pre_cnt );
-	}
-    else if ( Args.get_decoder_type() == DEC_SIG )
-    {
-    	dcc_bits.put_sig_pkt(		Args.get_decoder_address(),
-        							Args.get_aspect_preset() );
-    }
-	else // Accessory decoder.
-	{
-		dcc_bits.put_acc_pkt(		Args.get_decoder_address(),
-									true, ACC_PRE, pre_cnt );
-	}
+	put_preset_pkt( dcc_bits, Args.get_decoder_address(), pre_cnt, true );
 	dcc_bits.put_idle_pkt( idle_cnt );
 	dcc_bits.put_1s(1).done();
 
@@ -1751,27 +1726,7 @@ Dec_tst::decoder_ames(
 	 */
 	dcc_bits2.clr_in();
 	dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	if ( Args.get_decoder_type() ==  DEC_LOCO )
-	{
-		dcc_bits2.put_cmd_pkt_28(	Args.get_decoder_address(),
-									true, trig_cmd_speed, pre_cnt );
-	}
-	else if ( Args.get_decoder_type() == DEC_FUNC )
-	{
-		// See .\NMRA\put_........_pktx Info.txt
-		dcc_bits2.put_func_grp_pktx(	Args.get_decoder_address(),
-										GRP_1, 0, pre_cnt );
-	}
-    else if ( Args.get_decoder_type() == DEC_SIG )
-    {
-    	dcc_bits2.put_sig_pkt(		Args.get_decoder_address(),
-        							Args.get_aspect_trigger() );
-    }
-	else // Accessory decoder.
-	{
-		dcc_bits2.put_acc_pkt(		Args.get_decoder_address(),
-									true, ACC_TRG, pre_cnt );
-	}
+	put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), pre_cnt, true );
 	dcc_bits2.put_idle_pkt( idle_cnt );
 	dcc_bits2.put_1s(1).done();
 
@@ -1781,15 +1736,15 @@ Dec_tst::decoder_ames(
 	 */
 	if ( Args.get_decoder_type() == DEC_LOCO )
 	{
-		trig_b1			=	(BYTE)Args.get_decoder_address();
+		trig_b1			=	static_cast<BYTE>( Args.get_decoder_address() );
 		trig_b2			=	build_cmd_28_byte( true, trig_cmd_speed );
-		trig_chk		=	(BYTE)( trig_b1 ^ trig_b2 );
+		trig_chk		=	static_cast<BYTE>( trig_b1 ^ trig_b2 );
 		trig_pkt_type	=	"loco";
 		trig_has_decode	=	true;
 	}
 	else if ( Args.get_decoder_type() == DEC_FUNC )
 	{
-		trig_b1	=	(BYTE)Args.get_decoder_address();
+		trig_b1	=	static_cast<BYTE>( Args.get_decoder_address() );
 
 		if ( Bits::get_trig_rev() == true )
 		{
@@ -1807,7 +1762,7 @@ Dec_tst::decoder_ames(
 			trig_pkt_type	=	"func grp1";
 		}
 
-		trig_chk		=	(BYTE)( trig_b1 ^ trig_b2 );
+		trig_chk		=	static_cast<BYTE>( trig_b1 ^ trig_b2 );
 		trig_has_decode	=	true;
 	}
 	else if ( Args.get_decoder_type() == DEC_ACC )
@@ -1815,12 +1770,12 @@ Dec_tst::decoder_ames(
 		u_short			a;
 
 		a			=	Args.get_decoder_address();
-		trig_b1			=	(BYTE)( 0x80 | (BYTE)( 0x3f & a ) );
-		trig_b2			=	(BYTE)0x80
-						|	(BYTE)( 0x70 & ~( a >> 2 ) )
-						|	(BYTE)0x08
-						|	(BYTE)( 0x07 & ACC_TRG );
-		trig_chk		=	(BYTE)( trig_b1 ^ trig_b2 );
+		trig_b1			=	static_cast<BYTE>( 0x80 | ( 0x3f & a ) );
+		trig_b2			=	static_cast<BYTE>(	0x80
+						|	( 0x70 & ~( a >> 2 ) )
+						|	0x08
+						|	( 0x07 & ACC_TRG ) );
+		trig_chk		=	static_cast<BYTE>( trig_b1 ^ trig_b2 );
 		trig_pkt_type	=	"accessory";
 		trig_has_decode	=	true;
 	}
@@ -1835,12 +1790,12 @@ Dec_tst::decoder_ames(
 		}
 		a	+=	3;
 
-		trig_b1			=	(BYTE)( 0x80 | (BYTE)( 0x3f & ( a >> 2 ) ) );
-		trig_b2			=	(BYTE)0x01
-						|	(BYTE)( 0x70 & ~( a >> 4 ) )
-						|	(BYTE)( 0x06 &  ( a << 1 ) );
-		trig_b3			=	(BYTE)( Args.get_aspect_trigger() & 0x1f );
-		trig_chk		=	(BYTE)( trig_b1 ^ trig_b2 ^ trig_b3 );
+		trig_b1			=	static_cast<BYTE>( 0x80 | ( 0x3f & ( a >> 2 ) ) );
+		trig_b2			=	static_cast<BYTE>(	0x01
+						|	( 0x70 & ~( a >> 4 ) )
+						|	( 0x06 &  ( a << 1 ) ) );
+		trig_b3			=	static_cast<BYTE>( Args.get_aspect_trigger() & 0x1f );
+		trig_chk		=	static_cast<BYTE>( trig_b1 ^ trig_b2 ^ trig_b3 );
 		trig_pkt_type	=	"signal";
 		trig_has_b3		=	true;
 		trig_has_decode	=	true;
@@ -1850,7 +1805,7 @@ Dec_tst::decoder_ames(
 	{
 		if ( trig_has_b3 )
 		{
-			sprintf( trig_info,
+			snprintf( trig_info, sizeof( trig_info ),
 				"Send packet acceptance trigger packet. (%s b1=%02x b2=%02x b3=%02x chk=%02x)",
 				trig_pkt_type, trig_b1, trig_b2, trig_b3, trig_chk );
 
@@ -1859,7 +1814,7 @@ Dec_tst::decoder_ames(
 		}
 		else
 		{
-			sprintf( trig_info,
+			snprintf( trig_info, sizeof( trig_info ),
 				"Send packet acceptance trigger packet. (%s b1=%02x b2=%02x chk=%02x)",
 				trig_pkt_type, trig_b1, trig_b2, trig_chk );
 
@@ -1869,7 +1824,7 @@ Dec_tst::decoder_ames(
 	}
 	else
 	{
-		strcpy( trig_info, "Send packet acceptance trigger packet." );
+		snprintf( trig_info, sizeof( trig_info ), "%s", "Send packet acceptance trigger packet." );
 	}
 
 
@@ -1877,16 +1832,13 @@ Dec_tst::decoder_ames(
 	 * Send a scope trigger at start of trigger packet
 	 * if the normal (early) scope trigger is desired.
 	 */
-#ifdef PKT_REP_DEBUG
-	DBGLOG( "%s: Sending %2u packet acceptance trigger packet(s).",
-			my_name, extra_trg + 1 );
-#endif
+	if ( Dcc_reg.get_log_pkts() )
+	{
+		DBGLOG( "%s: Sending %2u packet acceptance trigger packet(s).",
+				my_name, extra_trg + 1 );
+	}
 		
-	/*
-	 *	Note: This test is run 100 times to make sure there is less
-	 *	Than a 1% chance of not seeing at least 1 failure assuming the
-	 */
-	for ( i = 0; i < 100; i++ )
+	for ( i = 0; i < PERCENT100; i++ )
 	{
 		pre_fail	=	false;
 
@@ -1903,8 +1855,7 @@ Dec_tst::decoder_ames(
 								"Send packet acceptance preset packet." );
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != 0 )
+		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			pre_fail	=	true;
 		}
@@ -1914,7 +1865,6 @@ Dec_tst::decoder_ames(
 			Dcc_reg.set_scope( true );
 		}
 
-		Dcc_reg.clr_under();
 		for ( k = 0; k < extra_trg + 1; k++ )
 		{
 			Dcc_reg.send_pkt(	dcc_bits2,		// Attempt emergency stop.
@@ -1936,8 +1886,7 @@ Dec_tst::decoder_ames(
 
 		send_filler();							// Send filler.
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != true )
+		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			trig_fail	=	true;
 		}
@@ -1961,12 +1910,7 @@ Dec_tst::decoder_ames(
 	}
 
 	CLR_LINE;
-	TO_STAT(	"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-		m_tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-		t_stat.get_percent() );
-	printf(		"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-		m_tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-		t_stat.get_percent() );
+	print_summary( m_tst_name );
 
 	return ( retval );
 }
@@ -2000,13 +1944,12 @@ Dec_tst::decoder_str0_ames(
 	int				i;			  			// Index variable.
 	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
 	BYTE			pbyte;					// Present byte to send.
 	std::vector<BYTE>	trigger_bytes;		// Atomic stretched trigger stream.
 
-	sprintf( m_tst_name, "0T %5u 0H %5u:", iclk0t, iclk0h );
+	snprintf( m_tst_name, sizeof( m_tst_name ), "0T %5u 0H %5u:", iclk0t, iclk0h );
 	Dcc_reg.clr_err_cnt();					// Restart error counter.
 	t_stat.reset();
 
@@ -2018,26 +1961,7 @@ Dec_tst::decoder_str0_ames(
 	 */
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	if ( Args.get_decoder_type() == DEC_LOCO )
-	{
-		dcc_bits.put_cmd_pkt_28(	Args.get_decoder_address(),
-									false, SP_TEST_MIN, BEST_PRE );
-	}
-	else if ( Args.get_decoder_type() == DEC_FUNC )
-	{
-		dcc_bits.put_func_grp_pktx(	Args.get_decoder_address(),
-									GRP_1, Args.get_func_mask(), BEST_PRE );
-	}
-    else if ( Args.get_decoder_type() == DEC_SIG )
-    {
-    	dcc_bits.put_sig_pkt(		Args.get_decoder_address(),
-        							Args.get_aspect_preset() );
-    }
-	else // Accessory decoder.
-	{
-		dcc_bits.put_acc_pkt(		Args.get_decoder_address(),
-									true, ACC_PRE, BEST_PRE );
-	}
+	put_preset_pkt( dcc_bits, Args.get_decoder_address(), BEST_PRE, true );
 	dcc_bits.put_idle_pkt( 1 );
 	dcc_bits.put_1s(1).done();
 
@@ -2047,35 +1971,11 @@ Dec_tst::decoder_str0_ames(
 	 */
 	dcc_bits2.clr_in();
 	dcc_bits2.put_0s( STRETCH_BITS );	// Align first 0 on bit boundary.
-	if ( Args.get_decoder_type() ==  DEC_LOCO )
-	{
-		dcc_bits2.put_cmd_pkt_28(	Args.get_decoder_address(),
-									true, trig_cmd_speed, BEST_PRE );
-	}
-	else if ( Args.get_decoder_type() == DEC_FUNC )
-	{
-		dcc_bits2.put_func_grp_pktx(	Args.get_decoder_address(),
-									GRP_1, 0, BEST_PRE );
-	}
-    else if ( Args.get_decoder_type() == DEC_SIG )
-    {
-    	dcc_bits2.put_sig_pkt(		Args.get_decoder_address(),
-        							Args.get_aspect_trigger() );
-    }
-	else // Accessory decoder.
-	{
-		dcc_bits2.put_acc_pkt(		Args.get_decoder_address(),
-									true, ACC_TRG, BEST_PRE );
-	}
+	put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), BEST_PRE, true );
 	dcc_bits2.put_idle_pkt( 1 );
 	dcc_bits2.put_1s(1).done();
 
-	/*
-	 *	Note: This test is run 100 times to make sure there is less
-	 *	Than a 1% chance of not seeing at least 1 failure assuming the
-	 *	average pass rate is 95%.  100 tests gives a miss rate of .59%.
-	 */
-	for ( i = 0; i < 100; i++ )
+	for ( i = 0; i < PERCENT100; i++ )
 	{
 		pre_fail	=	false;
 		trig_fail	=	false;
@@ -2091,8 +1991,7 @@ Dec_tst::decoder_str0_ames(
 			Dcc_reg.send_pkt( dcc_bits, "Send stretched test preset packet." );
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != 0 )
+		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			pre_fail	=	true;
 		}
@@ -2134,8 +2033,7 @@ Dec_tst::decoder_str0_ames(
 
 		send_filler();							// Send filler.
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != true )
+		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			trig_fail	=	true;
 		}
@@ -2159,12 +2057,7 @@ Dec_tst::decoder_str0_ames(
 	}
 
 	CLR_LINE;
-	TO_STAT(	"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-		m_tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-		t_stat.get_percent() );
-	printf(		"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-		m_tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-		t_stat.get_percent() );
+	print_summary( m_tst_name );
 
 	return ( retval );
 }
@@ -2200,7 +2093,6 @@ Dec_tst::decoder_bad_addr(
 	int				addr_min;					// Minimum test address.
 	int				addr_max;					// Maximum test address.
 	u_short			send_addr;					// Address to send.
-	BYTE			tgen;						// Generic input BYTE.
 	bool			pre_fail;					// Preset failed.
 	bool			trig_fail;	  				// Trigger failed.
 	bool			rst_fail;					// Reset failed.
@@ -2263,21 +2155,7 @@ Dec_tst::decoder_bad_addr(
 	 */
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	if ( Args.get_decoder_type() == DEC_LOCO )
-	{
-		dcc_bits.put_cmd_pkt_28(	Args.get_decoder_address(),
-									false, SP_TEST_MIN, pre_cnt );
-	}
-	else if ( Args.get_decoder_type() == DEC_FUNC )
-	{
-		dcc_bits.put_func_grp_pktx(	Args.get_decoder_address(),
-									GRP_1, Args.get_func_mask(), pre_cnt );
-	}
-	else // Accessory decoder.
-	{
-		dcc_bits.put_acc_pkt( 		Args.get_decoder_address(),
-									true, ACC_PRE, pre_cnt );
-	}
+	put_preset_pkt( dcc_bits, Args.get_decoder_address(), pre_cnt );
 	dcc_bits.put_idle_pkt( BEST_IDLE );
 	dcc_bits.put_1s(1).done();
 
@@ -2306,27 +2184,13 @@ Dec_tst::decoder_bad_addr(
 
 		dcc_bits2.clr_in();
 		dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-		if ( Args.get_decoder_type() == DEC_LOCO )
-		{
-			dcc_bits2.put_cmd_pkt_28(	send_addr, true,
-										trig_cmd_speed, pre_cnt );
-		}
-		else if ( Args.get_decoder_type() == DEC_FUNC )
-		{
-			dcc_bits2.put_func_grp_pktx(	send_addr,
-									GRP_1, 0, pre_cnt );
-		}
-		else // Accessory decoder.
-		{
-			dcc_bits2.put_acc_pkt(		send_addr, true, ACC_TRG, pre_cnt );
-		}
+		put_trigger_pkt( dcc_bits2, send_addr, pre_cnt );
 		dcc_bits2.put_idle_pkt( BEST_IDLE );
 		dcc_bits2.put_1s(1).done();
 
 		/*	Reset the decoder using the appropriate sequence by decoder type.
 		 *	fsoc is used to reset the decoder unless dcc_bits3 has s special reset packet.
 		 */
-		Dcc_reg.clr_under();
 		if ( dcc_bits3.get_byte_size() == 0 )	// Send Fail Safe Rst cmd.
 		{
 			Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence." );
@@ -2340,8 +2204,7 @@ Dec_tst::decoder_bad_addr(
 			}
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != true )
+		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			rst_fail	=	true;
 		}
@@ -2351,8 +2214,7 @@ Dec_tst::decoder_bad_addr(
 			Dcc_reg.send_pkt( dcc_bits, "Send bad address preset packet." );
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != 0 )
+		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			pre_fail	=	true;
 		}
@@ -2363,8 +2225,7 @@ Dec_tst::decoder_bad_addr(
 			Dcc_reg.send_pkt( dcc_bits2, "Send bad address trigger packet." );
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != ( send_addr ==
+		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) != ( send_addr ==
 								Args.get_decoder_address() ? true : false) )
 		{
 			trig_fail	=	true;
@@ -2391,12 +2252,7 @@ Dec_tst::decoder_bad_addr(
 	}
 
 	CLR_LINE;
-	TO_STAT(	"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-		tst_name, t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-		t_stat.get_percent() );
-	printf(		"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-		tst_name, t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-		t_stat.get_percent() );
+	print_summary( tst_name );
 
 	return ( retval );
 }
@@ -2429,7 +2285,6 @@ Dec_tst::decoder_bad_bit(
 	int				i;			  			// Index variable.
 	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
 	bool			rst_fail;				// Reset failed.
@@ -2560,7 +2415,6 @@ Dec_tst::decoder_bad_bit(
 		/*	Reset the decoder using the appropriate sequence by decoder type.
 		 *	fsoc is used to reset the decoder unless dcc_bits3 has s special reset packet.
 		 */
-		Dcc_reg.clr_under();
 		if ( dcc_bits3.get_byte_size() == 0 )	// Send fsoc sequence.
 		{
 			Dcc_reg.send_pkt( fsoc, "Reset decoder using fsoc sequence." );
@@ -2574,8 +2428,7 @@ Dec_tst::decoder_bad_bit(
 			}
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != true )
+		if ( Dcc_reg.get_gen_fb( decoder_type ) )
 		{
 			rst_fail	=	true;
 		}
@@ -2585,8 +2438,7 @@ Dec_tst::decoder_bad_bit(
 			Dcc_reg.send_pkt( dcc_bits, "Send bad bit preset packet." );
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != 0 )
+		if ( !Dcc_reg.get_gen_fb( decoder_type ) )
 		{
 			pre_fail	=	true;
 		}
@@ -2597,8 +2449,7 @@ Dec_tst::decoder_bad_bit(
 			Dcc_reg.send_pkt( dcc_bits2, "Send bad bit trigger packet." );
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != (i == last_bit ? true : false) )
+		if ( !Dcc_reg.get_gen_fb( decoder_type ) != (i == last_bit ? true : false) )
 		{
 			trig_fail	=	true;
 		}
@@ -2631,12 +2482,7 @@ Dec_tst::decoder_bad_bit(
 	}
 
 	CLR_LINE;
-	TO_STAT(	"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-		tst_name, t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-		t_stat.get_percent() );
-	printf(		"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-		tst_name, t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-		t_stat.get_percent() );
+	print_summary( tst_name );
 
 	return ( retval );
 }
@@ -2685,6 +2531,31 @@ Dec_tst::decoder_margin_1( void )
 	CLR_LINE;
 	STATPRINT(	"Margin test for 1T clock, %3u preambles",   margin_pre );
 	printf(		"Margin test for 1T clock, %3u preambles\n", margin_pre );
+
+	/*
+	 *	Verify nominal timing before searching for the margin.
+	 */
+	tclk1t	=	DECODER_1T_NOM;
+	f_cnt	=	0;
+	if ( quick_ames(	f_cnt, "Nominal 1T:",
+						tclk0t, tclk0h, tclk1t, margin_pre, false, 2 )
+						!= OK )
+	{
+		return ( FAIL );
+	}
+	if ( f_cnt != 0 )
+	{
+		ERRPRINT( tst_name, LOG_WARNING,
+			"Nominal timing 1T %u us failed with %u failures; skipping 1T margin search.",
+			tclk1t, f_cnt );
+		printf(	"Nominal timing 1T %u us failed with %u failures; "
+				"skipping 1T margin search.\n", tclk1t, f_cnt );
+		STATPRINT(	"Nominal timing 1T %u us failed with %u failures; "
+					"skipping 1T margin search.", tclk1t, f_cnt );
+		return ( OK );
+	}
+	STATPRINT(	"Nominal timing 1T %u us passed.", tclk1t );
+	printf(		"Nominal timing 1T %u us passed.\n", tclk1t );
 
 	/*
 	 *	Test for minimum 1T value.
@@ -2806,6 +2677,33 @@ Dec_tst::decoder_duty_1( void )
 	printf(		"Duty cycle test for 1 clock, %3u preambles\n", margin_pre );
 
 	/*
+	 *	Verify nominal timing before searching for the duty-cycle margins.
+	 */
+	tclk1t	=	DECODER_1T_NOM;
+	tclk1h	=	DECODER_1H_NOM;
+	f_cnt	=	0;
+	if ( quick_ames(	f_cnt, "Nominal 1 Duty:",
+						tclk1t, tclk1h, tclk0t, margin_pre, true, 2 )
+						!= OK )
+	{
+		return ( FAIL );
+	}
+	if ( f_cnt != 0 )
+	{
+		ERRPRINT( tst_name, LOG_WARNING,
+			"Nominal timing 1T %u us, 1H %u us failed with %u failures; "
+			"skipping duty-cycle search.",
+			tclk1t, tclk1h, f_cnt );
+		printf(	"Nominal timing 1T %u us, 1H %u us failed with %u failures; "
+				"skipping duty-cycle search.\n", tclk1t, tclk1h, f_cnt );
+		STATPRINT(	"Nominal timing 1T %u us, 1H %u us failed with %u failures; "
+					"skipping duty-cycle search.", tclk1t, tclk1h, f_cnt );
+		return ( OK );
+	}
+	STATPRINT(	"Nominal timing 1T %u us, 1H %u us passed.", tclk1t, tclk1h );
+	printf(		"Nominal timing 1T %u us, 1H %u us passed.\n", tclk1t, tclk1h );
+
+	/*
 	 *	Test for minimum 1H value.
 	 */
 	tclk1t	=	DECODER_1T_NOM;
@@ -2912,17 +2810,13 @@ Dec_tst::quick_ames(
 	u_short			tclk0h,					// Clk 0H.
 	u_short			tclk1t,				  	// Clk 1T.
 	u_int			margin_pre,				// Preamble bits to use.
-	bool			swap_0_1 )				// If true, swap meaning of 1 & 0.
+	bool			swap_0_1,				// If true, swap meaning of 1 & 0.
+	int				pass_cnt )				// Pass count; 0 uses configured.
 {
 	int				i;			  			// Index variable.
 	int				j;						// Index variable.
+	int				cycles = ( pass_cnt > 0 ) ? pass_cnt : PERCENT100;
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
-	BYTE			pre_gen = 0;				// GEN input after preset sequence.
-	BYTE			trig_gen = 0;				// GEN input after trigger sequence.
-	bool			pre_fail_exp0;				// Preset fail if expected state is 0.
-	bool			pre_fail_exp1;				// Preset fail if expected state is 1.
-	bool			trans_fail;				// Trigger failed to transition from preset.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
 
@@ -2948,8 +2842,6 @@ Dec_tst::quick_ames(
 	}
 
 	fsoc_send( "quick_ames() initialization" );
-	Dcc_reg.clr_under();
-	send_filler();							// Wake up the booster.
 
 	CLR_LINE;
 
@@ -2959,27 +2851,7 @@ Dec_tst::quick_ames(
 	 */
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	if ( Args.get_decoder_type() == DEC_LOCO )
-	{
-		dcc_bits.put_cmd_pkt_28(	Args.get_decoder_address(),
-									false, SP_TEST_MIN, margin_pre );
-	}
-	else if ( Args.get_decoder_type() == DEC_FUNC )
-	{
-		dcc_bits.put_func_grp_pktx(	Args.get_decoder_address(),
-									GRP_1, Args.get_func_mask(), margin_pre );
-	}
-    else if ( Args.get_decoder_type() == DEC_SIG )
-    {
-    	dcc_bits.put_sig_pkt(		Args.get_decoder_address(),
-        							Args.get_aspect_preset() );
-    }
-	else // Accessory decoder.
-	{
-		dcc_bits.put_acc_pkt(		Args.get_decoder_address(),
-									true, ACC_PRE, margin_pre );
-	}
-	dcc_bits.put_idle_pkt( 1 );
+	put_preset_pkt( dcc_bits, Args.get_decoder_address(), margin_pre, true );
 	dcc_bits.put_1s(1).done();
 
 	/*
@@ -2988,37 +2860,17 @@ Dec_tst::quick_ames(
 	 */
 	dcc_bits2.clr_in();
 	dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	if ( Args.get_decoder_type() == DEC_LOCO )
-	{
-		dcc_bits2.put_cmd_pkt_28(	Args.get_decoder_address(),
-									true, trig_cmd_speed, margin_pre );
-	}
-	else if ( Args.get_decoder_type() == DEC_FUNC )
-	{
-		dcc_bits2.put_func_grp_pktx(	Args.get_decoder_address(),
-									GRP_1, 0, margin_pre );
-	}
-    else if ( Args.get_decoder_type() == DEC_SIG )
-    {
-    	dcc_bits2.put_sig_pkt(		Args.get_decoder_address(),
-        							Args.get_aspect_trigger() );
-    }
-	else // Accessory decoder.
-	{
-		dcc_bits2.put_acc_pkt(		Args.get_decoder_address(),
-									true, ACC_TRG, margin_pre );
-	}
-	dcc_bits2.put_idle_pkt( 1 );
+	put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), margin_pre, true );
 	dcc_bits2.put_1s(1).done();
 
 	/*
-	 *	Note: This test is run 100 times to make sure there is less
-	 *	Than a 1% chance of not seeing at least 1 failure assuming the
-	 *	average pass rate is 95%.  100 tests gives a miss rate of .59%.
-	 *	This test fails if any of the 100 tests fails making it more
-	 *	stringent than the normal Ames test.
+	 *	The MCU streams idle packets between commands, so wait after each
+	 *	packet so the preset repeats are spread over 'fill_usec'.
 	 */
-	for ( i = 0; i < 100; i++ )
+	const auto		pkt_delay = std::chrono::microseconds(
+									fill_usec / ( pkt_rep_cnt ? pkt_rep_cnt : 1 ) );
+
+	for ( i = 0; i < cycles; i++ )
 	{
 		pre_fail	=	false;
 		trig_fail	=	false;
@@ -3037,42 +2889,23 @@ Dec_tst::quick_ames(
 		}
 
 		fsoc_send( "quick_ames() loop" );
-		for ( j = 0; j < pkt_rep_cnt;  j++ )   	// Preset decoder reverse.
+
+		for ( j = 0; j < pkt_rep_cnt;  j++ )   	// Preset decoder preset.
 		{
 			Dcc_reg.send_pkt( dcc_bits, "Send preset for quick test." );
+			std::this_thread::sleep_for( pkt_delay );
 		}
 
-		tgen	=	Dcc_reg.get_gen();
-		pre_fail = ( (tgen & 0x01) != 0 );
-
-		/*
-		 * Send a scope trigger at start of trigger packet
-		 * if the normal (early) scope trigger is desired.
-		 */
-		if ( Args.get_late_scope() != true )
+		if (!Dcc_reg.get_gen_fb( Args.get_decoder_type() ))
 		{
-			Dcc_reg.set_scope( true );
+			pre_fail	=	true;
 		}
 
+		std::this_thread::sleep_for( 5 *pkt_delay );
 		Dcc_reg.send_pkt( dcc_bits2, "Send trigger for quick test." );
-
-		/*
-		 * The following code sends another idle filler, turns
-		 * on the scope trigger, and then sends one second of idle filler.
-		 * This results in scope trigger starting 2 idles after the trigger
-		 * command.
-		 */
-		Dcc_reg.send_idle();					// Send one idle space.
-
-		if ( Args.get_late_scope() == true )
-		{
-			Dcc_reg.set_scope( true );
-		}
-
-		send_filler();							// Send filler.
-
-		tgen	=	Dcc_reg.get_gen();
-		if ( (tgen & 0x01) != true )
+		std::this_thread::sleep_for( 5 *pkt_delay );
+		
+		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			trig_fail	=	true;
 		}
@@ -3080,6 +2913,30 @@ Dec_tst::quick_ames(
 		if ( pre_fail || trig_fail )
 		{
 			++f_cnt;
+		}
+
+		if ( Dcc_reg.get_log_pkts() )
+		{
+			if ( swap_0_1 )
+			{
+				DBGLOG( "%s() cycle %d %s: preset %s, trigger %s; "
+						"0T %hu, 1H %hu, 1T %hu",
+					tst_name, i + 1,
+					( pre_fail || trig_fail ) ? "FAIL" : "PASS",
+					pre_fail ? "FAIL" : "PASS",
+					trig_fail ? "FAIL" : "PASS",
+					tclk1t, tclk0h, tclk0t );
+			}
+			else
+			{
+				DBGLOG( "%s() cycle %d %s: preset %s, trigger %s; "
+						"0T %hu, 0H %hu, 1T %hu",
+					tst_name, i + 1,
+					( pre_fail || trig_fail ) ? "FAIL" : "PASS",
+					pre_fail ? "FAIL" : "PASS",
+					trig_fail ? "FAIL" : "PASS",
+					tclk0t, tclk0h, tclk1t );
+			}
 		}
 
 		if ( get_test_break() )
@@ -3131,7 +2988,6 @@ Dec_tst::decoder_truncate(
 	BYTE			t_addr;					// Truncated address.
 	BYTE			t_cmd;					// Truncated command.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
 	u_int			test_repeats;			// Number of times to repeat test.
@@ -3149,7 +3005,6 @@ Dec_tst::decoder_truncate(
 	calc_filler( DECODER_0T_NOM, DECODER_1T_NOM );
 
 	fsoc_send( "decoder_truncate() initialization" );
-	Dcc_reg.clr_under();
 	send_filler();							// Reset the decoder.
 
 	test_repeats	=	Args.get_test_repeats();
@@ -3179,21 +3034,7 @@ Dec_tst::decoder_truncate(
 	 */
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	if ( Args.get_decoder_type() == DEC_LOCO )
-	{
-		dcc_bits.put_cmd_pkt_28(	Args.get_decoder_address(),
-									false, SP_TEST_MIN, BEST_PRE );
-	}
-	else if ( Args.get_decoder_type() == DEC_FUNC )
-	{
-		dcc_bits.put_func_grp_pktx(	Args.get_decoder_address(),
-									GRP_1, Args.get_func_mask(), BEST_PRE );
-	}
-	else // Accessory decoder.
-	{
-		dcc_bits.put_acc_pkt(		Args.get_decoder_address(),
-									true, ACC_PRE, BEST_PRE );
-	}
+	put_preset_pkt( dcc_bits, Args.get_decoder_address(), BEST_PRE );
 	dcc_bits.put_idle_pkt( BEST_IDLE );
 	dcc_bits.put_1s(1).done();
 
@@ -3220,7 +3061,7 @@ Dec_tst::decoder_truncate(
 
 			t_stat.reset();
 
-			sprintf( m_tst_name, "Pre %2d Frag %2u:", test_pre, bit_size );
+			snprintf( m_tst_name, sizeof( m_tst_name ), "Pre %2d Frag %2u:", test_pre, bit_size );
 
 			/*
 			*	Precede the trigger command with a truncated packet fragment.
@@ -3235,21 +3076,7 @@ Dec_tst::decoder_truncate(
 			*	Next, set decoder to trigger speed, forward, lamp off or
 			*	set accessory decoder to the normal position.
 			*/
-			if ( Args.get_decoder_type() ==  DEC_LOCO )
-			{
-				dcc_bits2.put_cmd_pkt_28(	Args.get_decoder_address(),
-											true, trig_cmd_speed, test_pre );
-			}
-			else if ( Args.get_decoder_type() == DEC_FUNC )
-			{
-				dcc_bits2.put_func_grp_pktx(	Args.get_decoder_address(),
-											GRP_1, 0, test_pre );
-			}
-			else // Accessory decoder.
-			{
-				dcc_bits2.put_acc_pkt(		Args.get_decoder_address(),
-											true, ACC_TRG, test_pre );
-			}
+			put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), test_pre );
 			dcc_bits2.put_idle_pkt( BEST_IDLE );
 			dcc_bits2.put_1s(1).done();
 
@@ -3269,8 +3096,7 @@ Dec_tst::decoder_truncate(
 					Dcc_reg.send_pkt( dcc_bits, "Send truncate test preset." );
 				}
 
-				tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != 0 )
+				if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
 					pre_fail	=	true;
 				}
@@ -3302,8 +3128,7 @@ Dec_tst::decoder_truncate(
 			
 				send_filler();			 			// Send filler.
 
-				tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != true )
+				if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
 					trig_fail	=	true;
 				}
@@ -3327,26 +3152,8 @@ Dec_tst::decoder_truncate(
 			}
 
 			CLR_LINE;
-			if ( mandatory_test )
-			{
-				// Pass is mandatory, show *
-				TO_STAT(	"  %-18s Tests %4lu; Passes %4lu, %4lu%% *\n",
-					m_tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-					t_stat.get_percent() );
-				printf(		"  %-18s Tests %4lu; Passes %4lu, %4lu%% *\n",
-					m_tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-					t_stat.get_percent() );
-			}
-			else
-			{
-				// Pass is optional.
-				TO_STAT(	"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-					m_tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-					t_stat.get_percent() );
-				printf(		"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-					m_tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-					t_stat.get_percent() );
-			}
+			// A mandatory pass is marked with a '*'.
+			print_summary( m_tst_name, mandatory_test );
 
 			if ( retval == FAIL )
 			{
@@ -3399,7 +3206,6 @@ Dec_tst::decoder_prior(
 	BYTE			t_addr;					// Prior address.
 	BYTE			t_cmd;					// Prior command.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
 	u_int			test_repeats;			// Number of times to repeat test.
@@ -3414,7 +3220,6 @@ Dec_tst::decoder_prior(
 	calc_filler( DECODER_0T_NOM, DECODER_1T_NOM );
 
 	fsoc_send( "decoder_prior() initialization" );
-	Dcc_reg.clr_under();
 	send_filler();							// Reset the decoder.
 
 	test_repeats	=	Args.get_test_repeats();
@@ -3443,21 +3248,7 @@ Dec_tst::decoder_prior(
 	 */
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	if ( Args.get_decoder_type() == DEC_LOCO )
-	{
-		dcc_bits.put_cmd_pkt_28(	Args.get_decoder_address(),
-									false, SP_TEST_MIN, BEST_PRE );
-	}
-	else if ( Args.get_decoder_type() == DEC_FUNC )
-	{
-		dcc_bits.put_func_grp_pktx(	Args.get_decoder_address(),
-									GRP_1, Args.get_func_mask(), BEST_PRE );
-	}
-	else // Accessory decoder.
-	{
-		dcc_bits.put_acc_pkt(		Args.get_decoder_address(),
-									true, ACC_PRE, BEST_PRE );
-	}
+	put_preset_pkt( dcc_bits, Args.get_decoder_address(), BEST_PRE );
 	dcc_bits.put_idle_pkt( BEST_IDLE );
 	dcc_bits.put_1s(1).done();
 
@@ -3517,25 +3308,11 @@ Dec_tst::decoder_prior(
 			 *	Next, set decoder to trigger speed, forward, lamp off or
 			 *	set accessory decoder to the normal position.
 			 */
-			 if ( Args.get_decoder_type() ==  DEC_LOCO )
-			 {
-				dcc_bits2.put_cmd_pkt_28(	Args.get_decoder_address(),
-											true, trig_cmd_speed, pre_bits );
-			 }
-             else if ( Args.get_decoder_type() == DEC_FUNC )
-			 {
-				dcc_bits2.put_func_grp_pktx(	Args.get_decoder_address(),
-											GRP_1, 0, pre_bits );
-			 }
-			 else // Accessory decoder.
-			 {
-				dcc_bits2.put_acc_pkt(		Args.get_decoder_address(),
-											true, ACC_TRG, pre_bits );
-			 }
+			 put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), pre_bits );
 			 dcc_bits2.put_idle_pkt( BEST_IDLE );
 			 dcc_bits2.put_1s(1).done();
 
-			 sprintf( m_tst_name, "<%02x %02x %02x>%1s %1s<pre %2d>",
+			 snprintf( m_tst_name, sizeof( m_tst_name ), "<%02x %02x %02x>%1s %1s<pre %2d>",
 				t_addr, t_cmd, t_chk_byte,
 				one_cnt ? "1" : " ",zero_cnt ? "0" : " ",
 				pre_bits );
@@ -3557,8 +3334,7 @@ Dec_tst::decoder_prior(
 						"Send prior packet preset." );
 				}
 
-				tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != 0 )
+				if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
 					pre_fail	=	true;
 				}
@@ -3590,8 +3366,7 @@ Dec_tst::decoder_prior(
 
 				send_filler();				  	// Send filler.
 
-				tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != true )
+				if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
 					trig_fail	=	true;
 				}
@@ -3615,12 +3390,7 @@ Dec_tst::decoder_prior(
 			}
 
 			CLR_LINE;
-			TO_STAT(	"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-				m_tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-				t_stat.get_percent() );
-			printf(		"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-				m_tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-				t_stat.get_percent() );
+			print_summary( m_tst_name );
 
 			if ( retval == FAIL )
 			{
@@ -3687,7 +3457,6 @@ Dec_tst::decoder_6_byte(
 	BYTE			t_cmd3;					// Prior command byte 3.
 	BYTE			t_cmd4;					// Prior command byte 4.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
 	u_int			test_repeats;			// Number of times to repeat test.
@@ -3702,7 +3471,6 @@ Dec_tst::decoder_6_byte(
 	calc_filler( DECODER_0T_NOM, DECODER_1T_NOM );
 
 	fsoc_send( "decoder_6_byte() initialization" );
-	Dcc_reg.clr_under();
 	send_filler();							// Reset the decoder.
 
 	test_repeats	=	Args.get_test_repeats();
@@ -3731,21 +3499,7 @@ Dec_tst::decoder_6_byte(
 	 */
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	if ( Args.get_decoder_type() == DEC_LOCO )
-	{
-		dcc_bits.put_cmd_pkt_28(	Args.get_decoder_address(),
-									false, SP_TEST_MIN, BEST_PRE );
-	}
-	else if ( Args.get_decoder_type() == DEC_FUNC )
-	{
-		dcc_bits.put_func_grp_pktx(	Args.get_decoder_address(),
-									GRP_1, Args.get_func_mask(), BEST_PRE );
-	}
-	else // Accessory decoder.
-	{
-		dcc_bits.put_acc_pkt(		Args.get_decoder_address(),
-									true, ACC_PRE, BEST_PRE );
-	}
+	put_preset_pkt( dcc_bits, Args.get_decoder_address(), BEST_PRE );
 	dcc_bits.put_idle_pkt( BEST_IDLE );
 	dcc_bits.put_1s(1).done();
 
@@ -3797,25 +3551,11 @@ Dec_tst::decoder_6_byte(
 			 *	Next, set decoder to trigger speed, forward, lamp off or
 			 *	set accessory decoder to the normal position.
 			 */
-			 if ( Args.get_decoder_type() ==  DEC_LOCO )
-			 {
-				dcc_bits2.put_cmd_pkt_28(	Args.get_decoder_address(),
-											true, trig_cmd_speed, pre_bits );
-			 }
-             else if ( Args.get_decoder_type() == DEC_FUNC )
-			 {
-				dcc_bits2.put_func_grp_pktx(	Args.get_decoder_address(),
-											GRP_1, 0, pre_bits );
-			 }
-			 else // Accessory decoder.
-			 {
-				dcc_bits2.put_acc_pkt(		Args.get_decoder_address(),
-											true, ACC_TRG, pre_bits );
-			 }
+			 put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), pre_bits );
 			 dcc_bits2.put_idle_pkt( BEST_IDLE );
 			 dcc_bits2.put_1s(1).done();
 
-			 sprintf( m_tst_name,
+			 snprintf( m_tst_name, sizeof( m_tst_name ),
 				"<%02x %02x %02x %02x %02x %02x>%1s %1s<pre %2d>",
 				t_addr, t_cmd1, t_cmd2, t_cmd3, t_cmd4, t_chk_byte,
 				one_cnt ? "1" : " ",zero_cnt ? "0" : " ",
@@ -3838,8 +3578,7 @@ Dec_tst::decoder_6_byte(
 						"Send 6 byte prior packet preset." );
 				}
 
-				tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != 0 )
+				if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
 					pre_fail	=	true;
 				}
@@ -3871,8 +3610,7 @@ Dec_tst::decoder_6_byte(
 
 				send_filler();				  	// Send filler.
 
-				tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != true )
+				if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
 					trig_fail	=	true;
 				}
@@ -3896,12 +3634,7 @@ Dec_tst::decoder_6_byte(
 			}
 
 			CLR_LINE;
-			TO_STAT(	"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-				m_tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-				t_stat.get_percent() );
-			printf(		"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-				m_tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-				t_stat.get_percent() );
+			print_summary( m_tst_name );
 
 			if ( retval == FAIL )
 			{
@@ -3956,7 +3689,6 @@ Dec_tst::decoder_ambig1(
 	int				i;			  			// Index variable.
 	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
     int				ambig1_bit;				// Ambiguous bit number.
@@ -3984,7 +3716,6 @@ Dec_tst::decoder_ambig1(
 	calc_filler( DECODER_0T_NOM, DECODER_1T_NOM );
 
 	fsoc_send( "decoder_ambig1() initialization" );
-	Dcc_reg.clr_under();
 	send_filler();							// Reset the decoder.
 
 	test_repeats	=	Args.get_test_repeats();
@@ -4021,21 +3752,7 @@ Dec_tst::decoder_ambig1(
 	 */
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	if ( Args.get_decoder_type() == DEC_LOCO )
-	{
-		dcc_bits.put_cmd_pkt_28(	Args.get_decoder_address(),
-									false, SP_TEST_MIN, pre_cnt );
-	}
-	else if ( Args.get_decoder_type() == DEC_FUNC )
-	{
-		dcc_bits.put_func_grp_pktx(	Args.get_decoder_address(),
-									GRP_1, Args.get_func_mask(), pre_cnt );
-	}
-	else // Accessory decoder.
-	{
-		dcc_bits.put_acc_pkt(		Args.get_decoder_address(),
-									true, ACC_PRE, pre_cnt );
-	}
+	put_preset_pkt( dcc_bits, Args.get_decoder_address(), pre_cnt );
 	dcc_bits.put_idle_pkt( BEST_IDLE );
 	dcc_bits.put_1s(1).done();
 
@@ -4068,7 +3785,7 @@ Dec_tst::decoder_ambig1(
 
         	pre_bytes	=	(ambig1_bit - 1 + fill_bits) / BITS_IN_BYTE;
 
-        	sprintf( m_tst_name,
+        	snprintf( m_tst_name, sizeof( m_tst_name ),
         		"Ambig 1 bit %2d <%3d, %3d> PAddr %5u:",
         	    ambig1_bit, ambig1_0t, ambig1_0h, t_addr );
 
@@ -4080,21 +3797,7 @@ Dec_tst::decoder_ambig1(
 				dcc_bits2.put_0s( fill_bits );
         	}
 
-			if ( Args.get_decoder_type() == DEC_LOCO )
-			{
-				dcc_bits2.put_cmd_pkt_28(	t_addr,
-											false, SP_TEST_MIN, BEST_PRE );
-			}
-        	else if ( Args.get_decoder_type() == DEC_FUNC )
-            {
-            	dcc_bits2.put_func_grp_pktx(	t_addr,
-                                    GRP_1, Args.get_func_mask(), BEST_PRE );
-        	}
-			else // Accessory decoder.
-			{
-				dcc_bits2.put_acc_pkt(		t_addr,
-											true, ACC_PRE, BEST_PRE );
-			}
+			put_preset_pkt( dcc_bits2, t_addr, BEST_PRE );
 
 			if ( ambig1_bit == (BASE_BITS + 1) )		// Packet end bit.
         	{
@@ -4122,21 +3825,7 @@ Dec_tst::decoder_ambig1(
     		/*
      	 	 *	Set up a normal trigger packet.
      	 	 */
-    		if ( Args.get_decoder_type() ==  DEC_LOCO )
-    		{
-    			dcc_bits2.put_cmd_pkt_28(	Args.get_decoder_address(),
-        									true, trig_cmd_speed, pre_cnt );
-    		}
-            else if ( Args.get_decoder_type() == DEC_FUNC )
-            {
-            	dcc_bits2.put_func_grp_pktx(	Args.get_decoder_address(),
-											GRP_1, 0, pre_cnt );
-            }
-    		else // Accessory decoder.
-    		{
-    			dcc_bits2.put_acc_pkt(		Args.get_decoder_address(),
-        									true, ACC_TRG, pre_cnt );
-    		}
+    		put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), pre_cnt );
     		dcc_bits2.put_idle_pkt( 1 );
     		dcc_bits2.put_1s(1).done();
 
@@ -4162,8 +3851,7 @@ Dec_tst::decoder_ambig1(
             			"Send ambig 1 packet preset." );
         		}
 
-        		tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != 0 )
+				if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
         		{
         			pre_fail	=	true;
         		}
@@ -4187,8 +3875,7 @@ Dec_tst::decoder_ambig1(
 
 				send_filler();		  			// Send filler.
 
-        		tgen	=	Dcc_reg.get_gen();
-        		if ( (tgen & 0x01) != true )
+        		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
         		{
         			trig_fail	=	true;
         		}
@@ -4212,12 +3899,7 @@ Dec_tst::decoder_ambig1(
 			}
 
     		CLR_LINE;
-    		TO_STAT(	"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-						m_tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-						t_stat.get_percent() );
-    		printf(		"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-						m_tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-						t_stat.get_percent() );
+    		print_summary( m_tst_name );
 
     		if ( retval == FAIL )
     		{
@@ -4267,7 +3949,6 @@ Dec_tst::decoder_ambig2(
 	int				i;			  			// Index variable.
 	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
-	BYTE			tgen;					// Generic input BYTE.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
 	BYTE			pbyte;					// Present byte to send.
@@ -4317,21 +3998,7 @@ Dec_tst::decoder_ambig2(
 	 */
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	if ( Args.get_decoder_type() == DEC_LOCO )
-	{
-		dcc_bits.put_cmd_pkt_28(	Args.get_decoder_address(),
-									false, SP_TEST_MIN, pre_cnt );
-	}
-	else if ( Args.get_decoder_type() == DEC_FUNC )
-	{
-		dcc_bits.put_func_grp_pktx(	Args.get_decoder_address(),
-									GRP_1, Args.get_func_mask(), pre_cnt );
-	}
-	else // Accessory decoder.
-	{
-		dcc_bits.put_acc_pkt(		Args.get_decoder_address(),
-									true, ACC_PRE, pre_cnt );
-	}
+	put_preset_pkt( dcc_bits, Args.get_decoder_address(), pre_cnt );
 	dcc_bits.put_idle_pkt( BEST_IDLE );
 	dcc_bits.put_1s(1).done();
 
@@ -4340,21 +4007,7 @@ Dec_tst::decoder_ambig2(
      */
 	dcc_bits2.clr_in();
 	dcc_bits2.put_0s( AMBIG1_BITS );	// Align preset to end on BYTE boundary.
-	if ( Args.get_decoder_type() == DEC_LOCO )
-	{
-		dcc_bits2.put_cmd_pkt_28(	t_addr,
-									false, SP_TEST_MIN, BEST_PRE );
-	}
-	else if ( Args.get_decoder_type() == DEC_FUNC )
-	{
-		dcc_bits2.put_func_grp_pktx(	t_addr,
-									GRP_1, Args.get_func_mask(), BEST_PRE );
-	}
-	else // Accessory decoder.
-	{
-		dcc_bits2.put_acc_pkt(		t_addr,
-									true, ACC_PRE, BEST_PRE );
-	}
+	put_preset_pkt( dcc_bits2, t_addr, BEST_PRE );
     dcc_bits2.put_1s( 1 );				// Put the packet end bit.
     dcc_bits2.done();
 
@@ -4363,21 +4016,7 @@ Dec_tst::decoder_ambig2(
      */
 	dcc_bits3.clr_in();
     dcc_bits3.put_0s( 2 );				// Put 2 zeroes used for feedback bits.
-	if ( Args.get_decoder_type() ==  DEC_LOCO )
-	{
-		dcc_bits3.put_cmd_pkt_28(	Args.get_decoder_address(),
-									true, trig_cmd_speed, pre_cnt );
-	}
-    else if ( Args.get_decoder_type() == DEC_FUNC )
-    {
-    	dcc_bits3.put_func_grp_pktx(	Args.get_decoder_address(),
-        							GRP_1, 0, pre_cnt );
-    }
-	else // Accessory decoder.
-	{
-		dcc_bits3.put_acc_pkt(		Args.get_decoder_address(),
-									true, ACC_TRG, pre_cnt );
-	}
+	put_trigger_pkt( dcc_bits3, Args.get_decoder_address(), pre_cnt );
 	dcc_bits3.put_idle_pkt( 1 );
 	dcc_bits3.put_1s(1).done();
 
@@ -4402,7 +4041,6 @@ Dec_tst::decoder_ambig2(
 		calc_filler( tclk0t, tclk1t );
 
 		fsoc_send( "decoder_ambig2() outer clock loop" );
-		Dcc_reg.clr_under();
 		send_filler();							// Reset the decoder.
 
     	for ( test_cycle = 0; test_cycle < ambig2_tbl_size; test_cycle++ )
@@ -4417,7 +4055,7 @@ Dec_tst::decoder_ambig2(
          	ambig2_0t2	=	ambig2_tbl[ test_cycle ].ambig2_0t2;
          	ambig2_0h2	=	ambig2_tbl[ test_cycle]. ambig2_0h2;
 
-         	sprintf( m_tst_name,
+         	snprintf( m_tst_name, sizeof( m_tst_name ),
          		"Ambig 2 <%3d, %3d, %3d, %3d> PAddr %5u:",
          		ambig2_0t1, ambig2_0h1, ambig2_0t2, ambig2_0h2, t_addr );
 
@@ -4439,8 +4077,7 @@ Dec_tst::decoder_ambig2(
             			"Send ambig 2 packet preset." );
         		}
 
-        		tgen	=	Dcc_reg.get_gen();
-				if ( (tgen & 0x01) != 0 )
+				if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
         		{
         			pre_fail	=	true;
         		}
@@ -4467,8 +4104,7 @@ Dec_tst::decoder_ambig2(
 
 				send_filler();					// Send filler.
         
-        		tgen	=	Dcc_reg.get_gen();
-        		if ( (tgen & 0x01) != true )
+        		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
         		{
         			trig_fail	=	true;
         		}
@@ -4492,12 +4128,7 @@ Dec_tst::decoder_ambig2(
 			}
 
     		CLR_LINE;
-    		TO_STAT(	"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-						m_tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-						t_stat.get_percent() );
-    		printf(		"  %-18s Tests %4lu; Passes %4lu, %4lu%%\n",
-						m_tst_name,t_stat.get_t_cnt(), t_stat.get_p_cnt(),
-						t_stat.get_percent() );
+    		print_summary( m_tst_name );
 
     		if ( retval == FAIL )
     		{
@@ -4556,11 +4187,10 @@ Dec_tst::calc_filler(
 
 	if ( Dcc_reg.get_log_pkts() )
 	{
-#ifdef PKT_REP_DEBUG
 		DBGLOG(
 			"Dec_tst::calc_filler() fill_usec %10lu, clk0t %5u, clk1t %5u.",
 			fill_usec, clk0t, clk1t );
-#endif
+
 		DBGLOG(
 			"Dec_tst::calc_filler() Fill_Idle %3u, Cmd_one %3u, Cmd_two %3u.",
 			filler_idles, pkt_rep_cnt,
@@ -4610,6 +4240,121 @@ Dec_tst::send_filler( void )
 }
 
  
+/*--------------------------------------------------------------------------*/
+/*
+ *	NAME
+ *
+ *		print_summary()		   	   	-	 Print a test's pass summary line.
+ *
+ *	DESCRIPTION
+ *
+ *		print_summary() writes the Tests/Passes line for t_stat to both the
+ *		statistics file and the console.  If 'flagged' is true the line is
+ *		marked with a trailing '*'.
+ */
+/*--------------------------------------------------------------------------*/
+
+void
+Dec_tst::print_summary(
+	const char		*name,					// Test name.
+	bool			flagged )				// Mark the line with '*'.
+{
+	const char		*mark = flagged ? " *" : "";
+
+	TO_STAT(	"  %-18s Tests %4lu; Passes %4lu, %4lu%%%s\n",
+		name, t_stat.get_t_cnt(), t_stat.get_p_cnt(),
+		t_stat.get_percent(), mark );
+	printf(		"  %-18s Tests %4lu; Passes %4lu, %4lu%%%s\n",
+		name, t_stat.get_t_cnt(), t_stat.get_p_cnt(),
+		t_stat.get_percent(), mark );
+}
+
+
+/*--------------------------------------------------------------------------*/
+/*
+ *	NAME
+ *
+ *		put_preset_pkt()		   	   	-	 Append the preset packet.
+ *
+ *	DESCRIPTION
+ *
+ *		put_preset_pkt() appends the packet that presets the decoder under
+ *		test, selected by decoder type: loco reverse with lamp on, function
+ *		group 1 on, signal preset aspect, or accessory reverse position.
+ *		Only the packet is appended; the caller adds leading 0s, idles and
+ *		the end bit.  Signal decoders are only handled if 'sig_ok' is true;
+ *		otherwise they fall through to the accessory packet as before.
+ */
+/*--------------------------------------------------------------------------*/
+
+void
+Dec_tst::put_preset_pkt(
+	Bits			&bits,					// Bits to append to.
+	u_short			addr,					// Decoder address.
+	int				pre_cnt,				// Preamble bit count.
+	bool			sig_ok )				// Handle signal decoders.
+{
+	if ( Args.get_decoder_type() == DEC_LOCO )
+	{
+		bits.put_cmd_pkt_28( addr, false, SP_TEST_MIN, pre_cnt );
+	}
+	else if ( Args.get_decoder_type() == DEC_FUNC )
+	{
+		// See .\NMRA\put_........_pktx Info.txt
+		bits.put_func_grp_pktx( addr, GRP_1, Args.get_func_mask(), pre_cnt );
+	}
+	else if ( sig_ok && Args.get_decoder_type() == DEC_SIG )
+	{
+		bits.put_sig_pkt( addr, Args.get_aspect_preset() );
+	}
+	else // Accessory decoder.
+	{
+		bits.put_acc_pkt( addr, true, ACC_PRE, pre_cnt );
+	}
+}
+
+
+/*--------------------------------------------------------------------------*/
+/*
+ *	NAME
+ *
+ *		put_trigger_pkt()		   	   	-	 Append the trigger packet.
+ *
+ *	DESCRIPTION
+ *
+ *		put_trigger_pkt() appends the packet that triggers the decoder under
+ *		test, selected by decoder type: loco trigger speed forward, function
+ *		group 1 off, signal trigger aspect, or accessory normal position.
+ *		See put_preset_pkt() for the 'sig_ok' behavior.
+ */
+/*--------------------------------------------------------------------------*/
+
+void
+Dec_tst::put_trigger_pkt(
+	Bits			&bits,					// Bits to append to.
+	u_short			addr,					// Decoder address.
+	int				pre_cnt,				// Preamble bit count.
+	bool			sig_ok )				// Handle signal decoders.
+{
+	if ( Args.get_decoder_type() == DEC_LOCO )
+	{
+		bits.put_cmd_pkt_28( addr, true, trig_cmd_speed, pre_cnt );
+	}
+	else if ( Args.get_decoder_type() == DEC_FUNC )
+	{
+		bits.put_func_grp_pktx( addr, GRP_1, 0, pre_cnt );
+	}
+	else if ( sig_ok && Args.get_decoder_type() == DEC_SIG )
+	{
+		bits.put_sig_pkt( addr, Args.get_aspect_trigger() );
+	}
+	else // Accessory decoder.
+	{
+		bits.put_acc_pkt( addr, true, ACC_TRG, pre_cnt );
+	}
+}
+
+
 /*--------------------------------------------------------------------------*/
 /*
  *	NAME
@@ -4681,15 +4426,15 @@ Dec_tst::min_phrase(
 
 	if ( t_min == T_INV )					// None of the tests passed.
 	{
-		strcpy( p_buf, "NONE" );
+		snprintf( p_buf, sizeof( p_buf ), "%s", "NONE" );
 	}
 	else if ( t_min - 1 <= out_of_range )
 	{
-		sprintf( p_buf, "<= %4u", t_min );
+		snprintf( p_buf, sizeof( p_buf ), "<= %4u", t_min );
 	}
 	else
 	{
-		sprintf( p_buf, "%4u", t_min );
+		snprintf( p_buf, sizeof( p_buf ), "%4u", t_min );
 	}
 
 	return ( p_buf );
@@ -4723,15 +4468,15 @@ Dec_tst::max_phrase(
 
 	if ( t_max == T_INV )					// None of the tests passed.
 	{
-		strcpy( p_buf, "NONE" );
+		snprintf( p_buf, sizeof( p_buf ), "%s", "NONE" );
 	}
 	else if ( t_max + 1 >= out_of_range )
 	{
-		sprintf( p_buf, ">= %4u", t_max );
+		snprintf( p_buf, sizeof( p_buf ), ">= %4u", t_max );
 	}
 	else
 	{
-		sprintf( p_buf, "%4u", t_max );
+		snprintf( p_buf, sizeof( p_buf ), "%4u", t_max );
 	}
 
 	return ( p_buf );
@@ -4767,15 +4512,15 @@ Dec_tst::min_duty_phrase(
 
 	if ( t_min == T_INV )					// None of the tests passed.
 	{
-		strcpy( p_buf, "NONE" );
+		snprintf( p_buf, sizeof( p_buf ), "%s", "NONE" );
 	}
 	else if ( t_min - 1 <= out_of_range )
 	{
-		sprintf( p_buf, "<= %4d", (int)t_min - (int)t_nom );
+		snprintf( p_buf, sizeof( p_buf ), 		"<= %4d", static_cast<int>( t_min ) - static_cast<int>( t_nom ) );
 	}
 	else
 	{
-		sprintf( p_buf, "%4d", (int)t_min - (int)t_nom );
+				snprintf( p_buf, sizeof( p_buf ), "%4d", static_cast<int>( t_min ) - static_cast<int>( t_nom ) );
 	}
 
 	return ( p_buf );
@@ -4811,15 +4556,15 @@ Dec_tst::max_duty_phrase(
 
 	if ( t_max == T_INV )					// None of the tests passed.
 	{
-		strcpy( p_buf, "NONE" );
+		snprintf( p_buf, sizeof( p_buf ), "%s", "NONE" );
 	}
 	else if ( t_max + 1 >= out_of_range )
 	{
-		sprintf( p_buf, ">= %4u", t_max - t_nom );
+		snprintf( p_buf, sizeof( p_buf ), ">= %4u", t_max - t_nom );
 	}
 	else
 	{
-		sprintf( p_buf, "%4u", t_max - t_nom );
+		snprintf( p_buf, sizeof( p_buf ), "%4u", t_max - t_nom );
 	}
 
 	return ( p_buf );

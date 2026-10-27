@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: SEND_REG.CPP $
- * Path:                 $Logfile: /NMRA/SRC/SEND/SEND_REG.CPP $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 28 $
- * Last Modified on:     $Modtime: 8/30/23 6:55p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 9/12/23 6:44p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	send_reg.cpp	-	Send_reg class methods.
@@ -26,6 +11,11 @@
 #include <bits.h>
 #include "args.h"
 #include "sender_hw_if.h"
+
+#include <string.h>
+#include <chrono>
+#include <thread>
+#include <vector>
 
 /*
  * Baseline packet arrays.
@@ -47,17 +37,95 @@ const int		MAX_PKT_LINE	= 24;			// Max packet bytes per line.
 BYTE
 Send_reg::get_gen( void ) const
 {
-	if ( m_hw_if != NULL )
+	if ( m_hw_if != nullptr )
 	{
 		BYTE gen1 = 0;
 		BYTE gen2 = 0;
-		if ( m_hw_if->get_gen_in( gen1, gen2 ) )
+
+		/*
+		 * The MCU queues bits well ahead of the track output (seconds for
+		 * long 0 clocks), so wait for the queue to drain before sampling
+		 * decoder feedback.  The status reply carries both queue_depth and
+		 * the input pins, so the final status read supplies the inputs.
+		 * After the queue empties, the last half period is still on the
+		 * track, so re-read once it has finished.
+		 */
+		bool				have_gen		= false;
 		{
-			return ( gen1 );
+			const int			MAX_DRAIN_MS	= 15000;
+			const int			LAST_HP_MS		= 12;	// Longest half period.
+			Sender_hw_status	hw_status;
+			int					waited_ms		= 0;
+			bool				saw_queued		= false;
+
+			std::this_thread::sleep_for(
+				std::chrono::milliseconds( LAST_HP_MS ) );
+
+			while ( m_hw_if->get_status( hw_status ) )
+			{
+				if ( hw_status.queue_depth != 0 )
+				{
+					saw_queued = true;
+					if ( waited_ms++ >= MAX_DRAIN_MS )
+					{
+						break;
+					}
+					std::this_thread::sleep_for(
+						std::chrono::milliseconds( 1 ) );
+				}
+				else if ( saw_queued )
+				{
+					saw_queued = false;
+					std::this_thread::sleep_for(
+						std::chrono::milliseconds( LAST_HP_MS ) );
+				}
+				else
+				{
+					gen1		= hw_status.gen1;
+					gen2		= hw_status.gen2;
+					have_gen	= true;
+					break;
+				}
+			}
+		}
+
+		if ( have_gen || m_hw_if->get_gen_in( gen1, gen2 ) )
+		{
+			if ( m_log_io )
+			{
+				DBGLOG( "Send_reg::get_gen() GEN1 %02X GEN2 %02X", gen1, gen2 );
+			}
+			return ( gen1 & 0x0F );
 		}
 	}
 
-	return ( 0 );
+	// No decoder feedback wiring present; simulate a floating (pulled-up)
+	// input so checks fail the same way a disconnected decoder would.
+	return ( 0x03 );
+}
+
+bool
+Send_reg::get_gen_fb(
+	Dec_types	idec_type ) const
+{
+	if ( m_hw_if == nullptr )
+	{
+		return ( false );
+	}
+
+	BYTE	gen		=	get_gen();
+	BYTE	mask	=	0;
+
+	if ( idec_type == DEC_LOCO )
+	{
+		mask	=	GEN_MOTOR_P_BIT;
+	}
+	else
+	{
+		mask	=	GEN_LP_MASK ;
+	}
+
+	return ( ( gen & mask ) != 0 );
 }
 
 void
@@ -70,24 +138,11 @@ Send_reg::set_scope(
 	}
 	else
 	{
-		if ( m_hw_if != NULL )
+		if ( m_hw_if != nullptr )
 		{
 			m_hw_if->set_scope( false );
 		}
 		scope	=	SCOPE_IDLE;
-	}
-}
-
-void
-Send_reg::clr_under( void )
-{
-	if ( m_hw_if != NULL )
-	{
-		m_hw_if->clear_underflow();
-	}
-	else
-	{
-		DBGLOG( "Skipping hw underclr." );
 	}
 }
 
@@ -129,12 +184,15 @@ Send_reg::set_clk(
 		stop_clk();
 	}
 
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
-		if ( m_log_pkts )
+		if ( m_no_hw_sim )
 		{
-			DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu.",
-				my_name, clk0t, clk0h, clk1t );
+			if ( m_log_pkts )
+			{
+				DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu.",
+					my_name, iclk0t, iclk0h, iclk1t );
+			}
 			return ( OK );
 		}
 
@@ -142,12 +200,6 @@ Send_reg::set_clk(
 			"MCU hardware interface not initialized" );
 		clk0t = clk0h = clk1t = DCC_CLK_ERR;
 		return ( FAIL );
-	}
-
-	if ( m_log_pkts )
-	{
-		DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu.",
-			my_name, clk0t, clk0h, clk1t );
 	}
 
 	if ( iclk0t != DCC_CLK_HOLD )
@@ -187,6 +239,12 @@ Send_reg::set_clk(
 		{
 			clk1t = iclk1t;
 		}
+	}
+
+	if ( m_log_pkts )
+	{
+		DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu.",
+			my_name, clk0t, clk0h, clk1t );
 	}
 
 	if ( !m_hw_if->set_timing( clk0t, clk0h, clk1t ) )
@@ -246,11 +304,14 @@ Send_reg::start_clk( void )
 		return ( FAIL );
 	}
 
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
-		if ( m_log_pkts )
+		if ( m_no_hw_sim )
 		{
-			DBGLOG( "%s() Clock started.", my_name );
+			if ( m_log_pkts )
+			{
+				DBGLOG( "%s() Clock started.", my_name );
+			}
 			scope	= 	SCOPE_IDLE;
 			running	=	true;
 			return ( OK );
@@ -313,11 +374,14 @@ Send_reg::stop_clk( void )
 		return ( FAIL );
 	}
 
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
-		if ( m_log_pkts )
+		if ( m_no_hw_sim )
 		{
-			DBGLOG( "%s() Clock stopped.", my_name );
+			if ( m_log_pkts )
+			{
+				DBGLOG( "%s() Clock stopped.", my_name );
+			}
 			scope	= 	SCOPE_IDLE;
 			running	=	false;
 			return ( OK );
@@ -382,12 +446,18 @@ Send_reg::send_bytes(
 		return ( FAIL );
 	}
 
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
-		if ( m_log_pkts )
+		if ( m_no_hw_sim )
 		{
-			DBGLOG( "%s() %s.", my_name, info ? info : "" );
-			DBGPKT( "%02x %4d %s", ibyte, icnt, icnt > 1 ? "times" : "time" );
+			if ( m_log_pkts )
+			{
+				DBGLOG( "%s() %s.", my_name, info ? info : "" );
+				if ( m_log_data )
+				{
+					DBGPKT( "%02x %4d %s", ibyte, icnt, icnt > 1 ? "times" : "time" );
+				}
+			}
 			clr_err_cnt();
 			b_cnt	+= icnt;
 			++p_cnt;
@@ -402,7 +472,10 @@ Send_reg::send_bytes(
 	if ( m_log_pkts )
 	{
 		DBGLOG( "%s() %s.", my_name, info ? info : "" );
-		DBGPKT( "%02x %4d %s", ibyte, icnt, icnt > 1 ? "times" : "time" );
+		if ( m_log_data )
+		{
+			DBGPKT( "%02x %4d %s", ibyte, icnt, icnt > 1 ? "times" : "time" );
+		}
 	}
 
 	switch ( scope )
@@ -419,8 +492,8 @@ Send_reg::send_bytes(
 		break;
 	}
 
-	BYTE out_byte = m_swap_0_1 ? (BYTE)~ibyte : ibyte;
-	if ( !m_hw_if->send_bytes( (u_short)icnt, out_byte, info ) )
+	BYTE out_byte = m_swap_0_1 ? static_cast<BYTE>( ~ibyte ) : ibyte;
+	if ( !m_hw_if->send_bytes( static_cast<u_short>( icnt ), out_byte, info ) )
 	{
 		ERRPRINT( my_name, LOG_ERR,
 			"send_bytes() FAILED, b_cnt %lu, p_cnt %lu", b_cnt, p_cnt );
@@ -463,7 +536,7 @@ Send_reg::send_stretched_byte(
 	const char		*info )					// Packet log info.
 {
 	const char		*my_name = "Send_reg::send_stretched_byte";
-	register u_long	san_cnt;		   		// Sanity timeout.
+	u_long			san_cnt; 		   		// Sanity timeout.
 	u_short			tclk0t;					// clk0t for stretched 0.
 
 	if ( ibyte & 0x80 )
@@ -498,23 +571,32 @@ Send_reg::send_stretched_byte(
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts && m_hw_if == NULL )
+	if ( m_no_hw_sim && m_hw_if == nullptr )
 	{
-		DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
-				 my_name, iclk0t, iclk0h, info ? info : "" );
-		DBGPKT( "%02x", ibyte );
+		if ( m_log_pkts )
+		{
+			DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
+					 my_name, iclk0t, iclk0h, info ? info : "" );
+			if ( m_log_data )
+			{
+				DBGPKT( "%02x", ibyte );
+			}
+		}
 		clr_err_cnt();
 		++b_cnt;
 		return ( OK );
 	}
 
-	if ( m_hw_if != NULL )
+	if ( m_hw_if != nullptr )
 	{
 		if ( m_log_pkts )
 		{
 			DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
 				my_name, iclk0t, iclk0h, info ? info : "" );
-			DBGPKT( "%02x", ibyte );
+			if ( m_log_data )
+			{
+				DBGPKT( "%02x", ibyte );
+			}
 		}
 
 		switch ( scope )
@@ -531,7 +613,7 @@ Send_reg::send_stretched_byte(
 			break;
 		}
 
-		BYTE out_byte = m_swap_0_1 ? (BYTE)~ibyte : ibyte;
+		BYTE out_byte = m_swap_0_1 ? static_cast<BYTE>( ~ibyte ) : ibyte;
 		if ( !m_hw_if->send_stretched_byte( iclk0t, iclk0h, out_byte, info ) )
 		{
 			ERRPRINT( my_name, LOG_ERR,
@@ -561,22 +643,25 @@ Send_reg::send_raw_bytes_stretched(
 {
 	const char	*my_name = "Send_reg::send_raw_bytes_stretched";
 
-	if ( ibytes == NULL || isize == 0 || stretch_byte_index >= isize )
+	if ( ibytes == nullptr || isize == 0 || stretch_byte_index >= isize )
 	{
 		ERRPRINT( my_name, LOG_ERR, "Invalid raw stretched-byte arguments" );
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts && m_hw_if == NULL )
+	if ( m_no_hw_sim && m_hw_if == nullptr )
 	{
-		DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
-			my_name, iclk0t, iclk0h, info ? info : "" );
-		print_pkt_log( ibytes, isize );
+		if ( m_log_pkts )
+		{
+			DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
+				my_name, iclk0t, iclk0h, info ? info : "" );
+			print_pkt_log( ibytes, isize );
+		}
 		b_cnt += isize;
 		return ( OK );
 	}
 
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
 		ERRPRINT( my_name, LOG_ERR, "MCU hardware interface not initialized" );
 		return ( FAIL );
@@ -657,22 +742,25 @@ Send_reg::send_raw_bytes_timed(
 {
 	const char	*my_name = "Send_reg::send_raw_bytes_timed";
 
-	if ( ibytes == NULL || isize == 0 || bit_index1 >= isize * BITS_IN_BYTE ||
+	if ( ibytes == nullptr || isize == 0 || bit_index1 >= isize * BITS_IN_BYTE ||
 		 (bit_index2 != 0xFFFF && bit_index2 >= isize * BITS_IN_BYTE) )
 	{
 		ERRPRINT( my_name, LOG_ERR, "Invalid raw timed-bit arguments" );
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts && m_hw_if == NULL )
+	if ( m_no_hw_sim && m_hw_if == nullptr )
 	{
-		DBGLOG( "%s() %s.", my_name, info ? info : "" );
-		print_pkt_log( ibytes, isize );
+		if ( m_log_pkts )
+		{
+			DBGLOG( "%s() %s.", my_name, info ? info : "" );
+			print_pkt_log( ibytes, isize );
+		}
 		b_cnt += isize;
 		return ( OK );
 	}
 
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
 		ERRPRINT( my_name, LOG_ERR, "MCU hardware interface not initialized" );
 		return ( FAIL );
@@ -772,7 +860,7 @@ Send_reg::send_pkt(
 	const char		*info )					// Packet log info.
 {
 	const char		*my_name = "Send_reg::send_pkt(BYTE)";
-	register u_int	count;					// Count of BYTES sent.
+	u_int			count;					// Count of BYTES sent.
 
 	if ( isize < 1 )
 	{
@@ -781,12 +869,15 @@ Send_reg::send_pkt(
 		return ( FAIL );
 	}
 
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
-		if ( m_log_pkts )
+		if ( m_no_hw_sim )
 		{
-			DBGLOG( "%s %s.", my_name, info ? info : "" );
-			print_pkt_log( ibytes, isize );
+			if ( m_log_pkts )
+			{
+				DBGLOG( "%s %s.", my_name, info ? info : "" );
+				print_pkt_log( ibytes, isize );
+			}
 			clr_err_cnt();
 			b_cnt	+= isize;
 			++p_cnt;
@@ -830,29 +921,20 @@ Send_reg::send_pkt(
 	}
 	else
 	{
-		BYTE *swap_bytes = new BYTE[ isize ];
-		if ( swap_bytes == NULL )
-		{
-			ERRPRINT( my_name, LOG_ERR,
-				"Failed to allocate swap_bytes, isize %u", isize );
-			return ( FAIL );
-		}
+		std::vector<BYTE> swap_bytes( isize );
 
 		for ( count = 0; count < isize; ++count )
 		{
-			swap_bytes[count] = (BYTE)~ibytes[count];
+			swap_bytes[count] = static_cast<BYTE>( ~ibytes[count] );
 		}
 
-		if ( !m_hw_if->send_raw_bytes( swap_bytes, isize, info ) )
+		if ( !m_hw_if->send_raw_bytes( swap_bytes.data(), isize, info ) )
 		{
-			delete [] swap_bytes;
 			ERRPRINT( my_name, LOG_ERR,
 				"send_raw_bytes() FAILED in swap mode, b_cnt %lu, p_cnt %lu",
 				b_cnt, p_cnt );
 			return ( FAIL );
 		}
-
-		delete [] swap_bytes;
 	}
 
 	clr_err_cnt();
@@ -887,7 +969,7 @@ Send_reg::send_pkt(
 	const char		*info )					// Packet log info.
 {
 	const char		*my_name = "Send_reg::send_pkt(Bits)";
-	register u_int	count = 0;				// Count of BYTES sent.
+	u_int			count = 0;				// Count of BYTES sent.
 	BYTE			pbyte;					// Present BYTE.
 
 	if ( ibits.get_obj_errs() )
@@ -905,12 +987,15 @@ Send_reg::send_pkt(
 	const BYTE *pkt_bytes = ibits.get_byte_array();
 	u_int pkt_size = ibits.get_byte_size();
 
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
-		if ( m_log_pkts )
+		if ( m_no_hw_sim )
 		{
-			DBGLOG( "%s %s.", my_name, info ? info : "" );
-			print_pkt_log( pkt_bytes, pkt_size );
+			if ( m_log_pkts )
+			{
+				DBGLOG( "%s %s.", my_name, info ? info : "" );
+				print_pkt_log( pkt_bytes, pkt_size );
+			}
 			clr_err_cnt();
 			b_cnt	+= pkt_size;
 			++p_cnt;
@@ -961,30 +1046,21 @@ Send_reg::send_pkt(
 	}
 	else
 	{
-		BYTE *swap_bytes = new BYTE[ pkt_size ];
-		if ( swap_bytes == NULL )
-		{
-			ERRPRINT( my_name, LOG_ERR,
-				"Failed to allocate swap_bytes, pkt_size %u", pkt_size );
-			return ( FAIL );
-		}
+		std::vector<BYTE> swap_bytes( pkt_size );
 
 		for ( count = 0, ibits.rst_out();
 				ibits.get_byte( pbyte ) == OK; ++count )
 		{
-			swap_bytes[count] = (BYTE)~pbyte;
+			swap_bytes[count] = static_cast<BYTE>( ~pbyte );
 		}
 
-		if ( !m_hw_if->send_raw_bytes( swap_bytes, pkt_size, info ) )
+		if ( !m_hw_if->send_raw_bytes( swap_bytes.data(), pkt_size, info ) )
 		{
-			delete [] swap_bytes;
 			ERRPRINT( my_name, LOG_ERR,
 				"send_raw_bytes() FAILED in swap mode, b_cnt %lu, p_cnt %lu",
 				b_cnt, p_cnt );
 			return ( FAIL );
 		}
-
-		delete [] swap_bytes;
 	}
 
 	clr_err_cnt();
@@ -1078,9 +1154,12 @@ Send_reg::print_stats( void )
 void
 Send_reg::update( void )
 {
-	if ( m_hw_if == NULL )
+	if ( m_hw_if == nullptr )
 	{
-		DBGLOG( "Send_reg::update() Skipping update." );
+		if ( m_log_pkts )
+		{
+			DBGLOG( "Send_reg::update() Skipping update." );
+		}
 		m_pc_delay_1usec	=	1;
 		return;
 	}
@@ -1171,10 +1250,10 @@ Send_reg::fill_idles (
 {
 	u_short			reps;					// Reps to delay calculated time.
 
-	reps	=	(int)( ifill_usec /
-						(	(u_long)iclk0t * (u_long)(		IDLE_0S
+	reps	=	static_cast<int>( ifill_usec /
+						(	static_cast<u_long>( iclk0t ) * static_cast<u_long>(		IDLE_0S
 														+	FILL_1_0S )
-						+ 	(u_long)iclk1t * (u_long)(		IDLE_1S
+						+ 	static_cast<u_long>( iclk1t ) * static_cast<u_long>(		IDLE_1S
 														+	FILL_1_1S ) ) );
 	if ( reps < PKT_REP_MIN )
 	{
@@ -1196,11 +1275,11 @@ Send_reg::fill_cmds_1 (
 {
 	u_short			reps;					// Reps to delay calculated time.
 
-	reps		=	(int)( ifill_usec /
-						(	(u_long)iclk0t * (u_long)(		IDLE_0S
+	reps		=	static_cast<int>( ifill_usec /
+						(	static_cast<u_long>( iclk0t ) * static_cast<u_long>(		IDLE_0S
 														+	CMD_0S
 														+	FILL_2_0S )
-						+ 	(u_long)iclk1t * (u_long)(		IDLE_1S
+						+ 	static_cast<u_long>( iclk1t ) * static_cast<u_long>(		IDLE_1S
 														+	CMD_1S
 														+	FILL_2_1S ) ) );
 	if ( reps < PKT_REP_MIN )
@@ -1223,11 +1302,11 @@ Send_reg::fill_cmds_2 (
 {
 	u_short			reps;					// Reps to delay calculated time.
 
-	reps		=	(int)( ifill_usec /
-						(	(u_long)iclk0t * (u_long)(		( 2 * IDLE_0S )
+	reps		=	static_cast<int>( ifill_usec /
+						(	static_cast<u_long>( iclk0t ) * static_cast<u_long>(		( 2 * IDLE_0S )
 														+	( 2 * CMD_0S )
 														+	FILL_4_0S )
-						+ 	(u_long)iclk1t * (u_long)(		( 2 * IDLE_1S )
+						+ 	static_cast<u_long>( iclk1t ) * static_cast<u_long>(		( 2 * IDLE_1S )
 														+	( 2 * CMD_1S )
 														+	FILL_4_1S ) ) );
 	if ( reps < PKT_REP_MIN )
@@ -1285,7 +1364,7 @@ Send_reg::kick_start(
 	u_short				dots		=		// Dot time 4 pkt sequences.
 								fill_cmds_2() / 2;
 	u_short				reps;				// Number of command repeats.
-    register u_short	i;					// Index variabble.
+    u_short				i;					// Index variabble.
 
      if ( running == false )
 	{
@@ -1329,7 +1408,6 @@ Send_reg::kick_start(
 	reps = fill_cmds_2( 5 * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
 	STATPRINT( "%s Sending %3u power up pkts.",   my_name, reps );
 	printf(    "%s Sending %3u power up pkts.\n", my_name, reps );
-	clr_under();
 	for ( i = 0; i < reps; i++ )
 	{
 		Dcc_reg.set_scope( true );
@@ -1337,7 +1415,6 @@ Send_reg::kick_start(
 	   	if ( (i % dots) == 0 )
 	   	{
 	   		putchar( '.' );
-			clr_under();
 	   	}
 	}
 	putchar( '\n' );
@@ -1356,7 +1433,6 @@ Send_reg::kick_start(
 	reps = fill_cmds_2( 1 * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
 	STATPRINT( "%s Sending %3u loco start pkts.",   my_name, reps );
 	printf(    "%s Sending %3u loco start pkts.\n", my_name, reps );
-	clr_under();
 	for ( i = 0; i < reps; i++ )
 	{
 		Dcc_reg.set_scope( true );
@@ -1364,7 +1440,6 @@ Send_reg::kick_start(
 	   	if ( (i % dots) == 0 )
 	   	{
 	   		putchar( '.' );
-			clr_under();
 	   	}
 	}
 	putchar( '\n' );
@@ -1383,7 +1458,6 @@ Send_reg::kick_start(
 	reps = fill_cmds_2( 10 * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
 	STATPRINT( "%s Sending %3u function on pkts.",   my_name, reps );
 	printf(    "%s Sending %3u function on pkts.\n", my_name, reps );
-	clr_under();
 	for ( i = 0; i < reps; i++ )
 	{
 		Dcc_reg.set_scope( true );
@@ -1391,7 +1465,6 @@ Send_reg::kick_start(
 	   	if ( (i % dots) == 0 )
 	   	{
 	   		putchar( '.' );
-			clr_under();
 	   	}
 	}
 	putchar( '\n' );
@@ -1422,6 +1495,11 @@ Send_reg::print_pkt_log(
 	u_int			isize )				// Size of BYTE array.
 {
 	const char		*my_name 	= "Send_reg::print_pkt_log()";
+
+	if ( !m_log_data )
+	{
+		return;
+	}
 	int				lcnt;				// Count of BYTES on present line.
 
 	if ( !ibytes )

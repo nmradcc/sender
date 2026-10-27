@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: SEND_REG.H $
- * Path:                 $Logfile: /NMRA/SRC/SEND/SEND_REG.H $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 13 $
- * Last Modified on:     $Modtime: 9/14/23 4:03p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 9/14/23 4:12p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	send_reg.h	-	This file defines the Send_reg class which handles
@@ -23,11 +8,12 @@
  *****************************************************************************/
 
 #ifndef SEND_REG_H_DECLARED
-#define SEND_REG_H_DECLARED	"@(#) $Workfile: SEND_REG.H $$ $Revision: 13 $$"
+#define SEND_REG_H_DECLARED
 
 #include <zlog.h>
 #include <dcc.h>
 #include "sr_core.h"
+#include "send.h"
 
 const u_short	DCC_CLK_HOLD	= 0;		// Hold present clock value.
 const u_short	DCC_CLK_ERR		= 1;		// Clock has an error.
@@ -44,6 +30,16 @@ const u_int		FILL_2_1S		= 1;		// 2 packet 1 filler.
 const u_int		FILL_4_0S		= 3;		// 4 packet 0 filler.
 const u_int		FILL_4_1S		= 1;		// 4 packet 1 filler.
 const u_short	PKT_REP_MIN		= 10;		// Min. pkt repeat count.
+
+const BYTE		GEN_INPUT1_MASK		    = 0x0F;	// Valid GEN1 input bits.
+const BYTE		GEN_MOTOR_FEEDBACK_MASK	= 0x03;	// Motor feedback mask bit.
+const BYTE		GEN_MOTOR_P_BIT 		= 0x01; // Motor positive feedback bit.
+const BYTE		GEN_MOTOR_N_BIT 		= 0x02; // Motor negative feedback bit.
+const BYTE		GEN_FL_MASK	            = 0x04;	// Front Light mask bit.
+const BYTE		GEN_FL_BIT 		        = 0x04; // Front Light bit.
+const BYTE		GEN_RL_MASK	            = 0x08;	// Rear Light mask bit.
+const BYTE		GEN_RL_BIT 		        = 0x08; // Rear Light bit.
+const BYTE		GEN_LP_MASK 	        = 0x0C; // Light mask bit.
 
 
 const u_int		PC_DELAY_INIT	= 5;		// Initial 1 usec delay count.
@@ -94,7 +90,8 @@ class Send_reg : public Sr_core
 	:	running( false ), scope( SCOPE_IDLE ),
 		clk0t( DCC_CLK_ERR ), clk0h( DCC_CLK_ERR ), clk1t( DCC_CLK_ERR ),
 		err_cnt( 0 ), m_pc_delay_1usec( PC_DELAY_INIT ),
-		m_swap_0_1( false ), m_log_pkts( false ), m_hw_if( NULL )
+		m_swap_0_1( false ), m_no_hw_sim( false ), m_log_pkts( false ),
+		m_log_data( false ), m_log_io( false ), m_hw_if( nullptr )
 	{
 		rst_stats();
 	}
@@ -108,13 +105,19 @@ class Send_reg : public Sr_core
 	u_short	get_clk0h( void ) const { return ( clk0h ); }
 	u_short	get_clk1t( void ) const { return ( clk1t ); }
 	bool	get_swap_0_1( void ) const { return ( m_swap_0_1 ); }
+	bool	get_no_hw_sim( void ) const { return ( m_no_hw_sim ); }
 	bool	get_log_pkts( void ) const { return ( m_log_pkts ); }
+	bool	get_log_data( void ) const { return ( m_log_data ); }
 
 	BYTE	get_gen( void ) const;
+	bool	get_gen_fb( Dec_types idec_type ) const;
 
 	/* Simple set methods */
 	void	set_swap_0_1( bool iswap ) { m_swap_0_1 =  iswap; }
+	void	set_no_hw_sim( bool ino_hw_sim ) { m_no_hw_sim = ino_hw_sim; }
 	void	set_log_pkts( bool ilog_pkts ) { m_log_pkts =  ilog_pkts; }
+	void	set_log_data( bool ilog_data ) { m_log_data = ilog_data; }
+	void	set_log_io( bool ilog_io ) { m_log_io = ilog_io; }
 	void	set_hw_if( Sender_hw_if *ihw_if ) { m_hw_if = ihw_if; }
 
 	/* Board initialization and reset routines */
@@ -124,7 +127,6 @@ class Send_reg : public Sr_core
 	void	set_scope( bool scope_on );
 
 	/* Packet sending routines */
-	void	clr_under( void );
 	void	clr_err_cnt( void ) { err_cnt = 0; }
 	Rslt_t	start_clk( void );
 	Rslt_t	stop_clk( void );
@@ -200,11 +202,13 @@ class Send_reg : public Sr_core
 	u_int				err_cnt;				// Count of contiguous errors.
 	u_int				m_pc_delay_1usec;	   	// Loop count for 1 usec. delay.
 	bool				m_swap_0_1;				// Swap 0 & 1 if true.
+	bool				m_no_hw_sim;			// true to simulate with no MCU.
 	bool				m_log_pkts;				// true to log pkts.
+	bool				m_log_data;				// true to log packet data.
+	bool				m_log_io;				// true to log IO data.
 	Sender_hw_if		*m_hw_if;			// Optional MCU backend interface.
 
 	/* Method section */
-	
 	void	print_pkt_log( const BYTE *ibytes, u_int isize );
 };
 

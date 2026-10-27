@@ -59,18 +59,21 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/USBX/Target
 )
 
-# Firmware version exposed to host (SHP_CMD_GET_MCU_VERSION)
-set(SHP_MCU_FW_VERSION_MAJOR "1" CACHE STRING "MCU firmware major version")
-set(SHP_MCU_FW_VERSION_MINOR "0" CACHE STRING "MCU firmware minor version")
-set(SHP_MCU_FW_VERSION_PATCH "0" CACHE STRING "MCU firmware patch version")
-set(SHP_MCU_FW_VERSION_BUILD "0" CACHE STRING "MCU firmware build version")
+# Firmware version exposed to host (SHP_CMD_GET_MCU_VERSION).
+# This is the single definition of the MCU firmware version; it is passed to
+# the compiler below and is required by Core/Inc/sender_protocol.h.
+set(SHP_MCU_FW_VERSION_MAJOR 1)
+set(SHP_MCU_FW_VERSION_MINOR 0)
+set(SHP_MCU_FW_VERSION_PATCH 0)
+set(SHP_MCU_FW_VERSION_BUILD 0)
+message("MCU firmware version: ${SHP_MCU_FW_VERSION_MAJOR}.${SHP_MCU_FW_VERSION_MINOR}.${SHP_MCU_FW_VERSION_PATCH}.${SHP_MCU_FW_VERSION_BUILD}")
 
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
-    SHP_MCU_FW_VERSION_MAJOR=${SHP_MCU_FW_VERSION_MAJOR}
-    SHP_MCU_FW_VERSION_MINOR=${SHP_MCU_FW_VERSION_MINOR}
-    SHP_MCU_FW_VERSION_PATCH=${SHP_MCU_FW_VERSION_PATCH}
-    SHP_MCU_FW_VERSION_BUILD=${SHP_MCU_FW_VERSION_BUILD}
+    SHP_MCU_FW_VERSION_MAJOR=${SHP_MCU_FW_VERSION_MAJOR}u
+    SHP_MCU_FW_VERSION_MINOR=${SHP_MCU_FW_VERSION_MINOR}u
+    SHP_MCU_FW_VERSION_PATCH=${SHP_MCU_FW_VERSION_PATCH}u
+    SHP_MCU_FW_VERSION_BUILD=${SHP_MCU_FW_VERSION_BUILD}u
     # Add user defined symbols
 )
 
