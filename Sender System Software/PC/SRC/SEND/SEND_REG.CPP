@@ -876,8 +876,6 @@ Send_reg::send_pkt(
 {
 	const char		*my_name = "Send_reg::send_pkt(BYTE)";
 	u_int			count;					// Count of BYTES sent.
-	bool				is_idle_pkt = isize == PKT_SIZE &&
-					memcmp( ibytes, idle_bytes, PKT_SIZE ) == 0;
 
 	if ( isize < 1 )
 	{
@@ -890,7 +888,7 @@ Send_reg::send_pkt(
 	{
 		if ( m_no_hw_sim )
 		{
-			if ( m_log_pkts && ( !m_squelch_idle || !is_idle_pkt ) )
+			if ( m_log_pkts )
 			{
 				DBGLOG( "%s %s.", my_name, info ? info : "" );
 				print_pkt_log( ibytes, isize );
@@ -906,7 +904,7 @@ Send_reg::send_pkt(
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts && ( !m_squelch_idle || !is_idle_pkt ) )
+	if ( m_log_pkts )
 	{
 		DBGLOG( "%s %s.", my_name, info ? info : "" );
 		print_pkt_log( ibytes, isize );

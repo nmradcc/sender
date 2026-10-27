@@ -91,7 +91,7 @@ class Send_reg : public Sr_core
 		clk0t( DCC_CLK_ERR ), clk0h( DCC_CLK_ERR ), clk1t( DCC_CLK_ERR ),
 		err_cnt( 0 ), m_pc_delay_1usec( PC_DELAY_INIT ),
 		m_swap_0_1( false ), m_no_hw_sim( false ), m_log_pkts( false ),
-		m_log_data( false ), m_log_io( false ), m_squelch_idle( false ), m_hw_if( nullptr )
+		m_log_data( false ), m_log_io( false ), m_hw_if( nullptr )
 	{
 		rst_stats();
 	}
@@ -118,7 +118,6 @@ class Send_reg : public Sr_core
 	void	set_log_pkts( bool ilog_pkts ) { m_log_pkts =  ilog_pkts; }
 	void	set_log_data( bool ilog_data ) { m_log_data = ilog_data; }
 	void	set_log_io( bool ilog_io ) { m_log_io = ilog_io; }
-	void	set_squelch_idle( bool isquelch_idle ) { m_squelch_idle = isquelch_idle; }
 	void	set_hw_if( Sender_hw_if *ihw_if ) { m_hw_if = ihw_if; }
 
 	/* Board initialization and reset routines */
@@ -207,7 +206,6 @@ class Send_reg : public Sr_core
 	bool				m_log_pkts;				// true to log pkts.
 	bool				m_log_data;				// true to log packet data.
 	bool				m_log_io;				// true to log IO data.
-	bool				m_squelch_idle;			// true to omit idle packets from packet logs.
 	Sender_hw_if		*m_hw_if;			// Optional MCU backend interface.
 
 	/* Method section */

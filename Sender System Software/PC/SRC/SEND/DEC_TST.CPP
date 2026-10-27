@@ -764,19 +764,13 @@ Dec_tst::decoder_test(
 		STATPRINT( "sending 2 fail safe operation sequences." );
 		printf(    "sending 2 fail safe operation sequences.\n" );
 		Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence." );
-		j = Send_reg::fill_cmds_1( FSOC_DELAY * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
-		for ( i = 0; i < j; i++ )
-		{
-			Dcc_reg.send_idle();
-		}
+//		j = Send_reg::fill_cmds_1( FSOC_DELAY * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
+		std::this_thread::sleep_for( FSOC_DELAY * std::chrono::seconds( 1 ) );
 		
 		Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence again." );
 	
-		j = Send_reg::fill_cmds_1( FSOC_DELAY * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
-		for ( i = 0; i < j; i++ )
-		{
-			Dcc_reg.send_idle();
-		}
+//		j = Send_reg::fill_cmds_1( FSOC_DELAY * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
+		std::this_thread::sleep_for( FSOC_DELAY * std::chrono::seconds( 1 ) );
 	}
 
 	/*

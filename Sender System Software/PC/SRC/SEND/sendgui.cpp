@@ -190,7 +190,7 @@ static const char *g_funcBitLabels[FUNCBIT_COUNT] =
 	"FL",
 };
 
-static const int LOGBIT_COUNT = 5;
+static const int LOGBIT_COUNT = 4;
 
 static const char *g_logBitLabels[LOGBIT_COUNT] =
 {
@@ -198,7 +198,6 @@ static const char *g_logBitLabels[LOGBIT_COUNT] =
 	"Command logging",
 	"Packet data logging",
 	"IO data logging",
-	"Squelch idle packets",
 };
 
 /*---------------------------------------------------------------------------

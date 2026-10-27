@@ -487,7 +487,6 @@ main(
 	Dcc_reg.set_log_pkts( ( Args.get_log_mask() & LOG_COMMAND_BIT ) != 0 );
 	Dcc_reg.set_log_data( ( Args.get_log_mask() & LOG_PACKET_BIT ) != 0 );
 	Dcc_reg.set_log_io( ( Args.get_log_mask() & LOG_IO_BIT ) != 0 );
-	Dcc_reg.set_squelch_idle( ( Args.get_log_mask() & LOG_SQUELCH_IDLE_BIT ) != 0 );
 	Dcc_reg.set_hw_if( use_hw_backend ? Lhw_if : nullptr );
 
 	if ( Args.get_manual_flag() == true )	// Manual mode.
