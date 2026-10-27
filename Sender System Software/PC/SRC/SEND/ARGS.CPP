@@ -97,8 +97,7 @@ Args_obj::Args_obj( void )
 	m_mcu_baud			= 115200;			// Default MCU baud.
 	m_key_help			=					// Keyboard commands help msg.
 		"ESC - Return to command line       h - Print header\n"
-		"  c - Send single clock phase      C - Send series of clock phases\n"
-		"                                   0 - Send zeros\n"
+		"  c - Toggle idle clock            0 - Send zeros\n"
 		"  1 - Send ones                    a - Send scope A pattern\n"
 		"  b - Send scope B pattern         o - Send scope timing packet\n"
 		"  w - Send warble packets          S - Send stretched 0 pattern\n"
@@ -106,7 +105,7 @@ Args_obj::Args_obj( void )
 		"  D - Send stretched DCC packets   s - Change loco speed, acc. output\n"
 		"  e - Set speed to E-STOP          f - Change loco direction, acc. on/off\n"
 		"  E - Set speed to E_STOP(I)       t - Run self tests repeatedly\n"
-		"  k - Kickstart loco for funcs     i - Send DCC idle packets\n"
+		"  k - Kickstart loco for funcs\n"
 		"  R - Send hard resets             g - Test generic I/O\n"
 		"  z - Run decoder tests            q - Quit program\n";
 }

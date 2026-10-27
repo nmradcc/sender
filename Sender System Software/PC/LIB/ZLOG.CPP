@@ -10,6 +10,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <chrono>
 #include <stdlib.h>		// Needed for abort()
 
 /*
@@ -769,10 +770,30 @@ Zlog::vdbgprint(
 	{
 		return;
 	}
-	
+
+	/*
+	 *	DBG_LOG entries carry the same "<time>" tag as the STATUS messages.
+	 */
+	char			tag[TIME_STR + 4] = "";
+
+	if ( hdr == DBG_LOG )
+	{
+		const auto	now		= std::chrono::system_clock::now();
+		const time_t raw_time = std::chrono::system_clock::to_time_t( now );
+		const int	ms		= static_cast<int>(
+			std::chrono::duration_cast<std::chrono::milliseconds>(
+				now.time_since_epoch() ).count() % 1000 );
+		char		ctm[TIME_STR];
+
+		snprintf( ctm, sizeof( ctm ), "%.24s", ctime( &raw_time ) );
+		ctm[19] = '\0';						// Keep "Day Mon dd hh:mm:ss".
+		snprintf( tag, sizeof( tag ), "<%s.%03d %.4s> ",
+			ctm, ms, ctm + 20 );
+	}
+
 	if ( fp_log )
 	{
-		(void)fprintf(  fp_log, "!%c ", static_cast<char>( hdr ) );
+		(void)fprintf(  fp_log, "!%c %s", static_cast<char>( hdr ), tag );
 		(void)vfprintf( fp_log, fmt, ap );
 		(void)fputc( '\n', fp_log );
 		fflush( fp_log );
@@ -780,7 +801,7 @@ Zlog::vdbgprint(
 
 	if ( stderr_too )
 	{
-		(void)fprintf(  stderr, "!%c ", static_cast<char>( hdr ) );
+		(void)fprintf(  stderr, "!%c %s", static_cast<char>( hdr ), tag );
 		(void)vfprintf( stderr, fmt, ap );
 		(void)fputc( '\n', stderr );
 		fflush( stderr );

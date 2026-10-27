@@ -12,6 +12,8 @@
 
 #include <conio.h>
 #include <string.h>
+#include <chrono>
+#include <thread>
 #include <vector>
 
 /*
@@ -2835,7 +2837,7 @@ Dec_tst::quick_ames(
 	}
 
 	fsoc_send( "quick_ames() initialization" );
-	send_filler();							// Wake up the booster.
+	std::this_thread::sleep_for( std::chrono::seconds( 1 ) );	// Wake up the booster.
 
 	CLR_LINE;
 
@@ -2846,48 +2848,23 @@ Dec_tst::quick_ames(
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 	put_preset_pkt( dcc_bits, Args.get_decoder_address(), margin_pre, true );
-	dcc_bits.put_idle_pkt( 5 );
 	dcc_bits.put_1s(1).done();
 
 	/*
 	 *	Set decoder to trigger speed, forward, lamp off or
 	 *  preset accessory decoder to the normal position.
 	 */
-//	dcc_bits2.clr_in();
-//	dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-//	put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), margin_pre, true );
-//	dcc_bits2.put_idle_pkt( 5 );
-//	dcc_bits2.put_1s(1).done();
+	dcc_bits2.clr_in();
+	dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+	put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), margin_pre, true );
+	dcc_bits2.put_1s(1).done();
 
 	/*
-	 *	Place an idle packets between the final preset and first trigger.
+	 *	The MCU streams idle packets between commands, so wait after each
+	 *	packet so the preset repeats are spread over 'fill_usec'.
 	 */
-	dcc_bits3.clr_in();
-	dcc_bits3.put_0s(1);
-	put_preset_pkt( dcc_bits3, Args.get_decoder_address(), margin_pre, true );
-	dcc_bits3.put_idle_pkt( 5 );
-	dcc_bits3.put_1s(1);	// End bit of the last idle packet.
-	put_trigger_pkt( dcc_bits3, Args.get_decoder_address(), margin_pre, true );
-	dcc_bits3.put_idle_pkt( 5 );
-	dcc_bits3.put_1s(1).done();
-
-	/*
-	 *	The fsoc reset clears the direction of a function decoder, so
-	 *	restore the forward (or LAMP rear) direction before each preset.
-	 *	Not needed when the preset itself sends a loco packet first.
-	 */
-	const bool		dir_restore =	( Args.get_decoder_type() == DEC_FUNC )
-								&&	!trig_rev && !Bits::get_loco_first();
-	Bits			dir_bits( 64 );
-
-	if ( dir_restore )
-	{
-		dir_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-		dir_bits.put_cmd_pkt_28( Args.get_decoder_address(),
-								 !Args.get_lamp_rear(), 0, margin_pre );
-		dir_bits.put_idle_pkt( 5 );
-		dir_bits.put_1s(1).done();
-	}
+	const auto		pkt_delay = std::chrono::microseconds(
+									fill_usec / ( pkt_rep_cnt ? pkt_rep_cnt : 1 ) );
 
 	for ( i = 0; i < cycles; i++ )
 	{
@@ -2909,30 +2886,20 @@ Dec_tst::quick_ames(
 
 		fsoc_send( "quick_ames() loop" );
 
-		if ( dir_restore )
-		{
-			for ( j = 0; j < pkt_rep_cnt; j++ )
-			{
-				Dcc_reg.send_pkt( dir_bits, "Restore direction for quick test." );
-			}
-		}
-
 		for ( j = 0; j < pkt_rep_cnt;  j++ )   	// Preset decoder preset.
 		{
-			if ( j == pkt_rep_cnt - 1 )
-			{
-				if (!Dcc_reg.get_gen_fb( Args.get_decoder_type() ))
-				{
-					pre_fail	=	true;
-				}
-				Dcc_reg.send_pkt( dcc_bits3,
-					"Send final preset and trigger for quick test." );
-			}
-			else
-			{
-				Dcc_reg.send_pkt( dcc_bits, "Send preset for quick test." );
-			}
+			Dcc_reg.send_pkt( dcc_bits, "Send preset for quick test." );
+			std::this_thread::sleep_for( pkt_delay );
 		}
+
+		if (!Dcc_reg.get_gen_fb( Args.get_decoder_type() ))
+		{
+			pre_fail	=	true;
+		}
+
+		std::this_thread::sleep_for( 5 *pkt_delay );
+		Dcc_reg.send_pkt( dcc_bits2, "Send trigger for quick test." );
+		std::this_thread::sleep_for( 5 *pkt_delay );
 		
 		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{

@@ -85,8 +85,7 @@ enum Key_val
 	KEY_NULL		= '\0',						// NULL key command.
 	KEY_ESC			= '\033',					// Break test loop.
 	KEY_HEADER		= 'h',						// Print header.
-	KEY_CLOCK		= 'c',						// Toggle clock.
-	KEY_MCLK		= 'C', 						// Toggle many clocks.
+	KEY_CLOCK		= 'c',						// Toggle idle clock.
 	KEY_ZERO		= '0',						// Send 0 stream.
 	KEY_ONE			= '1',						// Send 1 stream.
 	KEY_SCOPE_A		= 'a',						// Scope test A.
@@ -96,7 +95,6 @@ enum Key_val
 	KEY_STRETCHED	= 'S',						// Send stretched 0s.
 	KEY_RESET		= 'r',						// Send resets.
 	KEY_HARD		= 'R',						// Send hard resets.
-	KEY_IDLE		= 'i',						// Send idles.
 	KEY_DCC			= 'd',						// Send Dcc packets.
 	KEY_DCC_S		= 'D',						// Send Stretched Dcc packets.
 	KEY_SPEED		= 's',					 	// Change speed.
@@ -115,8 +113,7 @@ enum Key_val
  */
 const char *Key_help	=
 "ESC - Return to command line       h - Print header\n"
-"  c - Send single clock phase      C - Send series of clock phases\n"
-"                                   0 - Send zeros\n"
+"  c - Toggle idle clock            0 - Send zeros\n"
 "  1 - Send ones                    a - Send scope A pattern\n"
 "  b - Send scope B pattern         o - Send scope timing packet\n"
 "  w - Send warble packets          S - Send stretched 0 pattern\n"
@@ -124,7 +121,7 @@ const char *Key_help	=
 "  D - Send stretched DCC packets   s - Change loco speed, acc. output\n"
 "  e - Set speed to E-STOP          f - Change loco direction, acc. on/off\n"
 "  E - Set speed to E_STOP(I)       t - Run self tests repeatedly\n"
-"  k - Kickstart loco for funcs     i - Send DCC idle packets\n"
+"  k - Kickstart loco for funcs\n"
 "  R - Send hard resets             g - Test generic I/O\n"
 "  z - Run decoder tests            q - Quit program\n";
 
@@ -177,7 +174,6 @@ static Bits	Dcc_bits( 256 );					// Packet scratchpad.
 enum Send_type
 {
 	SEND_NONE,									// Send nothing.
-	SEND_MCLK,									// Send SW clocks.
 	SEND_ZERO,									// Send 0s.
 	SEND_ONE,									// Send 1s.
 	SEND_SCOPE_A,								// Send scope test A.
@@ -1174,29 +1170,20 @@ Key_val			init_key )					// Initial key value.
 		 *	The following commands are for low level board debugging
 		 *	and use the software generated clock.
 		 */
-		case KEY_CLOCK:						// Change static clock phase.
+		case KEY_CLOCK:						// Toggle clock.
 			rep_type	=	SEND_NONE;
+			putchar( '\n' );				// Leave the prompt line intact.
 			if ( hw_is_running() == true )
 			{
-				hw_stop_clk();
-				printf( "Stop clock\n" );			
+				printf( "Stop clock %s\n",
+					( hw_stop_clk() == OK ) ? "OK" : "FAILED" );
 			}
 			else
 			{
-//				hw_set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
-				hw_start_clk();
-				printf( "Start clock\n" );
+				hw_set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
+				printf( "Start clock %s\n",
+					( hw_start_clk() == OK ) ? "OK" : "FAILED" );
 			}
-			Dcc_reg.up_print();
-			break;
-
-		case KEY_MCLK:						// Send a series of static clocks.
-			rep_type	=	SEND_MCLK;
-			if ( hw_is_running() == true )
-			{
-				hw_stop_clk();
-			}
-			printf( "SW clock burst is not supported in MCU mode\n" );
 			Dcc_reg.up_print();
 			break;
 
@@ -1309,15 +1296,6 @@ Key_val			init_key )					// Initial key value.
 				hw_start_clk();
 			}
 			printf( "Sending HARD Reset packets\n" );
-			break;
-
-		case KEY_IDLE:						// Send idle packets.
-			rep_type	=	SEND_IDLE;
-			if ( hw_is_running() != true )
-			{
-				hw_start_clk();
-			}
-			printf( "Sending Idle packets\n" );
 			break;
 
 		/*
@@ -1588,11 +1566,6 @@ Key_val			init_key )					// Initial key value.
 					ERRPRINT( my_name, LOG_CRIT,
 						"Unexpected SEND_NONE in repeat loop\n" );
 					exit_send( 1 );
-				case SEND_MCLK:				// Send a string of CPU clocks.
-					printf( "SW clock burst is not supported in MCU mode\n" );
-					c_flag	=	false;
-					break;
-
 				case SEND_ZERO:				// Repeat zero bytes.
 					hw_set_scope( true );
 					hw_send_bytes( 2, 0x00, "SEND_ZERO." );
@@ -1643,10 +1616,6 @@ Key_val			init_key )					// Initial key value.
 					hw_set_scope( true );
 					Dcc_reg.send_rst();
 					hw_set_scope( false );
-					for ( i = 0; i < 15; i++ )	// Send 15 normal idles.
-					{
-						Dcc_reg.send_idle();
-					}
 					break;
 
 				case SEND_HARD:			// Repeat the hard reset packet.
@@ -1654,20 +1623,9 @@ Key_val			init_key )					// Initial key value.
 					hw_set_scope( true );
 					Dcc_reg.send_hard_rst();	// Send the hard reset.
 					hw_set_scope( false );
-					for ( i = 0; i < 15; i++ )	// Send 15 normal idles.
-					{
-						Dcc_reg.send_idle();
-					}
 					break;
 
 				case SEND_IDLE:				// Repeat the idle packet.
-                	Dcc_bits.clr_in();
-                    Dcc_bits.put_idle_pkt( 4 );
-                    Dcc_bits.put_1s( 1 ).done();
-
-					hw_send_bytes( 1, 0x00, "SEND_IDLE." );
-					hw_set_scope( true );
-					hw_send_bits_pkt( Dcc_bits, "SEND_IDLE." );
 					break;
 
 				case SEND_DCC:				// Repeat the DCC packet.
@@ -1696,7 +1654,6 @@ Key_val			init_key )					// Initial key value.
                         					  		fw, speed );
                     }
 
-                    Dcc_bits.put_idle_pkt( 5 );
 					Dcc_bits.put_1s( 1 ).done();
 
 					Dcc_reg.send_pkt( Dcc_bits, "SEND_DCC Send pkt." );
@@ -1741,7 +1698,6 @@ Key_val			init_key )					// Initial key value.
 													fw, speed );
 					}
 
-					Dcc_bits.put_idle_pkt( 5 );
 					Dcc_bits.put_1s( 1 ).done();
         			/*
         			 * Send BYTES immediately before single stretched 0.

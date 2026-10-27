@@ -235,7 +235,7 @@ test_debug_output( void )
 
 	log = read_file( LOG_FILE );
 	CHECK( contains( log, "!> dbg_marker_on" ) );
-	CHECK( contains( log, "!L dbg_marker_on_log" ) );
+	CHECK( contains( log, "!L <" ) && contains( log, "> dbg_marker_on_log" ) );
 
 	// These always print, regardless of the dbg_on state.
 	Deflog.set_dbg_on( false );
@@ -247,7 +247,7 @@ test_debug_output( void )
 	log = read_file( LOG_FILE );
 	CHECK( contains( log, "!> dbg_marker_all" ) );
 	CHECK( contains( log, "!P dbg_marker_all_pkt" ) );
-	CHECK( contains( log, "!L dbg_marker_dbglog" ) );
+	CHECK( contains( log, "!L <" ) && contains( log, "> dbg_marker_dbglog" ) );
 	CHECK( contains( log, "!P dbg_marker_dbgpkt" ) );
 }
 
