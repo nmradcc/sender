@@ -86,7 +86,7 @@ class Dec_tst : public Z_core
 	void set_run_mask( Bits_t irun_mask )     { run_mask = irun_mask; }
 	void set_clk_mask( Bits_t iclk_mask )     { clk_mask = iclk_mask; }
 	void set_trig_rev( bool itrig_rev = false );
-	void set_fill_msec( u_long ifill_msec = MSEC_PER_SEC )
+	void set_fill_msec( u_long ifill_msec = 100 )
 	{
 		fill_usec	=	ifill_msec * 1000UL;
 	}

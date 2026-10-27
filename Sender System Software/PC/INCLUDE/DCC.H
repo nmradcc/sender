@@ -22,7 +22,6 @@
  *	All times are in microseconds unless otherwise noted.
  */
 const u_long	USEC_PER_SEC	= 1000000L;			// usecs. per sec.
-const u_int		MSEC_PER_SEC	= 1000;				// msecs. per sec.
 const u_int		DECODER_0T_MIN	= 180;				// Minimum DCC 0.
 const u_int		DECODER_0T_NOM	= 200;				// Nominal DCC 0.
 const u_int		DECODER_0T_MAX	= 12000;			// Maximum DCC 0.

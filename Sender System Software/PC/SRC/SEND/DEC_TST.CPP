@@ -519,7 +519,7 @@ Dec_tst::Dec_tst( void )
 	run_mask		= ~0L;				// Run all tests.
 	clk_mask		= ~0L;				// Use all clock values.
 	trig_cmd_speed	= SP_E_STOP;		// Use emeergency stop as trigger.
-	fill_usec		= USEC_PER_SEC;		// Default to 1 second of filler.
+	fill_usec		= 100000UL;			// Default to 100 ms of filler.
 	filler_idles	= PKT_REP_MIN;		// Default to minimum.
 	pkt_rep_cnt		= PKT_REP_MIN;		// Default to minimum.
     m_tst_name[0]	= '\0';				// Clear test name buffer.

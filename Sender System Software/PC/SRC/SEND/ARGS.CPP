@@ -77,7 +77,7 @@ Args_obj::Args_obj( void )
 	m_extra_preamble		= 0;				// Extra margin test preambles.
 	m_trig_rev			= false;			// Use E_STOP as trigger command.
 	m_loco_first			= false;;			// Put loco pkt + func pkt.
-	m_fill_msec			= MSEC_PER_SEC;		// Use 1 second fill time.
+	m_fill_msec			= 100;				// Use 100 ms fill time.
 	m_test_repeats		= 2;				// Times to repeat misc. tests.
 	m_print_user			= false;			// Don't print user docs.
 	m_log_mask			= DEF_LOG_MASK;		// Logging enabled.
