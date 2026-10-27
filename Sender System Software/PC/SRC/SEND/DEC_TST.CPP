@@ -2853,14 +2853,14 @@ Dec_tst::quick_ames(
 	 *	Set decoder to trigger speed, forward, lamp off or
 	 *  preset accessory decoder to the normal position.
 	 */
-	dcc_bits2.clr_in();
-	dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), margin_pre, true );
-	dcc_bits2.put_idle_pkt( 5 );
-	dcc_bits2.put_1s(1).done();
+//	dcc_bits2.clr_in();
+//	dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+//	put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), margin_pre, true );
+//	dcc_bits2.put_idle_pkt( 5 );
+//	dcc_bits2.put_1s(1).done();
 
 	/*
-	 *	Place an idle packet between the final preset and first trigger.
+	 *	Place an idle packets between the final preset and first trigger.
 	 */
 	dcc_bits3.clr_in();
 	dcc_bits3.put_0s(1);
