@@ -70,41 +70,19 @@ static void dump_version_info(void)
 
 static void dump_mcu_version_info(Sender_hw_mcu_usb& dev)
 {
-    std::vector<uint8_t> info;
-
-    if (!dev.get_info(info))
+    uint32_t version;
+    if (!dev.get_mcu_version(version))
     {
-        printf("  mcu info payload    : unavailable (GET_INFO failed)\n");
+        printf("  mcu fw version      : unavailable (GET_MCU_VERSION failed)\n");
         printf("----------------------------------------\n");
         return;
     }
 
-    printf("  mcu info payload    : %u byte(s)",
-           static_cast<unsigned int>(info.size()));
-    if (!info.empty())
-    {
-        printf(" [");
-        for (size_t i = 0; i < info.size(); ++i)
-        {
-            printf("%s%02X", (i == 0) ? "" : " ", static_cast<unsigned int>(info[i]));
-        }
-        printf("]");
-    }
-    printf("\n");
-
-    if (info.size() >= 3)
-    {
-        printf("  mcu fw version      : %u.%u.%u (bytes 0..2)\n",
-               static_cast<unsigned int>(info[0]),
-               static_cast<unsigned int>(info[1]),
-               static_cast<unsigned int>(info[2]));
-    }
-
-    if (info.size() >= 4)
-    {
-        printf("  mcu protocol ver    : %u (byte 3)\n",
-               static_cast<unsigned int>(info[3]));
-    }
+    printf("  mcu fw version      : %u.%u.%u.%u\n",
+           static_cast<unsigned int>((version >> 24) & 0xFF),
+           static_cast<unsigned int>((version >> 16) & 0xFF),
+           static_cast<unsigned int>((version >> 8) & 0xFF),
+           static_cast<unsigned int>(version & 0xFF));
 
     printf("----------------------------------------\n");
 }
