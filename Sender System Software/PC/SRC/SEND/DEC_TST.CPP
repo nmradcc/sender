@@ -2902,8 +2902,11 @@ Dec_tst::quick_ames(
 		}
 
 		std::this_thread::sleep_for( 5 *pkt_delay );
-		Dcc_reg.send_pkt( dcc_bits2, "Send trigger for quick test." );
-		std::this_thread::sleep_for( 5 *pkt_delay );
+		for ( j = 0; j < static_cast<int>( Args.get_extra_trg() ) + 1; j++ )
+		{
+			Dcc_reg.send_pkt( dcc_bits2, "Send trigger for quick test." );
+			std::this_thread::sleep_for( 5 *pkt_delay );
+		}
 		
 		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
