@@ -490,6 +490,7 @@ Dec_tst::fsoc_send( const char *msg )
 	{
 		DBGPRINT( DBG_DFLT, "Sending fsoc for %s.", msg );
 		Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence." );
+		std::this_thread::sleep_for( std::chrono::seconds( 1 ) );	// Wake up the booster.
 	}
 }
 
@@ -766,11 +767,21 @@ Dec_tst::decoder_test(
 		Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence." );
 //		j = Send_reg::fill_cmds_1( FSOC_DELAY * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
 		std::this_thread::sleep_for( FSOC_DELAY * std::chrono::seconds( 1 ) );
+		if ( Dcc_reg.get_log_pkts() )
+		{
+			DBGLOG( "Delay  %d seconds",
+				( FSOC_DELAY * std::chrono::seconds( 1 ) ) );
+		}
 		
 		Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence again." );
 	
 //		j = Send_reg::fill_cmds_1( FSOC_DELAY * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
 		std::this_thread::sleep_for( FSOC_DELAY * std::chrono::seconds( 1 ) );
+		if ( Dcc_reg.get_log_pkts() )
+		{
+			DBGLOG( "Delay  %d seconds",
+				( FSOC_DELAY * std::chrono::seconds( 1 ) ) );
+		}
 	}
 
 	/*
@@ -779,7 +790,7 @@ Dec_tst::decoder_test(
     if ( Args.get_decoder_type() == DEC_FUNC )
     {
 		/*	Setup the function decoder so the function is on
-		 *	and the motor is set  for the correct direction.
+		 *	and the motor is set for the correct direction.
 		 */
 		if ( Args.get_kick_start() == true )
 		{
@@ -2831,7 +2842,6 @@ Dec_tst::quick_ames(
 	}
 
 	fsoc_send( "quick_ames() initialization" );
-	std::this_thread::sleep_for( std::chrono::seconds( 1 ) );	// Wake up the booster.
 
 	CLR_LINE;
 

@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: SEND_REG.CPP $
- * Path:                 $Logfile: /NMRA/SRC/SEND/SEND_REG.CPP $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 28 $
- * Last Modified on:     $Modtime: 8/30/23 6:55p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 9/12/23 6:44p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	send_reg.cpp	-	Send_reg class methods.
