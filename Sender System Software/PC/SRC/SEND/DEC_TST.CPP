@@ -2513,8 +2513,6 @@ Dec_tst::decoder_margin_1( void )
 	u_int			f_cnt;					// Fail count from quick_ames.
 	u_int			margin_pre;				// Preamble count for margin test.
 
-	tclk0t		=	DECODER_0T_NOM;
-	tclk0h		=	DECODER_0H_NOM;
 	margin_pre	=	BEST_PRE + Args.get_extra_preamble();
 
 	CLR_LINE;
@@ -2524,6 +2522,8 @@ Dec_tst::decoder_margin_1( void )
 	/*
 	 *	Verify nominal timing before searching for the margin.
 	 */
+	tclk0t	=	DECODER_0T_NOM;
+	tclk0h	=	DECODER_0H_NOM;
 	tclk1t	=	DECODER_1T_NOM;
 	f_cnt	=	0;
 	if ( quick_ames(	f_cnt, "Nominal 1T:",
@@ -2658,7 +2658,6 @@ Dec_tst::decoder_duty_1( void )
 	u_int			f_cnt;					// Fail count from quick_ames.
 	u_int			margin_pre;				// Preamble count for margin test.
 
-	tclk0t		=	DECODER_0T_NOM;
 	margin_pre	=	BEST_PRE + Args.get_extra_preamble();
 
 	CLR_LINE;
@@ -2670,6 +2669,7 @@ Dec_tst::decoder_duty_1( void )
 	 */
 	tclk1t	=	DECODER_1T_NOM;
 	tclk1h	=	DECODER_1H_NOM;
+	tclk0t	=	DECODER_0T_NOM;
 	f_cnt	=	0;
 	if ( quick_ames(	f_cnt, "Nominal 1 Duty:",
 						tclk1t, tclk1h, tclk0t, margin_pre, true, 2 )
@@ -2803,7 +2803,6 @@ Dec_tst::quick_ames(
 	int				pass_cnt )				// Pass count; 0 uses configured.
 {
 	int				i;			  			// Index variable.
-	int				j;						// Index variable.
 	int				cycles = ( pass_cnt > 0 ) ? pass_cnt : PERCENT100;
 	Rslt_t			retval = OK;			// Return value.
 	bool			pre_fail;	  			// Preset failed.
@@ -2822,15 +2821,11 @@ Dec_tst::quick_ames(
 	if ( swap_0_1 )
 	{
 		Dcc_reg.set_swap_0_1( true );
-//		calc_filler( tclk1t, tclk0t );
 	}
 	else
 	{
 		Dcc_reg.set_swap_0_1( false );
-//		calc_filler( tclk0t, tclk1t );
 	}
-
-//	fsoc_send( "quick_ames() initialization" );
 
 	CLR_LINE;
 
@@ -2856,6 +2851,9 @@ Dec_tst::quick_ames(
 		fsoc_send( "quick_ames() loop" );
 
 		put_preset_pkt( dcc_bits, Args.get_decoder_address(), margin_pre, true );
+		dcc_bits.done();
+		Dcc_reg.send_pkt( dcc_bits, "Send preset function packet." );
+		Dcc_reg.pkt_gap();
 
 		if (!Dcc_reg.get_gen_fb( Args.get_decoder_type() ))
 		{
@@ -2863,6 +2861,9 @@ Dec_tst::quick_ames(
 		}
 
 		put_trigger_pkt( dcc_bits, Args.get_decoder_address(), margin_pre, true );
+		dcc_bits.done();
+		Dcc_reg.send_pkt( dcc_bits, "Send trigger function packet." );
+		Dcc_reg.pkt_gap();
 
 		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
@@ -4259,20 +4260,15 @@ Dec_tst::put_preset_pkt(
 	}
 	else if ( Args.get_decoder_type() == DEC_FUNC )
 	{
-		Bits	pkt_bits( 256 );				// Scratch for each sent packet.
-
 		// Loco speed 0 packet, always sent first; direction follows LAMP.
-		pkt_bits.put_cmd_pkt_28( addr, !Args.get_lamp_rear(), 0, pre_cnt );
-		pkt_bits.done();
-		Dcc_reg.send_pkt( pkt_bits, "Send preset loco packet." );
+		bits.put_cmd_pkt_28( addr, !Args.get_lamp_rear(), 0, pre_cnt );
+		bits.done();
+		Dcc_reg.send_pkt( bits, "Send preset loco packet." );
 		Dcc_reg.pkt_gap();
 
 		// Function packet.
-		pkt_bits.clr_in();
-		pkt_bits.put_func_grp_pkt( addr, GRP_1, Args.get_func_mask(), pre_cnt );
-		pkt_bits.done();
-		Dcc_reg.send_pkt( pkt_bits, "Send preset function packet." );
-//		Dcc_reg.pkt_gap();
+		bits.clr_in();
+		bits.put_func_grp_pkt( addr, GRP_1, Args.get_func_mask(), pre_cnt );
 	}
 	else if ( sig_ok && Args.get_decoder_type() == DEC_SIG )
 	{
@@ -4282,7 +4278,6 @@ Dec_tst::put_preset_pkt(
 	{
 		bits.put_acc_pkt( addr, true, ACC_PRE, pre_cnt );
 	}
-	Dcc_reg.pkt_gap();
 }
 
 
@@ -4314,14 +4309,9 @@ Dec_tst::put_trigger_pkt(
 	}
 	else if ( Args.get_decoder_type() == DEC_FUNC )
 	{
-		Bits	pkt_bits( 256 );				// Scratch for each sent packet.
-
 		// Function packet.
-		pkt_bits.clr_in();
-		pkt_bits.put_func_grp_pkt( addr, GRP_1, 0, pre_cnt );
-		pkt_bits.done();
-		Dcc_reg.send_pkt( pkt_bits, "Send preset function packet." );
-//		Dcc_reg.pkt_gap();
+		bits.clr_in();
+		bits.put_func_grp_pkt( addr, GRP_1, 0, pre_cnt );
 	}
 	else if ( sig_ok && Args.get_decoder_type() == DEC_SIG )
 	{
@@ -4331,7 +4321,6 @@ Dec_tst::put_trigger_pkt(
 	{
 		bits.put_acc_pkt( addr, true, ACC_TRG, pre_cnt );
 	}
-	Dcc_reg.pkt_gap();
 }
 
 
