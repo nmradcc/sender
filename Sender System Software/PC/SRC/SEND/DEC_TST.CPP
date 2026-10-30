@@ -2106,7 +2106,6 @@ Dec_tst::decoder_bad_addr(
 	{
 		dcc_bits3.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 		dcc_bits3.put_func_grp_pkt( Args.get_decoder_address(), GRP_1, 0, pre_cnt );
-		dcc_bits3.put_idle_pkt( BEST_IDLE );
 		dcc_bits3.put_1s(1).done();
 		
 		rst_msg = "Send bad address fuction reset packet.";
@@ -2116,7 +2115,6 @@ Dec_tst::decoder_bad_addr(
 		dcc_bits3.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 		dcc_bits3.put_acc_pkt( 	Args.get_decoder_address(),
 								true, ACC_TRG, pre_cnt );
-		dcc_bits3.put_idle_pkt( BEST_IDLE );
 		dcc_bits3.put_1s(1).done();
 		
 		rst_msg = "Send bad address accessory reset packet.";
@@ -2130,7 +2128,6 @@ Dec_tst::decoder_bad_addr(
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 	put_preset_pkt( dcc_bits, Args.get_decoder_address(), pre_cnt );
-	dcc_bits.put_idle_pkt( BEST_IDLE );
 	dcc_bits.put_1s(1).done();
 
 	for ( addr = addr_min; addr <= addr_max + 1; addr++ )
@@ -2159,7 +2156,6 @@ Dec_tst::decoder_bad_addr(
 		dcc_bits2.clr_in();
 		dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 		put_trigger_pkt( dcc_bits2, send_addr, pre_cnt );
-		dcc_bits2.put_idle_pkt( BEST_IDLE );
 		dcc_bits2.put_1s(1).done();
 
 		/*	Reset the decoder using the appropriate sequence by decoder type.
@@ -2168,36 +2164,27 @@ Dec_tst::decoder_bad_addr(
 		if ( dcc_bits3.get_byte_size() == 0 )	// Send Fail Safe Rst cmd.
 		{
 			Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence." );
-			send_filler();
 		}
 		else									// Send special reset packets.
 		{
-			for ( j = 0; j < pkt_rep_cnt;  j++ )
-			{
-				Dcc_reg.send_pkt( dcc_bits3, rst_msg );
-			}
+			Dcc_reg.send_pkt( dcc_bits3, rst_msg );
 		}
+
+		std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
 		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			rst_fail	=	true;
 		}
 
-		for ( j = 0; j < pkt_rep_cnt;  j++ )		// Send preset command.
-		{
-			Dcc_reg.send_pkt( dcc_bits, "Send bad address preset packet." );
-		}
+		Dcc_reg.send_pkt( dcc_bits, "Send bad address preset packet." );
 
 		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			pre_fail	=	true;
 		}
 
-		for ( j = 0; j < pkt_rep_cnt; j++ )			// Send test command.
-		{
-        	Dcc_reg.set_scope( true );
-			Dcc_reg.send_pkt( dcc_bits2, "Send bad address trigger packet." );
-		}
+		Dcc_reg.send_pkt( dcc_bits2, "Send bad address trigger packet." );
 
 		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) != ( send_addr ==
 								Args.get_decoder_address() ? true : false) )
@@ -2257,7 +2244,6 @@ Dec_tst::decoder_bad_bit(
 	const char		*my_name = "Bad bit";
 	const char		*tst_name = "Bad bit:"; // Test name.
 	int				i;			  			// Index variable.
-	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
@@ -2392,7 +2378,7 @@ Dec_tst::decoder_bad_bit(
 			Dcc_reg.send_pkt( dcc_bits3, rst_msg );
 		}
 
-		std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+		std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
 		if ( Dcc_reg.get_gen_fb( decoder_type ) )
 		{
@@ -2921,7 +2907,6 @@ Dec_tst::decoder_truncate(
 {
 	const char		*my_name = "Trunc";
 	int				i;			  			// Index variable.
-	int				j;						// Index variable.
 	int				bit_size;				// Present truncated bit size.
 	BYTE			t_addr;					// Truncated address.
 	BYTE			t_cmd;					// Truncated command.
@@ -2973,7 +2958,6 @@ Dec_tst::decoder_truncate(
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 	put_preset_pkt( dcc_bits, Args.get_decoder_address(), BEST_PRE );
-	dcc_bits.put_idle_pkt( BEST_IDLE );
 	dcc_bits.put_1s(1).done();
 
 	for ( test_pre = BEST_PRE; test_pre <= BEST_PRE + 4; test_pre++ )
@@ -3015,7 +2999,6 @@ Dec_tst::decoder_truncate(
 			*	set accessory decoder to the normal position.
 			*/
 			put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), test_pre );
-			dcc_bits2.put_idle_pkt( BEST_IDLE );
 			dcc_bits2.put_1s(1).done();
 
 			for ( i = 0; i < test_repeats; i++ )
@@ -3029,42 +3012,17 @@ Dec_tst::decoder_truncate(
 					i+1, t_stat.get_f_cnt() );
 
 				fsoc_send( "decoder_truncate() loop" );
-				for ( j = 0; j < pkt_rep_cnt;  j++ )	// Preset reverse.
-				{
-					Dcc_reg.send_pkt( dcc_bits, "Send truncate test preset." );
-				}
+				Dcc_reg.send_pkt( dcc_bits, "Send truncate test preset." );
 
 				if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
 					pre_fail	=	true;
 				}
 
-				/*
-				* Send a scope trigger at start of trigger packet
-				* if the normal (early) scope trigger is desired.
-				*/
-				if ( Args.get_late_scope() != true )
-				{
-					Dcc_reg.set_scope( true );
-				}
-
 				Dcc_reg.send_pkt( dcc_bits2,		// Attempt emergency stop.
 					"Send truncate trigger packet." );
-
-				/*
-				* The following code sends another idle filler, turns
-				* on the scope trigger, and then sends one second of
-				* idle filler.  This results in scope trigger starting 2
-				* idles after the trigger command.
-				*/
-				Dcc_reg.send_idle();	 			// Send one idle space.
-
-				if ( Args.get_late_scope() == true )
-				{
-					Dcc_reg.set_scope( true );
-				}
 			
-				send_filler();			 			// Send filler.
+				std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
 				if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
@@ -3135,7 +3093,6 @@ Dec_tst::decoder_prior(
 {
 	const char		*my_name = "Prior";
 	int				i;			  			// Index variable.
-	int				j;						// Index variable.
 	u_int			chk_msk;				// Checksum mask.
 	BYTE			t_chk_byte;				// Check byte.
 	int				one_cnt;				// Count of 1s to add after pkt.
@@ -3187,7 +3144,6 @@ Dec_tst::decoder_prior(
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 	put_preset_pkt( dcc_bits, Args.get_decoder_address(), BEST_PRE );
-	dcc_bits.put_idle_pkt( BEST_IDLE );
 	dcc_bits.put_1s(1).done();
 
 	for ( chk_msk = 0; chk_msk <= 0xff; chk_msk = (chk_msk << 1) | 0x01 )
@@ -3247,7 +3203,6 @@ Dec_tst::decoder_prior(
 			 *	set accessory decoder to the normal position.
 			 */
 			 put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), pre_bits );
-			 dcc_bits2.put_idle_pkt( BEST_IDLE );
 			 dcc_bits2.put_1s(1).done();
 
 			 snprintf( m_tst_name, sizeof( m_tst_name ), "<%02x %02x %02x>%1s %1s<pre %2d>",
@@ -3266,43 +3221,18 @@ Dec_tst::decoder_prior(
 					i+1, t_stat.get_f_cnt() );
 
 				fsoc_send( "decoder_prior() loop" );
-				for ( j = 0; j < pkt_rep_cnt;  j++ )	// Preset.
-				{
-					Dcc_reg.send_pkt( dcc_bits,
-						"Send prior packet preset." );
-				}
+				Dcc_reg.send_pkt( dcc_bits,
+					"Send prior packet preset." );
 
 				if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
 					pre_fail	=	true;
 				}
 
-				/*
-				 * Send a scope trigger at start of trigger packet
-				 * if the normal (early) scope trigger is desired.
-				 */
-				if ( Args.get_late_scope() != true )
-				{
-						Dcc_reg.set_scope( true );
-				}
-
 				Dcc_reg.send_pkt( dcc_bits2,			// Trigger.
 					"Send prior packet trigger." );
 
-				/*
-				 * The following code sends another idle filler, turns
-				 * on the scope trigger, and then sends one second of
-				 * idle filler.  This results in scope trigger starting
-				 * 2 idles after the trigger command.
-				 */
-				Dcc_reg.send_idle();		  	// Send one idle space.
-
-				if ( Args.get_late_scope() == true )
-				{
-					Dcc_reg.set_scope( true );
-				}
-
-				send_filler();				  	// Send filler.
+				std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
 				if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
@@ -3383,7 +3313,6 @@ Dec_tst::decoder_6_byte(
 {
 	const char		*my_name = "6 Byte";
 	int				i;			  			// Index variable.
-	int				j;						// Index variable.
 	BYTE			t_chk_byte;				// Check byte.
 	int				cmd_id;					// Command id.
 	int				one_cnt;				// Count of 1s to add after pkt.
@@ -3438,7 +3367,6 @@ Dec_tst::decoder_6_byte(
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 	put_preset_pkt( dcc_bits, Args.get_decoder_address(), BEST_PRE );
-	dcc_bits.put_idle_pkt( BEST_IDLE );
 	dcc_bits.put_1s(1).done();
 
 	for ( cmd_id = 0; cmd_id <= 2; cmd_id++ )
@@ -3490,7 +3418,6 @@ Dec_tst::decoder_6_byte(
 			 *	set accessory decoder to the normal position.
 			 */
 			 put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), pre_bits );
-			 dcc_bits2.put_idle_pkt( BEST_IDLE );
 			 dcc_bits2.put_1s(1).done();
 
 			 snprintf( m_tst_name, sizeof( m_tst_name ),
@@ -3510,43 +3437,18 @@ Dec_tst::decoder_6_byte(
 					i+1, t_stat.get_f_cnt() );
 
 				fsoc_send( "decoder_6_byte() loop" );
-				for ( j = 0; j < pkt_rep_cnt;  j++ )	// Preset.
-				{
-					Dcc_reg.send_pkt( dcc_bits,
-						"Send 6 byte prior packet preset." );
-				}
+				Dcc_reg.send_pkt( dcc_bits,
+					"Send 6 byte prior packet preset." );
 
 				if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
 					pre_fail	=	true;
 				}
 
-				/*
-				 * Send a scope trigger at start of trigger packet
-				 * if the normal (early) scope trigger is desired.
-				 */
-				if ( Args.get_late_scope() != true )
-				{
-						Dcc_reg.set_scope( true );
-				}
-
 				Dcc_reg.send_pkt( dcc_bits2,			// Trigger.
 					"Send 6 byte prior packet trigger." );
 
-				/*
-				 * The following code sends another idle filler, turns
-				 * on the scope trigger, and then sends one second of
-				 * idle filler.  This results in scope trigger starting
-				 * 2 idles after the trigger command.
-				 */
-				Dcc_reg.send_idle();		  	// Send one idle space.
-
-				if ( Args.get_late_scope() == true )
-				{
-					Dcc_reg.set_scope( true );
-				}
-
-				send_filler();				  	// Send filler.
+				std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
 				if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 				{
