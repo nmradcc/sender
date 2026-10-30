@@ -2292,7 +2292,6 @@ Dec_tst::decoder_bad_bit(
 	{
 		dcc_bits3.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 		dcc_bits3.put_func_grp_pkt( Args.get_decoder_address(), GRP_1, 0, pre_cnt );
-		dcc_bits3.put_idle_pkt( BEST_IDLE );
 		dcc_bits3.put_1s(1).done();
 		
 		rst_msg = "Send bad bit function reset packet.";
@@ -2302,7 +2301,6 @@ Dec_tst::decoder_bad_bit(
 		dcc_bits3.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 		dcc_bits3.put_acc_pkt( 	Args.get_decoder_address(),
 								true, ACC_TRG, pre_cnt );
-		dcc_bits3.put_idle_pkt( BEST_IDLE );
 		dcc_bits3.put_1s(1).done();
 		
 		rst_msg = "Send bad bit accessory reset packet.";
@@ -2330,7 +2328,6 @@ Dec_tst::decoder_bad_bit(
 		dcc_bits.put_acc_pkt(		Args.get_decoder_address(),
 									true, ACC_PRE, pre_cnt );
 	}
-	dcc_bits.put_idle_pkt( BEST_IDLE );
 	dcc_bits.put_1s(1).done();
 
 	/*
@@ -2352,7 +2349,6 @@ Dec_tst::decoder_bad_bit(
 		dcc_bits2.put_acc_pkt(		Args.get_decoder_address(),
 									true, ACC_TRG, pre_cnt );
 	}
-	dcc_bits2.put_idle_pkt( BEST_IDLE );
 	dcc_bits2.put_1s(1).done();
 
     /*	Loop through and flip each bit.  Note: skip the first PRE_SKIP_BITS
@@ -2390,36 +2386,27 @@ Dec_tst::decoder_bad_bit(
 		if ( dcc_bits3.get_byte_size() == 0 )	// Send fsoc sequence.
 		{
 			Dcc_reg.send_pkt( fsoc, "Reset decoder using fsoc sequence." );
-			send_filler();
 		}
 		else									// Send special reset packets.
 		{
-			for ( j = 0; j < pkt_rep_cnt;  j++ )
-			{
-				Dcc_reg.send_pkt( dcc_bits3, rst_msg );
-			}
+			Dcc_reg.send_pkt( dcc_bits3, rst_msg );
 		}
+
+		std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
 
 		if ( Dcc_reg.get_gen_fb( decoder_type ) )
 		{
 			rst_fail	=	true;
 		}
 
-		for ( j = 0; j < pkt_rep_cnt;  j++ )		// Send preset packet.
-		{
-			Dcc_reg.send_pkt( dcc_bits, "Send bad bit preset packet." );
-		}
+		Dcc_reg.send_pkt( dcc_bits, "Send bad bit preset packet." );
 
 		if ( !Dcc_reg.get_gen_fb( decoder_type ) )
 		{
 			pre_fail	=	true;
 		}
 
-		for ( j = 0; j < pkt_rep_cnt; j++ )		 	// Send test packet.
-		{
-            Dcc_reg.set_scope( true );
-			Dcc_reg.send_pkt( dcc_bits2, "Send bad bit trigger packet." );
-		}
+		Dcc_reg.send_pkt( dcc_bits2, "Send bad bit trigger packet." );
 
 		if ( !Dcc_reg.get_gen_fb( decoder_type ) != (i == last_bit ? true : false) )
 		{
