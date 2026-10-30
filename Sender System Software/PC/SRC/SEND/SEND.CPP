@@ -25,7 +25,6 @@
 #include "args.h"							// Includes send.h
 #include "send_reg.h"
 #include "dec_tst.h"
-#include <func_pkt.h>
 #include "SENDER_HW_MCU_USB.H"
 
 #include <cksum.h>
@@ -1626,10 +1625,23 @@ Key_val			init_key )					// Initial key value.
 				case SEND_DCC:				// Repeat the DCC packet.
 					if ( Args.get_decoder_type() == DEC_FUNC )
 					{
-						Func_pkt::send( Dcc_reg, Dcc_bits, Args.get_func_pkt_cfg(),
-										Args.get_decoder_address(), GRP_1,
-										fw ? Args.get_func_mask() : 0,
-										"SEND_DCC Send pkt." );
+						const BYTE	func_bits = fw ? Args.get_func_mask() : 0;
+						const bool	trig_rev = Args.get_trig_rev();
+						const bool	loco_fw = trig_rev
+							? ( ( func_bits != 0 ) != Args.get_lamp_rear() )
+							: !Args.get_lamp_rear();
+
+						Dcc_bits.clr_in();
+						Dcc_bits.put_cmd_pkt_28( Args.get_decoder_address(),
+												loco_fw, 0 );
+						Dcc_bits.done();
+						Dcc_reg.send_pkt( Dcc_bits, "SEND_DCC Send pkt." );
+
+						Dcc_bits.clr_in();
+						Dcc_bits.put_func_grp_pkt( Args.get_decoder_address(),
+							GRP_1, trig_rev ? Args.get_func_mask() : func_bits );
+						Dcc_bits.done();
+						Dcc_reg.send_pkt( Dcc_bits, "SEND_DCC Send pkt." );
 					}
 					else
 					{
@@ -1682,8 +1694,8 @@ Key_val			init_key )					// Initial key value.
                     	Dcc_bits.put_cmd_pkt_28( 	Args.get_decoder_address(),
                         							!Args.get_lamp_rear(), 0 );
                     	Dcc_bits.put_idle_pkt( 5 );
-                        Func_pkt::put_final_pkt( Dcc_bits, Args.get_func_pkt_cfg(), Args.get_decoder_address(),
-                        	GRP_1, fw ? Args.get_func_mask() : 0);
+                        Dcc_bits.put_func_grp_pkt( Args.get_decoder_address(),
+                        	GRP_1, fw ? Args.get_func_mask() : 0 );
                     }
                     else if ( Args.get_decoder_type() == DEC_SIG )
                     {

@@ -9,7 +9,7 @@
 #include "dec_tst.h"
 #include "args.h"
 #include "send_reg.h"
-#include <func_pkt.h>
+#include <bits.h>
 #include <conio.h>
 #include <string.h>
 #include <chrono>
@@ -819,9 +819,17 @@ Dec_tst::decoder_test(
 			           2, fwd ? "Fwd" : "Rev" );
 			for ( i = 0; i < 2; i++ )
 			{
-				Func_pkt::send( Dcc_reg, dcc_bits, Args.get_func_pkt_cfg(),
-								Args.get_decoder_address(), GRP_1,
-								Args.get_func_mask(), func_msg, BEST_PRE );
+				dcc_bits.clr_in();
+				dcc_bits.put_cmd_pkt_28( Args.get_decoder_address(),
+										!Args.get_lamp_rear(), 0, BEST_PRE );
+				dcc_bits.done();
+				Dcc_reg.send_pkt( dcc_bits, func_msg );
+
+				dcc_bits.clr_in();
+				dcc_bits.put_func_grp_pkt( Args.get_decoder_address(), GRP_1,
+										Args.get_func_mask(), BEST_PRE );
+				dcc_bits.done();
+				Dcc_reg.send_pkt( dcc_bits, func_msg );
 			}
 		}
 
@@ -2097,8 +2105,7 @@ Dec_tst::decoder_bad_addr(
 	if ( Args.get_decoder_type() == DEC_FUNC )
 	{
 		dcc_bits3.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-		Func_pkt::put_final_pkt( dcc_bits3, Args.get_func_pkt_cfg(), Args.get_decoder_address(),
-									GRP_1, 0, pre_cnt );
+		dcc_bits3.put_func_grp_pkt( Args.get_decoder_address(), GRP_1, 0, pre_cnt );
 		dcc_bits3.put_idle_pkt( BEST_IDLE );
 		dcc_bits3.put_1s(1).done();
 		
@@ -2284,8 +2291,7 @@ Dec_tst::decoder_bad_bit(
 	if ( decoder_type == DEC_FUNC )
 	{
 		dcc_bits3.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-		Func_pkt::put_final_pkt( dcc_bits3, Args.get_func_pkt_cfg(), Args.get_decoder_address(),
-									GRP_1, 0, pre_cnt );
+		dcc_bits3.put_func_grp_pkt( Args.get_decoder_address(), GRP_1, 0, pre_cnt );
 		dcc_bits3.put_idle_pkt( BEST_IDLE );
 		dcc_bits3.put_1s(1).done();
 		
@@ -2316,8 +2322,8 @@ Dec_tst::decoder_bad_bit(
 	}
 	else if ( decoder_type == DEC_FUNC )
 	{
-		Func_pkt::put_final_pkt( dcc_bits, Args.get_func_pkt_cfg(), Args.get_decoder_address(),
-									GRP_1, Args.get_func_mask(), pre_cnt );
+		dcc_bits.put_func_grp_pkt( Args.get_decoder_address(), GRP_1,
+									Args.get_func_mask(), pre_cnt );
 	}
 	else // Accessory decoder.
 	{
@@ -2339,8 +2345,7 @@ Dec_tst::decoder_bad_bit(
 	}
 	else if ( decoder_type == DEC_FUNC )
 	{
-		Func_pkt::put_final_pkt( dcc_bits2, Args.get_func_pkt_cfg(), Args.get_decoder_address(),
-									GRP_1, 0, pre_cnt );
+		dcc_bits2.put_func_grp_pkt( Args.get_decoder_address(), GRP_1, 0, pre_cnt );
 	}
 	else // Accessory decoder.
 	{
