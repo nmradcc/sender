@@ -80,7 +80,7 @@ Func_pkt::put_pkt(
  *	DESCRIPTION
  *
  *		send() builds each packet of the sequence in 'bits' and sends it
- *		with 'reg'. Dcc_reg.pkt_gap() is called between packets.
+ *		with 'reg'. send_pkt() supplies the packet gap after each packet.
  */
 /*--------------------------------------------------------------------------*/
 
@@ -106,11 +106,6 @@ Func_pkt::send(
 		if ( reg.send_pkt( bits, info ) != OK )
 		{
 			return ( false );
-		}
-
-		if ( i + 1 < count )
-		{
-			reg.pkt_gap();
 		}
 	}
 

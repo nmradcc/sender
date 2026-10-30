@@ -882,6 +882,7 @@ Send_reg::send_pkt(
 			clr_err_cnt();
 			b_cnt	+= isize;
 			++p_cnt;
+			pkt_gap();
 			return ( OK );
 		}
 
@@ -941,6 +942,7 @@ Send_reg::send_pkt(
 	clr_err_cnt();
 	b_cnt	+= isize;
 	++p_cnt;
+	pkt_gap();
 	return ( OK );
 }
 
@@ -1000,6 +1002,7 @@ Send_reg::send_pkt(
 			clr_err_cnt();
 			b_cnt	+= pkt_size;
 			++p_cnt;
+			pkt_gap();
 			return ( OK );
 		}
 
@@ -1067,6 +1070,7 @@ Send_reg::send_pkt(
 	clr_err_cnt();
 	b_cnt	+= pkt_size;
 	++p_cnt;
+	pkt_gap();
 	return ( OK );
 }
 

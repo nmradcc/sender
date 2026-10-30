@@ -1655,7 +1655,6 @@ Key_val			init_key )					// Initial key value.
 
 						Dcc_reg.send_pkt( Dcc_bits, "SEND_DCC Send pkt." );
 					}
-					Dcc_reg.pkt_gap();
 
 					if ( gen_after_pending )	// Once per d or f command.
 					{

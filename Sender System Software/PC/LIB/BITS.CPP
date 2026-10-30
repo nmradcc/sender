@@ -429,6 +429,12 @@ Bits &
 Bits::put_1s(
 	u_int			count )					// Count of 1 bits to add.
 {
+	if ( in_byte > last_byte )				// Array is full.
+	{
+		SET_ERROR( RANGE_OBJ_WARN );
+		return ( *this );
+	}
+
 	/*
 	 *	Fill in any bits in present Byte.
 	 */
@@ -501,6 +507,12 @@ Bits &
 Bits::put_0s(
 	u_int			count )					// Count of 0 bits to add.
 {
+	if ( in_byte > last_byte )				// Array is full.
+	{
+		SET_ERROR( RANGE_OBJ_WARN );
+		return ( *this );
+	}
+
 	/*
 	 *	Clear any bits in present Byte.
 	 */

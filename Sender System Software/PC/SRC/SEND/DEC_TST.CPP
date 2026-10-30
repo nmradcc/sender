@@ -822,7 +822,6 @@ Dec_tst::decoder_test(
 				Func_pkt::send( Dcc_reg, dcc_bits, Args.get_func_pkt_cfg(),
 								Args.get_decoder_address(), GRP_1,
 								Args.get_func_mask(), func_msg, BEST_PRE );
-				Dcc_reg.pkt_gap();
 			}
 		}
 
@@ -1263,15 +1262,19 @@ Dec_tst::decoder_ramp(
 			{
 		 		dcc_bits.put_cmd_pkt_28(	Args.get_decoder_address(),
 		 									fw, speed, pre_cnt );
-		 		dcc_bits.put_idle_pkt( BEST_IDLE );
 		 	}
 		 	dcc_bits.put_1s(1).done();
-
-            Dcc_reg.set_scope( true );
-
 		 	Dcc_reg.send_pkt( dcc_bits, "Send loco ramp test packet." );
+//		 	std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+			if ( Args.get_decoder_type() == DEC_LOCO )
+			{
+				for ( int g = 0; g < 5; g++ )	// Let the loco decoder speed settle.
+				{
+					Dcc_reg.pkt_gap();
+				}
+			}
 
-		 	send_filler();
+
 		 	/*
 		 	 *	Test the input only when the decoder is going reverse
 		 	 *	at relatively high speed with an even speed step.
@@ -2786,7 +2789,7 @@ Dec_tst::decoder_duty_1( void )
  *
  *	DESCRIPTION
  *
- *		quick_ames() runs the quick ames test as part of a clock margin test.
+ *		quick_ames() runs the quick ames test as part of a clock margin/duty cycle test.
  *		It returns FAIL if the user types the test break key sequence.
  */
 /*--------------------------------------------------------------------------*/
@@ -2850,20 +2853,28 @@ Dec_tst::quick_ames(
 
 		fsoc_send( "quick_ames() loop" );
 
+		dcc_bits.clr_in();
 		put_preset_pkt( dcc_bits, Args.get_decoder_address(), margin_pre, true );
 		dcc_bits.done();
 		Dcc_reg.send_pkt( dcc_bits, "Send preset function packet." );
-		Dcc_reg.pkt_gap();
+
+		if ( Args.get_decoder_type() == DEC_LOCO )
+		{
+			for ( int g = 0; g < 5; g++ )	// Let the loco decoder speed settle.
+			{
+				Dcc_reg.pkt_gap();
+			}
+		}
 
 		if (!Dcc_reg.get_gen_fb( Args.get_decoder_type() ))
 		{
 			pre_fail	=	true;
 		}
 
+		dcc_bits.clr_in();
 		put_trigger_pkt( dcc_bits, Args.get_decoder_address(), margin_pre, true );
 		dcc_bits.done();
 		Dcc_reg.send_pkt( dcc_bits, "Send trigger function packet." );
-		Dcc_reg.pkt_gap();
 
 		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
@@ -4264,7 +4275,6 @@ Dec_tst::put_preset_pkt(
 		bits.put_cmd_pkt_28( addr, !Args.get_lamp_rear(), 0, pre_cnt );
 		bits.done();
 		Dcc_reg.send_pkt( bits, "Send preset loco packet." );
-		Dcc_reg.pkt_gap();
 
 		// Function packet.
 		bits.clr_in();
