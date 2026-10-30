@@ -1265,7 +1265,6 @@ Dec_tst::decoder_ramp(
 		 	}
 		 	dcc_bits.put_1s(1).done();
 		 	Dcc_reg.send_pkt( dcc_bits, "Send loco ramp test packet." );
-//		 	std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
 			if ( Args.get_decoder_type() == DEC_LOCO )
 			{
 				for ( int g = 0; g < 5; g++ )	// Let the loco decoder speed settle.
@@ -1381,7 +1380,6 @@ Dec_tst::func_ramp(
 
 		const BYTE	func_bits = func == 0 ? 0 : Args.get_func_mask();
 
-        Dcc_reg.set_scope( true );
 		if ( Dcc_reg.get_log_pkts() )
 		{
 			DBGLOG( "Dce_tst::func_ramp() Sending %d function ramp packets.", pkt_rep_cnt );
