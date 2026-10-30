@@ -4259,9 +4259,20 @@ Dec_tst::put_preset_pkt(
 	}
 	else if ( Args.get_decoder_type() == DEC_FUNC )
 	{
-		Func_pkt::send( Dcc_reg, dcc_bits, Args.get_func_pkt_cfg(),
-						Args.get_decoder_address(), GRP_1,
-						Args.get_func_mask(), "Put preset function packets", BEST_PRE );
+		Bits	pkt_bits( 256 );				// Scratch for each sent packet.
+
+		// Loco speed 0 packet, always sent first; direction follows LAMP.
+		pkt_bits.put_cmd_pkt_28( addr, !Args.get_lamp_rear(), 0, pre_cnt );
+		pkt_bits.done();
+		Dcc_reg.send_pkt( pkt_bits, "Send preset loco packet." );
+		Dcc_reg.pkt_gap();
+
+		// Function packet.
+		pkt_bits.clr_in();
+		pkt_bits.put_func_grp_pkt( addr, GRP_1, Args.get_func_mask(), pre_cnt );
+		pkt_bits.done();
+		Dcc_reg.send_pkt( pkt_bits, "Send preset function packet." );
+//		Dcc_reg.pkt_gap();
 	}
 	else if ( sig_ok && Args.get_decoder_type() == DEC_SIG )
 	{
@@ -4303,9 +4314,14 @@ Dec_tst::put_trigger_pkt(
 	}
 	else if ( Args.get_decoder_type() == DEC_FUNC )
 	{
-		Func_pkt::send( Dcc_reg, dcc_bits, Args.get_func_pkt_cfg(),
-						Args.get_decoder_address(), GRP_1,
-						0, "Put trigger function packets", BEST_PRE );
+		Bits	pkt_bits( 256 );				// Scratch for each sent packet.
+
+		// Function packet.
+		pkt_bits.clr_in();
+		pkt_bits.put_func_grp_pkt( addr, GRP_1, 0, pre_cnt );
+		pkt_bits.done();
+		Dcc_reg.send_pkt( pkt_bits, "Send preset function packet." );
+//		Dcc_reg.pkt_gap();
 	}
 	else if ( sig_ok && Args.get_decoder_type() == DEC_SIG )
 	{
