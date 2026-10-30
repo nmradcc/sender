@@ -1361,7 +1361,6 @@ Dec_tst::func_ramp(
 	const char		*my_name = "Func";
 	const char		*tst_name = "Func:";   	// Test name.
 	char ramp_msg[128];
-	int				i;						// Function variable.
     int				func;					// Function state.
 	Rslt_t			retval = OK;	   		// Return value.
 	BYTE			tgen;			  		// Generic input BYTE.
@@ -1380,31 +1379,17 @@ Dec_tst::func_ramp(
 
 		const BYTE	func_bits = func == 0 ? 0 : Args.get_func_mask();
 
-		if ( Dcc_reg.get_log_pkts() )
-		{
-			DBGLOG( "Dce_tst::func_ramp() Sending %d function ramp packets.", pkt_rep_cnt );
-	 		tgen	=	Dcc_reg.get_gen();
-			snprintf( ramp_msg, sizeof( ramp_msg ),
-					"  %-18s Just before send function sequence gen1 %02X",
-				tst_name, tgen );
+		dcc_bits.clr_in();
+		dcc_bits.put_cmd_pkt_28( Args.get_decoder_address(),
+								!Args.get_lamp_rear(), 0, pre_cnt );
+		dcc_bits.done();
+		Dcc_reg.send_pkt( dcc_bits, "Send function ramp loco packet." );
 
-			DBGLOG( "%s() %s", my_name, ramp_msg );
-		}
-	  	for ( i = 0; i < pkt_rep_cnt; i++ )
-	  	{
-			Func_pkt::send( Dcc_reg, dcc_bits, Args.get_func_pkt_cfg(),
-							Args.get_decoder_address(), GRP_1, func_bits,
-							"Send function ramp test packet.", pre_cnt );
-	   	}
-		if ( Dcc_reg.get_log_pkts() )
-		{
-	 		tgen	=	Dcc_reg.get_gen();
-			snprintf( ramp_msg, sizeof( ramp_msg ),
-					"  %-18s Just after send function sequence gen1 %02X",
-				tst_name, tgen );
-
-			DBGLOG( "%s() %s", my_name, ramp_msg );
-		}
+		dcc_bits.clr_in();
+		dcc_bits.put_func_grp_pkt( Args.get_decoder_address(), GRP_1,
+								func_bits, pre_cnt );
+		dcc_bits.done();
+		Dcc_reg.send_pkt( dcc_bits, "Send function ramp test packet." );
 
 	  	/*
 	  	 *	Test the function input to verify it matches the
@@ -1412,6 +1397,7 @@ Dec_tst::func_ramp(
 	 	 */
 	 	t_stat.incr_t_cnt();
 	 	tgen	=	Dcc_reg.get_gen();
+
 	 	if ( (tgen & 0x04) != (func == 1 ? 0x04 : 0) )
 	 	{
 	 		t_stat.incr_f_cnt();
@@ -1420,15 +1406,6 @@ Dec_tst::func_ramp(
 	 			"Test FAILED: Function <%s>",
 	 			func == 0 ? "OFF" : "ON" );
 	 	}
-		if ( Dcc_reg.get_log_pkts() )
-		{
-	 		tgen	=	Dcc_reg.get_gen();
-			snprintf( ramp_msg, sizeof( ramp_msg ),
-					"  %-18s Just after input test gen1 %02X",
-				tst_name, tgen );
-
-			DBGLOG( "%s() %s", my_name, ramp_msg );
-		}
 
 		if ( get_test_break() )
 		{
