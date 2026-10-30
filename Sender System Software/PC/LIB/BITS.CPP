@@ -12,23 +12,12 @@
 #include <stdio.h>
 
 
-// Define DEBUG_LIB to print debug information to stdio.
-//#define DEBUG_LIB
-
 /*
  *	Library version information.
  */
-const BYTE	Bits::ver_major		= 2;		// Major library version.
-const BYTE	Bits::ver_minor		= 1;		// Minor library version.
-const BYTE	Bits::ver_build		= 1;		// Build library version.
-
-/*
- *	Initialize the static member variables.
- */
-bool		Bits::trig_rev		= false;	// Use reverse as trigger cmd.
-bool		Bits::loco_first	= false;	// Put loco pkt + func pkt.
-bool		Bits::lamp_rear		= false;	// Use rear lamp.
-BYTE		Bits::func_mask		= 0x00;		// Function group bit mask.
+const BYTE	Bits::ver_major		= 3;		// Major library version.
+const BYTE	Bits::ver_minor		= 0;		// Minor library version.
+const BYTE	Bits::ver_build		= 0;		// Build library version.
 
 /*
  *	Table of initial shift positions
@@ -202,6 +191,7 @@ Bits::clr_in()
 }
 
 
+
 /*--------------------------------------------------------------------------*/
 /*
  *	NAME
@@ -246,7 +236,9 @@ Bits::get_byte(
  *
  *	DESCRIPTION
  *
- *		put_cmd() adds a 14 step baseline command to the bit array.
+ *		put_cmd_14() adds the 14 step baseline command byte to the bit array.
+ *		This is a packet fragment, not a complete packet. Use
+ *		put_cmd_pkt_14() to build a complete packet.
  */
 /*--------------------------------------------------------------------------*/
 
@@ -306,7 +298,9 @@ Bits::put_cmd_14(
  *
  *	DESCRIPTION
  *
- *		put_cmd() adds a 28 step baseline command to the bit array.
+ *		put_cmd_28() adds the 28 step baseline command byte to the bit array.
+ *		This is a packet fragment, not a complete packet. Use
+ *		put_cmd_pkt_28() to build a complete packet.
  */
 /*--------------------------------------------------------------------------*/
 
@@ -356,10 +350,6 @@ Bits::put_cmd_28(
 	cmd	|= CMD_BITS;
 
 	put_byte( cmd );
-
-#ifdef DEBUG_LIB
-    printf( ">> put_cmd_28: cmd %02x.\n", cmd );
-#endif // DEBUG_LIB
 
 	return ( *this );
 }
@@ -577,7 +567,7 @@ Bits::put_0s(
  *	DESCRIPTION
  *
  *		put_fsoc() adds the fail safe operation sequence to the bit array.
- *		It does NOT add the trailing 1 which may be part of the next command.
+ *		The sequence is made of complete packets.
  */
 /*--------------------------------------------------------------------------*/
 
@@ -602,8 +592,7 @@ Bits::put_fsoc( void )
  *	DESCRIPTION
  *
  *		put_reset_pkt() adds 'packets' number of reset packets to the bit
- *		array.
- *		It does NOT add the trailing 1 which may be part of the next command.
+ *		array.  Each packet is complete, including the packet end 1 bit.
  */
 /*--------------------------------------------------------------------------*/
 
@@ -614,7 +603,7 @@ Bits::put_reset_pkt(
 {
 	while ( packets-- > 0 )
 	{
-		put_1s( pre_bits ).put_0s( BASE_BITS - PRE_BITS );
+		put_1s( pre_bits ).put_0s( BASE_BITS - PRE_BITS ).put_1s( 1 );
 	}
 
 	return ( *this );
@@ -634,8 +623,7 @@ Bits::put_reset_pkt(
  *	DESCRIPTION
  *
  *		put_idle_pkt() adds 'packets' number of idle packets to the bit
- *		array.
- *		It does NOT add the trailing 1 which may be part of the next command.
+ *		array.  Each packet is complete, including the packet end 1 bit.
  */
 /*--------------------------------------------------------------------------*/
 
@@ -647,7 +635,7 @@ Bits::put_idle_pkt(
 	while ( packets-- > 0 )
 	{
 		put_1s( pre_bits ).put_0s( 1 ).put_byte( 0xff ).put_0s( 10 );
-		put_byte( 0xff );
+		put_byte( 0xff ).put_1s( 1 );
 	}
 
 	return ( *this );
@@ -667,8 +655,7 @@ Bits::put_idle_pkt(
  *	DESCRIPTION
  *
  *		put_acc_pkt() adds an accessory command packet to the bit
- *		array.
- *		It does NOT add the trailing 1 which may be part of the next command.
+ *		array.  The packet is complete, including the packet end 1 bit.
  */
 /*--------------------------------------------------------------------------*/
 
@@ -692,7 +679,7 @@ Bits::put_acc_pkt(
 
 	clr_check();
 	put_1s( pre_bits ).put_0s( 1 ).put_byte( byte1 ).put_0s( 1 );
-	put_byte( byte2 ).put_0s( 1 ).put_check();
+	put_byte( byte2 ).put_0s( 1 ).put_check().put_1s( 1 );
 
 	return ( *this );
 }
@@ -711,8 +698,7 @@ Bits::put_acc_pkt(
  *	DESCRIPTION
  *
  *		put_sig_pkt() adds an Extended Accessory (signal) packet to the bit
- *		array.
- *		It does NOT add the trailing 1 which may be part of the next command.
+ *		array.  The packet is complete, including the packet end 1 bit.
  */
 /*--------------------------------------------------------------------------*/
 
@@ -747,12 +733,7 @@ Bits::put_sig_pkt(
 
 	clr_check();
 	put_1s( pre_bits ).put_0s( 1 ).put_byte( byte1 ).put_0s( 1 );
-	put_byte( byte2  ).put_0s( 1 ).put_byte( byte3 ).put_0s( 1 ).put_check();
-
-#ifdef DEBUG_LIB
-    printf( ">> put_sig_pkt: Bytes %02x, %02x, %02x, %02x.\n",
-    						byte1, byte2, byte3, byte1 ^ byte2 ^ byte3 );
-#endif // DEBUG_LIB
+	put_byte( byte2  ).put_0s( 1 ).put_byte( byte3 ).put_0s( 1 ).put_check().put_1s( 1 );
 
 	return ( *this );
 }
@@ -772,15 +753,16 @@ Bits::put_sig_pkt(
  *
  *		put_func_grp_pkt() adds a function group command packet to the bit
  *		array.
- *		It does NOT add the trailing 1 which may be part of the next command.
+ *		The packet is complete, including the packet end 1 bit.
  */
 /*--------------------------------------------------------------------------*/
+
 Bits &
 Bits::put_func_grp_pkt(
 	u_short			address,				// Mobile decoder address.
-    enum Func_Grps	func_grp,				// Function group number.
-    BYTE			func_bits,				// Function bits.
-    u_int			pre_bits )				// Preamble bits (default PRE_BITS)
+	enum Func_Grps	func_grp,				// Function group number.
+	BYTE			func_bits,				// Function bits.
+	u_int			pre_bits )				// Preamble bits (default PRE_BITS)
 {
 	BYTE			byte1;					// First command byte.
 
@@ -801,70 +783,9 @@ Bits::put_func_grp_pkt(
 
 	clr_check();
     put_1s( pre_bits ).put_0s( 1 ).put_byte( address ).put_0s( 1 );
-	put_byte( byte1 ).put_0s( 1 ).put_check();
+	put_byte( byte1 ).put_0s( 1 ).put_check().put_1s( 1 );
 
 	return ( *this );
-}
-
-// ..\See NMRA\put_........_pktx Info.txt
-
-/*--------------------------------------------------------------------------*/
-/*
- *	NAME
- *
- *		put_func_grp_pktx()		   			-	Add a loco or function pkt.
- *
- *	RETURN VALUE
- *
- *		this	-	Reference of calling object.
- *
- *	DESCRIPTION
- *
- *		put_func_grp_pktx() adds a loco speed 0 packet to the bit
- *		array if class variable 'trig_rev' is true or adds a
- *      function group packet otherwise. Clss variable 'lamp_rear'
- *		reverses the direction of the speed command if true.
- *		It does NOT add the trailing 1 which may be part of the next command.
- */
-/*--------------------------------------------------------------------------*/
-Bits &
-Bits::put_func_grp_pktx(
-	u_short			address,				// Mobile decoder address.
-    enum Func_Grps	func_grp,				// Function group number.
-    BYTE			func_bits,				// Function bits.
-    u_int			pre_bits )				// Preamble bits (default PRE_BITS)
-{
-	if ( trig_rev == true )
-    {
-		// First put a loco 0 speed packet in the func_bits direction.
-		put_cmd_pkt_28( address, (func_bits != 0) != lamp_rear,
-    					0, pre_bits );
-		// Add a function packet with function bits on.
-		if ( loco_first == true )
-        {
-			put_1s( 1 ).align_1s();			// End bit, pad with 1s to Byte boundary.
-			put_idle_pkt( 1 );
-			put_1s( 1 ).align_1s();			// End bit, pad with 1s to Byte boundary.
-			// Then add a function packet with funcs set by func_mask.
-			put_func_grp_pkt( address, func_grp, func_mask, pre_bits );
-        }
-    }
-    else
-    {
-		if ( loco_first == true )
-		{
-			// First put a loco 0 speed packet in the !lamp_rear direction.
-			put_cmd_pkt_28( address, !lamp_rear,
-							0, pre_bits );
-			put_1s( 1 ).align_1s();			// End bit, pad with 1s to Byte boundary.
-			put_idle_pkt( 1 );
-			put_1s( 1 ).align_1s();			// End bit, pad with 1s to Byte boundary.
-		}
-    	// Then add a function packet with funcs set by func_bits.
-		put_func_grp_pkt( address, func_grp, func_bits, pre_bits );
-    }
-
-	return *this;
 }
 
 
@@ -1003,7 +924,7 @@ Bits::clr_flip( void )
 
 Rslt_t
 Bits::clr_bit(
-	u_int		bit_pos )					// Bit position to blear.
+	u_int		bit_pos )					// Bit position to clear.
 {
 	BYTE		*tmp_clr_byte;				// Temporary Byte to clear.
 	u_int		tmp_clr_bit;				// Temparary bit to clear.
@@ -1079,9 +1000,9 @@ Bits::truncate(
 /*--------------------------------------------------------------------------*/
 
 Fsoc_bits::Fsoc_bits( void )
-: Bits( bits_to_bytes( (30 * BASE_BITS) + 1 ) )
+: Bits( bits_to_bytes( 30 * (BASE_BITS + 1) ) )
 {
-	put_fsoc().put_1s( 1 ).done();
+	put_fsoc().done();
 
 	if ( get_obj_errs() )
 	{
@@ -1110,9 +1031,9 @@ Fsoc_bits::Fsoc_bits( void )
 
 Idle_bits::Idle_bits(
 	u_int			packets )				// Count of idle packets.
-: Bits( bits_to_bytes( (packets * BASE_BITS) + 1 ) )
+: Bits( bits_to_bytes( packets * (BASE_BITS + 1) ) )
 {
-	put_idle_pkt( packets ).put_1s( 1 ).done();
+	put_idle_pkt( packets ).done();
 
 	if ( get_obj_errs() )
 	{

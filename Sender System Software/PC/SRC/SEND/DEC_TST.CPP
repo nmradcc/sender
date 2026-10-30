@@ -9,7 +9,7 @@
 #include "dec_tst.h"
 #include "args.h"
 #include "send_reg.h"
-
+#include <func_pkt.h>
 #include <conio.h>
 #include <string.h>
 #include <chrono>
@@ -812,24 +812,17 @@ Dec_tst::decoder_test(
 						fwd ? "forward" : "reverse" );
 			printf(    "Starting loco %s setup for a function decoder.\n",
 						fwd ? "forward" : "reverse" );
-			dcc_bits.clr_in();
-			dcc_bits.put_cmd_pkt_28(	Args.get_decoder_address(),
-										fwd, 0, BEST_PRE );
-			dcc_bits.put_idle_pkt( 5 );
-			dcc_bits.put_func_grp_pkt(	Args.get_decoder_address(),
-									GRP_1, Args.get_func_mask(), BEST_PRE );
-			dcc_bits.put_idle_pkt( 5 );
-			dcc_bits.put_1s(1).done();
-
 			func_msg	=	fwd ?	"Function decoder, Send Fwd Spd 0."
 								:	"Function decoder, Send Rev Spd 0.";
 								
-			j = Send_reg::fill_cmds_2( 5 * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
 			DBGPRINT( "Sending %d loco %s speed 0 + function on packets.",
-			           j, fwd ? "Fwd" : "Rev" );
-			for ( i = 0; i < j; i++ )
+			           2, fwd ? "Fwd" : "Rev" );
+			for ( i = 0; i < 2; i++ )
 			{
-				Dcc_reg.send_pkt( dcc_bits, func_msg );
+				Func_pkt::send( Dcc_reg, dcc_bits, Args.get_func_pkt_cfg(),
+								Args.get_decoder_address(), GRP_1,
+								Args.get_func_mask(), func_msg, BEST_PRE );
+				Dcc_reg.pkt_gap();
 			}
 		}
 
@@ -1383,13 +1376,7 @@ Dec_tst::func_ramp(
 			func == 0 ? "OFF" : " ON",
 			t_stat.get_f_cnt() );
 
-		dcc_bits.clr_in();
-		// See .\NMRA\put_........_pktx Info.txt
-		dcc_bits.put_func_grp_pktx(	Args.get_decoder_address(),
-	   			 GRP_1, func == 0 ? 0 : Args.get_func_mask(), pre_cnt );
-		dcc_bits.put_1s( 1 ).put_byte( 0x00 );	// Align next packet on Byte boundary.
-		dcc_bits.put_idle_pkt( 1 );
-		dcc_bits.put_1s( 1 ).done();	// Align next packet on Byte boundary.
+		const BYTE	func_bits = func == 0 ? 0 : Args.get_func_mask();
 
         Dcc_reg.set_scope( true );
 		if ( Dcc_reg.get_log_pkts() )
@@ -1404,7 +1391,9 @@ Dec_tst::func_ramp(
 		}
 	  	for ( i = 0; i < pkt_rep_cnt; i++ )
 	  	{
-			Dcc_reg.send_pkt( dcc_bits, "Send function ramp test packet." );
+			Func_pkt::send( Dcc_reg, dcc_bits, Args.get_func_pkt_cfg(),
+							Args.get_decoder_address(), GRP_1, func_bits,
+							"Send function ramp test packet.", pre_cnt );
 	   	}
 		if ( Dcc_reg.get_log_pkts() )
 		{
@@ -1746,14 +1735,14 @@ Dec_tst::decoder_ames(
 	{
 		trig_b1	=	static_cast<BYTE>( Args.get_decoder_address() );
 
-		if ( Bits::get_trig_rev() == true )
+		if ( Args.get_trig_rev() == true )
 		{
-			trig_b2			=	build_cmd_28_byte( Bits::get_lamp_rear(), 0 );
+			trig_b2			=	build_cmd_28_byte( Args.get_lamp_rear(), 0 );
 			trig_pkt_type	=	"func->loco trigger";
 		}
-		else if ( Bits::get_loco_first() == true )
+		else if ( Args.get_loco_first() == true )
 		{
-			trig_b2			=	build_cmd_28_byte( !Bits::get_lamp_rear(), 0 );
+			trig_b2			=	build_cmd_28_byte( !Args.get_lamp_rear(), 0 );
 			trig_pkt_type	=	"func->loco first";
 		}
 		else
@@ -2130,7 +2119,7 @@ Dec_tst::decoder_bad_addr(
 	if ( Args.get_decoder_type() == DEC_FUNC )
 	{
 		dcc_bits3.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-		dcc_bits3.put_func_grp_pktx(	Args.get_decoder_address(),
+		Func_pkt::put_final_pkt( dcc_bits3, Args.get_func_pkt_cfg(), Args.get_decoder_address(),
 									GRP_1, 0, pre_cnt );
 		dcc_bits3.put_idle_pkt( BEST_IDLE );
 		dcc_bits3.put_1s(1).done();
@@ -2317,7 +2306,7 @@ Dec_tst::decoder_bad_bit(
 	if ( decoder_type == DEC_FUNC )
 	{
 		dcc_bits3.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-		dcc_bits3.put_func_grp_pktx(	Args.get_decoder_address(),
+		Func_pkt::put_final_pkt( dcc_bits3, Args.get_func_pkt_cfg(), Args.get_decoder_address(),
 									GRP_1, 0, pre_cnt );
 		dcc_bits3.put_idle_pkt( BEST_IDLE );
 		dcc_bits3.put_1s(1).done();
@@ -2349,7 +2338,7 @@ Dec_tst::decoder_bad_bit(
 	}
 	else if ( decoder_type == DEC_FUNC )
 	{
-		dcc_bits.put_func_grp_pktx(	Args.get_decoder_address(),
+		Func_pkt::put_final_pkt( dcc_bits, Args.get_func_pkt_cfg(), Args.get_decoder_address(),
 									GRP_1, Args.get_func_mask(), pre_cnt );
 	}
 	else // Accessory decoder.
@@ -2372,7 +2361,7 @@ Dec_tst::decoder_bad_bit(
 	}
 	else if ( decoder_type == DEC_FUNC )
 	{
-		dcc_bits2.put_func_grp_pktx(	Args.get_decoder_address(),
+		Func_pkt::put_final_pkt( dcc_bits2, Args.get_func_pkt_cfg(), Args.get_decoder_address(),
 									GRP_1, 0, pre_cnt );
 	}
 	else // Accessory decoder.
@@ -2833,42 +2822,18 @@ Dec_tst::quick_ames(
 	if ( swap_0_1 )
 	{
 		Dcc_reg.set_swap_0_1( true );
-		calc_filler( tclk1t, tclk0t );
+//		calc_filler( tclk1t, tclk0t );
 	}
 	else
 	{
 		Dcc_reg.set_swap_0_1( false );
-		calc_filler( tclk0t, tclk1t );
+//		calc_filler( tclk0t, tclk1t );
 	}
 
-	fsoc_send( "quick_ames() initialization" );
+//	fsoc_send( "quick_ames() initialization" );
 
 	CLR_LINE;
 
-	/*
-	 *	Preset decoder to reverse with lamp on or
-	 *  preset accessory decoder to the reverse position.
-	 */
-	dcc_bits.clr_in();
-	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	put_preset_pkt( dcc_bits, Args.get_decoder_address(), margin_pre, true );
-	dcc_bits.put_1s(1).done();
-
-	/*
-	 *	Set decoder to trigger speed, forward, lamp off or
-	 *  preset accessory decoder to the normal position.
-	 */
-	dcc_bits2.clr_in();
-	dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), margin_pre, true );
-	dcc_bits2.put_1s(1).done();
-
-	/*
-	 *	The MCU streams idle packets between commands, so wait after each
-	 *	packet so the preset repeats are spread over 'fill_usec'.
-	 */
-	const auto		pkt_delay = std::chrono::microseconds(
-									fill_usec / ( pkt_rep_cnt ? pkt_rep_cnt : 1 ) );
 
 	for ( i = 0; i < cycles; i++ )
 	{
@@ -2890,24 +2855,15 @@ Dec_tst::quick_ames(
 
 		fsoc_send( "quick_ames() loop" );
 
-		for ( j = 0; j < pkt_rep_cnt;  j++ )   	// Preset decoder preset.
-		{
-			Dcc_reg.send_pkt( dcc_bits, "Send preset for quick test." );
-			std::this_thread::sleep_for( pkt_delay );
-		}
+		put_preset_pkt( dcc_bits, Args.get_decoder_address(), margin_pre, true );
 
 		if (!Dcc_reg.get_gen_fb( Args.get_decoder_type() ))
 		{
 			pre_fail	=	true;
 		}
 
-		std::this_thread::sleep_for( 5 *pkt_delay );
-		for ( j = 0; j < static_cast<int>( Args.get_extra_trg() ) + 1; j++ )
-		{
-			Dcc_reg.send_pkt( dcc_bits2, "Send trigger for quick test." );
-			std::this_thread::sleep_for( 5 *pkt_delay );
-		}
-		
+		put_trigger_pkt( dcc_bits, Args.get_decoder_address(), margin_pre, true );
+
 		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			trig_fail	=	true;
@@ -4303,8 +4259,9 @@ Dec_tst::put_preset_pkt(
 	}
 	else if ( Args.get_decoder_type() == DEC_FUNC )
 	{
-		// See .\NMRA\put_........_pktx Info.txt
-		bits.put_func_grp_pktx( addr, GRP_1, Args.get_func_mask(), pre_cnt );
+		Func_pkt::send( Dcc_reg, dcc_bits, Args.get_func_pkt_cfg(),
+						Args.get_decoder_address(), GRP_1,
+						Args.get_func_mask(), "Put preset function packets", BEST_PRE );
 	}
 	else if ( sig_ok && Args.get_decoder_type() == DEC_SIG )
 	{
@@ -4314,6 +4271,7 @@ Dec_tst::put_preset_pkt(
 	{
 		bits.put_acc_pkt( addr, true, ACC_PRE, pre_cnt );
 	}
+	Dcc_reg.pkt_gap();
 }
 
 
@@ -4345,7 +4303,9 @@ Dec_tst::put_trigger_pkt(
 	}
 	else if ( Args.get_decoder_type() == DEC_FUNC )
 	{
-		bits.put_func_grp_pktx( addr, GRP_1, 0, pre_cnt );
+		Func_pkt::send( Dcc_reg, dcc_bits, Args.get_func_pkt_cfg(),
+						Args.get_decoder_address(), GRP_1,
+						0, "Put trigger function packets", BEST_PRE );
 	}
 	else if ( sig_ok && Args.get_decoder_type() == DEC_SIG )
 	{
@@ -4355,6 +4315,7 @@ Dec_tst::put_trigger_pkt(
 	{
 		bits.put_acc_pkt( addr, true, ACC_TRG, pre_cnt );
 	}
+	Dcc_reg.pkt_gap();
 }
 
 

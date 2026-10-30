@@ -278,126 +278,126 @@ main( void )
 			break;
 
 		case  4:	// High level Reset
-			my_bits.put_reset_pkt( 1 ).put_1s( 1 ).done();
+			my_bits.put_reset_pkt( 1 ).done();
 			break;
 
 		case  5:	// High level Idle
-			my_bits.put_idle_pkt( 1 ).put_1s( 1 ).done();
+			my_bits.put_idle_pkt( 1 ).done();
 			break;
 
 		case  6:	// High level 14 step Baseline
-			my_bits.put_cmd_pkt_14( 0x03, true, false, 6 ).put_1s( 1 ).done();
+			my_bits.put_cmd_pkt_14( 0x03, true, false, 6 ).done();
 			break;
 
 		case  7:	// High level 14 step Baseline
-			my_bits.put_cmd_pkt_14( 0x03, true, true, 6 ).put_1s( 1 ).done();
+			my_bits.put_cmd_pkt_14( 0x03, true, true, 6 ).done();
 			break;
 
 		case  8:	// SP_MIN 14 step Baseline
 			my_bits.put_cmd_pkt_14( 0x03, true, false, SP_MIN );
-			my_bits.put_1s( 1 ).done();
+						my_bits.done();
 			break;
 
 		case  9:	// SP_MAX 14 step Baseline
 			my_bits.put_cmd_pkt_14( 0x03, true, false, SP_14_MAX );
-			my_bits.put_1s( 1 ).done();
+						my_bits.done();
 			break;
 
 		case  10:	// SP_E_STOP 14 step Baseline
 			my_bits.put_cmd_pkt_14( 0x03, true, false, SP_E_STOP );
-			my_bits.put_1s( 1 ).done();
+						my_bits.done();
 			break;
 
 		case  11:	// High level 28 step Baseline
-			my_bits.put_cmd_pkt_28( 0x03, true, 6 ).put_1s( 1 ).done();
+			my_bits.put_cmd_pkt_28( 0x03, true, 6 ).done();
 			break;
 
 		case  12:	// SP_MIN 28 step Baseline
 			my_bits.put_cmd_pkt_28( 0x03, true, SP_MIN );
-			my_bits.put_1s( 1 ).done();
+						my_bits.done();
 			break;
 
 		case  13:	// SP_MAX 28 step Baseline
 			my_bits.put_cmd_pkt_28( 0x03, true, SP_28_MAX );
-			my_bits.put_1s( 1 ).done();
+						my_bits.done();
 			break;
 
 		case  14:	// SP_E_STOP 28 step Baseline
 			my_bits.put_cmd_pkt_28( 0x03, true, SP_E_STOP );
-			my_bits.put_1s( 1 ).done();
+						my_bits.done();
 			break;
 
 		case  15:	// SP_E_STOP_I 28 step Baseline
 			my_bits.put_cmd_pkt_28( 0x03, true, SP_E_STOP_I );
-			my_bits.put_1s( 1 ).done();
+						my_bits.done();
 			break;
 
 		case  16:	// Odd speed step 1 28 step Baseline
 			my_bits.put_cmd_pkt_28( 0x03, true, 1 );
-			my_bits.put_1s( 1 ).done();
+						my_bits.done();
 			break;
 
 		case  17:	// Odd speed step 15 28 step Baseline
 			my_bits.put_cmd_pkt_28( 0x03, true, 15 );
-			my_bits.put_1s( 1 ).done();
+						my_bits.done();
 			break;
 
 		case 18:	// 15 Preamble High level Baseline
-			my_bits.put_cmd_pkt_28( 0x03, true, 6, 15 ).put_1s( 1 );
+			my_bits.put_cmd_pkt_28( 0x03, true, 			6, 15 );
 			my_bits.done();
 			break;
 
 		case 19:	// Accessory packet, Addr 0x02, act. true, Out. 1.
-			my_bits.put_acc_pkt( 0x02, true, 0x01 ).put_1s( 1 ).done();
+			my_bits.put_acc_pkt( 0x02, true, 0x01 ).done();
 			break;
 
 		case 20:	// Accessory packet, Addr 0xffff, act. true, Out. 0xff.
-			my_bits.put_acc_pkt( 0xffff, true, 0xff ).put_1s( 1 ).done();
+			my_bits.put_acc_pkt( 0xffff, true, 0xff ).done();
 			break;
 
 		case 21:	// Accessory packet, Addr 450, act. true, Out. 1.
-			my_bits.put_acc_pkt( 450, true, 1 ).put_1s( 1 ).done();
+			my_bits.put_acc_pkt( 450, true, 1 ).done();
 			break;
 
 		case 22:	// Accessory packet, Addr 450, act. false, Out. 1.
-			my_bits.put_acc_pkt( 450, false, 1 ).put_1s( 1 ).done();
+			my_bits.put_acc_pkt( 450, false, 1 ).done();
 			break;
 
 		case 23:	// Func Grp 1, Addr 3, function 0x1f.
-			my_bits.put_func_grp_pkt( 3, GRP_1, 0x1f ).put_1s( 1 ).done();
+			my_bits.put_func_grp_pkt( 3, GRP_1, 0x1f ).done();
 			break;
 
 		case 24:	// Func Grp 2, Addr 3, function 0x1f.
-			my_bits.put_func_grp_pkt( 3, GRP_2, 0x1f ).put_1s( 1 ).done();
+			my_bits.put_func_grp_pkt( 3, GRP_2, 0x1f ).done();
 			break;
 
 		case 25:	// Signal packet, Addr 1, aspect 0.
-			my_bits.put_sig_pkt( 1, 0 ).put_1s( 1 ).done();
+			my_bits.put_sig_pkt( 1, 0 ).done();
 			break;
 
 		case 26:	// Signal packet, Addr 2, aspect 0x0a.
-			my_bits.put_sig_pkt( 2, 0x0a ).put_1s( 1 ).done();
+			my_bits.put_sig_pkt( 2, 0x0a ).done();
 			break;
 
 		case 27:	// Signal packet, 4, aspect 0x1f.
-			my_bits.put_sig_pkt( 4, 0x1f ).put_1s( 1 ).done();
+			my_bits.put_sig_pkt( 4, 0x1f ).done();
 			break;
 
 		case 28:	// Signal packet, 5, aspect 0x1f.
-			my_bits.put_sig_pkt( 5, 0x1f ).put_1s( 1 ).done();
+			my_bits.put_sig_pkt( 5, 0x1f ).done();
 			break;
 
 		case 29:	// Signal packet, Addr SIG_ADDR_MAX, aspect 0x15.
-			my_bits.put_sig_pkt( SIG_ADDR_MAX, 0x15 ).put_1s( 1 ).done();
+			my_bits.put_sig_pkt( SIG_ADDR_MAX, 0x15 ).done();
 			break;
 
 		case 30:	// Signal packet, Addr too low, aspect too big.
-			my_bits.put_sig_pkt( SIG_ADDR_MIN - 1, 0xff ).put_1s( 1 ).done();
+			my_bits.put_sig_pkt( SIG_ADDR_MIN - 1, 0xff ).done();
             ignoreError = true;
 			break;
 
 		case 31:	// Signal packet, Addr too high, aspect too big.
-			my_bits.put_sig_pkt( SIG_ADDR_MAX + 1, 0xff ).put_1s( 1 ).done();
+			my_bits.put_sig_pkt( SIG_ADDR_MAX + 1, 0xff ).done();
             ignoreError = true;
 			break;
 

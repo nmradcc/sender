@@ -25,6 +25,7 @@
 #include "args.h"							// Includes send.h
 #include "send_reg.h"
 #include "dec_tst.h"
+#include <func_pkt.h>
 #include "SENDER_HW_MCU_USB.H"
 
 #include <cksum.h>
@@ -456,12 +457,6 @@ main(
 	}
 	
 	/*
-	 *	Set Bits class static variables.
-	 */
-	Bits::set_static_variables( Args.get_trig_rev(), Args.get_loco_first(),
-    							Args.get_lamp_rear(), Args.get_func_mask() );
-	
-	/*
 	 *	Don't abort on errors if NO_ABORT flag set.
 	 */
 	Deflog.set_no_abort_flag( Args.get_no_abort() );
@@ -488,6 +483,7 @@ main(
 	Dcc_reg.set_log_data( ( Args.get_log_mask() & LOG_PACKET_BIT ) != 0 );
 	Dcc_reg.set_log_io( ( Args.get_log_mask() & LOG_IO_BIT ) != 0 );
 	Dcc_reg.set_hw_if( use_hw_backend ? Lhw_if : nullptr );
+	Dcc_reg.set_pkt_gap_msec( Args.get_fill_msec() );
 
 	if ( Args.get_manual_flag() == true )	// Manual mode.
 	{
@@ -1628,34 +1624,38 @@ Key_val			init_key )					// Initial key value.
 					break;
 
 				case SEND_DCC:				// Repeat the DCC packet.
-					Dcc_bits.clr_in();
+					if ( Args.get_decoder_type() == DEC_FUNC )
+					{
+						Func_pkt::send( Dcc_reg, Dcc_bits, Args.get_func_pkt_cfg(),
+										Args.get_decoder_address(), GRP_1,
+										fw ? Args.get_func_mask() : 0,
+										"SEND_DCC Send pkt." );
+					}
+					else
+					{
+						Dcc_bits.clr_in();
 
-                    if ( Args.get_decoder_type() == DEC_LOCO )
-                    {
-                    	Dcc_bits.put_cmd_pkt_28( 	Args.get_decoder_address(),
-                    							 	fw, speed );
-                    }
-                    else if ( Args.get_decoder_type() == DEC_FUNC )
-                    {
-						// See NMRA\put_........_pktx Info.txt
-                   	    Dcc_bits.put_func_grp_pktx( 	Args.get_decoder_address(),
-                                        GRP_1, fw ? Args.get_func_mask() : 0 );
-						Dcc_bits.put_1s( 1 ).align_1s();	// End bit, then pad with 1s to Byte boundary.
-                   }
-                    else if ( Args.get_decoder_type() == DEC_SIG )
-                    {
-                    	Dcc_bits.put_sig_pkt( 	   	Args.get_decoder_address(),
-                        						   	speed );
-                    }
-                    else // Accessory decoder.
-                    {
-                    	Dcc_bits.put_acc_pkt(		Args.get_decoder_address(),
-                        					  		fw, speed );
-                    }
+						if ( Args.get_decoder_type() == DEC_LOCO )
+						{
+							Dcc_bits.put_cmd_pkt_28( 	Args.get_decoder_address(),
+														fw, speed );
+						}
+						else if ( Args.get_decoder_type() == DEC_SIG )
+						{
+							Dcc_bits.put_sig_pkt( 	   	Args.get_decoder_address(),
+														speed );
+						}
+						else // Accessory decoder.
+						{
+							Dcc_bits.put_acc_pkt(		Args.get_decoder_address(),
+														fw, speed );
+						}
 
-					Dcc_bits.put_1s( 1 ).done();
+						Dcc_bits.done();
 
-					Dcc_reg.send_pkt( Dcc_bits, "SEND_DCC Send pkt." );
+						Dcc_reg.send_pkt( Dcc_bits, "SEND_DCC Send pkt." );
+					}
+					Dcc_reg.pkt_gap();
 
 					if ( gen_after_pending )	// Once per d or f command.
 					{
@@ -1683,7 +1683,7 @@ Key_val			init_key )					// Initial key value.
                     	Dcc_bits.put_cmd_pkt_28( 	Args.get_decoder_address(),
                         							!Args.get_lamp_rear(), 0 );
                     	Dcc_bits.put_idle_pkt( 5 );
-                        Dcc_bits.put_func_grp_pktx(	Args.get_decoder_address(),
+                        Func_pkt::put_final_pkt( Dcc_bits, Args.get_func_pkt_cfg(), Args.get_decoder_address(),
                         	GRP_1, fw ? Args.get_func_mask() : 0);
                     }
                     else if ( Args.get_decoder_type() == DEC_SIG )

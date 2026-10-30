@@ -11,7 +11,7 @@
 #define ARGS_H_DECLARED
 
 #include "send.h"
-
+#include <func_pkt.h>
 #if defined(_MSC_VER)
 #include <direct.h>
 #include <stdlib.h>
@@ -121,6 +121,15 @@ class Args_obj : public Z_core
 				{ return ( m_kick_start ); }
 	u_int	   	get_extra_trg( void ) const
 				{ return ( m_extra_trg ); }
+	Func_pkt_cfg	get_func_pkt_cfg( void ) const
+				{
+					Func_pkt_cfg	cfg;
+					cfg.trig_rev	=	m_trig_rev;
+					cfg.loco_first	=	m_loco_first;
+					cfg.lamp_rear	=	m_lamp_rear;
+					cfg.func_mask	=	m_func_mask;
+					return ( cfg );
+				}
 	const char	*get_mcu_port( void ) const
 				{ return ( m_mcu_port ); }
 	u_int		get_mcu_baud( void ) const
