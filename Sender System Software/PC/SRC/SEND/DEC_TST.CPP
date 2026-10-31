@@ -490,7 +490,7 @@ Dec_tst::fsoc_send( const char *msg )
 	{
 		DBGPRINT( DBG_DFLT, "Sending fsoc for %s.", msg );
 		Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence." );
-		std::this_thread::sleep_for( std::chrono::seconds( 1 ) );	// Wake up the booster.
+		std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 	}
 }
 
@@ -752,7 +752,6 @@ Dec_tst::decoder_test(
 	{
 		Dcc_reg.start_clk();
 	}
-	calc_filler( DECODER_0T_NOM, DECODER_1T_NOM );
 
  
 	if ( FSOC_SKIP == true )
@@ -906,9 +905,7 @@ Dec_tst::decoder_test(
 			dclk_tbl[clk_idx].msg, tclk0t, tclk0h, tclk1t );
 
 			Dcc_reg.set_clk( tclk0t, tclk0h, tclk1t );
-			calc_filler( tclk0t, tclk1t );
 
-			send_filler();						// Reset the decoder.
 			fsoc_send( "each clock value" );
 		}
 		else
@@ -1481,19 +1478,17 @@ Dec_tst::acc_ramp(
 
 			dcc_bits.clr_in();
 			dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+			dcc_bits.put_acc_pkt(	Args.get_decoder_address(), active,
+										out_id, pre_cnt );
+			dcc_bits.put_1s(1).done();
+
 			for ( j = 0; j < PKT_REP_MIN; j++ )
 			{
-				dcc_bits.put_acc_pkt(	Args.get_decoder_address(), active,
-										out_id, pre_cnt );
-				dcc_bits.put_idle_pkt( BEST_IDLE );
+				Dcc_reg.send_pkt( dcc_bits, "Send accessory ramp test packet." );
 			}
-			dcc_bits.put_1s(1).done();
 				
-            Dcc_reg.set_scope( true );
 
-			Dcc_reg.send_pkt( dcc_bits, "Send accessory ramp test packet." );
-
-			send_filler();
+//			send_filler();
 
 			// Test output for accessory preset and trigger values.
 			if ( (out_id==ACC_PRE || out_id==ACC_TRG) && active == true )
@@ -1595,7 +1590,7 @@ Dec_tst::sig_ramp(
 
 	  	Dcc_reg.send_pkt( dcc_bits, "Send signal ramp test packet." );
 
-	  	send_filler();
+//	  	send_filler();
 
 	  	/*
 	  	 *	Test the function input to verify it matches the
@@ -1835,31 +1830,13 @@ Dec_tst::decoder_ames(
 			pre_fail	=	true;
 		}
 
-		if ( Args.get_late_scope() != true )
-		{
-			Dcc_reg.set_scope( true );
-		}
-
 		for ( k = 0; k < extra_trg + 1; k++ )
 		{
 			Dcc_reg.send_pkt(	dcc_bits2,		// Attempt emergency stop.
 								"Send packet acceptance trigger packet." );
 		}
 
-		/*
-		 * The following code sends another idle filler, turns
-		 * on the scope trigger, and then sends one second of idle filler.
-		 * This results in scope trigger starting 2 idles after the trigger
-		 * command.
-		 */
-		Dcc_reg.send_idle();					// Send one idle space.
-
-		if ( Args.get_late_scope() == true )
-		{
-			Dcc_reg.set_scope( true );
-		}
-
-		send_filler();							// Send filler.
+//		send_filler();							// Send filler.
 
 		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
@@ -1961,6 +1938,7 @@ Dec_tst::decoder_str0_ames(
 			i+1, t_stat.get_f_cnt() );
 
 		fsoc_send( "decoder_str0_ames() loop" );
+
 		for ( j = 0; j < pkt_rep_cnt;  j++ )   	// Preset decoder reverse.
 		{
 			Dcc_reg.send_pkt( dcc_bits, "Send stretched test preset packet." );
@@ -1989,24 +1967,12 @@ Dec_tst::decoder_str0_ames(
 			Dcc_reg.set_scope( true );
 		}
 
+//TODO:
 		Dcc_reg.send_raw_bytes_stretched( &trigger_bytes[0], trigger_bytes.size(),
 			( STRETCH_BITS + PRE_BITS ) / BITS_IN_BYTE, iclk0t, iclk0h,
 			"Send trigger packet with single stretched 0." );
 
-		/*
-		 * The following code sends another idle filler, turns
-		 * on the scope trigger, and then sends one second of idle filler.
-		 * This results in scope trigger starting 2 idles after the trigger
-		 * command.
-		 */
-		Dcc_reg.send_idle();					// Send one idle space.
-
-		if ( Args.get_late_scope() == true )
-		{
-			Dcc_reg.set_scope( true );
-		}
-
-		send_filler();							// Send filler.
+//		send_filler();							// Send filler.
 
 		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
@@ -2925,10 +2891,8 @@ Dec_tst::decoder_truncate(
 		DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
 
 	Dcc_reg.set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
-	calc_filler( DECODER_0T_NOM, DECODER_1T_NOM );
 
 	fsoc_send( "decoder_truncate() initialization" );
-	send_filler();							// Reset the decoder.
 
 	test_repeats	=	Args.get_test_repeats();
 
@@ -3012,6 +2976,7 @@ Dec_tst::decoder_truncate(
 					i+1, t_stat.get_f_cnt() );
 
 				fsoc_send( "decoder_truncate() loop" );
+
 				Dcc_reg.send_pkt( dcc_bits, "Send truncate test preset." );
 
 				if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
@@ -3112,10 +3077,8 @@ Dec_tst::decoder_prior(
 		DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
 
 	Dcc_reg.set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
-	calc_filler( DECODER_0T_NOM, DECODER_1T_NOM );
 
 	fsoc_send( "decoder_prior() initialization" );
-	send_filler();							// Reset the decoder.
 
 	test_repeats	=	Args.get_test_repeats();
 
@@ -3221,6 +3184,7 @@ Dec_tst::decoder_prior(
 					i+1, t_stat.get_f_cnt() );
 
 				fsoc_send( "decoder_prior() loop" );
+
 				Dcc_reg.send_pkt( dcc_bits,
 					"Send prior packet preset." );
 
@@ -3335,10 +3299,8 @@ Dec_tst::decoder_6_byte(
 		DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
 
 	Dcc_reg.set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
-	calc_filler( DECODER_0T_NOM, DECODER_1T_NOM );
 
 	fsoc_send( "decoder_6_byte() initialization" );
-	send_filler();							// Reset the decoder.
 
 	test_repeats	=	Args.get_test_repeats();
 
@@ -3437,6 +3399,7 @@ Dec_tst::decoder_6_byte(
 					i+1, t_stat.get_f_cnt() );
 
 				fsoc_send( "decoder_6_byte() loop" );
+
 				Dcc_reg.send_pkt( dcc_bits,
 					"Send 6 byte prior packet preset." );
 
@@ -3527,7 +3490,6 @@ Dec_tst::decoder_ambig1(
 {
 	const char		*my_name = "Ambig 1";
 	int				i;			  			// Index variable.
-	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
@@ -3553,10 +3515,8 @@ Dec_tst::decoder_ambig1(
     printf(		"         0 Times < 0T   0H>\n" );
 
 	Dcc_reg.set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
-	calc_filler( DECODER_0T_NOM, DECODER_1T_NOM );
 
 	fsoc_send( "decoder_ambig1() initialization" );
-	send_filler();							// Reset the decoder.
 
 	test_repeats	=	Args.get_test_repeats();
 
@@ -3593,7 +3553,6 @@ Dec_tst::decoder_ambig1(
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 	put_preset_pkt( dcc_bits, Args.get_decoder_address(), pre_cnt );
-	dcc_bits.put_idle_pkt( BEST_IDLE );
 	dcc_bits.put_1s(1).done();
 
     for ( test_cycle = 0; test_cycle < ambig1_tbl_size; test_cycle++ )
@@ -3666,7 +3625,6 @@ Dec_tst::decoder_ambig1(
      	 	 *	Set up a normal trigger packet.
      	 	 */
     		put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), pre_cnt );
-    		dcc_bits2.put_idle_pkt( 1 );
     		dcc_bits2.put_1s(1).done();
 
             // Force the selected ambiguous bit to 0
@@ -3685,11 +3643,7 @@ Dec_tst::decoder_ambig1(
 
 				fsoc_send( "decoder_ambig1() loop" );
 
-        		for ( j = 0; j < pkt_rep_cnt;  j++ )	// Preset.
-        		{
-        			Dcc_reg.send_pkt( dcc_bits,
-            			"Send ambig 1 packet preset." );
-        		}
+       			Dcc_reg.send_pkt( dcc_bits,"Send ambig 1 packet preset." );
 
 				if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
         		{
@@ -3703,17 +3657,11 @@ Dec_tst::decoder_ambig1(
 					ambig_bytes.push_back( pbyte );
 				}
 
-				/*
-		 	 	 * Send a scope trigger at start of trigger packet
-                 * This test requires an early scope trigger.
-		 	 	 */
-                 Dcc_reg.set_scope( true );
-
 				Dcc_reg.send_raw_bytes_timed( &ambig_bytes[0], ambig_bytes.size(),
 					pre_bytes * BITS_IN_BYTE, ambig1_0t, ambig1_0h, 0xFFFF,
 					0, 0, "Send trigger packet with 1 ambiguous bit." );
 
-				send_filler();		  			// Send filler.
+				std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
         		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
         		{
@@ -3787,7 +3735,6 @@ Dec_tst::decoder_ambig2(
 	u_short			tclk0h;				 	// Temp tclk0h.
 	u_short			tclk1t;				 	// Temp tclk1t.
 	int				i;			  			// Index variable.
-	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
@@ -3839,7 +3786,6 @@ Dec_tst::decoder_ambig2(
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 	put_preset_pkt( dcc_bits, Args.get_decoder_address(), pre_cnt );
-	dcc_bits.put_idle_pkt( BEST_IDLE );
 	dcc_bits.put_1s(1).done();
 
     /*
@@ -3857,7 +3803,6 @@ Dec_tst::decoder_ambig2(
 	dcc_bits3.clr_in();
     dcc_bits3.put_0s( 2 );				// Put 2 zeroes used for feedback bits.
 	put_trigger_pkt( dcc_bits3, Args.get_decoder_address(), pre_cnt );
-	dcc_bits3.put_idle_pkt( 1 );
 	dcc_bits3.put_1s(1).done();
 
 	/*
@@ -3878,10 +3823,8 @@ Dec_tst::decoder_ambig2(
     	printf(		"  0 Times <0T1  0H1  0T2  0H2>\n" );
 
 		Dcc_reg.set_clk( tclk0t, tclk0h, tclk1t );
-		calc_filler( tclk0t, tclk1t );
 
 		fsoc_send( "decoder_ambig2() outer clock loop" );
-		send_filler();							// Reset the decoder.
 
     	for ( test_cycle = 0; test_cycle < ambig2_tbl_size; test_cycle++ )
     	{
@@ -3910,12 +3853,8 @@ Dec_tst::decoder_ambig2(
             		i+1, t_stat.get_f_cnt() );
 
 				fsoc_send( "decoder_ambig2() inner test loop" );
-            
-        		for ( j = 0; j < pkt_rep_cnt;  j++ )	// Preset.
-        		{
-        			Dcc_reg.send_pkt( dcc_bits,
-            			"Send ambig 2 packet preset." );
-        		}
+
+       			Dcc_reg.send_pkt( dcc_bits,"Send ambig 2 packet preset." );
 
 				if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
         		{
@@ -3923,8 +3862,7 @@ Dec_tst::decoder_ambig2(
         		}
 
         		//	Send preset just before feedback bits.
-        		Dcc_reg.send_pkt(	dcc_bits2,
-        			"Send preset just before ambig 2 bits." );
+        		Dcc_reg.send_pkt(	dcc_bits2,"Send preset just before ambig 2 bits." );
 
 				/*
              	 * Send a scope trigger at start of trigger packet
@@ -3938,12 +3876,14 @@ Dec_tst::decoder_ambig2(
 				{
 					ambig_bytes.push_back( pbyte );
 				}
+//TODO:
 				Dcc_reg.send_raw_bytes_timed( &ambig_bytes[0], ambig_bytes.size(),
 					0, ambig2_0t1, ambig2_0h1, 1, ambig2_0t2, ambig2_0h2,
 					"Send trigger packet with 2 ambiguous bits." );
 
-				send_filler();					// Send filler.
-        
+//				send_filler();					// Send filler.
+				std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+
         		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
         		{
         			trig_fail	=	true;
@@ -3987,99 +3927,7 @@ Dec_tst::decoder_ambig2(
 	return ( retval );
 }
 
- 
-/*--------------------------------------------------------------------------*/
-/*
- *	NAME
- *
- *		calc_filler()				   	-	 Calculate number of filler idles.
- *
- *	RETURN VALUE
- *
- *		None.
- *
- *	DESCRIPTION
- *
- *		calc_filler() calculates the number of idle packets to send between
- *		tests and stores it in 'filler_idles'.  It next calculates the number
- *		of times to repeat the setup commands which are assumed to be an idle
- *		followed by a command.  It stores the results in 'pkt_rep_cnt'.  Note
- *		that 'pkt_rep_cnt' is approximate since the actual 1 and 0 bits in the
- *		command changes for each test.
- */
-/*--------------------------------------------------------------------------*/
-
-void
-Dec_tst::calc_filler(
-	u_short			clk0t,					// Clock 0T value.
-	u_short			clk1t )					// Clock 1T value.
-{
-	/*
-	 *	Calculate number of idles to fill 'fill_usec' amount of time.
-	 */
-	filler_idles	=	Send_reg::fill_idles(fill_usec,clk0t,clk1t);
-
-	/*
-	 *	Calculate approximate number of command/idle pairs to
-	 *	fill 'fill_usec' amount of time.
-	 */
-	pkt_rep_cnt		=	Send_reg::fill_cmds_1(fill_usec,clk0t,clk1t);
-
-	if ( Dcc_reg.get_log_pkts() )
-	{
-		DBGLOG(
-			"Dec_tst::calc_filler() fill_usec %10lu, clk0t %5u, clk1t %5u.",
-			fill_usec, clk0t, clk1t );
-
-		DBGLOG(
-			"Dec_tst::calc_filler() Fill_Idle %3u, Cmd_one %3u, Cmd_two %3u.",
-			filler_idles, pkt_rep_cnt,
-			Send_reg::fill_cmds_2(fill_usec,clk0t,clk1t) );
-	}
-}
-
- 
-/*--------------------------------------------------------------------------*/
-/*
- *	NAME
- *
- *		send_filler()				   	-	 Send filler idles.
- *
- *	RETURN VALUE
- *
- *		OK		-	Normal return.
- *		FAIL	-	Send failed.
- *
- *	DESCRIPTION
- *
- *		send_filler() sends 'filler_idles' number of idle packets using the
- *		send_idle() method.
- */
-/*--------------------------------------------------------------------------*/
-
-Rslt_t
-Dec_tst::send_filler( void )
-{
-	u_short			i;						// Index variable.
-
-	if ( Dcc_reg.get_log_pkts() )
-	{
-		DBGLOG( "Dec_tst::send_filler() Sending %d idles.",
-		filler_idles );
-	}
-
-	for ( i = 0; i < filler_idles; i++ )
-	{
-		if ( Dcc_reg.send_idle() != OK )
-		{
-			return ( FAIL );
-		}
-	}
-
-	return ( OK );
-}
-
- 
+  
 /*--------------------------------------------------------------------------*/
 /*
  *	NAME
