@@ -201,7 +201,7 @@ static void dcc_schedule_address_event(uint8_t address, uint32_t hp_index)
     uint32_t clear_slot;
     uint32_t next_tail;
 
-    if (address == 0xFFu || address == 0x00u)
+    if (address == 0xFFu)
     {
         return;
     }

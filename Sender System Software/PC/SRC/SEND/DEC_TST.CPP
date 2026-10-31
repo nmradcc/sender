@@ -1664,17 +1664,19 @@ Dec_tst::decoder_ames(
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 	put_preset_pkt( dcc_bits, Args.get_decoder_address(), pre_cnt, true );
-	dcc_bits.put_idle_pkt( idle_cnt );
 	dcc_bits.put_1s(1).done();
 
 	/*
-	 *	Set decoder to trigger speed, forward, lamp off or
+	 *	Set decoder to preset and trigger speed, forward, lamp off or
 	 *	set accessory decoder to the normal position.
 	 */
 	dcc_bits2.clr_in();
 	dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), pre_cnt, true );
+	put_preset_pkt( dcc_bits2, Args.get_decoder_address(), pre_cnt, true );
 	dcc_bits2.put_idle_pkt( idle_cnt );
+//	dcc_bits2.put_1s(1);
+//	dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+	put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), pre_cnt, true );
 	dcc_bits2.put_1s(1).done();
 
 	/*
@@ -1775,10 +1777,6 @@ Dec_tst::decoder_ames(
 	}
 
 
-	/*
-	 * Send a scope trigger at start of trigger packet
-	 * if the normal (early) scope trigger is desired.
-	 */
 	if ( Dcc_reg.get_log_pkts() )
 	{
 		DBGLOG( "%s: Sending %2u packet acceptance trigger packet(s).",
@@ -1796,24 +1794,15 @@ Dec_tst::decoder_ames(
 
 		fsoc_send( "decoder_ames()" );
 		
-		for ( j = 0; j < t_pkt_cnt;  j++ )   	// Preset decoder reverse.
-		{
-			Dcc_reg.send_pkt(	dcc_bits,
-								"Send packet acceptance preset packet." );
-		}
-
+		Dcc_reg.send_pkt(	dcc_bits,"Send packet acceptance preset packet.");
+	
 		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			pre_fail	=	true;
 		}
 
-		for ( k = 0; k < extra_trg + 1; k++ )
-		{
-			Dcc_reg.send_pkt(	dcc_bits2,		// Attempt emergency stop.
-								"Send packet acceptance trigger packet." );
-		}
-
-//		send_filler();							// Send filler.
+		Dcc_reg.send_pkt(	dcc_bits2,		// Attempt emergency stop.
+								"Send packet acceptance and trigger packet back to back.");
 
 		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
