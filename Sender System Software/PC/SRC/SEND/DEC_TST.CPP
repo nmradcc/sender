@@ -698,7 +698,6 @@ Dec_tst::decoder_test(
 	const char		*my_name = "decoder_test";
 	int				clk_idx;				// Clock test index value.
 	int				i;						// Index variable.
-	int				j;						// Index variable.
 	u_short			tclk0t;					// Temp tclk0t.
 	u_short			tclk0h;				 	// Temp tclk0h.
 	u_short			tclk1t;				 	// Temp tclk1t.
@@ -764,7 +763,6 @@ Dec_tst::decoder_test(
 		STATPRINT( "sending 2 fail safe operation sequences." );
 		printf(    "sending 2 fail safe operation sequences.\n" );
 		Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence." );
-//		j = Send_reg::fill_cmds_1( FSOC_DELAY * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
 		std::this_thread::sleep_for( FSOC_DELAY * std::chrono::seconds( 1 ) );
 		if ( Dcc_reg.get_log_pkts() )
 		{
@@ -774,7 +772,6 @@ Dec_tst::decoder_test(
 		
 		Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence again." );
 	
-//		j = Send_reg::fill_cmds_1( FSOC_DELAY * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
 		std::this_thread::sleep_for( FSOC_DELAY * std::chrono::seconds( 1 ) );
 		if ( Dcc_reg.get_log_pkts() )
 		{

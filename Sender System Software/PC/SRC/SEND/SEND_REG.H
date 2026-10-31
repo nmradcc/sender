@@ -176,9 +176,9 @@ class Send_reg : public Sr_core
 									u_short iclk0t1, u_short iclk0h1,
 									u_short iclk0t2, u_short iclk0h2,
 									BYTE ibyte, const char *into );
-	Rslt_t	send_pkt( Bits &ibits, const char *info );
+	Rslt_t	send_pkt( Bits &ibits, const char *info, bool add_gap = true );
 	Rslt_t	send_pkt(	const BYTE *ibytes, u_int isize,
-						const char *info );
+						const char *info, bool add_gap = true );
 
 	// Send the kick start packet sequence to the decoder.
 	Rslt_t kick_start( Bits & ibits, Args_obj & iargs );

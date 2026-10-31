@@ -851,6 +851,8 @@ Send_reg::send_2_ambig_bits(
  *		send_pkt() sends each BYTE in the 'ibytes' array.
  *		It returns FAIL if the INTRA line does not go inactive in a
  *		reasonable length of time or if the underflow flag gets set.
+ *		The host side inter-packet delay is appended only if 'add_gap'
+ *		is true.
  */
 /*--------------------------------------------------------------------------*/
 
@@ -858,7 +860,8 @@ Rslt_t
 Send_reg::send_pkt(
 	const BYTE		*ibytes,				// Pointer to BYTE array.
 	u_int			isize,					// Size of ibytes array.
-	const char		*info )					// Packet log info.
+	const char		*info,					// Packet log info.
+	bool			add_gap )				// true to append the pkt gap.
 {
 	const char		*my_name = "Send_reg::send_pkt(BYTE)";
 	u_int			count;					// Count of BYTES sent.
@@ -882,7 +885,10 @@ Send_reg::send_pkt(
 			clr_err_cnt();
 			b_cnt	+= isize;
 			++p_cnt;
-			pkt_gap();
+			if ( add_gap )
+			{
+				pkt_gap();
+			}
 			return ( OK );
 		}
 
@@ -942,7 +948,10 @@ Send_reg::send_pkt(
 	clr_err_cnt();
 	b_cnt	+= isize;
 	++p_cnt;
-	pkt_gap();
+	if ( add_gap )
+	{
+		pkt_gap();
+	}
 	return ( OK );
 }
 
@@ -963,13 +972,16 @@ Send_reg::send_pkt(
  *		send_pkt() sends out all BYTES in a Bits object.
  *		It returns FAIL if the INTRA line does not go inactive in a
  *		reasonable length of time or if the underflow flag gets set.
+ *		The host side inter-packet delay is appended only if 'add_gap'
+ *		is true.
  */
 /*--------------------------------------------------------------------------*/
 
 Rslt_t
 Send_reg::send_pkt(
 	Bits			&ibits,					// Bits to send.
-	const char		*info )					// Packet log info.
+	const char		*info,					// Packet log info.
+	bool			add_gap )				// true to append the pkt gap.
 {
 	const char		*my_name = "Send_reg::send_pkt(Bits)";
 	u_int			count = 0;				// Count of BYTES sent.
@@ -1002,7 +1014,10 @@ Send_reg::send_pkt(
 			clr_err_cnt();
 			b_cnt	+= pkt_size;
 			++p_cnt;
-			pkt_gap();
+			if ( add_gap )
+			{
+				pkt_gap();
+			}
 			return ( OK );
 		}
 
@@ -1070,7 +1085,10 @@ Send_reg::send_pkt(
 	clr_err_cnt();
 	b_cnt	+= pkt_size;
 	++p_cnt;
-	pkt_gap();
+	if ( add_gap )
+	{
+		pkt_gap();
+	}
 	return ( OK );
 }
 
