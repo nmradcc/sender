@@ -82,8 +82,6 @@ class Args_obj : public Z_core
 				{ return ( m_extra_preamble ); }
 	bool	  	get_trig_rev( void ) const
 				{ return ( m_trig_rev ); }
-	bool	  	get_loco_first( void ) const
-				{ return ( m_loco_first ); }
 	u_int	   	get_fill_msec( void ) const
 				{ return ( m_fill_msec ); }
 	u_int	   	get_test_repeats( void ) const
@@ -145,7 +143,6 @@ class Args_obj : public Z_core
 	bool					m_manual_flag;		// Run tests manually.
 	u_int					m_extra_preamble;		// Extra margin test preambles.
 	bool					m_trig_rev;			// Use reverse as trigger cmd.
-	bool					m_loco_first;			// Put loco pkt + func pkt.
 	u_int					m_fill_msec;			// Fill time (msec).
 	u_int					m_test_repeats;		// Number of times to do tests.
 	bool					m_print_user;			// If true, print user docs.

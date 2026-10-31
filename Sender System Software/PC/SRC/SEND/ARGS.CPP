@@ -76,7 +76,6 @@ Args_obj::Args_obj( void )
 	m_manual_flag			= false;			// Run tests manually.
 	m_extra_preamble		= 0;				// Extra margin test preambles.
 	m_trig_rev			= false;			// Use E_STOP as trigger command.
-	m_loco_first			= false;;			// Put loco pkt + func pkt.
 	m_fill_msec			= 100;				// Use 100 ms fill time.
 	m_test_repeats		= 2;				// Times to repeat misc. tests.
 	m_print_user			= false;			// Don't print user docs.
@@ -231,10 +230,6 @@ Args_obj::usage(
 		"  -T         TRIG_REV   "
 		"Use loco reverse as trigger packet   <value %s>\n",
 		m_trig_rev	 	? "true" : "false" );
-	fprintf( ofp,
-		"  -L         LOCO_FIRST "
-		"Put loco packet before func packet   <value %s>\n",
-		m_loco_first	 	? "true" : "false" );
 	fprintf( ofp,
 		"  -F <fill>  FILL_MSEC  "
 		"Fill time in milliseconds            <value %u>\n",
@@ -600,9 +595,8 @@ Args_obj::argscan(
 		{
 			m_trig_rev	=	m_trig_rev ? false  : true;
 		}
-		else if ( strcmp( argv[i], "-L" ) == 0 )	// Put loco pkt + func pkt.
+		else if ( strcmp( argv[i], "-L" ) == 0 )	// Obsolete LOCO_FIRST, ignored.
 		{
-			m_loco_first	=	m_loco_first ? false  : true;
 		}
 		else if ( strcmp( argv[i], "-F" ) == 0 )	// Fill time in msec.
 		{
@@ -1031,7 +1025,7 @@ Args_obj::cfgscan( void )
 			targv[1]	=	"-T";
 			targc		=	2;
 		}
-		else if ( 	!strcmpi( cmd,	"lOCO_FIRST" ) )
+		else if ( 	!strcmpi( cmd,	"LOCO_FIRST" ) )	// Obsolete, ignored.
 		{
 			targv[1]	=	"-L";
 			targc		=	2;

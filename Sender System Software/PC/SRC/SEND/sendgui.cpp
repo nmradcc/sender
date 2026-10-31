@@ -53,7 +53,6 @@ enum
 	ID_CHK_LAMP,
 	ID_CHK_REPEAT,
 	ID_CHK_TRIG_REV,
-	ID_CHK_LOCO_FIRST,
 	ID_CHK_NO_ABORT,
 	ID_CHK_LATE_SCOPE,
 	ID_CHK_FRAGMENT,
@@ -229,7 +228,6 @@ static const FlagCtrl g_flagCtrls[] =
 	{ ID_CHK_LAMP,            "LAMP" },
 	{ ID_CHK_REPEAT,          "REPEAT" },
 	{ ID_CHK_TRIG_REV,        "TRIG_REV" },
-	{ ID_CHK_LOCO_FIRST,      "LOCO_FIRST" },
 	{ ID_CHK_NO_ABORT,        "NO_ABORT" },
 	{ ID_CHK_LATE_SCOPE,      "LATE_SCOPE" },
 	{ ID_CHK_FRAGMENT,        "FRAGMENT" },
@@ -870,7 +868,6 @@ SaveCfgFile( const char *path )
 	addMaskField( "LOG", GetEditText( ID_EDIT_LOG ) );
 	addField( "EXTRA_PRE", GetEditText( ID_EDIT_EXTRA_PRE ) );
 	addFlag( "TRIG_REV", IsChecked( ID_CHK_TRIG_REV ) );
-	addFlag( "LOCO_FIRST", IsChecked( ID_CHK_LOCO_FIRST ) );
 	addField( "FILL_MSEC", GetEditText( ID_EDIT_FILL_MSEC ) );
 	addField( "TEST_REPS", GetEditText( ID_EDIT_TEST_REPS ) );
 	addFlag( "NO_ABORT", IsChecked( ID_CHK_NO_ABORT ) );
@@ -1548,7 +1545,6 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LAMP, "LAMP - Use rear lamp for func tests", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REPEAT, "REPEAT - Continuously repeat tests", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_TRIG_REV, "TRIG_REV - Use reverse as trigger cmd", xChk, yChk, chkW, 20 ) ); yChk += rowH;
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LOCO_FIRST, "LOCO_FIRST - Loco pkt before func pkt", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_NO_ABORT, "NO_ABORT - Do not stop on error", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LATE_SCOPE, "LATE_SCOPE - Scope trigger after cmd", xChk, yChk, chkW, 20 ) ); yChk += rowH;

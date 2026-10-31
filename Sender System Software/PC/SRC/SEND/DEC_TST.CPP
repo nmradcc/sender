@@ -1676,6 +1676,7 @@ Dec_tst::decoder_ames(
 	dcc_bits2.put_idle_pkt( idle_cnt );
 //	dcc_bits2.put_1s(1);
 //	dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+//TODO: add extra trigger packets??
 	put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), pre_cnt, true );
 	dcc_bits2.put_1s(1).done();
 
@@ -1699,11 +1700,6 @@ Dec_tst::decoder_ames(
 		{
 			trig_b2			=	build_cmd_28_byte( Args.get_lamp_rear(), 0 );
 			trig_pkt_type	=	"func->loco trigger";
-		}
-		else if ( Args.get_loco_first() == true )
-		{
-			trig_b2			=	build_cmd_28_byte( !Args.get_lamp_rear(), 0 );
-			trig_pkt_type	=	"func->loco first";
 		}
 		else
 		{
