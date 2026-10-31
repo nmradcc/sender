@@ -96,8 +96,6 @@ class Args_obj : public Z_core
 				{ return ( m_reduce_passcnt ); }
 	bool	  	get_no_abort( void ) const
 				{ return ( m_no_abort ); }
-	bool	  	get_late_scope( void ) const
-				{ return ( m_late_scope ); }
 	bool	  	get_ambig_addr_same( void ) const
 				{ return ( m_ambig_addr_same ); }
 	BYTE	   	get_aspect_preset( void ) const
@@ -150,7 +148,6 @@ class Args_obj : public Z_core
 	bool				    m_mcu_bypass_tst;	// If true, skip MCU self tests.
 	bool				    m_reduce_passcnt;	// If true, use reduced pass count.
 	bool					m_no_abort;			// If true, no stop on error.
-	bool					m_late_scope;		// If true, use late scope.
 	bool					m_ambig_addr_same;	// If true, use same address.
     BYTE					m_aspect_preset;		// Sig decoder aspect preset.
     BYTE					m_aspect_trigger;		// Sig decoder aspect trigger.

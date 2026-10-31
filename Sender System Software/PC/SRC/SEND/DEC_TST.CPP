@@ -1856,7 +1856,6 @@ Dec_tst::decoder_str0_ames(
 {
 	const char		*my_name  = "Stretch 0";
 	int				i;			  			// Index variable.
-	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
@@ -1876,7 +1875,6 @@ Dec_tst::decoder_str0_ames(
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 	put_preset_pkt( dcc_bits, Args.get_decoder_address(), BEST_PRE, true );
-	dcc_bits.put_idle_pkt( 1 );
 	dcc_bits.put_1s(1).done();
 
 	/*
@@ -1886,7 +1884,6 @@ Dec_tst::decoder_str0_ames(
 	dcc_bits2.clr_in();
 	dcc_bits2.put_0s( STRETCH_BITS );	// Align first 0 on bit boundary.
 	put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), BEST_PRE, true );
-	dcc_bits2.put_idle_pkt( 1 );
 	dcc_bits2.put_1s(1).done();
 
 	for ( i = 0; i < PERCENT100; i++ )
@@ -1901,10 +1898,7 @@ Dec_tst::decoder_str0_ames(
 
 		fsoc_send( "decoder_str0_ames() loop" );
 
-		for ( j = 0; j < pkt_rep_cnt;  j++ )   	// Preset decoder reverse.
-		{
-			Dcc_reg.send_pkt( dcc_bits, "Send stretched test preset packet." );
-		}
+		Dcc_reg.send_pkt( dcc_bits, "Send stretched test preset packet." );
 
 		if ( !Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
@@ -1921,20 +1915,16 @@ Dec_tst::decoder_str0_ames(
 		}
 
 		/*
-		 * Send a scope trigger at start of trigger packet
-		 * if the normal (early) scope trigger is desired.
+		 * Send a scope trigger at start of trigger packet.
 		 */
-		if ( Args.get_late_scope() != true )
-		{
-			Dcc_reg.set_scope( true );
-		}
+		Dcc_reg.set_scope( true );
 
 //TODO:
 		Dcc_reg.send_raw_bytes_stretched( &trigger_bytes[0], trigger_bytes.size(),
 			( STRETCH_BITS + PRE_BITS ) / BITS_IN_BYTE, iclk0t, iclk0h,
 			"Send trigger packet with single stretched 0." );
 
-//		send_filler();							// Send filler.
+		std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
 		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{

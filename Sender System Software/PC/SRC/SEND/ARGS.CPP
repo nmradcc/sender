@@ -83,7 +83,6 @@ Args_obj::Args_obj( void )
 	m_mcu_bypass_tst	= false;			// Run MCU self tests.
 	m_reduce_passcnt	= false;			// Full pass count.
 	m_no_abort			= false;			// Stop on error.
-	m_late_scope		= false;			// Use normal scope trigger.
 	m_ambig_addr_same  	= false;			// Use different address.
     m_aspect_preset		= 0;				// Sig decoder aspect preset.
     m_aspect_trigger		= 8;				// Sig decoder aspect trigger.
@@ -242,10 +241,6 @@ Args_obj::usage(
 		"  -A         NO_ABORT   "
 		"Do not stop program on an error      <value %s>\n",
 		m_no_abort		? "true" : "false" );
-	fprintf( ofp,
-		"  -s         LATE_SCOPE "
-		"Put scope trigger after trigger      <value %s>\n",
-		m_late_scope   	? "true" : "false" );
 	fprintf( ofp,
 		"  -f         FRAGMENT   "
 		"Test all fragments                   <value %s>\n",
@@ -681,9 +676,8 @@ Args_obj::argscan(
 		{
 			m_no_abort	=	m_no_abort ? false  : true;
 		}
-		else if ( strcmp( argv[i], "-s" ) == 0 )	// Late scope flag.
+		else if ( strcmp( argv[i], "-s" ) == 0 )	// Obsolete LATE_SCOPE, ignored.
 		{
-			m_late_scope	=	m_late_scope ? false  : true;
 		}
 		else if ( strcmp( argv[i], "-S" ) == 0 )	// Same ambig addr flag.
 		{
@@ -1083,7 +1077,7 @@ Args_obj::cfgscan( void )
 			targv[1]	=	"-A";
 			targc		=	2;
 		}
-		else if ( 	!strcmpi( cmd,	"LATE_SCOPE" ) )
+		else if ( 	!strcmpi( cmd,	"LATE_SCOPE" ) )	// Obsolete, ignored.
 		{
 			targv[1]	=	"-s";
 			targc		=	2;
