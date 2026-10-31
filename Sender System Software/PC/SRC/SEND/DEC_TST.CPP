@@ -1451,7 +1451,6 @@ Dec_tst::acc_ramp(
 	const char		*my_name = "Acc";
 	const char		*tst_name = "Acc:";   	// Test name.
 	int				i;						// Index variable.
-	int				j;						// Index variable.
 	Rslt_t			retval = OK;	   		// Return value.
 	bool			active;					// Output active if true.
 	BYTE		  	out_id;			  		// Output ID.
@@ -1477,18 +1476,10 @@ Dec_tst::acc_ramp(
 				t_stat.get_f_cnt() );
 
 			dcc_bits.clr_in();
-			dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 			dcc_bits.put_acc_pkt(	Args.get_decoder_address(), active,
 										out_id, pre_cnt );
-			dcc_bits.put_1s(1).done();
-
-			for ( j = 0; j < PKT_REP_MIN; j++ )
-			{
-				Dcc_reg.send_pkt( dcc_bits, "Send accessory ramp test packet." );
-			}
-				
-
-//			send_filler();
+			dcc_bits.done();
+			Dcc_reg.send_pkt( dcc_bits, "Send accessory ramp test packet." );
 
 			// Test output for accessory preset and trigger values.
 			if ( (out_id==ACC_PRE || out_id==ACC_TRG) && active == true )
@@ -1555,7 +1546,6 @@ Dec_tst::sig_ramp(
 {
 	const char		*my_name = "Sig";
 	const char		*tst_name = "Sig:";   	// Test name.
-	BYTE			i;						// Function variable.
     int				aspect;					// Function state.
 	Rslt_t			retval = OK;	   		// Return value.
 	BYTE			tgen;			  		// Generic input BYTE.
@@ -1576,21 +1566,11 @@ Dec_tst::sig_ramp(
 	 		tst_name, pre_cnt, Args.get_decoder_address(), aspect,
 	 		t_stat.get_f_cnt() );
 
-	  	dcc_bits.clr_in();
-	  	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	  	for ( i = 0; i < PKT_REP_MIN; i++ )
-	  	{
-	   		dcc_bits.put_sig_pkt(	Args.get_decoder_address(),
-            						aspect, pre_cnt );
-	   		dcc_bits.put_idle_pkt( BEST_IDLE );
-	   	}
-	   	dcc_bits.put_1s(1).done();
-
-        Dcc_reg.set_scope( true );
-
-	  	Dcc_reg.send_pkt( dcc_bits, "Send signal ramp test packet." );
-
-//	  	send_filler();
+		dcc_bits.clr_in();
+		dcc_bits.put_sig_pkt(	Args.get_decoder_address(),
+								aspect, pre_cnt );
+		dcc_bits.done();
+		Dcc_reg.send_pkt( dcc_bits, "Send signal ramp test packet." );
 
 	  	/*
 	  	 *	Test the function input to verify it matches the
