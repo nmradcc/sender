@@ -159,7 +159,7 @@ Args_obj::usage(
 		"                [-r] [-t test mask] [-c clock mask] [-g function mask] [-P log mask] [-E pre]\n",
 		m_cmd_name );			
     fprintf( ofp,
-		"                [-T] [-L] [-F fill] [-R reps] [-A] [-s] [-f] [-S]\n"
+		"                [-T] [-F fill] [-R reps] [-A] [-f] [-S]\n"
 		"                [-o pair] [-k] [-e trg] [-B] [-Q] [-J port] [-Y baud]\n\n" );
 
 	if ( m_cfg_path[0] != '\0' )
