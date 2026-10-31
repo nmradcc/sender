@@ -3936,7 +3936,8 @@ Dec_tst::put_preset_pkt(
 {
 	if ( Args.get_decoder_type() == DEC_LOCO )
 	{
-		bits.put_cmd_pkt_28( addr, false, SP_TEST_MIN, pre_cnt );
+//TODO:		bits.put_cmd_pkt_28( addr, false, SP_TEST_MIN, pre_cnt );
+		bits.put_cmd_pkt_28( addr, true, SP_TEST_MIN, pre_cnt );
 	}
 	else if ( Args.get_decoder_type() == DEC_FUNC )
 	{
