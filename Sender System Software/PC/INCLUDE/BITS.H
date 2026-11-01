@@ -13,6 +13,7 @@
 #include <z_core.h>							// Define Z_core class.
 #include <dcc.h>							// Fundamental DCC constants.
 
+
 /*
  *	Possible decoder commands for Accesory command type 2 packets
  */
@@ -37,6 +38,15 @@ bits_to_bytes(
 	return ( ibits == 0 ? 0 : ((ibits - 1)/BITS_IN_BYTE) + 1);
 }
 
+/*
+ *	Packet convention: every put_*_pkt() method (and put_fsoc()) adds
+ *	complete packets, including the trailing packet end 1 bit.  Packets can
+ *	be concatenated in one Bits object with no further bit handling.  The
+ *	low level put_1s(), put_0s(), put_byte(), put_check(), put_cmd_14() and
+ *	put_cmd_28() methods are fragments for hand built packets; the caller
+ *	must add the packet end bit.  Inter-packet idle timing is the job of the
+ *	MCU and the host side packet delay, not of this class.
+ */
 class Bits : public Z_core
 {
   public:
@@ -44,46 +54,6 @@ class Bits : public Z_core
     static const BYTE	ver_major;					// Major library version.
     static const BYTE	ver_minor;					// Minor library version.
     static const BYTE	ver_build;					// Build library version.
-
-	/*
-	 *	Static method section.
-	 */
-	 
-	// Get static variables at runtime.
-	static bool
-	get_trig_rev( void ) noexcept
-	{
-		return ( trig_rev );
-	}
-	
-	static bool
-	get_loco_first( void ) noexcept
-	{
-		return ( loco_first );
-	}
-	
-	static bool
-	get_lamp_rear( void ) noexcept
-	{
-		return ( lamp_rear );
-	}
-	
-	static BYTE
-	get_func_mask( void ) noexcept
-	{
-		return ( func_mask );
-	}
-
-	// Set the static variables at runtime.
-	static void
-	set_static_variables( bool itrg, bool iloco_first,
-						  bool ilamp, BYTE ifuncs )
-	{
-    	trig_rev	=	itrg;
-		loco_first	=	iloco_first;
-        lamp_rear	=	ilamp;
-		func_mask	=	ifuncs;
-	}
 
 	/*
 	 *	Method section
@@ -175,15 +145,6 @@ class Bits : public Z_core
 	put_1s(
 		u_int	count );
 
-	// Pad with 1s to the next Byte boundary (no-op if already aligned).
-	Bits &
-	align_1s( void )
-	{
-		u_int	rem = get_bit_size() % BITS_IN_BYTE;
-
-		return ( rem ? put_1s( BITS_IN_BYTE - rem ) : *this );
-	}
-
 	Bits &
 	put_0s(
 		u_int	count );
@@ -211,7 +172,7 @@ class Bits : public Z_core
 	{
 		clr_check();
 		put_1s( pre_bits ).put_0s( 1 ).put_byte( address ).put_0s( 1 );
-		put_cmd_14( forward, lamp, speed ).put_0s( 1 ).put_check();
+		put_cmd_14( forward, lamp, speed ).put_0s( 1 ).put_check().put_1s( 1 );
 		return ( *this );
 	}
 
@@ -224,7 +185,7 @@ class Bits : public Z_core
 	{
 		clr_check();
 		put_1s( pre_bits ).put_0s( 1 ).put_byte( address ).put_0s( 1 );
-		put_cmd_28( forward, speed ).put_0s( 1 ).put_check();
+		put_cmd_28( forward, speed ).put_0s( 1 ).put_check().put_1s( 1 );
 		return ( *this );
 	}
 
@@ -243,14 +204,6 @@ class Bits : public Z_core
 
 	Bits &
 	put_func_grp_pkt(
-		u_short			address,
-		enum Func_Grps	func_grp,
-		BYTE			func_bits,
-		u_int			pre_bits = PRE_BITS );
-
-// See ..\NMRAput_........_pktx Info.txt
-	Bits &
-	put_func_grp_pktx(
 		u_short			address,
 		enum Func_Grps	func_grp,
 		BYTE			func_bits,
@@ -281,10 +234,6 @@ class Bits : public Z_core
 	static const BYTE	bit0_1st[BITS_IN_BYTE];		// 0s for first Byte.
 	static const BYTE	bit0_2nd[BITS_IN_BYTE];		// 0s for second Byte.
 	static const BYTE	bit_flips[BITS_IN_BYTE];	// Flipped bit array.
-	static bool			trig_rev;					// Use reverse as trigger cmd.
-	static bool			loco_first;					// Put loco pkt + func pkt.
-	static bool			lamp_rear;					// Use rear lamp.
-	static BYTE			func_mask;					// Function group bit mask.
 	BYTE				*bytes;						// Array of BYTES.
 	BYTE				*last_byte;					// Ptr to last BYTE.
 	BYTE				*in_byte;					// Next incoming byte.

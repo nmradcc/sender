@@ -76,7 +76,6 @@ Args_obj::Args_obj( void )
 	m_manual_flag			= false;			// Run tests manually.
 	m_extra_preamble		= 0;				// Extra margin test preambles.
 	m_trig_rev			= false;			// Use E_STOP as trigger command.
-	m_loco_first			= false;;			// Put loco pkt + func pkt.
 	m_fill_msec			= 100;				// Use 100 ms fill time.
 	m_test_repeats		= 2;				// Times to repeat misc. tests.
 	m_print_user			= false;			// Don't print user docs.
@@ -84,7 +83,6 @@ Args_obj::Args_obj( void )
 	m_mcu_bypass_tst	= false;			// Run MCU self tests.
 	m_reduce_passcnt	= false;			// Full pass count.
 	m_no_abort			= false;			// Stop on error.
-	m_late_scope		= false;			// Use normal scope trigger.
 	m_ambig_addr_same  	= false;			// Use different address.
     m_aspect_preset		= 0;				// Sig decoder aspect preset.
     m_aspect_trigger		= 8;				// Sig decoder aspect trigger.
@@ -161,7 +159,7 @@ Args_obj::usage(
 		"                [-r] [-t test mask] [-c clock mask] [-g function mask] [-P log mask] [-E pre]\n",
 		m_cmd_name );			
     fprintf( ofp,
-		"                [-T] [-L] [-F fill] [-R reps] [-A] [-s] [-f] [-S]\n"
+		"                [-T] [-F fill] [-R reps] [-A] [-f] [-S]\n"
 		"                [-o pair] [-k] [-e trg] [-B] [-Q] [-J port] [-Y baud]\n\n" );
 
 	if ( m_cfg_path[0] != '\0' )
@@ -232,10 +230,6 @@ Args_obj::usage(
 		"Use loco reverse as trigger packet   <value %s>\n",
 		m_trig_rev	 	? "true" : "false" );
 	fprintf( ofp,
-		"  -L         LOCO_FIRST "
-		"Put loco packet before func packet   <value %s>\n",
-		m_loco_first	 	? "true" : "false" );
-	fprintf( ofp,
 		"  -F <fill>  FILL_MSEC  "
 		"Fill time in milliseconds            <value %u>\n",
 		m_fill_msec );
@@ -247,10 +241,6 @@ Args_obj::usage(
 		"  -A         NO_ABORT   "
 		"Do not stop program on an error      <value %s>\n",
 		m_no_abort		? "true" : "false" );
-	fprintf( ofp,
-		"  -s         LATE_SCOPE "
-		"Put scope trigger after trigger      <value %s>\n",
-		m_late_scope   	? "true" : "false" );
 	fprintf( ofp,
 		"  -f         FRAGMENT   "
 		"Test all fragments                   <value %s>\n",
@@ -600,9 +590,8 @@ Args_obj::argscan(
 		{
 			m_trig_rev	=	m_trig_rev ? false  : true;
 		}
-		else if ( strcmp( argv[i], "-L" ) == 0 )	// Put loco pkt + func pkt.
+		else if ( strcmp( argv[i], "-L" ) == 0 )	// Obsolete LOCO_FIRST, ignored.
 		{
-			m_loco_first	=	m_loco_first ? false  : true;
 		}
 		else if ( strcmp( argv[i], "-F" ) == 0 )	// Fill time in msec.
 		{
@@ -687,9 +676,8 @@ Args_obj::argscan(
 		{
 			m_no_abort	=	m_no_abort ? false  : true;
 		}
-		else if ( strcmp( argv[i], "-s" ) == 0 )	// Late scope flag.
+		else if ( strcmp( argv[i], "-s" ) == 0 )	// Obsolete LATE_SCOPE, ignored.
 		{
-			m_late_scope	=	m_late_scope ? false  : true;
 		}
 		else if ( strcmp( argv[i], "-S" ) == 0 )	// Same ambig addr flag.
 		{
@@ -1031,7 +1019,7 @@ Args_obj::cfgscan( void )
 			targv[1]	=	"-T";
 			targc		=	2;
 		}
-		else if ( 	!strcmpi( cmd,	"lOCO_FIRST" ) )
+		else if ( 	!strcmpi( cmd,	"LOCO_FIRST" ) )	// Obsolete, ignored.
 		{
 			targv[1]	=	"-L";
 			targc		=	2;
@@ -1089,7 +1077,7 @@ Args_obj::cfgscan( void )
 			targv[1]	=	"-A";
 			targc		=	2;
 		}
-		else if ( 	!strcmpi( cmd,	"LATE_SCOPE" ) )
+		else if ( 	!strcmpi( cmd,	"LATE_SCOPE" ) )	// Obsolete, ignored.
 		{
 			targv[1]	=	"-s";
 			targc		=	2;

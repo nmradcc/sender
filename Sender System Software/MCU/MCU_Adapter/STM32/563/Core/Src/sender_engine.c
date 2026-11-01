@@ -87,6 +87,9 @@ extern TIM_HandleTypeDef htim5;
 #define DCC_IDLE_HP_US      58u         /* half-period for a DCC "1" bit */
 #define DCC_MON_MIN_PREAMBLE_ONES 10u
 
+/* Shortest half-period (us) accepted by set_timing. */
+#define DCC_MIN_HP_US       20u
+
 /* Idle packet: 14 preamble 1s, 0, FF, 0, 00, 0, FF, end 1 = 42 bits. */
 #define DCC_IDLE_PKT_BITS   42u
 
@@ -198,7 +201,7 @@ static void dcc_schedule_address_event(uint8_t address, uint32_t hp_index)
     uint32_t clear_slot;
     uint32_t next_tail;
 
-    if (address == 0xFFu || address == 0x00u)
+    if (address == 0xFFu)
     {
         return;
     }
@@ -556,17 +559,31 @@ void sender_engine_reset(sender_engine_t *eng)
 uint8_t sender_engine_set_timing(sender_engine_t *eng, uint16_t clk0t_us,
                                  uint16_t clk0h_us, uint16_t clk1t_us)
 {
+    uint32_t primask;
+
     if (eng == 0)
     {
         return SHP_STATUS_INTERNAL_ERROR;
     }
 
+    /* Every half-period must be long enough for the ISR to keep up. */
+    if (clk0h_us < DCC_MIN_HP_US || clk0h_us >= clk0t_us ||
+        (uint16_t)(clk0t_us - clk0h_us) < DCC_MIN_HP_US ||
+        (clk1t_us / 2u) < DCC_MIN_HP_US)
+    {
+        return SHP_STATUS_BAD_LENGTH;
+    }
+
+    /* Publish all three values atomically with respect to the ISR. */
+    primask = __get_PRIMASK();
+    __disable_irq();
     eng->clk0t_us = clk0t_us;
     eng->clk0h_us = clk0h_us;
     eng->clk1t_us = clk1t_us;
     g_cfg_clk0t_us = clk0t_us;
     g_cfg_clk0h_us = clk0h_us;
     g_cfg_clk1t_us = clk1t_us;
+    __set_PRIMASK(primask);
     return SHP_STATUS_OK;
 }
 

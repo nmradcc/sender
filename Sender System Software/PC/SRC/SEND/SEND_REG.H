@@ -11,13 +11,15 @@
 #define SEND_REG_H_DECLARED
 
 #include <zlog.h>
+#include <chrono>
+#include <thread>
 #include <dcc.h>
 #include "sr_core.h"
 #include "send.h"
 
 const u_short	DCC_CLK_HOLD	= 0;		// Hold present clock value.
 const u_short	DCC_CLK_ERR		= 1;		// Clock has an error.
-const u_short	DCC_CLK_MIN		= 10;		// Minimum valid clock value.
+const u_short	DCC_CLK_MIN		= 40;		// Minimum valid clock value.
 const u_int		PKT_SIZE		= 5;		// Size of basic packets.
 /*
  *	Count of 1s and 0s added to fill out 1,2, or 4 39 bit packets
@@ -40,6 +42,15 @@ const BYTE		GEN_FL_BIT 		        = 0x04; // Front Light bit.
 const BYTE		GEN_RL_MASK	            = 0x08;	// Rear Light mask bit.
 const BYTE		GEN_RL_BIT 		        = 0x08; // Rear Light bit.
 const BYTE		GEN_LP_MASK 	        = 0x0C; // Light mask bit.
+const BYTE		GEN_F1_BIT 		        = 0x10; // F1/AUX1 bit.
+const BYTE		GEN_F1_MASK		        = 0x10; // F1/AUX1 mask bit.
+const BYTE		GEN_F2_BIT 		        = 0x20; // F2/AUX2 bit.
+const BYTE		GEN_F2_MASK		        = 0x20; // F2/AUX2 mask bit.
+const BYTE		GEN_F3_BIT 		        = 0x40; // F3/AUX3 bit.
+const BYTE		GEN_F3_MASK		        = 0x40; // F3/AUX3 mask bit.
+const BYTE		GEN_F4_BIT 		        = 0x80; // F4/AUX4 bit.
+const BYTE		GEN_F4_MASK		        = 0x80; // F4/AUX4 mask bit.
+
 
 
 const u_int		PC_DELAY_INIT	= 5;		// Initial 1 usec delay count.
@@ -91,7 +102,8 @@ class Send_reg : public Sr_core
 		clk0t( DCC_CLK_ERR ), clk0h( DCC_CLK_ERR ), clk1t( DCC_CLK_ERR ),
 		err_cnt( 0 ), m_pc_delay_1usec( PC_DELAY_INIT ),
 		m_swap_0_1( false ), m_no_hw_sim( false ), m_log_pkts( false ),
-		m_log_data( false ), m_log_io( false ), m_hw_if( nullptr )
+		m_log_data( false ), m_log_io( false ), m_hw_if( nullptr ),
+		m_pkt_gap_msec( 100 )
 	{
 		rst_stats();
 	}
@@ -119,6 +131,14 @@ class Send_reg : public Sr_core
 	void	set_log_data( bool ilog_data ) { m_log_data = ilog_data; }
 	void	set_log_io( bool ilog_io ) { m_log_io = ilog_io; }
 	void	set_hw_if( Sender_hw_if *ihw_if ) { m_hw_if = ihw_if; }
+	void	set_pkt_gap_msec( u_int imsec ) { m_pkt_gap_msec = imsec; }
+
+	// Sleep for the host side inter-packet delay (the Fill time).
+	void	pkt_gap( void ) const
+	{
+		std::this_thread::sleep_for(
+			std::chrono::milliseconds( m_pkt_gap_msec ) );
+	}
 
 	/* Board initialization and reset routines */
 	Rslt_t	set_clk( u_short iclk0t, u_short iclk0h, u_short iclk1t );
@@ -156,9 +176,9 @@ class Send_reg : public Sr_core
 									u_short iclk0t1, u_short iclk0h1,
 									u_short iclk0t2, u_short iclk0h2,
 									BYTE ibyte, const char *into );
-	Rslt_t	send_pkt( Bits &ibits, const char *info );
+	Rslt_t	send_pkt( Bits &ibits, const char *info, bool add_gap = true );
 	Rslt_t	send_pkt(	const BYTE *ibytes, u_int isize,
-						const char *info );
+						const char *info, bool add_gap = true );
 
 	// Send the kick start packet sequence to the decoder.
 	Rslt_t kick_start( Bits & ibits, Args_obj & iargs );
@@ -207,6 +227,7 @@ class Send_reg : public Sr_core
 	bool				m_log_data;				// true to log packet data.
 	bool				m_log_io;				// true to log IO data.
 	Sender_hw_if		*m_hw_if;			// Optional MCU backend interface.
+	u_int				m_pkt_gap_msec;		// Host delay between pkts (msec).
 
 	/* Method section */
 	void	print_pkt_log( const BYTE *ibytes, u_int isize );

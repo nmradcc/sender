@@ -11,7 +11,6 @@
 #define ARGS_H_DECLARED
 
 #include "send.h"
-
 #if defined(_MSC_VER)
 #include <direct.h>
 #include <stdlib.h>
@@ -83,8 +82,6 @@ class Args_obj : public Z_core
 				{ return ( m_extra_preamble ); }
 	bool	  	get_trig_rev( void ) const
 				{ return ( m_trig_rev ); }
-	bool	  	get_loco_first( void ) const
-				{ return ( m_loco_first ); }
 	u_int	   	get_fill_msec( void ) const
 				{ return ( m_fill_msec ); }
 	u_int	   	get_test_repeats( void ) const
@@ -99,8 +96,6 @@ class Args_obj : public Z_core
 				{ return ( m_reduce_passcnt ); }
 	bool	  	get_no_abort( void ) const
 				{ return ( m_no_abort ); }
-	bool	  	get_late_scope( void ) const
-				{ return ( m_late_scope ); }
 	bool	  	get_ambig_addr_same( void ) const
 				{ return ( m_ambig_addr_same ); }
 	BYTE	   	get_aspect_preset( void ) const
@@ -146,7 +141,6 @@ class Args_obj : public Z_core
 	bool					m_manual_flag;		// Run tests manually.
 	u_int					m_extra_preamble;		// Extra margin test preambles.
 	bool					m_trig_rev;			// Use reverse as trigger cmd.
-	bool					m_loco_first;			// Put loco pkt + func pkt.
 	u_int					m_fill_msec;			// Fill time (msec).
 	u_int					m_test_repeats;		// Number of times to do tests.
 	bool					m_print_user;			// If true, print user docs.
@@ -154,7 +148,6 @@ class Args_obj : public Z_core
 	bool				    m_mcu_bypass_tst;	// If true, skip MCU self tests.
 	bool				    m_reduce_passcnt;	// If true, use reduced pass count.
 	bool					m_no_abort;			// If true, no stop on error.
-	bool					m_late_scope;		// If true, use late scope.
 	bool					m_ambig_addr_same;	// If true, use same address.
     BYTE					m_aspect_preset;		// Sig decoder aspect preset.
     BYTE					m_aspect_trigger;		// Sig decoder aspect trigger.

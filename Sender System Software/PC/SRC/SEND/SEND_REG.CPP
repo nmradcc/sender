@@ -164,7 +164,8 @@ Send_reg::set_scope(
  *		'iclk0t' sets the 0T time in microseconds.  'iclk0h' sets the
  *		0H time in microseconds.  'iclk1t' sets the 1T time in microseconds.
  *		Setting any of these value to DCC_CLK_HOLD will leave that value
- *		unchanged.
+ *		unchanged.  If the clock is not running it is started first; if it
+ *		is running the new timing is sent on the fly without a stop/start.
  */
 /*--------------------------------------------------------------------------*/
 
@@ -175,13 +176,17 @@ Send_reg::set_clk(
 	u_short			iclk1t )				// 1T duration in usec.
 {
 	const char		*my_name = "Send_reg::set_clk";
-	bool			trunning = running;		// Temp running state.
 
 	clr_err_cnt();							// Restart error counter.
 
-	if ( running )							// Stop the clock if it is running.
+	// Timing is changed on the fly; never stop the clock to do it.
+	if ( !running )
 	{
-		stop_clk();
+		if ( start_clk() != OK )
+		{
+			return ( FAIL );
+		}
+		clr_err_cnt();
 	}
 
 	if ( m_hw_if == nullptr )
@@ -241,6 +246,14 @@ Send_reg::set_clk(
 		}
 	}
 
+	// The 0 bit low phase (0T - 0H) must also be a valid half period.
+	if ( clk0h >= clk0t || ( clk0t - clk0h ) < ( DCC_CLK_MIN / 2 ) )
+	{
+		ERRPRINT( my_name, LOG_ERR,
+			"0T %hu, 0H %hu leave an invalid 0 low phase", clk0t, clk0h );
+		return ( FAIL );
+	}
+
 	if ( m_log_pkts )
 	{
 		DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu.",
@@ -253,18 +266,6 @@ Send_reg::set_clk(
 			"set_timing() FAILED" );
 		clk0t = clk0h = clk1t = DCC_CLK_ERR;
 		return ( FAIL );
-	}
-
-	if ( trunning )
-	{
-		if ( start_clk() != OK )
-		{
-			return ( FAIL );
-		}
-	}
-	else
-	{
-		running = false;
 	}
 
 	return ( OK );
@@ -849,6 +850,8 @@ Send_reg::send_2_ambig_bits(
  *		send_pkt() sends each BYTE in the 'ibytes' array.
  *		It returns FAIL if the INTRA line does not go inactive in a
  *		reasonable length of time.
+ *		The host side inter-packet delay is appended only if 'add_gap'
+ *		is true.
  */
 /*--------------------------------------------------------------------------*/
 
@@ -856,7 +859,8 @@ Rslt_t
 Send_reg::send_pkt(
 	const BYTE		*ibytes,				// Pointer to BYTE array.
 	u_int			isize,					// Size of ibytes array.
-	const char		*info )					// Packet log info.
+	const char		*info,					// Packet log info.
+	bool			add_gap )				// true to append the pkt gap.
 {
 	const char		*my_name = "Send_reg::send_pkt(BYTE)";
 	u_int			count;					// Count of BYTES sent.
@@ -880,6 +884,10 @@ Send_reg::send_pkt(
 			clr_err_cnt();
 			b_cnt	+= isize;
 			++p_cnt;
+			if ( add_gap )
+			{
+				pkt_gap();
+			}
 			return ( OK );
 		}
 
@@ -939,6 +947,10 @@ Send_reg::send_pkt(
 	clr_err_cnt();
 	b_cnt	+= isize;
 	++p_cnt;
+	if ( add_gap )
+	{
+		pkt_gap();
+	}
 	return ( OK );
 }
 
@@ -959,13 +971,16 @@ Send_reg::send_pkt(
  *		send_pkt() sends out all BYTES in a Bits object.
  *		It returns FAIL if the INTRA line does not go inactive in a
  *		reasonable length of time.
+ *		The host side inter-packet delay is appended only if 'add_gap'
+ *		is true.
  */
 /*--------------------------------------------------------------------------*/
 
 Rslt_t
 Send_reg::send_pkt(
 	Bits			&ibits,					// Bits to send.
-	const char		*info )					// Packet log info.
+	const char		*info,					// Packet log info.
+	bool			add_gap )				// true to append the pkt gap.
 {
 	const char		*my_name = "Send_reg::send_pkt(Bits)";
 	u_int			count = 0;				// Count of BYTES sent.
@@ -998,6 +1013,10 @@ Send_reg::send_pkt(
 			clr_err_cnt();
 			b_cnt	+= pkt_size;
 			++p_cnt;
+			if ( add_gap )
+			{
+				pkt_gap();
+			}
 			return ( OK );
 		}
 
@@ -1065,6 +1084,10 @@ Send_reg::send_pkt(
 	clr_err_cnt();
 	b_cnt	+= pkt_size;
 	++p_cnt;
+	if ( add_gap )
+	{
+		pkt_gap();
+	}
 	return ( OK );
 }
 
