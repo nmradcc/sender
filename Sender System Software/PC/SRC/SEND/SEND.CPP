@@ -929,86 +929,91 @@ do_mcu_self_tests( void )
 	}
 	printf( "----------------------------------------\n" );
 
-	/* 1. RESET_STATS */
-	SELF_CHECK( "1. RESET_STATS", Lhw_if->reset_stats() );
+	/* 1. FREQ_TEST */
+	{
+		bool		 freq_pass = false;
+		uint32_t	 freq_hz = 0;
+		bool		 ok = Lmcu_hw && Lmcu_hw->freq_test( freq_pass, freq_hz );
+		char		 freq_text[48];
 
-	/* 2. SET_TIMING */
-	SELF_CHECK( "2. SET_TIMING (200/100/116 us)",
+		SELF_CHECK( "1. FREQ_TEST (4 MHz +/- 200 Hz)", ok && freq_pass );
+		snprintf( freq_text, sizeof( freq_text ),
+			"1b. measured freq == %luHz", static_cast<unsigned long>( freq_hz ) );
+		SELF_CHECK( freq_text, ok && freq_pass );
+	}
+
+	/* 2. RESET_STATS */
+	SELF_CHECK( "2. RESET_STATS", Lhw_if->reset_stats() );
+
+	/* 3. SET_TIMING */
+	SELF_CHECK( "3. SET_TIMING (200/100/116 us)",
 		Lhw_if->set_timing( 200, 100, 116 ) );
 
-	/* 3. START_CLK */
+	/* 4. START_CLK */
 	{
 		bool started = Lhw_if->start_clock();
-		SELF_CHECK( "3. START_CLK", started );
+		SELF_CHECK( "4. START_CLK", started );
 		if ( started )
 		{
 			Lhw_running = true;
 		}
 	}
 
-	/* 4. SEND_BYTES (4 x 0xFF idle bytes) */
-	SELF_CHECK( "4. SEND_BYTES (4 x 0xFF)",
+	/* 5. SEND_BYTES (4 x 0xFF idle bytes) */
+	SELF_CHECK( "5. SEND_BYTES (4 x 0xFF)",
 		Lhw_if->send_bytes( 4, 0xFF, "selftest" ) );
 
-	/* 5. GET_STATUS */
+	/* 6. GET_STATUS */
 	{
 		Sender_hw_status st;
 		bool ok = Lhw_if->get_status( st );
-		SELF_CHECK( "5. GET_STATUS succeeds", ok );
+		SELF_CHECK( "6. GET_STATUS succeeds", ok );
 		if ( ok )
 		{
-			SELF_CHECK( "5a. running == true",    st.running );
+			SELF_CHECK( "6a. running == true",    st.running );
 		}
 	}
 
-	/* 5c. GET_STATS after GET_STATUS (SEND_BYTES phase) */
+	/* 6b/6c. GET_STATS after GET_STATUS (SEND_BYTES phase) */
 	{
 		Sender_hw_stats stats;
 		bool ok = Lhw_if->get_stats( stats );
-		SELF_CHECK( "5c. GET_STATS succeeds", ok );
-		if ( ok )
-		{
-			SELF_CHECK( "5d. bytes_sent == 4",   stats.bytes_sent   == 4 );
-			SELF_CHECK( "5e. packets_sent == 1", stats.packets_sent == 1 );
-		}
+		SELF_CHECK( "6b. bytes_sent == 4",   ok && stats.bytes_sent   == 4 );
+		SELF_CHECK( "6c. packets_sent == 1", ok && stats.packets_sent == 1 );
 	}
 
-	/* 6. RESET_STATS again */
-	SELF_CHECK( "6. RESET_STATS (before SEND_PACKET)", Lhw_if->reset_stats() );
+	/* 7. RESET_STATS again */
+	SELF_CHECK( "7. RESET_STATS (before SEND_PACKET)", Lhw_if->reset_stats() );
 
-	/* 7. SEND_PACKET (DCC idle FF 00 FF) */
+	/* 8. SEND_PACKET (DCC idle FF 00 FF) */
 	{
 		static const uint8_t idle_pkt[] = { 0xFF, 0x00, 0xFF };
 		hw_set_scope( true );
-		SELF_CHECK( "7. SEND_PACKET (DCC idle FF 00 FF)",
+		SELF_CHECK( "8. SEND_PACKET (DCC idle FF 00 FF)",
 			Lhw_if->send_packet( idle_pkt, sizeof( idle_pkt ), "selftest" ) );
 		hw_set_scope( false );
 	}
 
-	/* 8. GET_STATS */
+	/* 9. GET_STATS */
 	{
 		Sender_hw_stats stats;
 		bool ok = Lhw_if->get_stats( stats );
-		SELF_CHECK( "8. GET_STATS succeeds", ok );
-		if ( ok )
-		{
-			SELF_CHECK( "8a. bytes_sent == 3",    stats.bytes_sent   == 3 );
-			SELF_CHECK( "8b. packets_sent == 1",  stats.packets_sent == 1 );
-		}
+		SELF_CHECK( "9a. bytes_sent == 3",    ok && stats.bytes_sent   == 3 );
+		SELF_CHECK( "9b. packets_sent == 1",  ok && stats.packets_sent == 1 );
 	}
 
-	/* 9. STOP_CLK */
+	/* 10. STOP_CLK */
 	{
 		bool stopped = Lhw_if->stop_clock();
-		SELF_CHECK( "9. STOP_CLK", stopped );
+		SELF_CHECK( "10. STOP_CLK", stopped );
 		if ( stopped )
 		{
 			Lhw_running = false;
 		}
 	}
 
-	/* 10. RESET_STATS */
-	SELF_CHECK( "10. RESET_STATS", Lhw_if->reset_stats() );
+	/* 11. RESET_STATS */
+	SELF_CHECK( "11. RESET_STATS", Lhw_if->reset_stats() );
 
 #undef SELF_CHECK
 
