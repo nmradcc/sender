@@ -848,8 +848,6 @@ Send_reg::send_2_ambig_bits(
  *	DESCRIPTION
  *
  *		send_pkt() sends each BYTE in the 'ibytes' array.
- *		It returns FAIL if the INTRA line does not go inactive in a
- *		reasonable length of time.
  *		The host side inter-packet delay is appended only if 'add_gap'
  *		is true.
  */
@@ -969,9 +967,7 @@ Send_reg::send_pkt(
  *	DESCRIPTION
  *
  *		send_pkt() sends out all BYTES in a Bits object.
- *		It returns FAIL if the INTRA line does not go inactive in a
- *		reasonable length of time.
- *		The host side inter-packet delay is appended only if 'add_gap'
+  *		The host side inter-packet delay is appended only if 'add_gap'
  *		is true.
  */
 /*--------------------------------------------------------------------------*/
