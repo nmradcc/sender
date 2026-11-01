@@ -141,11 +141,23 @@ void MX_ThreadX_Init(void)
 /* USER CODE BEGIN 1 */
 static VOID LedThreadTask(ULONG thread_input)
 {
+  int red_flashing = 0;
+
   TX_PARAMETER_NOT_USED(thread_input);
 
   while (1)
   {
     BSP_LED_Toggle(LED_YELLOW);
+    if (sender_app_freq_failed())
+    {
+      BSP_LED_Toggle(LED_RED);
+      red_flashing = 1;
+    }
+    else if (red_flashing)
+    {
+      BSP_LED_Off(LED_RED);
+      red_flashing = 0;
+    }
     tx_thread_sleep(TX_TIMER_TICKS_PER_SECOND / 2U);
   }
 }

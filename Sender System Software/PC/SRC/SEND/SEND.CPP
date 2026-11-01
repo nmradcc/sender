@@ -963,7 +963,6 @@ do_mcu_self_tests( void )
 		if ( ok )
 		{
 			SELF_CHECK( "5a. running == true",    st.running );
-			SELF_CHECK( "5b. underflow == false", !st.underflow );
 		}
 	}
 

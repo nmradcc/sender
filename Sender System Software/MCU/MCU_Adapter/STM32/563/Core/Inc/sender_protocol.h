@@ -51,6 +51,7 @@ enum shp_cmd
     SHP_CMD_GET_STATS = 0x31,
     SHP_CMD_RESET_STATS = 0x32,
     SHP_CMD_GET_MCU_VERSION = 0x33,
+    SHP_CMD_FREQ_TEST = 0x34,
 
     SHP_CMD_RESET_DEVICE = 0x7F
 };
@@ -79,7 +80,6 @@ enum shp_status
 typedef struct sender_status_payload
 {
     bool running;
-    bool underflow;
     uint32_t err_flags;
     uint16_t queue_depth;
     uint8_t gen1;

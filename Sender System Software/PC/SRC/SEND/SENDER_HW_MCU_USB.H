@@ -55,6 +55,9 @@ class Sender_hw_mcu_usb : public Sender_hw_if
     /* Returns raw SHP_CMD_GET_INFO payload from the MCU. */
     bool get_info(std::vector<uint8_t>& info_payload);
     bool get_mcu_version(uint32_t& version);
+    /* Runs the MCU 4 MHz reference frequency test (takes about 1 s).
+       pass is true if the MCU measured 4 MHz +/- 200 Hz. */
+    bool freq_test(bool& pass, uint32_t& freq_hz);
 
     /* Helpers used by host and test code for frame handling. */
     static uint16_t crc16_ccitt(const uint8_t* data, size_t size);
@@ -69,7 +72,8 @@ class Sender_hw_mcu_usb : public Sender_hw_if
     bool send_command_wait_response(uint8_t cmd, const uint8_t* payload,
                                     uint16_t payload_len,
                                     std::vector<uint8_t>& out_payload,
-                                    uint8_t& out_status);
+                                    uint8_t& out_status,
+                                    uint32_t timeout_ms = 1000);
     bool send_chunked_commit(const uint8_t* data, size_t size,
                  uint8_t append_cmd, uint8_t commit_cmd,
                  const uint8_t* commit_payload = nullptr,

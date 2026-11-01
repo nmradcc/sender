@@ -12,17 +12,18 @@
  *
  * Tests performed in order:
  *   1. Open CDC port and issue GET_INFO — verify protocol version.
- *   2. RESET_STATS.
- *   3. SET_TIMING with default DCC values.
- *   4. START_CLK.
- *   5. SEND_BYTES (4 x 0xFF idle bytes).
- *   6. GET_STATUS, then GET_STATS — verify exact counts 4 bytes, 1 packet.
- *   7. RESET_STATS again.
- *   8. SEND_PACKET (DCC idle packet: FF 00 FF).
- *   9. GET_STATS  — verify exact counts 3 bytes, 1 packet.
- *  10. STOP_CLK.
- *  11. Close device.
- *  12. Re-open and verify link recovery.
+ *   2. FREQ_TEST — MCU measures the 4 MHz reference (4 MHz +/- 200 Hz).
+ *   3. RESET_STATS.
+ *   4. SET_TIMING with default DCC values.
+ *   5. START_CLK.
+ *   6. SEND_BYTES (4 x 0xFF idle bytes).
+ *   7. GET_STATUS, then GET_STATS — verify exact counts 4 bytes, 1 packet.
+ *   8. RESET_STATS again.
+ *   9. SEND_PACKET (DCC idle packet: FF 00 FF).
+ *  10. GET_STATS  — verify exact counts 3 bytes, 1 packet.
+ *  11. STOP_CLK.
+ *  12. Close device.
+ *  13. Re-open and verify link recovery.
  */
 
 #include <stdio.h>
@@ -117,81 +118,97 @@ int main(int argc, char *argv[])
 
     /* 1. Open + GET_INFO -------------------------------------------------- */
     bool opened = dev.init();
-    check("1. init / GET_INFO (version check)", opened);
+    if (opened)
+    {
+        dump_mcu_version_info(dev);
+    }
+    else
+    {
+        printf("----------------------------------------\n");
+    }
+    check("1. GET_INFO (version check)", opened);
     if (!opened)
     {
         printf("Cannot open port — aborting.\n");
         return 1;
     }
 
-    dump_mcu_version_info(dev);
+    /* 2. FREQ_TEST --------------------------------------------------------- */
+    {
+        bool freq_pass = false;
+        uint32_t freq_hz = 0;
+        bool ok = dev.freq_test(freq_pass, freq_hz);
 
-    /* 2. RESET_STATS + verify zero ----------------------------------------- */
-    check("2. RESET_STATS", dev.reset_stats());
+        check("2. FREQ_TEST (4 MHz +/- 200 Hz)", ok && freq_pass);
+        {
+            char freq_text[48];
+            snprintf(freq_text, sizeof(freq_text), "2b. measured freq == %luHz",
+                     static_cast<unsigned long>(freq_hz));
+            check(freq_text, ok && freq_pass);
+        }
+    }
 
-    /* 3. SET_TIMING -------------------------------------------------------- */
+    /* 3. RESET_STATS + verify zero ----------------------------------------- */
+    check("3. RESET_STATS", dev.reset_stats());
+
+    /* 4. SET_TIMING -------------------------------------------------------- */
     /* Defaults: 0T=200 us, 0H=100 us, 1T=116 us */
-    check("3. SET_TIMING (200/100/116 us)",
+    check("4. SET_TIMING (200/100/116 us)",
           dev.set_timing(200, 100, 116));
 
-    /* 4. START_CLK --------------------------------------------------------- */
-    check("4. START_CLK", dev.start_clock());
+    /* 5. START_CLK --------------------------------------------------------- */
+    check("5. START_CLK", dev.start_clock());
 
-    /* 5. SEND_BYTES -------------------------------------------------------- */
-    check("5. SEND_BYTES (4 x 0xFF)", dev.send_bytes(4, 0xFF, "smoke"));
+    /* 6. SEND_BYTES -------------------------------------------------------- */
+    check("6. SEND_BYTES (4 x 0xFF)", dev.send_bytes(4, 0xFF, "smoke"));
 
-    /* 6. GET_STATUS -------------------------------------------------------- */
+    /* 7. GET_STATUS -------------------------------------------------------- */
     {
         Sender_hw_status st;
         bool ok = dev.get_status(st);
-        check("6. GET_STATUS succeeds", ok);
+        check("7. GET_STATUS succeeds", ok);
         if (ok)
         {
-            check("6a. running == true",  st.running);
-            check("6b. underflow == false", !st.underflow);
+            check("7a. running == true",  st.running);
         }
     }
 
-    /* 6c. GET_STATS after GET_STATUS (SEND_BYTES phase) ------------------- */
+    /* 7b/7c. GET_STATS after GET_STATUS (SEND_BYTES phase) ---------------- */
     {
         Sender_hw_stats stats;
         bool ok = dev.get_stats(stats);
-        check("6c. GET_STATS succeeds", ok);
-        if (ok)
-        {
-            check("6d. bytes_sent == 4", stats.bytes_sent == 4);
-            check("6e. packets_sent == 1", stats.packets_sent == 1);
-        }
+        check("7b. bytes_sent == 4", ok && stats.bytes_sent == 4);
+        check("7c. packets_sent == 1", ok && stats.packets_sent == 1);
     }
 
-    /* 7. RESET_STATS again + verify zero ----------------------------------- */
-    check("7. RESET_STATS (before SEND_PACKET)", dev.reset_stats());
+    /* 8. RESET_STATS again + verify zero ----------------------------------- */
+    check("8. RESET_STATS (before SEND_PACKET)", dev.reset_stats());
 
-    /* 8. SEND_PACKET ------------------------------------------------------- */
+    /* 9. SEND_PACKET ------------------------------------------------------- */
     /* DCC idle packet: address=0xFF, data=0x00, checksum=0xFF */
     {
         static const uint8_t idle_pkt[] = { 0xFF, 0x00, 0xFF };
-        check("8. SEND_PACKET (DCC idle FF 00 FF)",
+        check("9. SEND_PACKET (DCC idle FF 00 FF)",
               dev.send_packet(idle_pkt, sizeof(idle_pkt), "smoke"));
     }
 
-    /* 9. GET_STATS --------------------------------------------------------- */
+    /* 10. GET_STATS -------------------------------------------------------- */
     {
         Sender_hw_stats stats;
         bool ok = dev.get_stats(stats);
-        check("9. GET_STATS succeeds", ok);
+        check("10. GET_STATS succeeds", ok);
         if (ok)
         {
-            check("9a. bytes_sent == 3", stats.bytes_sent == 3);
-            check("9b. packets_sent == 1", stats.packets_sent == 1);
+            check("10a. bytes_sent == 3", stats.bytes_sent == 3);
+            check("10b. packets_sent == 1", stats.packets_sent == 1);
         }
     }
 
-    /* 10. STOP_CLK --------------------------------------------------------- */
-    check("10. STOP_CLK", dev.stop_clock());
+    /* 11. STOP_CLK --------------------------------------------------------- */
+    check("11. STOP_CLK", dev.stop_clock());
 
-    /* 11. CLOSE_DEVICE ----------------------------------------------------- */
-    check("11. CLOSE_DEVICE", dev.close() /* close flushes; reset via re-init */
+    /* 12. CLOSE_DEVICE ----------------------------------------------------- */
+    check("12. CLOSE_DEVICE", dev.close() /* close flushes; reset via re-init */
           || true /* close always succeeds */);
     /* Re-open and send RESET_DEVICE command explicitly */
     {
@@ -199,12 +216,12 @@ int main(int argc, char *argv[])
         if (dev2.init())
         {
                 /* Verify the port can be reopened after close. */
-            check("12. Re-open after close", true);
+            check("13. Re-open after close", true);
             dev2.close();
         }
         else
         {
-            check("12. Re-open after close", false);
+            check("13. Re-open after close", false);
         }
     }
 

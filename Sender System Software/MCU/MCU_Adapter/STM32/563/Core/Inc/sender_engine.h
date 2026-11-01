@@ -14,7 +14,6 @@ extern "C" {
 typedef struct sender_engine
 {
     bool running;
-    bool underflow;
     bool scope_on;
 
     uint16_t clk0t_us;

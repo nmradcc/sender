@@ -543,18 +543,17 @@ bool Sender_hw_mcu_usb::get_status(Sender_hw_status& status)
         return false;
     }
 
-    if (out.size() < 10)
+    if (out.size() < 9)
     {
         return false;
     }
 
     status.running = (out[0] != 0);
-    status.underflow = (out[1] != 0);
-    status.err_flags = static_cast<uint32_t>(out[2]) | (static_cast<uint32_t>(out[3]) << 8) |
-                       (static_cast<uint32_t>(out[4]) << 16) | (static_cast<uint32_t>(out[5]) << 24);
-    status.queue_depth = static_cast<uint16_t>(out[6] | (out[7] << 8));
-    status.gen1 = out[8];
-    status.gen2 = out[9];
+    status.err_flags = static_cast<uint32_t>(out[1]) | (static_cast<uint32_t>(out[2]) << 8) |
+                       (static_cast<uint32_t>(out[3]) << 16) | (static_cast<uint32_t>(out[4]) << 24);
+    status.queue_depth = static_cast<uint16_t>(out[5] | (out[6] << 8));
+    status.gen1 = out[7];
+    status.gen2 = out[8];
 
     return true;
 }
@@ -621,6 +620,27 @@ bool Sender_hw_mcu_usb::get_mcu_version(uint32_t& version)
 
     version = static_cast<uint32_t>(out[0]) | (static_cast<uint32_t>(out[1]) << 8) |
               (static_cast<uint32_t>(out[2]) << 16) | (static_cast<uint32_t>(out[3]) << 24);
+    return true;
+}
+
+bool Sender_hw_mcu_usb::freq_test(bool& pass, uint32_t& freq_hz)
+{
+    std::vector<uint8_t> out;
+    uint8_t rsp_status = SHP_STATUS_INTERNAL_ERROR;
+
+    pass = false;
+    freq_hz = 0;
+
+    /* The MCU measures for 1 s and may flash the LED, so allow extra time. */
+    if (!send_command_wait_response(SHP_CMD_FREQ_TEST, nullptr, 0, out,
+                                    rsp_status, 5000) || out.size() != 5)
+    {
+        return false;
+    }
+
+    pass = (out[0] != 0);
+    freq_hz = static_cast<uint32_t>(out[1]) | (static_cast<uint32_t>(out[2]) << 8) |
+              (static_cast<uint32_t>(out[3]) << 16) | (static_cast<uint32_t>(out[4]) << 24);
     return true;
 }
 
@@ -692,7 +712,8 @@ bool Sender_hw_mcu_usb::send_command_wait_response(uint8_t cmd,
                                                     const uint8_t* payload,
                                                     uint16_t payload_len,
                                                     std::vector<uint8_t>& out_payload,
-                                                    uint8_t& out_status)
+                                                    uint8_t& out_status,
+                                                    uint32_t timeout_ms)
 {
     std::vector<uint8_t> tx;
     uint8_t hdr[7];
@@ -721,9 +742,9 @@ bool Sender_hw_mcu_usb::send_command_wait_response(uint8_t cmd,
         return false;
     }
 
-    if (!read_exact(hdr, sizeof(hdr), 1000))
+    if (!read_exact(hdr, sizeof(hdr), timeout_ms))
     {
-        SHP_LOG_FAILURE(cmd, seq, "response-header", "no complete response within 1000 ms");
+        SHP_LOG_FAILURE(cmd, seq, "response-header", "no complete response within timeout");
         return false;
     }
 

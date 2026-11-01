@@ -588,7 +588,6 @@ uint8_t sender_engine_start(sender_engine_t *eng)
     g_hp_dequeued_total = 0u;
     g_adr_evt_head = 0u;
     g_adr_evt_tail = 0u;
-    eng->underflow = false;
     dcc_hw_start();
     eng->running  = true;
     return SHP_STATUS_OK;
@@ -921,7 +920,6 @@ void sender_engine_get_status(const sender_engine_t *eng,
     }
 
     out->running    = eng->running;
-    out->underflow  = eng->underflow;
     out->err_flags  = eng->err_flags;
     out->queue_depth = (uint16_t)((g_hp_commit - g_hp_head) & DCC_FIFO_MASK);
     out->gen1 = dcc_read_gen_pins();

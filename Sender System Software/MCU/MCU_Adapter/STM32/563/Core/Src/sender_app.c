@@ -2,9 +2,16 @@
 
 #include <string.h>
 
+#include "main.h"
 #include "sender_engine.h"
 #include "sender_parser.h"
 #include "sender_transport.h"
+
+#define FREQ_TEST_GATE_MS   1000u
+#define FREQ_TEST_NOMINAL   4000000u
+#define FREQ_TEST_TOL_HZ    200u
+
+static volatile uint8_t g_freq_failed;
 
 static sender_engine_t g_engine;
 static uint8_t g_rx_frame[1024];
@@ -38,6 +45,7 @@ static void sender_app_handle_request(const sender_request_t* req,
         req->cmd != SHP_CMD_COMMIT_RAW_TIMED_BITS &&
         req->cmd != SHP_CMD_GET_INFO &&
         req->cmd != SHP_CMD_GET_MCU_VERSION &&
+        req->cmd != SHP_CMD_FREQ_TEST &&
         req->cmd != SHP_CMD_GET_STATUS &&
         req->cmd != SHP_CMD_GET_STATS &&
         req->cmd != SHP_CMD_RESET_STATS &&
@@ -81,6 +89,29 @@ static void sender_app_handle_request(const sender_request_t* req,
             rsp->payload[3] =
                 (uint8_t)((SHP_MCU_FW_VERSION_NUMBER >> 24) & 0xFFu);
             rsp->payload_len = 4;
+            break;
+
+        case SHP_CMD_FREQ_TEST:
+            if (req->payload_len != 0u)
+            {
+                rsp->status = SHP_STATUS_BAD_LENGTH;
+                break;
+            }
+
+            {
+                uint32_t freq_hz = freq_meas_hz(FREQ_TEST_GATE_MS);
+                bool pass = (freq_hz >= (FREQ_TEST_NOMINAL - FREQ_TEST_TOL_HZ)) &&
+                            (freq_hz <= (FREQ_TEST_NOMINAL + FREQ_TEST_TOL_HZ));
+
+                g_freq_failed = pass ? 0u : 1u;
+
+                rsp->payload[0] = pass ? 1u : 0u;
+                rsp->payload[1] = (uint8_t)(freq_hz & 0xFFu);
+                rsp->payload[2] = (uint8_t)((freq_hz >> 8) & 0xFFu);
+                rsp->payload[3] = (uint8_t)((freq_hz >> 16) & 0xFFu);
+                rsp->payload[4] = (uint8_t)((freq_hz >> 24) & 0xFFu);
+                rsp->payload_len = 5;
+            }
             break;
 
         case SHP_CMD_SET_TIMING:
@@ -285,24 +316,23 @@ static void sender_app_handle_request(const sender_request_t* req,
         case SHP_CMD_GET_STATUS:
             sender_engine_get_status(&g_engine, &status);
             rsp->payload[0] = status.running ? 1u : 0u;
-            rsp->payload[1] = status.underflow ? 1u : 0u;
-            rsp->payload[2] = (uint8_t)(status.err_flags & 0xFFu);
-            rsp->payload[3] = (uint8_t)((status.err_flags >> 8) & 0xFFu);
-            rsp->payload[4] = (uint8_t)((status.err_flags >> 16) & 0xFFu);
-            rsp->payload[5] = (uint8_t)((status.err_flags >> 24) & 0xFFu);
-            rsp->payload[6] = (uint8_t)(status.queue_depth & 0xFFu);
-            rsp->payload[7] = (uint8_t)((status.queue_depth >> 8) & 0xFFu);
-            rsp->payload[8] = status.gen1;
-            rsp->payload[9] = status.gen2;
-            rsp->payload[10] = (uint8_t)(status.non_idle_event_count & 0xFFu);
-            rsp->payload[11] =
+            rsp->payload[1] = (uint8_t)(status.err_flags & 0xFFu);
+            rsp->payload[2] = (uint8_t)((status.err_flags >> 8) & 0xFFu);
+            rsp->payload[3] = (uint8_t)((status.err_flags >> 16) & 0xFFu);
+            rsp->payload[4] = (uint8_t)((status.err_flags >> 24) & 0xFFu);
+            rsp->payload[5] = (uint8_t)(status.queue_depth & 0xFFu);
+            rsp->payload[6] = (uint8_t)((status.queue_depth >> 8) & 0xFFu);
+            rsp->payload[7] = status.gen1;
+            rsp->payload[8] = status.gen2;
+            rsp->payload[9] = (uint8_t)(status.non_idle_event_count & 0xFFu);
+            rsp->payload[10] =
                 (uint8_t)((status.non_idle_event_count >> 8) & 0xFFu);
-            rsp->payload[12] =
+            rsp->payload[11] =
                 (uint8_t)((status.non_idle_event_count >> 16) & 0xFFu);
-            rsp->payload[13] =
+            rsp->payload[12] =
                 (uint8_t)((status.non_idle_event_count >> 24) & 0xFFu);
-            rsp->payload[14] = status.last_non_idle_address;
-            rsp->payload_len = 15;
+            rsp->payload[13] = status.last_non_idle_address;
+            rsp->payload_len = 14;
             break;
 
         case SHP_CMD_GET_STATS:
@@ -376,4 +406,9 @@ void sender_app_get_non_idle_packet_event(uint32_t *event_count,
                                           uint8_t *last_address)
 {
     sender_engine_get_non_idle_packet_event(event_count, last_address);
+}
+
+int sender_app_freq_failed(void)
+{
+    return g_freq_failed != 0u;
 }

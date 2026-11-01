@@ -59,7 +59,7 @@ void MX_USART3_UART_Init(void);
 void MX_USB_PCD_Init(void);
 
 /* USER CODE BEGIN EFP */
-
+uint32_t freq_meas_hz(uint32_t gate_ms);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -77,6 +77,8 @@ void MX_USB_PCD_Init(void);
 #define IN1_GPIO_Port GPIOE
 #define IN3_Pin GPIO_PIN_15
 #define IN3_GPIO_Port GPIOE
+#define REF4MHZ_Pin GPIO_PIN_13
+#define REF4MHZ_GPIO_Port GPIOD
 #define BR_ENABLE_Pin GPIO_PIN_6
 #define BR_ENABLE_GPIO_Port GPIOG
 

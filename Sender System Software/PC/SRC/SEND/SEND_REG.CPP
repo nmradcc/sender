@@ -426,8 +426,7 @@ Send_reg::stop_clk( void )
  *	DESCRIPTION
  *
  *		send_bytes() sends 'ibyte' 'icnt' times.  It returns FAIL if the
- *		INTRA line does not go inactive in a reasonable length of time or
- *		if the underflow flag gets set.
+ *		INTRA line does not go inactive in a reasonable length of time.
  */
 /*--------------------------------------------------------------------------*/
 
@@ -849,7 +848,7 @@ Send_reg::send_2_ambig_bits(
  *
  *		send_pkt() sends each BYTE in the 'ibytes' array.
  *		It returns FAIL if the INTRA line does not go inactive in a
- *		reasonable length of time or if the underflow flag gets set.
+ *		reasonable length of time.
  */
 /*--------------------------------------------------------------------------*/
 
@@ -959,7 +958,7 @@ Send_reg::send_pkt(
  *
  *		send_pkt() sends out all BYTES in a Bits object.
  *		It returns FAIL if the INTRA line does not go inactive in a
- *		reasonable length of time or if the underflow flag gets set.
+ *		reasonable length of time.
  */
 /*--------------------------------------------------------------------------*/
 
@@ -1176,10 +1175,10 @@ Send_reg::update( void )
 	if ( m_hw_if->get_status( status ) )
 	{
 		running = status.running;
-		v.pb = status.underflow ? 0x01 : 0x00;
 	}
 
 	v.pa = 0;
+	v.pb = 0;
 	v.pc = 0;
 	v.s0t = 0;
 	v.s0h = 0;
