@@ -82,6 +82,7 @@ Args_obj::Args_obj( void )
 	m_log_mask			= DEF_LOG_MASK;		// Logging enabled.
 	m_mcu_bypass_tst	= false;			// Run MCU self tests.
 	m_reduce_passcnt	= false;			// Full pass count.
+	m_non_interactive	= false;			// Ask the startup questions.
 	m_no_abort			= false;			// Stop on error.
 	m_ambig_addr_same  	= false;			// Use different address.
     m_aspect_preset		= 0;				// Sig decoder aspect preset.
@@ -160,7 +161,7 @@ Args_obj::usage(
 		m_cmd_name );			
     fprintf( ofp,
 		"                [-T] [-F fill] [-R reps] [-A] [-f] [-S]\n"
-		"                [-o pair] [-k] [-e trg] [-B] [-Q] [-J port] [-Y baud]\n\n" );
+		"                [-o pair] [-k] [-e trg] [-B] [-Q] [-x] [-J port] [-Y baud]\n\n" );
 
 	if ( m_cfg_path[0] != '\0' )
 	{
@@ -202,7 +203,7 @@ Args_obj::usage(
 		"Signal decoder trigger aspect        <value %u>\n",
 		m_aspect_trigger );
 	fprintf( ofp,
-		"  -r         REPEAT      "
+		"  -r         REPEAT     "
 		"Repeat decoder tests                 <value %s>\n",
 		m_rep_flag		? "true" : "false" );
 	fprintf( ofp,
@@ -271,6 +272,10 @@ Args_obj::usage(
 		"  -Q    REDUCE_PASSCNT  "
 		"Reduce pass count (5 instead of 100) <value %s>\n",
 		m_reduce_passcnt	? "true" : "false" );
+	fprintf( ofp,
+		"  -x    NON_INTERACTIVE "
+		"Skip all startup prompts             <value %s>\n",
+		m_non_interactive	? "true" : "false" );
 	fprintf( ofp,
 		"  -J <port>  MCU_PORT   "
 		"MCU serial port name                 <value %s>\n",
@@ -672,6 +677,10 @@ Args_obj::argscan(
 		{
 			m_reduce_passcnt	= 	m_reduce_passcnt ? false  : true;
 		}
+		else if ( strcmp( argv[i], "-x" ) == 0 )	// Non-interactive start.
+		{
+			m_non_interactive	= 	m_non_interactive ? false  : true;
+		}
 		else if ( strcmp( argv[i], "-A" ) == 0 )	// No abort flag.
 		{
 			m_no_abort	=	m_no_abort ? false  : true;
@@ -1070,6 +1079,11 @@ Args_obj::cfgscan( void )
 		else if ( 	!strcmpi( cmd, 	"REDUCE_PASSCNT" ) )
 		{
 			targv[1]	= 	"-Q";
+			targc		= 	2;
+		}
+		else if ( 	!strcmpi( cmd, 	"NON_INTERACTIVE" ) )
+		{
+			targv[1]	= 	"-x";
 			targc		= 	2;
 		}
 		else if ( 	!strcmpi( cmd,	"NO_ABORT" ) )

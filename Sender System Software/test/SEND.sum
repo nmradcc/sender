@@ -1,0 +1,82 @@
+<Sun Nov  1 07:45:33 2026> STATUS  BEGINNING decoder test log
+<Sun Nov  1 07:45:33 2026> STATUS  Test software version B.7.0.0.0
+<Sun Nov  1 07:45:33 2026> STATUS  File <C:\GitHub\nmradcc\sender\Sender System Software\PC\build\Debug\send.exe>
+<Sun Nov  1 07:45:33 2026> STATUS  CRC 4283489290, Length 790528
+Manufacturer: 
+Model: 
+Version: 
+Modified CVs: 
+Booster type: 
+Track Direction: 
+--------------------------------
+--------------------------------
+
+Summary of command line and 'SEND.CFG' switches:
+
+Usage:     send [-?] [-u] [-m] [-a addr] [-d l|f|a|s] [-l] [-n pre] [-N trig]
+                [-r] [-t test mask] [-c clock mask] [-g function mask] [-P log mask] [-E pre]
+                [-T] [-F fill] [-R reps] [-A] [-f] [-S]
+                [-o pair] [-k] [-e trg] [-B] [-Q] [-x] [-J port] [-Y baud]
+
+Cfg file: <C:\GitHub\nmradcc\sender\Sender System Software\test\send.cfg>
+
+  -?                    Print usage message and exit
+  -u                    Print user information to 's_user.txt' and exit
+  -m         MANUAL     Start in manual mode                 <value false>
+  -a <addr>  ADDRESS    Decoder address                      <value 3>
+  -d L|F|A|S|l|f|a|s TYPE       Dec. type(L-LOC,F-FUNC,A-ACC,S-SIG)  <value L>
+  -l         LAMP       Use rear lamp for function tests     <value false>
+  -n <pre>   PRESET     Signal decoder preset aspect         <value 0>
+  -N <trig>  TRIGGER    Signal decoder trigger aspect        <value 8>
+  -r         REPEAT     Repeat decoder tests                 <value false>
+  -t <mask>  TESTS      Bit mask of tests to run             <value 0x00000001>
+  -c <mask>  CLOCKS     Bit mask of clocks to try            <value 0x00000000>
+  -g <mask>  FUNCS      Bit mask of active functions         <value 0x1f>
+  -P <mask>  LOG        Bit mask for logging                 <value 0x0F>
+  -E <pre>   EXTRA_PRE  Extra margin test preamble bits      <value 0>
+  -T         TRIG_REV   Use loco reverse as trigger packet   <value false>
+  -F <fill>  FILL_MSEC  Fill time in milliseconds            <value 100>
+  -R <reps>  TEST_REPS  Non packet acceptance test repeats   <value 2>
+  -A         NO_ABORT   Do not stop program on an error      <value false>
+  -f         FRAGMENT   Test all fragments                   <value false>
+  -S    SAME_AMBIG_ADDR Use same address for ambig tests     <value false>
+  -o        ACC_PAIR    Accessory output pair (1-4)          <value 1>
+                            output {preset, trigger}         <value {1, 0}>
+  -k        KICK_START  Kick start motor for function tests  <value false>
+  -e <trg>   EXTRA_TRG  Extra Ames test trigger packets      <value 0>
+  -B    MCU_BYPASS_TST  Skip MCU startup self tests          <value false>
+  -Q    REDUCE_PASSCNT  Reduce pass count (5 instead of 100) <value true>
+  -x    NON_INTERACTIVE Skip all startup prompts             <value true>
+  -J <port>  MCU_PORT   MCU serial port name                 <value COM4>
+  -Y <baud>  MCU_BAUD   MCU serial baud rate                 <value 115200>
+
+Manual keyboard commands >
+
+ESC - Return to command line       h - Print header
+  c - Toggle idle clock            0 - Send zeros
+  1 - Send ones                    a - Send scope A pattern
+  b - Send scope B pattern         o - Send scope timing packet
+  w - Send warble packets          S - Send stretched 0 pattern
+  r - Send DCC reset packets       d - Send DCC packets
+  D - Send stretched DCC packets   s - Change loco speed, acc. output
+  e - Set speed to E-STOP          f - Change loco direction, acc. on/off
+  E - Set speed to E_STOP(I)       t - Run self tests repeatedly
+  k - Kickstart loco for funcs
+  R - Send hard resets             g - Test generic I/O
+  z - Run decoder tests            q - Quit program
+
+
+<Sun Nov  1 07:45:33 2026> STATUS  Starting decoder tests, address 3, type L
+<Sun Nov  1 07:45:33 2026> STATUS  Beginning MCU self tests
+<Sun Nov  1 07:45:33 2026> STATUS  MCU self test
+<Sun Nov  1 07:45:33 2026> STATUS  MCU firmware version 1.0.0.1
+<Sun Nov  1 07:45:34 2026> STATUS  MCU self tests passed
+<Sun Nov  1 07:45:34 2026> STATUS  Starting Decoder test cycle    1
+<Sun Nov  1 07:45:34 2026> STATUS  Beginning booster warm up.
+<Sun Nov  1 07:45:34 2026> STATUS  sending 2 fail safe operation sequences.
+<Sun Nov  1 07:45:39 2026> STATUS  Starting decoder tests.
+<Sun Nov  1 07:45:39 2026> STATUS  Margin test for 1T clock,  12 preambles
+<Sun Nov  1 07:45:40 2026> STATUS  Nominal timing 1T 116 us failed with 1 failures; skipping 1T margin search.
+<Sun Nov  1 07:45:40 2026> STATUS  Packets sent 5, Bytes sent 460
+<Sun Nov  1 07:45:40 2026> STATUS  Tests COMPLETED
+<Sun Nov  1 07:45:40 2026> STATUS  {SEND_END 0}

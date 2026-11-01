@@ -700,7 +700,12 @@ get_log_file(
     	nCRC, nLength );
 	fputs( "Enter base of log and statistics file name > ", stdout );
 
-	if ( !fgets(  buf, MAXLINE, stdin ) )
+	if ( Args.get_non_interactive() )
+	{
+		buf[0] = '\0';
+		putchar( '\n' );
+	}
+	else if ( !fgets(  buf, MAXLINE, stdin ) )
 	{
 		ERRPRINT( my_name, LOG_CRIT,
 			"fgets() failed" );
@@ -788,7 +793,12 @@ get_log_file(
 	{
 		fputs( Questions[i].question, stdout );
 
-		if ( !fgets( buf, MAXLINE, stdin ) )
+		if ( Args.get_non_interactive() )
+		{
+			buf[0] = '\0';
+			putchar( '\n' );
+		}
+		else if ( !fgets( buf, MAXLINE, stdin ) )
 		{
 			ERRPRINT( my_name, LOG_CRIT,
 				"fgets() failed" );
@@ -805,7 +815,7 @@ get_log_file(
 	puts( "Enter comments.  Begin line with '.' to end input" );
     puts(    "--------------------------------" );
 	TO_STAT( "--------------------------------\n" );
-	while ( true )
+	while ( !Args.get_non_interactive() )
 	{
 		if ( !fgets( buf, MAXLINE, stdin ) )
 		{

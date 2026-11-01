@@ -94,6 +94,8 @@ class Args_obj : public Z_core
 				{ return ( m_mcu_bypass_tst ); }
 	bool	  		get_reduce_passcnt( void ) const
 				{ return ( m_reduce_passcnt ); }
+	bool	  		get_non_interactive( void ) const
+				{ return ( m_non_interactive ); }
 	bool	  	get_no_abort( void ) const
 				{ return ( m_no_abort ); }
 	bool	  	get_ambig_addr_same( void ) const
@@ -147,6 +149,7 @@ class Args_obj : public Z_core
 	u_int					m_log_mask;			// LOG mode: 0..3.
 	bool				    m_mcu_bypass_tst;	// If true, skip MCU self tests.
 	bool				    m_reduce_passcnt;	// If true, use reduced pass count.
+	bool				    m_non_interactive;	// If true, skip all prompts.
 	bool					m_no_abort;			// If true, no stop on error.
 	bool					m_ambig_addr_same;	// If true, use same address.
     BYTE					m_aspect_preset;		// Sig decoder aspect preset.
