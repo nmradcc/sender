@@ -1867,7 +1867,7 @@ Key_val			init_key )					// Initial key value.
 				 */
 				if ( rep_type != SEND_DEC_TST )
 				{
-					if ( Dcc_reg.get_obj_errs() || kbhit())
+					if ( kbhit() )
 					{
 						c_flag	=	false;
 					}
@@ -1888,7 +1888,6 @@ Key_val			init_key )					// Initial key value.
 				Dcc_reg.print_stats();
 				Dcc_reg.rst_stats();
 			}
-			Dcc_reg.clear_warn();
 
 			/*
 			 *	Print the CMD_MSG to the screen after the decoder test since

@@ -32,7 +32,6 @@
 #else
 #include <dir.h>
 #endif
-#include <z_core.h>
 #include <stdio.h>
 
 const int	MAXROOT				= MAXFILE + MAXEXT - 1;	// Max command size.
@@ -47,7 +46,7 @@ const u_int LOG_IO_BIT          = 0x08;                 // Log IO data.
 /*
  *	Args_obj object.
  */
-class Args_obj : public Z_core
+class Args_obj
 {
   public:
 	/* Method section */

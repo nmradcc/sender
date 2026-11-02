@@ -14,7 +14,6 @@
 #include <chrono>
 #include <thread>
 #include <dcc.h>
-#include <z_core.h>
 #include "send.h"
 
 const u_short	DCC_CLK_HOLD	= 0;		// Hold present clock value.
@@ -66,7 +65,7 @@ class Bits;									// Defined in bits.h
 class Args_obj;								// Defined in args.h
 class Sender_hw_if;
 
-class Send_reg : public Z_core
+class Send_reg
 {
   public:
   

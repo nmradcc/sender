@@ -70,7 +70,7 @@ struct Ambig2_type
 /*
  *	Dec_tst object.
  */
-class Dec_tst : public Z_core
+class Dec_tst
 {
   public:
 	/* Method section */
