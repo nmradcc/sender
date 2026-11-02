@@ -477,12 +477,12 @@ void sender_engine_tim_irq_handler(void)
             g_adr_evt_head = (g_adr_evt_head + 1u) & DCC_ADR_EVT_FIFO_MASK;
             if (trigger_action == DCC_ADR_EVT_SET)
             {
-                HAL_GPIO_WritePin(SCOPE_ADR_GPIO_Port, SCOPE_ADR_Pin, GPIO_PIN_SET);
+                HAL_GPIO_WritePin(AUXOUT_GPIO_Port, AUXOUT_Pin, GPIO_PIN_SET);
                 dcc_monitor_note_address(trigger_address);
             }
             else
             {
-                HAL_GPIO_WritePin(SCOPE_ADR_GPIO_Port, SCOPE_ADR_Pin, GPIO_PIN_RESET);
+                HAL_GPIO_WritePin(AUXOUT_GPIO_Port, AUXOUT_Pin, GPIO_PIN_RESET);
             }
         }
     }
@@ -529,7 +529,8 @@ void sender_engine_init(sender_engine_t *eng)
 
     /* Ensure the external scope trigger GPIO is in the OFF state. */
     HAL_GPIO_WritePin(SCOPE_GPIO_Port, SCOPE_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(SCOPE_ADR_GPIO_Port, SCOPE_ADR_Pin, GPIO_PIN_RESET);
+    /* Ensure the external AUXOUT GPIO is in the OFF state. */
+    HAL_GPIO_WritePin(AUXOUT_GPIO_Port, AUXOUT_Pin, GPIO_PIN_RESET);
 }
 
 void sender_engine_reset(sender_engine_t *eng)
