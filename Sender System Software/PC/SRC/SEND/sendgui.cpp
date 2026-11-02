@@ -51,6 +51,7 @@ enum
 
 	ID_CHK_MANUAL,
 	ID_CHK_LAMP,
+	ID_CHK_LAMP_FRONT,
 	ID_CHK_REPEAT,
 	ID_CHK_TRIG_REV,
 	ID_CHK_NO_ABORT,
@@ -182,11 +183,11 @@ static const int FUNCBIT_COUNT = 5;
 
 static const char *g_funcBitLabels[FUNCBIT_COUNT] =
 {
-	"AUX1",
-	"AUX2",
-	"AUX3",
-	"AUX4",
-	"FL",
+	"F1 AUX1",
+	"F2 AUX2",
+	"F3 AUX3",
+	"F4 AUX4",
+	"F0 LAMP",
 };
 
 static const int LOGBIT_COUNT = 4;
@@ -260,6 +261,14 @@ MakeCheck( HWND parent, int id, const char *text, int x, int y, int w, int h )
 {
 	return CreateWindowEx( 0, "BUTTON", text,
 		WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX,
+		x, y, w, h, parent, (HMENU)(INT_PTR)id, nullptr, nullptr );
+}
+
+static HWND
+MakeRadio( HWND parent, int id, const char *text, int x, int y, int w, int h )
+{
+	return CreateWindowEx( 0, "BUTTON", text,
+		WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_RADIOBUTTON,
 		x, y, w, h, parent, (HMENU)(INT_PTR)id, nullptr, nullptr );
 }
 
@@ -501,6 +510,20 @@ SyncClocksFromBits( void )
 }
 
 /*---------------------------------------------------------------------------
+ * FL Front / RL Rear are mutually exclusive views of the single LAMP flag
+ * (LAMP set = rear).  Both are grayed out unless the F0 LAMP func bit is on.
+ *-------------------------------------------------------------------------*/
+static void
+UpdateLampCtrls( void )
+{
+	bool enable = IsChecked( ID_CHK_FUNCBIT_BASE + 4 );
+
+	SetChecked( ID_CHK_LAMP_FRONT, !IsChecked( ID_CHK_LAMP ) );
+	EnableWindow( GetDlgItem( g_hMain, ID_CHK_LAMP_FRONT ), enable );
+	EnableWindow( GetDlgItem( g_hMain, ID_CHK_LAMP ), enable );
+}
+
+/*---------------------------------------------------------------------------
  * Keep the FUNCS mask hex field and the per-bit checkboxes in sync.
  *-------------------------------------------------------------------------*/
 static void
@@ -511,6 +534,7 @@ SyncBitsFromFuncs( void )
 	{
 		SetChecked( ID_CHK_FUNCBIT_BASE + i, ( mask & ( 1UL << i ) ) != 0 );
 	}
+	UpdateLampCtrls();
 }
 
 static void
@@ -525,6 +549,7 @@ SyncFuncsFromBits( void )
 		}
 	}
 	SetMaskUInt( ID_EDIT_FUNCS, ID_EDIT_FUNCS_GENERAL, mask );
+	UpdateLampCtrls();
 }
 
 static void
@@ -1542,7 +1567,6 @@ CreateControls( HWND hwnd )
 	const int chkW = 340;
 
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MANUAL, "MANUAL - Don't run tests automatically", xChk, yChk, chkW, 20 ) ); yChk += rowH;
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LAMP, "LAMP - Use rear lamp for func tests", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REPEAT, "REPEAT - Continuously repeat tests", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_TRIG_REV, "TRIG_REV - Use reverse as trigger cmd", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 
@@ -1640,13 +1664,24 @@ CreateControls( HWND hwnd )
 		for ( int i = 0; i < FUNCBIT_COUNT; i++ )
 		{
 			char text[64];
-			snprintf( text, sizeof( text ), "Bit %2d (0x%02lX) - %s", i, 1UL << i, g_funcBitLabels[i] );
+			int w = bitColW - 10;
+
+			snprintf( text, sizeof( text ), "Bit %d [0x%02lX] - %s", i, 1UL << i, g_funcBitLabels[i] );
+			if ( i == 4 )
+			{
+				w = 230;
+			}
 
 			HWND chk = MakeCheck( hwnd, ID_CHK_FUNCBIT_BASE + i, text,
 				xLabel, pageTop + 32 + i * bitRowH,
-				bitColW - 10, 20 );
+				w, 20 );
 			g_page3Ctrls.push_back( chk );
 		}
+
+		g_page3Ctrls.push_back( MakeRadio( hwnd, ID_CHK_LAMP_FRONT, "FL Front",
+			xLabel + 24, pageTop + 32 + 5 * bitRowH, 100, 20 ) );
+		g_page3Ctrls.push_back( MakeRadio( hwnd, ID_CHK_LAMP, "RL Rear",
+			xLabel + 24, pageTop + 32 + 6 * bitRowH, 100, 20 ) );
 
 		int by = pageTop + 32 + ((CLOCKBIT_COUNT + 1) / 2) * bitRowH + 10;
 		g_page3Ctrls.push_back(
@@ -1990,6 +2025,18 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 				&& HIWORD( wParam ) == BN_CLICKED )
 			{
 				SyncFuncsFromBits();
+			}
+			else if ( LOWORD( wParam ) == ID_CHK_LAMP_FRONT
+				&& HIWORD( wParam ) == BN_CLICKED )
+			{
+				SetChecked( ID_CHK_LAMP, false );
+				UpdateLampCtrls();
+			}
+			else if ( LOWORD( wParam ) == ID_CHK_LAMP
+				&& HIWORD( wParam ) == BN_CLICKED )
+			{
+				SetChecked( ID_CHK_LAMP, true );
+				UpdateLampCtrls();
 			}
 			else if ( LOWORD( wParam ) >= ID_CHK_LOGBIT_BASE
 				&& LOWORD( wParam ) < ID_CHK_LOGBIT_BASE + LOGBIT_COUNT
