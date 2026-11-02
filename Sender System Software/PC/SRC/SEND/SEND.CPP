@@ -122,7 +122,7 @@ const char *Key_help	=
 "  e - Set speed to E-STOP          f - Change loco direction, acc. on/off\n"
 "  E - Set speed to E_STOP(I)       t - Run self tests repeatedly\n"
 "  k - Kickstart loco for funcs\n"
-"  R - Send hard resets             g - Test generic I/O\n"
+"  R - Send hard resets             g - I/O status\n"
 "  z - Run decoder tests            q - Quit program\n";
 
 static Key_val	get_key_cmd();
@@ -1193,8 +1193,27 @@ Key_val			init_key )					// Initial key value.
 			}
 			break;
 
-		case KEY_GEN	:					// Toggle GEN_2, read inputs.
-			printf( "Generic port test is not supported in MCU mode\n" );
+		case KEY_GEN	:					// Show I/O status.
+			{
+				Sender_hw_status	io_st;
+
+				if ( Lhw_if != nullptr && Lhw_if->get_status( io_st ) )
+				{
+					printf( "\nI/O inputs  GEN (bits 3..0): " );
+					for ( BYTE mask = 0x08; mask != 0; mask >>= 1 )
+					{
+						putchar( ( io_st.gen1 & mask ) ? '1' : '0' );
+					}
+					printf( " (0x%02X)\n", io_st.gen1 & 0x0F );
+					printf( "I/O outputs DCC output %s, queue depth %u\n",
+						io_st.running ? "running" : "stopped",
+						(unsigned)io_st.queue_depth );
+				}
+				else
+				{
+					printf( "\nI/O status unavailable\n" );
+				}
+			}
 			break;
 
 		/*

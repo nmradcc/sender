@@ -105,7 +105,7 @@ Args_obj::Args_obj( void )
 		"  e - Set speed to E-STOP          f - Change loco direction, acc. on/off\n"
 		"  E - Set speed to E_STOP(I)       t - Run self tests repeatedly\n"
 		"  k - Kickstart loco for funcs\n"
-		"  R - Send hard resets             g - Test generic I/O\n"
+		"  R - Send hard resets             g - I/O status\n"
 		"  z - Run decoder tests            q - Quit program\n";
 }
 
