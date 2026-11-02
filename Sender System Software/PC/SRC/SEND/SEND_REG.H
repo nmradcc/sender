@@ -14,7 +14,7 @@
 #include <chrono>
 #include <thread>
 #include <dcc.h>
-#include "sr_core.h"
+#include <z_core.h>
 #include "send.h"
 
 const u_short	DCC_CLK_HOLD	= 0;		// Hold present clock value.
@@ -66,7 +66,7 @@ class Bits;									// Defined in bits.h
 class Args_obj;								// Defined in args.h
 class Sender_hw_if;
 
-class Send_reg : public Sr_core
+class Send_reg : public Z_core
 {
   public:
   
@@ -194,14 +194,16 @@ class Send_reg : public Sr_core
 		p_cnt	=	0L;
 	}
 
-	void	update( void );					// Get hardware state.
-
-	void	up_print( bool pr_hdr_flag = false );
-
+	// Print the 4 GEN input bits as 1s and 0s.
 	void
 	gen_print( void ) const
 	{
-		print_nibble( get_gen() );
+		BYTE	gen = get_gen();
+
+		for ( BYTE mask = 0x08; mask != 0; mask >>= 1 )
+		{
+			putchar( ( gen & mask ) ? '1' : '0' );
+		}
 	}
 
   protected:

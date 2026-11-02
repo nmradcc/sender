@@ -1171,7 +1171,6 @@ Key_val			init_key )					// Initial key value.
 
 		case KEY_HEADER:					// Print the help message header.
 			printf( "%s", Args.get_key_help() );
-			Dcc_reg.up_print( true );  		// Print out hardware state.
 			break;
 
 		/*
@@ -1192,7 +1191,6 @@ Key_val			init_key )					// Initial key value.
 				printf( "Start clock %s\n",
 					( hw_start_clk() == OK ) ? "OK" : "FAILED" );
 			}
-			Dcc_reg.up_print();
 			break;
 
 		case KEY_GEN	:					// Toggle GEN_2, read inputs.

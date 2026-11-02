@@ -88,7 +88,6 @@ add_executable(send
   ${SEND_DIR}/SEND.CPP
   ${SEND_DIR}/SENDER_HW_MCU_USB.CPP
   ${SEND_DIR}/SEND_REG.CPP
-  ${SEND_DIR}/SR_CORE.CPP
 )
 
 target_include_directories(send PRIVATE ${INC_DIR} ${SEND_DIR})
