@@ -1,20 +1,5 @@
 /*****************************************************************************
  *
- * File:                 $Workfile: SEND.CPP $
- * Path:                 $Logfile: /NMRA/SRC/SEND/SEND.CPP $
- * Project:              NMRA DCC Conformance Tests
- *
- * Creation date:        #
- * Designed by:          K. West
- * Coded by:             K. West
- *
- * Current version:      $Revision: 39 $
- * Last Modified on:     $Modtime: 8/29/23 6:51p $
- *               by:     $Author: Kenw $
- * Last checkin on:      $Date: 9/12/23 8:04p $
- *
- *****************************************************************************
- *
  * DESCRIPTION:
  *
  *	send.cpp	-	This file is the main() function for the sender test
