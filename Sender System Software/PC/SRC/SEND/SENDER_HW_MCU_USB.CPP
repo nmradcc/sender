@@ -259,11 +259,12 @@ bool Sender_hw_mcu_usb::set_timing(uint16_t clk0t_us, uint16_t clk0h_us,
                                       static_cast<uint16_t>(sizeof(payload)), out, status);
 }
 
-bool Sender_hw_mcu_usb::start_clock()
+bool Sender_hw_mcu_usb::start_clock(Sender_fill_mode fill)
 {
+    uint8_t payload = static_cast<uint8_t>(fill);
     std::vector<uint8_t> out;
     uint8_t status = SHP_STATUS_INTERNAL_ERROR;
-    return send_command_wait_response(SHP_CMD_START_CLK, nullptr, 0, out, status);
+    return send_command_wait_response(SHP_CMD_START_CLK, &payload, 1, out, status);
 }
 
 bool Sender_hw_mcu_usb::stop_clock()

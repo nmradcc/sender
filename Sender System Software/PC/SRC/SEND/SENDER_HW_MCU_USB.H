@@ -20,7 +20,7 @@ class Sender_hw_mcu_usb : public Sender_hw_if
 
     virtual bool set_timing(uint16_t clk0t_us, uint16_t clk0h_us,
                             uint16_t clk1t_us);
-    virtual bool start_clock();
+    virtual bool start_clock(Sender_fill_mode fill = SENDER_FILL_IDLE);
     virtual bool stop_clock();
     virtual bool set_scope(bool on);
 

@@ -121,7 +121,7 @@ static void		close_hw_backend();
 static void		reset_mcu_before_abort();
 static bool		hw_is_running();
 static Rslt_t	hw_set_clk( u_short clk0t, u_short clk0h, u_short clk1t );
-static Rslt_t	hw_start_clk();
+static Rslt_t	hw_start_clk( Sender_fill_mode fill = SENDER_FILL_IDLE );
 static Rslt_t	hw_stop_clk();
 static void		hw_set_scope( bool on );
 static Rslt_t	hw_send_bytes( u_int count, BYTE val, const char *info );
@@ -159,8 +159,6 @@ static Bits	Dcc_bits( 256 );					// Packet scratchpad.
 enum Send_type
 {
 	SEND_NONE,									// Send nothing.
-	SEND_ZERO,									// Send 0s.
-	SEND_ONE,									// Send 1s.
 	SEND_SCOPE_A,								// Send scope test A.
 	SEND_SCOPE_B,								// Send scope test B.
 	SEND_SCOPE_O,								// Send scope timing test.
@@ -283,14 +281,14 @@ hw_set_clk(
 }
 
 static Rslt_t
-hw_start_clk( void )
+hw_start_clk( Sender_fill_mode fill )
 {
 	if ( Lhw_if == nullptr )
 	{
 		return ( FAIL );
 	}
 
-	if ( Lhw_if->start_clock() )
+	if ( Lhw_if->start_clock( fill ) )
 	{
 		Lhw_running = true;
 		return ( OK );
@@ -983,10 +981,8 @@ do_mcu_self_tests( void )
 	/* 8. SEND_PACKET (DCC idle FF 00 FF) */
 	{
 		static const uint8_t idle_pkt[] = { 0xFF, 0x00, 0xFF };
-		hw_set_scope( true );
 		SELF_CHECK( "8. SEND_PACKET (DCC idle FF 00 FF)",
 			Lhw_if->send_packet( idle_pkt, sizeof( idle_pkt ), "selftest" ) );
-		hw_set_scope( false );
 	}
 
 	/* 9. GET_STATS */
@@ -1205,22 +1201,28 @@ Key_val			init_key )					// Initial key value.
 		 *	The following commands are for board and fixture debugging
 		 *	and use the hardware generated clock.
 		 */
-		case KEY_ZERO:						// Send zero bytes.
-			rep_type	=	SEND_ZERO;
-			if ( hw_is_running() != true )
+		case KEY_ZERO:						// Send 1 second of zero clocks.
+		case KEY_ONE:						// Send 1 second of one clocks.
+			rep_type	=	SEND_NONE;
+			if ( hw_is_running() == true )
 			{
-				hw_start_clk();
+				hw_stop_clk();
 			}
-			printf( "Sending 2 Zero Bytes\n" );
-			break;
-
-		case KEY_ONE:						// Send one bytes.
-			rep_type	=	SEND_ONE;
-			if ( hw_is_running() != true )
+			printf( "Sending 1 second of %s clocks\n",
+				( key_val == KEY_ZERO ) ? "zero" : "one" );
+			hw_set_scope( true );
+			hw_set_scope( false );
+			if ( hw_start_clk( ( key_val == KEY_ZERO ) ? SENDER_FILL_ZEROS
+													   : SENDER_FILL_ONES )
+				== OK )
 			{
-				hw_start_clk();
+				std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+				hw_stop_clk();
 			}
-			printf( "Sending 2 One Bytes\n" );
+			else
+			{
+				printf( "Start clock FAILED\n" );
+			}
 			break;
 
 		case KEY_SCOPE_A:					// Send the scope A test.
@@ -1576,18 +1578,6 @@ Key_val			init_key )					// Initial key value.
 					ERRPRINT( my_name, LOG_CRIT,
 						"Unexpected SEND_NONE in repeat loop\n" );
 					exit_send( 1 );
-				case SEND_ZERO:				// Repeat zero bytes.
-					hw_set_scope( true );
-					hw_send_bytes( 2, 0x00, "SEND_ZERO." );
-					hw_set_scope( false );
-					break;
-
-				case SEND_ONE:				// Repeat one bytes.
-					hw_set_scope( true );
-					hw_send_bytes( 2, 0xff, "SEND_ONE." );
-					hw_set_scope( false );
-					break;
-
 				case SEND_SCOPE_A:			// Repeat scope A (0-1) test.
 					Dcc_bits.clr_in();
 					Dcc_bits.put_byte( 0x00 ).put_byte( 0xff ).done();

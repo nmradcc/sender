@@ -99,6 +99,8 @@ static volatile uint16_t g_cfg_clk0h_us = 100u;
 static volatile uint16_t g_cfg_clk1t_us = 116u;
 
 /* Idle generator state (ISR only). Timing is latched per idle packet. */
+enum { FILL_IDLE = 0, FILL_ONES = 1, FILL_ZEROS = 2 };
+static volatile uint8_t g_fill_mode = FILL_IDLE;	/* filler when the FIFO is empty */
 static bool g_idle_active;              /* true while idling, false while sending queued data */
 static uint8_t g_idle_bit;              /* bit index within the idle packet */
 static uint8_t g_idle_half;             /* 0 = first half-period of the bit */
@@ -431,7 +433,11 @@ void sender_engine_tim_irq_handler(void)
      *  - Queued data that arrives during an idle packet waits until that
      *    idle packet is complete (idle bit 0, first half-period).
      */
-    if (!g_idle_active)
+    if (g_fill_mode != FILL_IDLE)
+    {
+        pop = (head != g_hp_commit);
+    }
+    else if (!g_idle_active)
     {
         pop = (head != g_hp_commit);
         if (!pop)
@@ -486,9 +492,20 @@ void sender_engine_tim_irq_handler(void)
             }
         }
     }
-    else
+    else if (g_fill_mode == FILL_IDLE)
     {
         hp = dcc_idle_next_hp();
+    }
+    else if (g_fill_mode == FILL_ONES)
+    {
+        hp = g_idle_one_hp;
+    }
+    else
+    {
+        /* Continuous "0" bits: alternate the two half-periods. */
+        hp = (g_idle_half == 0u) ? g_idle_zero_h
+                                 : (uint16_t)(g_idle_zero_t - g_idle_zero_h);
+        g_idle_half ^= 1u;
     }
 
     /* Advance the compare value; the timer toggles the output at the match. */
@@ -588,7 +605,7 @@ uint8_t sender_engine_set_timing(sender_engine_t *eng, uint16_t clk0t_us,
     return SHP_STATUS_OK;
 }
 
-uint8_t sender_engine_start(sender_engine_t *eng)
+uint8_t sender_engine_start(sender_engine_t *eng, uint8_t fill_mode)
 {
     if (eng == 0)
     {
@@ -606,6 +623,9 @@ uint8_t sender_engine_start(sender_engine_t *eng)
     g_hp_dequeued_total = 0u;
     g_adr_evt_head = 0u;
     g_adr_evt_tail = 0u;
+    dcc_idle_reset();
+    dcc_idle_latch_timing();
+    g_fill_mode = fill_mode;
     dcc_hw_start();
     eng->running  = true;
     return SHP_STATUS_OK;

@@ -128,7 +128,15 @@ static void sender_app_handle_request(const sender_request_t* req,
             break;
 
         case SHP_CMD_START_CLK:
-            rsp->status = sender_engine_start(&g_engine);
+            /* Optional 1-byte fill mode: 0 = idle packets, 1 = "1"s, 2 = "0"s. */
+            if (req->payload_len > 1 ||
+                (req->payload_len == 1 && req->payload[0] > 2u))
+            {
+                rsp->status = SHP_STATUS_BAD_LENGTH;
+                break;
+            }
+            rsp->status = sender_engine_start(
+                &g_engine, (req->payload_len == 0) ? 0u : req->payload[0]);
             break;
 
         case SHP_CMD_STOP_CLK:

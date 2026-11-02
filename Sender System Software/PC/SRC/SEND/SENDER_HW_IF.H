@@ -32,6 +32,14 @@ struct Sender_hw_stats
     }
 };
 
+// Output when the MCU queue is empty after the clock starts.
+enum Sender_fill_mode
+{
+    SENDER_FILL_IDLE  = 0,		// DCC idle packets.
+    SENDER_FILL_ONES  = 1,		// Continuous "1" bits.
+    SENDER_FILL_ZEROS = 2		// Continuous "0" bits.
+};
+
 class Sender_hw_if
 {
   public:
@@ -42,7 +50,7 @@ class Sender_hw_if
 
     virtual bool set_timing(uint16_t clk0t_us, uint16_t clk0h_us,
                             uint16_t clk1t_us) = 0;
-    virtual bool start_clock() = 0;
+    virtual bool start_clock(Sender_fill_mode fill = SENDER_FILL_IDLE) = 0;
     virtual bool stop_clock() = 0;
     virtual bool set_scope(bool on) = 0;
 

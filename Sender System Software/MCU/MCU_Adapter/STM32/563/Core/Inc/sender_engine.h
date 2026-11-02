@@ -34,7 +34,7 @@ void sender_engine_reset(sender_engine_t* eng);
 
 uint8_t sender_engine_set_timing(sender_engine_t* eng, uint16_t clk0t_us,
                                  uint16_t clk0h_us, uint16_t clk1t_us);
-uint8_t sender_engine_start(sender_engine_t* eng);
+uint8_t sender_engine_start(sender_engine_t* eng, uint8_t fill_mode);
 uint8_t sender_engine_stop(sender_engine_t* eng);
 uint8_t sender_engine_set_scope(sender_engine_t* eng, bool scope_on);
 
