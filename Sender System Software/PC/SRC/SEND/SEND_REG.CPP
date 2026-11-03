@@ -1156,8 +1156,6 @@ Send_reg::print_stats( void )
 /*
  *	NAME
  *
- *		fill_idles()	-	Calc number of reps. for idles.
- *		fill_cmds_1{}	-	Calc number of reps. for 1 cmd and 1 idle.
  *		fill_cmds_2{}	-	Calc number of reps. for 2 cmds and 2 idles.
  *
  *	RETURN VALUE
@@ -1166,65 +1164,13 @@ Send_reg::print_stats( void )
  *
  *	DESCRIPTION
  *
- *		These methods calculate the 'u_reps' of the given packet sequence
+ *		This method calculates the 'u_reps' of the given packet sequence
  *		requited to filll the delay time of 'ifill_usec' using the given
  *		packet sequence wih the 'iclk0t' and 'iclk1t' packet times.
  *		Note: The command delay times are approximate since generic
  *		cmd packets are used rather than the actual cmd packets.
  */
 /*--------------------------------------------------------------------------*/
-
-/*
- * Calculate the number of repeats usings 1 idle packet.
- * 1 39 bit packet plus filler requires 5 Bytes.
- */
-u_short
-Send_reg::fill_idles (
-	u_long			ifill_usec,				// Fill time in usec.
-	u_short			iclk0t,					// Total clock 0 time.
-	u_short 		iclk1t )			   	// Total clock 1 time.
-{
-	u_short			reps;					// Reps to delay calculated time.
-
-	reps	=	static_cast<int>( ifill_usec /
-						(	static_cast<u_long>( iclk0t ) * static_cast<u_long>(		IDLE_0S
-														+	FILL_1_0S )
-						+ 	static_cast<u_long>( iclk1t ) * static_cast<u_long>(		IDLE_1S
-														+	FILL_1_1S ) ) );
-	if ( reps < PKT_REP_MIN )
-	{
-		reps	=	PKT_REP_MIN;
-	}
-
-	return ( reps );
-}
-
-/*
- * Calculate the number of repeats usings 1 command + idle packet pair.
- * 2 39 bit packets plus filler require 10 Bytes.
- */
-u_short
-Send_reg::fill_cmds_1 (
-	u_long			ifill_usec,				// Fill time in usec.
-	u_short			iclk0t,					// Total clock 0 time.
-	u_short 		iclk1t )			   	// Total clock 1 time.
-{
-	u_short			reps;					// Reps to delay calculated time.
-
-	reps		=	static_cast<int>( ifill_usec /
-						(	static_cast<u_long>( iclk0t ) * static_cast<u_long>(		IDLE_0S
-														+	CMD_0S
-														+	FILL_2_0S )
-						+ 	static_cast<u_long>( iclk1t ) * static_cast<u_long>(		IDLE_1S
-														+	CMD_1S
-														+	FILL_2_1S ) ) );
-	if ( reps < PKT_REP_MIN )
-	{
-		reps	=	PKT_REP_MIN;
-	}
-
-	return ( reps );
-}
 
 /*
  * Calculate the number of repeats usings 2 command + idle packet pairs.

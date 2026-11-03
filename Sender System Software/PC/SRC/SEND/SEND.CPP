@@ -478,7 +478,6 @@ main(
 	Ldec_tst.set_run_mask(     Args.get_run_mask() );
 	Ldec_tst.set_clk_mask(     Args.get_clk_mask() );
 	Ldec_tst.set_trig_rev(     Args.get_trig_rev() );
-	Ldec_tst.set_fill_msec(    Args.get_fill_msec() );
 	Ldec_tst.set_decoder_type( Args.get_decoder_type() );
 
 	get_log_file( argv[0] );

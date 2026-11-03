@@ -21,13 +21,9 @@ const u_short	DCC_CLK_ERR		= 1;		// Clock has an error.
 const u_short	DCC_CLK_MIN		= 40;		// Minimum valid clock value.
 const u_int		PKT_SIZE		= 5;		// Size of basic packets.
 /*
- *	Count of 1s and 0s added to fill out 1,2, or 4 39 bit packets
+ *	Count of 1s and 0s added to fill out 4 39 bit packets
  *	up the the next Byte boundary.
  */
-const u_int		FILL_1_0S       = 0;		// 1 packet 0 filler.
-const u_int		FILL_1_1S		= 1;		// 1 packet 1 filler.
-const u_int		FILL_2_0S		= 1;		// 2 packet 0 filler.
-const u_int		FILL_2_1S		= 1;		// 2 packet 1 filler.
 const u_int		FILL_4_0S		= 3;		// 4 packet 0 filler.
 const u_int		FILL_4_1S		= 1;		// 4 packet 1 filler.
 const u_short	PKT_REP_MIN		= 10;		// Min. pkt repeat count.
@@ -50,10 +46,6 @@ const BYTE		GEN_F3_MASK		        = 0x40; // F3/AUX3 mask bit.
 const BYTE		GEN_F4_BIT 		        = 0x80; // F4/AUX4 bit.
 const BYTE		GEN_F4_MASK		        = 0x80; // F4/AUX4 mask bit.
 
-
-
-const u_int		PC_DELAY_INIT	= 5;		// Initial 1 usec delay count.
-
 enum Scope_states
 {
 	SCOPE_IDLE,								// Scope trigger idle.
@@ -72,21 +64,6 @@ class Send_reg
 	/* Static method section */
 	
 	/*
-	 * Calculate the number of repeats usings 1 idle packet.
-	 * 1 39 bit packet plus filler requires 5 Bytes.
-	 */
-	static u_short fill_idles (		u_long  ifill_usec = USEC_PER_SEC,
-									u_short iclk0t     = DECODER_0T_NOM,
-									u_short iclk1t     = DECODER_1T_NOM);
-	/*
-	 * Calculate the number of repeats usings 1 command + idle packet pair.
-	 * 2 39 bit packets plus filler require 10 Bytes.
-	 */
-	static u_short fill_cmds_1 (	u_long  ifill_usec = USEC_PER_SEC,
-									u_short iclk0t     = DECODER_0T_NOM,
-									u_short iclk1t     = DECODER_1T_NOM);
-									
-	/*
 	 * Calculate the number of repeats usings 2 command + idle packet pairs.
 	 * 4 39 bit packets plus filler require 20 Bytes.
 	 */
@@ -99,7 +76,7 @@ class Send_reg
 	Send_reg( void )
 	:	running( false ), scope( SCOPE_IDLE ),
 		clk0t( DCC_CLK_ERR ), clk0h( DCC_CLK_ERR ), clk1t( DCC_CLK_ERR ),
-		err_cnt( 0 ), m_pc_delay_1usec( PC_DELAY_INIT ),
+		err_cnt( 0 ),
 		m_swap_0_1( false ), m_no_hw_sim( false ), m_log_pkts( false ),
 		m_log_data( false ), m_log_io( false ), m_hw_if( nullptr ),
 		m_pkt_gap_msec( 100 )
@@ -141,7 +118,6 @@ class Send_reg
 
 	/* Board initialization and reset routines */
 	Rslt_t	set_clk( u_short iclk0t, u_short iclk0h, u_short iclk1t );
-	Rslt_t	set_pc_delay_1usec( void );
 
 	void	set_scope( bool scope_on );
 
@@ -221,7 +197,6 @@ class Send_reg
 	u_short				clk0h;					// 0H duration in usec.
 	u_short				clk1t;					// 1T duration in usec.
 	u_int				err_cnt;				// Count of contiguous errors.
-	u_int				m_pc_delay_1usec;	   	// Loop count for 1 usec. delay.
 	bool				m_swap_0_1;				// Swap 0 & 1 if true.
 	bool				m_no_hw_sim;			// true to simulate with no MCU.
 	bool				m_log_pkts;				// true to log pkts.

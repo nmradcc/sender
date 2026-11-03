@@ -86,10 +86,6 @@ class Dec_tst
 	void set_run_mask( Bits_t irun_mask )     { run_mask = irun_mask; }
 	void set_clk_mask( Bits_t iclk_mask )     { clk_mask = iclk_mask; }
 	void set_trig_rev( bool itrig_rev = false );
-	void set_fill_msec( u_long ifill_msec = 100 )
-	{
-		fill_usec	=	ifill_msec * 1000UL;
-	}
 
 	Rslt_t	decoder_test( Rslt_t &tst_rslt );
 
@@ -120,8 +116,6 @@ class Dec_tst
 	Bits						dcc_bits3;			// Packet scratchpad.
 	Fsoc_bits					fsoc;		   	   	// Fail safe packet.
 	int							trig_cmd_speed;		// Trigger speed command.
-	u_long						fill_usec;			// Fill time in usec.
-	u_short						filler_idles;  	   	// Count of filler idles.
 	u_short						pkt_rep_cnt;		// Test packet repeat count.
     char						m_tst_name[128];	// Buffer for tst_name.
 	bool						trig_rev;			// Handle reverse differently.
@@ -148,8 +142,6 @@ class Dec_tst
     Rslt_t	decoder_ambig2( Rslt_t &tst_rslt );
 	Rslt_t	decoder_str0_ames(	Rslt_t &tst_rslt,
 								u_short iclk0t, u_short iclk0h );
-	void	calc_filler( u_short clk0t, u_short clk1t );
-	Rslt_t	send_filler( void );
 	void	print_summary( const char *name, bool flagged = false );
 	void	put_preset_pkt( Bits &bits, u_short addr, int pre_cnt,
 							bool sig_ok = false );

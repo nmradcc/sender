@@ -519,8 +519,6 @@ Dec_tst::Dec_tst( void )
 	run_mask		= ~0L;				// Run all tests.
 	clk_mask		= ~0L;				// Use all clock values.
 	trig_cmd_speed	= SP_E_STOP;		// Use emeergency stop as trigger.
-	fill_usec		= 100000UL;			// Default to 100 ms of filler.
-	filler_idles	= PKT_REP_MIN;		// Default to minimum.
 	pkt_rep_cnt		= PKT_REP_MIN;		// Default to minimum.
     m_tst_name[0]	= '\0';				// Clear test name buffer.
 	trig_rev        = false;			// Handle reverse differently.
@@ -3754,7 +3752,6 @@ Dec_tst::decoder_ambig2(
 					0, ambig2_0t1, ambig2_0h1, 1, ambig2_0t2, ambig2_0h2,
 					"Send trigger packet with 2 ambiguous bits." );
 
-//				send_filler();					// Send filler.
 				std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
         		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
