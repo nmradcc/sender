@@ -439,9 +439,10 @@ main(
 	}
 	
 	/*
-	 *	Don't abort on errors if NO_ABORT flag set.
+	 *	Don't abort on errors if the NO_ABORT log mask bit is set.
 	 */
-	Deflog.set_no_abort_flag( Args.get_no_abort() );
+	Deflog.set_no_abort_flag(
+		( Args.get_log_mask() & LOG_NO_ABORT_BIT ) != 0 );
 
 	if ( init_hw_backend() == true )
 	{

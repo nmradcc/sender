@@ -54,7 +54,6 @@ enum
 	ID_CHK_LAMP_FRONT,
 	ID_CHK_REPEAT,
 	ID_CHK_TRIG_REV,
-	ID_CHK_NO_ABORT,
 	ID_CHK_FRAGMENT,
 	ID_CHK_SAME_AMBIG_ADDR,
 	ID_CHK_MCU_BYPASS_TST,
@@ -189,7 +188,7 @@ static const char *g_funcBitLabels[FUNCBIT_COUNT] =
 	"F0 LAMP",
 };
 
-static const int LOGBIT_COUNT = 4;
+static const int LOGBIT_COUNT = 5;
 
 static const char *g_logBitLabels[LOGBIT_COUNT] =
 {
@@ -197,6 +196,7 @@ static const char *g_logBitLabels[LOGBIT_COUNT] =
 	"Command logging",
 	"Packet data logging",
 	"IO data logging",
+	"No abort on errors",
 };
 
 /*---------------------------------------------------------------------------
@@ -228,7 +228,6 @@ static const FlagCtrl g_flagCtrls[] =
 	{ ID_CHK_LAMP,            "LAMP" },
 	{ ID_CHK_REPEAT,          "REPEAT" },
 	{ ID_CHK_TRIG_REV,        "TRIG_REV" },
-	{ ID_CHK_NO_ABORT,        "NO_ABORT" },
 	{ ID_CHK_FRAGMENT,        "FRAGMENT" },
 	{ ID_CHK_SAME_AMBIG_ADDR, "SAME_AMBIG_ADDR" },
 	{ ID_CHK_MCU_BYPASS_TST,  "MCU_BYPASS_TST" },
@@ -893,7 +892,6 @@ SaveCfgFile( const char *path )
 	addFlag( "TRIG_REV", IsChecked( ID_CHK_TRIG_REV ) );
 	addField( "FILL_MSEC", GetEditText( ID_EDIT_FILL_MSEC ) );
 	addField( "TEST_REPS", GetEditText( ID_EDIT_TEST_REPS ) );
-	addFlag( "NO_ABORT", IsChecked( ID_CHK_NO_ABORT ) );
 	addFlag( "FRAGMENT", IsChecked( ID_CHK_FRAGMENT ) );
 	addFlag( "SAME_AMBIG_ADDR", IsChecked( ID_CHK_SAME_AMBIG_ADDR ) );
 	addField( "ACC_PAIR", GetEditText( ID_EDIT_ACC_PAIR ) );
@@ -1567,7 +1565,6 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REPEAT, "REPEAT - Continuously repeat tests", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_TRIG_REV, "TRIG_REV - Use reverse as trigger cmd", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_NO_ABORT, "NO_ABORT - Do not stop on error", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_FRAGMENT, "FRAGMENT - Test all fragment lengths", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_SAME_AMBIG_ADDR, "SAME_AMBIG_ADDR - Same addr for ambig.", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REDUCE_PASSCNT, "REDUCE_PASSCNT - Reduce pass count [5]", xChk, yChk, chkW, 20 ) ); yChk += rowH;
@@ -1615,7 +1612,7 @@ CreateControls( HWND hwnd )
 		}
 	}
 
-		/* Log Mask Bits page: independent file, command, and packet logging bits. */
+		/* Log Mask Bits page: independent logging and abort behavior bits. */
 		{
 			const int bitColW = 500;
 			const int bitRowH = 24;
@@ -1633,7 +1630,7 @@ CreateControls( HWND hwnd )
 					xLabel, pageTop + 32 + i * bitRowH, bitColW - 10, 20 ) );
 			}
 
-			int by = pageTop + 32 + ((CLOCKBIT_COUNT + 1) / 2) * bitRowH + 10;
+			int by = pageTop + 32 + LOGBIT_COUNT * bitRowH + 10;
 			g_page4Ctrls.push_back(
 				MakeButton( hwnd, ID_BTN_LOGBITS_ALL, "Select All", xLabel, by, 110, 26 ) );
 			g_page4Ctrls.push_back(

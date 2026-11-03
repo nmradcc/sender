@@ -38,11 +38,12 @@ const int	MAXROOT				= MAXFILE + MAXEXT - 1;	// Max command size.
 const int	MAX_MCU_PORT		= 64;					// Max MCU port name size.
 const u_int	MAX_EXTRA_PREAMBLE	=  8;					// Max extra preamble bits.
 const u_int MAX_EXTRA_TRG       = 5;                    // Max extra trig pkts.
-const u_int LOG_MASK_MAX        = 0x0F;                 // Maximum LOG mask.
+const u_int LOG_MASK_MAX        = 0x1F;                 // Maximum LOG mask.
 const u_int LOG_FILE_BIT        = 0x01;                 // Write the log file.
 const u_int LOG_COMMAND_BIT     = 0x02;                 // Log command activity.
 const u_int LOG_PACKET_BIT      = 0x04;                 // Log packet data.
 const u_int LOG_IO_BIT          = 0x08;                 // Log IO data.
+const u_int LOG_NO_ABORT_BIT    = 0x10;                 // Don't abort on errors.
 /*
  *	Args_obj object.
  */
@@ -95,8 +96,6 @@ class Args_obj
 				{ return ( m_reduce_passcnt ); }
 	bool	  		get_non_interactive( void ) const
 				{ return ( m_non_interactive ); }
-	bool	  	get_no_abort( void ) const
-				{ return ( m_no_abort ); }
 	bool	  	get_ambig_addr_same( void ) const
 				{ return ( m_ambig_addr_same ); }
 	BYTE	   	get_aspect_preset( void ) const
@@ -147,8 +146,7 @@ class Args_obj
 	bool				    m_mcu_bypass_tst;	// If true, skip MCU self tests.
 	bool				    m_reduce_passcnt;	// If true, use reduced pass count.
 	bool				    m_non_interactive;	// If true, skip all prompts.
-	bool					m_no_abort;			// If true, no stop on error.
-	bool					m_ambig_addr_same;	// If true, use same address.
+	bool					m_ambig_addr_same;		// If true, use same address.
     BYTE					m_aspect_preset;		// Sig decoder aspect preset.
     BYTE					m_aspect_trigger;		// Sig decoder aspect trigger.
     bool					m_lamp_rear;		// Use rear lamp.
