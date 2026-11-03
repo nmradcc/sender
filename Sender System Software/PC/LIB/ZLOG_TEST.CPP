@@ -12,6 +12,7 @@
 
 #include <zlog.h>
 
+#include <algorithm>
 #include <setjmp.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,7 +61,27 @@ read_file(
 
 	fclose( fp );
 
+	// Drop the CR that text mode writes on Windows.
+	contents.erase( std::remove( contents.begin(), contents.end(), '\r' ),
+					contents.end() );
+
 	return ( contents );
+}
+
+/*
+ *	Return the part of a file written since 'off' and advance 'off'.
+ */
+static std::string
+read_new(
+	const char		*fname,
+	size_t			&off )
+{
+	std::string		all		= read_file( fname );
+	std::string		added	= all.substr( off < all.size() ? off : all.size() );
+
+	off = all.size();
+
+	return ( added );
 }
 
 static bool
@@ -159,22 +180,147 @@ test_errprint_priorities( void )
 
 	Deflog.set_no_abort_flag( true );
 
+	size_t			off		= read_file( LOG_FILE ).size();
+
 	for ( size_t i = 0; i < sizeof( pris ) / sizeof( pris[0] ); i++ )
 	{
 		char		msg[64];
-		std::string	expect;
+
+		CHECK( std::string( Deflog.get_err_pri_str( pris[i].pri ) ) == pris[i].name );
 
 		snprintf( msg, sizeof( msg ), "priority message %d", static_cast<int>( i ) );
 		Deflog.errprint( "test_fn", pris[i].pri, "%s", msg );
 
-		expect = std::string( pris[i].name );
-		std::string	log = read_file( LOG_FILE );
+		// Only the line just written, so earlier lines can't satisfy the check.
+		std::string	line = read_new( LOG_FILE, off );
 
-		CHECK( contains( log, pris[i].name ) );
-		CHECK( contains( log, ("zlog_test: test_fn - " + std::string( msg )).c_str() ) );
+		CHECK( contains( line, ("> " + std::string( pris[i].name ) + " ").c_str() ) );
+		CHECK( contains( line, ("zlog_test: test_fn - " + std::string( msg ) + "\n").c_str() ) );
+		CHECK( line.find( '\n' ) == line.size() - 1 );	// Exactly one line.
 	}
 
 	Deflog.set_no_abort_flag( false );
+}
+
+static void
+test_errprint_default_priority( void )
+{
+	// The priority-less overload logs at LOG_ERR, which aborts.
+	size_t			off = read_file( LOG_FILE ).size();
+
+	Deflog.set_abort_handler( test_abort_handler );
+	g_abort_calls = 0;
+
+	if ( setjmp( g_abort_jmp ) == 0 )
+	{
+		Deflog.errprint( "test_fn", "default pri %d", 5 );
+		CHECK( !"errprint returned instead of aborting" );
+	}
+
+	std::string		line = read_new( LOG_FILE, off );
+
+	CHECK( g_abort_calls == 1 );
+	CHECK( contains( line, "> ERROR " ) );
+	CHECK( contains( line, "test_fn - default pri 5" ) );
+
+	Deflog.set_abort_handler( nullptr );
+}
+
+static void
+call_verrprint(
+	Zlog_pri		pri,
+	const char		*fmt,
+	... )
+{
+	va_list			ap;
+
+	va_start( ap, fmt );
+	Deflog.verrprint( "test_fn", pri, fmt, ap );
+	va_end( ap );
+}
+
+static void
+call_vdbgprint(
+	bool			print_msg,
+	Dbg_hdr			hdr,
+	const char		*fmt,
+	... )
+{
+	va_list			ap;
+
+	va_start( ap, fmt );
+	Deflog.vdbgprint( print_msg, hdr, fmt, ap );
+	va_end( ap );
+}
+
+static void
+test_va_list_variants( void )
+{
+	size_t			off = read_file( LOG_FILE ).size();
+
+	Deflog.set_no_abort_flag( true );
+	call_verrprint( LOG_WARNING, "verr %d %s", 12, "abc" );
+	std::string		line = read_new( LOG_FILE, off );
+	CHECK( contains( line, "> WARNING " ) );
+	CHECK( contains( line, "test_fn - verr 12 abc\n" ) );
+	Deflog.set_no_abort_flag( false );
+
+	call_vdbgprint( false, DBG_DFLT, "vdbg_suppressed" );
+	CHECK( read_new( LOG_FILE, off ).empty() );
+
+	call_vdbgprint( true, DBG_PKT, "vdbg_shown %d", 3 );
+	CHECK( read_new( LOG_FILE, off ) == "!P vdbg_shown 3\n" );
+}
+
+static void
+test_getters_setters( void )
+{
+	// Log and stderr together reuse the arguments for both outputs.
+	size_t			off = read_file( LOG_FILE ).size();
+
+	Deflog.set_stderr_too( true );
+	Deflog.to_log( "both_outputs %d %s\n", 21, "ok" );
+	Deflog.dbgall( "both_dbg %d", 22 );
+	Deflog.set_stderr_too( false );
+
+	std::string		line = read_new( LOG_FILE, off );
+	CHECK( contains( line, "both_outputs 21 ok\n" ) );
+	CHECK( contains( line, "!> both_dbg 22\n" ) );
+
+	Deflog.set_no_abort_flag( true );
+	CHECK( Deflog.get_no_abort_flag() );
+	Deflog.set_no_abort_flag( false );
+	CHECK( !Deflog.get_no_abort_flag() );
+
+	Deflog.set_stderr_too( true );
+	CHECK( Deflog.get_stderr_too() );
+	Deflog.set_stderr_too( false );
+	CHECK( !Deflog.get_stderr_too() );
+}
+
+static void
+test_long_message( void )
+{
+	// Over-long messages are truncated but still end in one newline.
+	size_t			off = read_file( LOG_FILE ).size();
+	std::string		big( 2000, 'x' );
+
+	Deflog.set_no_abort_flag( true );
+	Deflog.errprint( "test_fn", LOG_WARNING, "%s", big.c_str() );
+	Deflog.set_no_abort_flag( false );
+
+	std::string		line = read_new( LOG_FILE, off );
+
+	CHECK( line.size() > 100 );
+	CHECK( line.size() < 512 );
+	CHECK( line.back() == '\n' );
+	CHECK( line.find( '\n' ) == line.size() - 1 );
+	CHECK( contains( line, "xxxxxxxxxx" ) );
+
+	Deflog.statprint( "%s", big.c_str() );
+	line = read_new( LOG_FILE, off );
+	CHECK( line.size() < 512 );
+	CHECK( line.back() == '\n' );
 }
 
 static void
@@ -212,14 +358,14 @@ test_debug_output( void )
 	Deflog.set_dbg_on( false );
 	CHECK( !Deflog.get_dbg_on() );
 
-	Deflog.dbgprint( false, "dbg_marker_false_flag" );
-	Deflog.dbgprint( "dbg_marker_off" );
-	Deflog.dbgprint( DBG_PKT, "dbg_marker_off_pkt" );
+	Deflog.dbgprint( false, "dbg_off_1" );
+	Deflog.dbgprint( "dbg_off_2" );
+	Deflog.dbgprint( DBG_PKT, "dbg_off_3" );
 
 	std::string		log = read_file( LOG_FILE );
-	CHECK( !contains( log, "dbg_marker_false_flag" ) );
-	CHECK( !contains( log, "dbg_marker_off" ) );
-	CHECK( !contains( log, "dbg_marker_off_pkt" ) );
+	CHECK( !contains( log, "dbg_off_1" ) );
+	CHECK( !contains( log, "dbg_off_2" ) );
+	CHECK( !contains( log, "dbg_off_3" ) );
 
 	Deflog.dbgprint( true, "dbg_marker_true_flag %d", 1 );
 	Deflog.dbgprint( true, DBG_PKT, "dbg_marker_true_pkt" );
@@ -301,6 +447,10 @@ main( void )
 	test_open_close();
 	test_statprint();
 	test_errprint_priorities();
+	test_errprint_default_priority();
+	test_va_list_variants();
+	test_getters_setters();
+	test_long_message();
 	test_abort_behavior();
 	test_debug_output();
 	test_headerless_output();

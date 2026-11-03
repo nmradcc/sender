@@ -793,10 +793,14 @@ Zlog::vdbgprint(
 
 	if ( fp_log )
 	{
+		va_list		ap_log;					// Copy, ap is reused below.
+
+		va_copy( ap_log, ap );
 		(void)fprintf(  fp_log, "!%c %s", static_cast<char>( hdr ), tag );
-		(void)vfprintf( fp_log, fmt, ap );
+		(void)vfprintf( fp_log, fmt, ap_log );
 		(void)fputc( '\n', fp_log );
 		fflush( fp_log );
+		va_end( ap_log );
 	}
 
 	if ( stderr_too )
@@ -832,12 +836,15 @@ Zlog::to_log(
 	... )							 	// printf(3) arguments
 {
 	va_list				ap;			 	// Variable argument list
+	va_list				ap2;			// Copy for the next output.
 
 	va_start( ap, fmt );
 
 	if ( fp_log )
 	{
-		(void)vfprintf( fp_log, fmt, ap );
+		va_copy( ap2, ap );
+		(void)vfprintf( fp_log, fmt, ap2 );
+		va_end( ap2 );
 		fflush( fp_log );
 	}
 
@@ -873,18 +880,23 @@ Zlog::to_stat(
 	... )							 	// printf(3) arguments
 {
 	va_list				ap;			 	// Variable argument list
+	va_list				ap2;			// Copy for the next output.
 
 	va_start( ap, fmt );
 
 	if ( fp_log )
 	{
-		(void)vfprintf( fp_log, fmt, ap );
+		va_copy( ap2, ap );
+		(void)vfprintf( fp_log, fmt, ap2 );
+		va_end( ap2 );
 		fflush( fp_log );
 	}
 
 	if ( stderr_too )
 	{
-		(void)vfprintf( stderr, fmt, ap );
+		va_copy( ap2, ap );
+		(void)vfprintf( stderr, fmt, ap2 );
+		va_end( ap2 );
 	}
 
 	if ( fp_stat )

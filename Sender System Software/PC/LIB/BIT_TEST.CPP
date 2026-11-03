@@ -155,6 +155,105 @@ test_misc(
 
 	b.clr_in();
 }
+// Verify 'whole' equals the concatenation of the bits in 'a', 'b' and 'c'.
+static void
+check_concat(
+	const Bits		&whole,
+	const Bits		&a,
+	const Bits		&b,
+	const Bits		&c )
+{
+	const Bits		*parts[]	= { &a, &b, &c };
+	u_int			pos			= 0;
+
+	CHECK( whole.get_obj_errs() == 0 );
+	CHECK( whole.get_bit_size() ==
+			a.get_bit_size() + b.get_bit_size() + c.get_bit_size() );
+
+	for ( const Bits *p : parts )
+	{
+		for ( u_int k = 0; k < p->get_bit_size(); k++, pos++ )
+		{
+			CHECK( bit_at( whole, pos ) == bit_at( *p, k ) );
+		}
+	}
+}
+
+// Multiple idle packets and chained packets form one continuous stream.
+static void
+test_chained_pkts( void )
+{
+	Bits			one( BITS_SIZE );
+	Bits			many( BITS_SIZE );
+	Bits			a( BITS_SIZE );
+	Bits			b( BITS_SIZE );
+	Bits			c( BITS_SIZE );
+	Bits			whole( BITS_SIZE );
+	Bits			none( BITS_SIZE );
+
+	// put_idle_pkt( n ) is n back to back single idle packets.
+	for ( u_int n = 1; n <= 5; n++ )
+	{
+		one.clr_in();
+		many.clr_in();
+
+		for ( u_int k = 0; k < n; k++ )
+		{
+			one.put_idle_pkt( 1 );
+		}
+
+		many.put_idle_pkt( n );
+		check_concat( many, one, none.clr_in(), none );
+	}
+
+	CHECK( none.clr_in().put_idle_pkt( 0 ).get_bit_size() == 0 );
+
+	// Function packet, idles, trigger style packet as one stream.
+	for ( u_int idles = 0; idles <= 5; idles++ )
+	{
+		for ( u_int pre = 12; pre <= 15; pre++ )
+		{
+			a.clr_in().put_func_grp_pkt( 3, GRP_1, 0x1f, pre );
+			b.clr_in().put_idle_pkt( idles, pre );
+			c.clr_in().put_func_grp_pkt( 3, GRP_2, 0x1f, pre );
+
+			whole.clr_in();
+			whole.put_func_grp_pkt( 3, GRP_1, 0x1f, pre );
+			whole.put_idle_pkt( idles, pre );
+			whole.put_func_grp_pkt( 3, GRP_2, 0x1f, pre );
+
+			check_concat( whole, a, b, c );
+
+			// Every packet ends with a 1 and the next starts with its preamble.
+			CHECK( bit_at( whole, a.get_bit_size() - 1 ) );
+			CHECK( bit_at( whole, whole.get_bit_size() - 1 ) );
+
+			whole.done();
+			CHECK( whole.get_obj_errs() == 0 );
+		}
+	}
+
+	// Repeated idle/trigger pairs, as built for extra trigger packets.
+	for ( u_int extra = 0; extra <= 5; extra++ )
+	{
+		a.clr_in().put_idle_pkt( 2 ).put_func_grp_pkt( 3, GRP_2, 0x1f );
+		whole.clr_in();
+
+		for ( u_int k = 0; k <= extra; k++ )
+		{
+			whole.put_idle_pkt( 2 ).put_func_grp_pkt( 3, GRP_2, 0x1f );
+		}
+
+		CHECK( whole.get_obj_errs() == 0 );
+		CHECK( whole.get_bit_size() == (extra + 1) * a.get_bit_size() );
+
+		for ( u_int k = 0; k < whole.get_bit_size(); k++ )
+		{
+			CHECK( bit_at( whole, k ) == bit_at( a, k % a.get_bit_size() ) );
+		}
+	}
+}
+
 Fsoc_bits	Fsoc;
 Idle_bits	Idle( 2 );
 
@@ -246,6 +345,9 @@ main( void )
 
 	printf( "Test get_check(), rst_out(), clr_bit()\n" );
 	test_misc( my_bits );
+
+	printf( "Test multiple idle and chained packets\n" );
+	test_chained_pkts();
 
 	printf( "Begin test vectors\n" );
 
