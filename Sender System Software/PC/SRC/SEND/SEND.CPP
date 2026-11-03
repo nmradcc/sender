@@ -1516,9 +1516,20 @@ Key_val			init_key )					// Initial key value.
 				printf( "Starting loco kickstart to enable functions\n" );
 				
 				rep_type	=	SEND_IDLE;
-				if ( hw_is_running() != true )
+				if ( Dcc_reg.get_running() != true )
 				{
-					hw_start_clk();
+					/*	kick_start() needs Dcc_reg's own clock state,
+					 *	so restart the clock through Dcc_reg.
+					 */
+					if ( hw_is_running() == true )
+					{
+						hw_stop_clk();
+					}
+					if ( Dcc_reg.start_clk() != OK )
+					{
+						printf( "Unable to start the clock\n" );
+						break;
+					}
 				}
 				Dcc_reg.kick_start( Dcc_bits, Args );
             }

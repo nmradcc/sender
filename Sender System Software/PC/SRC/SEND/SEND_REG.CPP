@@ -9,6 +9,7 @@
 #include "send_reg.h"
 
 #include <bits.h>
+#include <conio.h>
 #include "args.h"
 #include "sender_hw_if.h"
 
@@ -1151,55 +1152,7 @@ Send_reg::print_stats( void )
 		"Packets sent %lu, Bytes sent %lu\n", p_cnt, b_cnt );
 }
 
- 
-/*--------------------------------------------------------------------------*/
-/*
- *	NAME
- *
- *		fill_cmds_2{}	-	Calc number of reps. for 2 cmds and 2 idles.
- *
- *	RETURN VALUE
- *
- *		u_reps	-	Reps to fill time required for packet sequence.
- *
- *	DESCRIPTION
- *
- *		This method calculates the 'u_reps' of the given packet sequence
- *		requited to filll the delay time of 'ifill_usec' using the given
- *		packet sequence wih the 'iclk0t' and 'iclk1t' packet times.
- *		Note: The command delay times are approximate since generic
- *		cmd packets are used rather than the actual cmd packets.
- */
-/*--------------------------------------------------------------------------*/
 
-/*
- * Calculate the number of repeats usings 2 command + idle packet pairs.
- * 4 39 bit packets plus filler require 20 Bytes.
- */
-u_short
-Send_reg::fill_cmds_2 (
-	u_long			ifill_usec,				// Fill time in usec.
-	u_short			iclk0t,					// Total clock 0 time.
-	u_short 		iclk1t )			   	// Total clock 1 time.
-{
-	u_short			reps;					// Reps to delay calculated time.
-
-	reps		=	static_cast<int>( ifill_usec /
-						(	static_cast<u_long>( iclk0t ) * static_cast<u_long>(		( 2 * IDLE_0S )
-														+	( 2 * CMD_0S )
-														+	FILL_4_0S )
-						+ 	static_cast<u_long>( iclk1t ) * static_cast<u_long>(		( 2 * IDLE_1S )
-														+	( 2 * CMD_1S )
-														+	FILL_4_1S ) ) );
-	if ( reps < PKT_REP_MIN )
-	{
-		reps	=	PKT_REP_MIN;
-	}
-
-	return ( reps );
-}
-
- 
 /*--------------------------------------------------------------------------*/
 /*
  *	NAME
@@ -1215,7 +1168,8 @@ Send_reg::fill_cmds_2 (
  *
  *		This method sends the following command sequence to power up and
  *      turn on the forward or reverse functions of the loco functions
- *		being tested:
+ *		being tested.  Each step sends one loco speed packet and one function
+ *		packet, then waits:
  *           Power up:        5 seconds of speed 0 with functions on.
  *           Loco start:      1 second of speed 1 to activate locomotive.
  *           function on:    10 seconds to get the functions turned on.
@@ -1243,12 +1197,8 @@ Send_reg::kick_start(
 								PRE_BITS + iargs.get_extra_preamble();
 	BYTE				fmask		=		// Function mask.
 								iargs.get_func_mask();
-	u_short				dots		=		// Dot time 4 pkt sequences.
-								fill_cmds_2() / 2;
-	u_short				reps;				// Number of command repeats.
-    u_short				i;					// Index variabble.
 
-     if ( running == false )
+    if ( running == false )
 	{
 		fprintf( stderr,            "Clock must be running\n" );
 		ERRPRINT( my_name, LOG_ERR, "Clock must be running" );
@@ -1275,81 +1225,68 @@ Send_reg::kick_start(
 	{
 		DBGLOG( "%s: Skipping DCC clk tests.", my_name );
 	}
-	
+
 	/*
-	 * Run 5 second power up sequence.
+	 *	Send the loco speed packet and the function packet as separate
+	 *	send_pkt() calls so each gets the post packet fill delay.  Repeat
+	 *	the pair until the step time has elapsed or the user types the
+	 *	break sequence '<ESC> q'.  Returns false if stopped by BREAK.
 	 */
-	 
-	 // Set up loco speed, idle, function, and idle packets.
-	ibits.clr_in().put_0s( 1 );
-	ibits.put_cmd_pkt_28( addr, fwd, 0, pre ).put_idle_pkt( 1 );
-	ibits.put_func_grp_pkt( addr, GRP_1, fmask, pre ).put_idle_pkt( 1 );
-	ibits.put_1s( 1 ).done();
-	
-	// Get the number of reps.
-	reps = fill_cmds_2( 5 * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
-	STATPRINT( "%s Sending %3u power up pkts.",   my_name, reps );
-	printf(    "%s Sending %3u power up pkts.\n", my_name, reps );
-	for ( i = 0; i < reps; i++ )
+	char				lchar = '\0';		// Last key received.
+	auto break_typed = [&]()
 	{
-		Dcc_reg.set_scope( true );
-		Dcc_reg.send_pkt( ibits, "SEND power up pkts." );
-	   	if ( (i % dots) == 0 )
-	   	{
-	   		putchar( '.' );
-	   	}
-	}
-	putchar( '\n' );
-	
-	/*
-	 * Run 1 second loco start sequence.
-	 */
-	 
-	 // Set up loco speed, idle, function, and idle packets.
-	ibits.clr_in().put_0s( 1 );
-	ibits.put_cmd_pkt_28( addr, fwd, 1, pre ).put_idle_pkt( 1 );
-	ibits.put_func_grp_pkt( addr, GRP_1, fmask, pre ).put_idle_pkt( 1 );
-	ibits.put_1s( 1 ).done();
-	
-	// Get the number of reps.
-	reps = fill_cmds_2( 1 * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
-	STATPRINT( "%s Sending %3u loco start pkts.",   my_name, reps );
-	printf(    "%s Sending %3u loco start pkts.\n", my_name, reps );
-	for ( i = 0; i < reps; i++ )
+		bool		got_break = false;
+
+		while ( kbhit() )
+		{
+			char	tchar = lchar;
+
+			lchar = static_cast<char>( getch() );
+			if ( tchar == '\033' && lchar == 'q' )
+			{
+				got_break = true;
+			}
+		}
+
+		return ( got_break );
+	};
+
+	auto run_phase = [&]( int speed, int seconds, const char *name )
 	{
-		Dcc_reg.set_scope( true );
-		Dcc_reg.send_pkt( ibits, "SEND loco start pkts." );
-	   	if ( (i % dots) == 0 )
-	   	{
-	   		putchar( '.' );
-	   	}
-	}
-	putchar( '\n' );
-	
-	/*
-	 * Run 10 second power up sequence.
-	 */
-	 
-	 // Set up loco speed, idle, function, and idle packets.
-	ibits.clr_in().put_0s( 1 );
-	ibits.put_cmd_pkt_28( addr, fwd, 0, pre ).put_idle_pkt( 1 );
-	ibits.put_func_grp_pkt( addr, GRP_1, fmask, pre ).put_idle_pkt( 1 );
-	ibits.put_1s( 1 ).done();
-	
-	// Get the number of reps.
-	reps = fill_cmds_2( 10 * USEC_PER_SEC, DECODER_0T_NOM, DECODER_1T_NOM );
-	STATPRINT( "%s Sending %3u function on pkts.",   my_name, reps );
-	printf(    "%s Sending %3u function on pkts.\n", my_name, reps );
-	for ( i = 0; i < reps; i++ )
+		const auto	end_time = std::chrono::steady_clock::now()
+								+ std::chrono::seconds( seconds );
+
+		STATPRINT( "%s %s for %d seconds, '<ESC> q' to stop.",   my_name, name, seconds );
+		printf(    "%s %s for %d seconds, '<ESC> q' to stop.\n", my_name, name, seconds );
+
+		do
+		{
+			ibits.clr_in().put_0s( 1 );
+			ibits.put_cmd_pkt_28( addr, fwd, speed, pre ).done();
+			Dcc_reg.send_pkt( ibits, name );
+
+			ibits.clr_in().put_0s( 1 );
+			ibits.put_func_grp_pkt( addr, GRP_1, fmask, pre ).done();
+			Dcc_reg.send_pkt( ibits, name );
+
+			if ( break_typed() )
+			{
+				printf( "\n<BREAK>\n" );
+				ERRPRINT( my_name, LOG_WARNING, "Kick start stopped by BREAK" );
+				return ( false );
+			}
+		}
+		while ( std::chrono::steady_clock::now() < end_time );
+
+		return ( true );
+	};
+
+	if (	!run_phase( 0, 5,  "Power up" )			// Speed 0, functions on.
+		||	!run_phase( 1, 1,  "Loco start" )		// Speed 1 to activate the loco.
+		||	!run_phase( 0, 10, "Function on" ) )	// Speed 0, functions on.
 	{
-		Dcc_reg.set_scope( true );
-		Dcc_reg.send_pkt( ibits, "SEND function on pkts." );
-	   	if ( (i % dots) == 0 )
-	   	{
-	   		putchar( '.' );
-	   	}
+		return ( FAIL );
 	}
-	putchar( '\n' );
 
 	return ( OK );
 }

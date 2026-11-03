@@ -20,12 +20,6 @@ const u_short	DCC_CLK_HOLD	= 0;		// Hold present clock value.
 const u_short	DCC_CLK_ERR		= 1;		// Clock has an error.
 const u_short	DCC_CLK_MIN		= 40;		// Minimum valid clock value.
 const u_int		PKT_SIZE		= 5;		// Size of basic packets.
-/*
- *	Count of 1s and 0s added to fill out 4 39 bit packets
- *	up the the next Byte boundary.
- */
-const u_int		FILL_4_0S		= 3;		// 4 packet 0 filler.
-const u_int		FILL_4_1S		= 1;		// 4 packet 1 filler.
 const u_short	PKT_REP_MIN		= 10;		// Min. pkt repeat count.
 
 const BYTE		GEN_INPUT1_MASK		    = 0x0F;	// Valid GEN1 input bits.
@@ -60,16 +54,6 @@ class Sender_hw_if;
 class Send_reg
 {
   public:
-  
-	/* Static method section */
-	
-	/*
-	 * Calculate the number of repeats usings 2 command + idle packet pairs.
-	 * 4 39 bit packets plus filler require 20 Bytes.
-	 */
-	static u_short fill_cmds_2 (	u_long  ifill_usec = USEC_PER_SEC,
-									u_short iclk0t     = DECODER_0T_NOM,
-									u_short iclk1t     = DECODER_1T_NOM);
 
 	/* Method section */
 	
