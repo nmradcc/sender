@@ -1629,31 +1629,16 @@ Dec_tst::decoder_ames(
 {
 	const char		*my_name = "Ames";
 	int				i;			  			// Index variable.
-	int				j;						// Index variable.
 	Rslt_t			retval = OK;			// Return value.
 	bool			pre_fail = false;	  	// Preset failed.
 	bool			trig_fail = false;	  	// Trigger failed.
-	int				t_pkt_cnt;				// Temp repeat count.
 	u_int			extra_trg =				// Extra trg pkt count.
 					Args.get_extra_trg();
 	u_int			k;						// Index variable.
-	char			trig_info[128];				// Trigger packet debug info.
-	BYTE			trig_b1 = 0;				// Trigger packet byte 1.
-	BYTE			trig_b2 = 0;				// Trigger packet byte 2.
-	BYTE			trig_b3 = 0;				// Trigger packet byte 3.
-	BYTE			trig_chk = 0;				// Trigger packet checksum.
-	bool			trig_has_b3 = false;		// True if trigger has 3 data bytes.
-	bool			trig_has_decode = false;	// True if trigger decode is valid.
-	const char		*trig_pkt_type = "unknown";// Trigger packet type string.
 
 	snprintf( m_tst_name, sizeof( m_tst_name ), "pre %d idle %d:", pre_cnt, idle_cnt );
 	Dcc_reg.clr_err_cnt();					// Restart error counter.
 	t_stat.reset();
-
-	/*
-	 *	Double the packet repeats if no idles are being sent.
-	 */
-	t_pkt_cnt	=	(idle_cnt == 0) ? 2 * pkt_rep_cnt : pkt_rep_cnt;
 
 	CLR_LINE;
 
@@ -1701,105 +1686,6 @@ Dec_tst::decoder_ames(
 	dcc_bits3.done();
 
 
-	/*
-	 *	Log decoded trigger packet fields so packet payload bytes are
-	 *	explicit even when scope/UART decode alignment differs.
-	 */
-	if ( Args.get_decoder_type() == DEC_LOCO )
-	{
-		trig_b1			=	static_cast<BYTE>( Args.get_decoder_address() );
-		trig_b2			=	build_cmd_28_byte( true, trig_cmd_speed );
-		trig_chk		=	static_cast<BYTE>( trig_b1 ^ trig_b2 );
-		trig_pkt_type	=	"loco";
-		trig_has_decode	=	true;
-	}
-	else if ( Args.get_decoder_type() == DEC_FUNC )
-	{
-		trig_b1	=	static_cast<BYTE>( Args.get_decoder_address() );
-
-		if ( Args.get_trig_rev() == true )
-		{
-			trig_b2			=	build_cmd_28_byte( Args.get_lamp_rear(), 0 );
-			trig_pkt_type	=	"func->loco trigger";
-		}
-		else
-		{
-			trig_b2			=	0x80;
-			trig_pkt_type	=	"func grp1";
-		}
-
-		trig_chk		=	static_cast<BYTE>( trig_b1 ^ trig_b2 );
-		trig_has_decode	=	true;
-	}
-	else if ( Args.get_decoder_type() == DEC_ACC )
-	{
-		u_short			a;
-
-		a			=	Args.get_decoder_address();
-		trig_b1			=	static_cast<BYTE>( 0x80 | ( 0x3f & a ) );
-		trig_b2			=	static_cast<BYTE>(	0x80
-						|	( 0x70 & ~( a >> 2 ) )
-						|	0x08
-						|	( 0x07 & ACC_TRG ) );
-		trig_chk		=	static_cast<BYTE>( trig_b1 ^ trig_b2 );
-		trig_pkt_type	=	"accessory";
-		trig_has_decode	=	true;
-	}
-	else if ( Args.get_decoder_type() == DEC_SIG )
-	{
-		u_short			a;
-
-		a			=	Args.get_decoder_address();
-		if ( a < SIG_ADDR_MIN || a > SIG_ADDR_MAX )
-		{
-			a	=	SIG_ADDR_MIN;
-		}
-		a	+=	3;
-
-		trig_b1			=	static_cast<BYTE>( 0x80 | ( 0x3f & ( a >> 2 ) ) );
-		trig_b2			=	static_cast<BYTE>(	0x01
-						|	( 0x70 & ~( a >> 4 ) )
-						|	( 0x06 &  ( a << 1 ) ) );
-		trig_b3			=	static_cast<BYTE>( Args.get_aspect_trigger() & 0x1f );
-		trig_chk		=	static_cast<BYTE>( trig_b1 ^ trig_b2 ^ trig_b3 );
-		trig_pkt_type	=	"signal";
-		trig_has_b3		=	true;
-		trig_has_decode	=	true;
-	}
-
-	if ( trig_has_decode )
-	{
-		if ( trig_has_b3 )
-		{
-			snprintf( trig_info, sizeof( trig_info ),
-				"Send packet acceptance trigger packet. (%s b1=%02x b2=%02x b3=%02x chk=%02x)",
-				trig_pkt_type, trig_b1, trig_b2, trig_b3, trig_chk );
-
-			printf(    "Ames trigger decode (%s): b1=%02x b2=%02x b3=%02x chk=%02x\n",
-				trig_pkt_type, trig_b1, trig_b2, trig_b3, trig_chk );
-		}
-		else
-		{
-			snprintf( trig_info, sizeof( trig_info ),
-				"Send packet acceptance trigger packet. (%s b1=%02x b2=%02x chk=%02x)",
-				trig_pkt_type, trig_b1, trig_b2, trig_chk );
-
-			printf(    "Ames trigger decode (%s): b1=%02x b2=%02x chk=%02x\n",
-				trig_pkt_type, trig_b1, trig_b2, trig_chk );
-		}
-	}
-	else
-	{
-		snprintf( trig_info, sizeof( trig_info ), "%s", "Send packet acceptance trigger packet." );
-	}
-
-
-	if ( Dcc_reg.get_log_pkts() )
-	{
-		DBGLOG( "%s: Sending %2u packet acceptance trigger packet(s).",
-				my_name, extra_trg + 1 );
-	}
-		
 	for ( i = 0; i < PERCENT100; i++ )
 	{
 		pre_fail	=	false;
