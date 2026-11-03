@@ -1664,7 +1664,7 @@ Dec_tst::decoder_ames(
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 	put_preset_pkt( dcc_bits, Args.get_decoder_address(), pre_cnt, true );
-	dcc_bits.put_1s(1).done();
+	dcc_bits.done();
 
 	/*
 	 *	Set decoder to trigger speed, forward, lamp off or
@@ -1673,24 +1673,25 @@ Dec_tst::decoder_ames(
 	dcc_bits2.clr_in();
 	dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 	put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), pre_cnt, true );
-	dcc_bits2.put_1s(1).done();
+	dcc_bits2.done();
 
-	dcc3.clr_in();
-	dcc3.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+	/*
+	 *	Generate combined preset/trigger packets for the decoder.
+	 *	This includes the preset packet, idle packets, and the trigger packet.
+	 */
+	dcc_bits3.clr_in();
+	dcc_bits3.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 	if ( Args.get_decoder_type() == DEC_FUNC )
 	{
-		bits.put_func_grp_pkt( addr, GRP_1, Args.get_func_mask(), pre_cnt );
+		dcc_bits3.put_func_grp_pkt( Args.get_decoder_address(), GRP_1, Args.get_func_mask(), pre_cnt );
 	}
 	else
 	{
-		put_preset_pkt( dcc3, Args.get_decoder_address(), pre_cnt, true );
+		put_preset_pkt( dcc_bits3, Args.get_decoder_address(), pre_cnt, true );
 	}
-	dcc3.put_1s(1);
-//??
-	dcc3.put_idle_pkt( idle_cnt );
-	dcc3.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+	dcc_bits3.put_idle_pkt( idle_cnt );
 	put_trigger_pkt( dcc_bits3, Args.get_decoder_address(), pre_cnt, true );
-	dcc_bits3.put_1s(1).done();
+	dcc_bits3.done();
 
 
 	/*
@@ -1795,6 +1796,7 @@ Dec_tst::decoder_ames(
 	for ( i = 0; i < PERCENT100; i++ )
 	{
 		pre_fail	=	false;
+		trig_fail	=	false;
 
 		printf(
 			"  %-18s Addr %5u, Speed %2d cycle %4d, Fails %4lu\r",
@@ -1810,12 +1812,20 @@ Dec_tst::decoder_ames(
 			pre_fail	=	true;
 		}
 
-		Dcc_reg.send_pkt(	dcc_bits2,		// Attempt emergency stop.
-								"Send packet acceptance and trigger packet back to back.");
+		Dcc_reg.send_pkt(	dcc_bits2,"Send packet acceptance and trigger packet back to back.");
 
 		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
 			trig_fail	=	true;
+		}
+		else
+		{
+			Dcc_reg.send_pkt(	dcc_bits3,"Send packet acceptance and trigger packet back to back.");
+
+			if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
+			{
+				trig_fail	=	true;
+			}
 		}
 
 		t_stat.incr_t_cnt();
@@ -4003,7 +4013,6 @@ Dec_tst::put_trigger_pkt(
 	else if ( Args.get_decoder_type() == DEC_FUNC )
 	{
 		// Function packet.
-		bits.clr_in();
 		bits.put_func_grp_pkt( addr, GRP_1, 0, pre_cnt );
 	}
 	else if ( sig_ok && Args.get_decoder_type() == DEC_SIG )
