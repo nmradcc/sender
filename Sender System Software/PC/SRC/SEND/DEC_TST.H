@@ -80,8 +80,6 @@ class Dec_tst
 
     /* Set methods */
 
-	void print_user_docs( FILE *ofp );
-
 	void set_decoder_type( Dec_types itype )  { decoder_type = itype; }
 	void set_run_mask( Bits_t irun_mask )     { run_mask = irun_mask; }
 	void set_clk_mask( Bits_t iclk_mask )     { clk_mask = iclk_mask; }

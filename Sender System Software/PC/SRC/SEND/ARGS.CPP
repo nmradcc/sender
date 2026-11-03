@@ -69,7 +69,6 @@ Args_obj::Args_obj( void )
 	m_trig_rev			= false;			// Use E_STOP as trigger command.
 	m_fill_msec			= 100;				// Use 100 ms fill time.
 	m_test_repeats		= 2;				// Times to repeat misc. tests.
-	m_print_user			= false;			// Don't print user docs.
 	m_log_mask			= DEF_LOG_MASK;		// Logging enabled.
 	m_mcu_bypass_tst	= false;			// Run MCU self tests.
 	m_reduce_passcnt	= false;			// Full pass count.
@@ -145,7 +144,7 @@ Args_obj::usage(
 	FILE		 *ofp )						// Output FILE stream.
 {
 	fprintf( ofp,
-		"Usage: %8s [-?] [-u] [-m] [-a addr] [-d l|f|a|s] [-l] [-n pre] [-N trig]\n"
+		"Usage: %8s [-?] [-m] [-a addr] [-d l|f|a|s] [-l] [-n pre] [-N trig]\n"
 		"                [-r] [-t test mask] [-c clock mask] [-g function mask] [-P log mask] [-E pre]\n",
 		m_cmd_name );			
     fprintf( ofp,
@@ -159,8 +158,6 @@ Args_obj::usage(
 	
 	fprintf( ofp,
 		"  -?                    Print usage message and exit\n" );
-	fprintf( ofp,
-		"  -u                    Print user information to 's_user.txt' and exit\n" );
 	fprintf( ofp,
 		"  -m         MANUAL     Start in manual mode                 <value %s>\n",
 		m_manual_flag		? "true" : "false" );
@@ -380,11 +377,6 @@ Args_obj::argscan(
 	{
 		if ( strcmp( argv[i], "-?" ) == 0 )			// Print usage message.
 		{
-			return ( FAIL );
-		}
-		else if ( strcmp( argv[i], "-u" ) == 0 )    // Print user docs.
-		{
-			m_print_user	=	true;
 			return ( FAIL );
 		}
 		else if ( strcmp( argv[i], "-m" ) == 0 )	// Manual mode.

@@ -96,8 +96,7 @@ enum
 /* Number of individual TESTS mask bit checkboxes. */
 static const int TESTBIT_COUNT = 32;
 
-/* Short description of what each TESTS mask bit selects (see DEC_TST.CPP
- * print_user_docs() for the authoritative bit ordering). Valid bits are 0-19;
+/* Short description of what each TESTS mask bit selects. Valid bits are 0-19;
  * bits 20-31 are reserved and must stay clear. */
 static const char *g_testBitLabels[TESTBIT_COUNT] =
 {

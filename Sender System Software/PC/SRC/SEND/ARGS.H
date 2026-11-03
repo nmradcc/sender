@@ -93,8 +93,6 @@ class Args_obj
 				{ return ( m_fill_msec ); }
 	u_int	   	get_test_repeats( void ) const
 				{ return ( m_test_repeats ); }
-	bool	  	get_print_user( void ) const
-				{ return ( m_print_user ); }
 	u_int		get_log_mask( void ) const
 				{ return ( m_log_mask ); }
 	bool	  		get_mcu_bypass_tst( void ) const
@@ -148,7 +146,6 @@ class Args_obj
 	bool					m_trig_rev;			// Use reverse as trigger cmd.
 	u_int					m_fill_msec;			// Fill time (msec).
 	u_int					m_test_repeats;		// Number of times to do tests.
-	bool					m_print_user;			// If true, print user docs.
 	u_int					m_log_mask;			// LOG mode: 0..3.
 	bool				    m_mcu_bypass_tst;	// If true, skip MCU self tests.
 	bool				    m_reduce_passcnt;	// If true, use reduced pass count.

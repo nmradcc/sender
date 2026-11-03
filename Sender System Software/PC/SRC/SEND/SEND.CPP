@@ -24,7 +24,6 @@
 
 #define CMD_MSG		( printf( "Command mode (h for help, q to quit) >>" ) )
 
-const char * const	DOCS_FILE	= "s_user.txt";	// User docs file.
 const int			MAXLINE		= 256;			// Maximum input line.
 
 /*
@@ -114,7 +113,6 @@ static Key_val	get_key_cmd();
 static void		parse_key_cmd( Key_val init_key );
 static Rslt_t	do_mcu_self_tests( void );
 static void		get_log_file( const char *cmd_name );
-static void		print_user_docs();
 static void		exit_send( int status );
 static bool		init_hw_backend();
 static void		close_hw_backend();
@@ -427,14 +425,7 @@ main(
 
 	if ( Args.get_args( argc, argv ) != OK )
 	{
-		if ( Args.get_print_user() )
-		{
-			print_user_docs();
-		}
-		else
-		{
-			Args.usage();
-		}
+		Args.usage();
 		exit_send( 1 );
 	}
 	
@@ -569,57 +560,6 @@ exit_send(
 	close_hw_backend();
 
 	exit( status );
-}
-
- 
-/*--------------------------------------------------------------------------*/
-/*
- *	NAME
- *
- *		print_user_docs()		  				-	 Print user docs.
- *
- *	RETURN VALUE
- *
- *		NONE
- *
- *	DESCRIPTION
- *
- *		print_user_docs() prints the user documentation summary to
- *		DOCS_FILE.
- */
-/*--------------------------------------------------------------------------*/
-
-static void
-print_user_docs( void )
-{
-	FILE		*fp;						// FILE pointer.
-
-	if ( (fp = fopen( DOCS_FILE, "w" )) == nullptr )
-	{
-		fprintf( stderr,
-			"User documentation file <%s> could not be opened", DOCS_FILE );
-		return;
-	}
-
-	printf( "Printing user documentation summary to <%s>\n", DOCS_FILE );
-
-	/*
-	 *	Write user documentation summary to DOCS_FILE
-	 */
-	fprintf( fp,
-		"User documenation summary for test software version %c.%u.%u.%u.%u\n\n",
-		Ver_rel, Ver_maj, Ver_min, Ver_pat, Ver_bld );
-	fputs(
-		"Summary of command line and 'SEND.CFG' switches:\n\n",
-		fp );
-	Args.usage( fp );
-
-	fputs(
-		"\nSummary of decoder tests and clocks:\n\n",
-		fp );
-	Ldec_tst.print_user_docs( fp );
-
-	fclose( fp );
 }
 
  
