@@ -1689,8 +1689,15 @@ Dec_tst::decoder_ames(
 	{
 		put_preset_pkt( dcc_bits3, Args.get_decoder_address(), pre_cnt, true );
 	}
+	
 	dcc_bits3.put_idle_pkt( idle_cnt );
 	put_trigger_pkt( dcc_bits3, Args.get_decoder_address(), pre_cnt, true );
+	for ( k = 0; k < extra_trg; k++ )		// Extra idle, trigger pairs.
+	{
+		dcc_bits3.put_idle_pkt( idle_cnt );
+		put_trigger_pkt( dcc_bits3, Args.get_decoder_address(), pre_cnt, true );
+	}
+	
 	dcc_bits3.done();
 
 
@@ -1812,7 +1819,12 @@ Dec_tst::decoder_ames(
 			pre_fail	=	true;
 		}
 
-		Dcc_reg.send_pkt(	dcc_bits2,"Send packet acceptance and trigger packet back to back.");
+		Dcc_reg.send_pkt(	dcc_bits2,"Send packet acceptance trigger packet.");
+
+		for ( k = 0; k < extra_trg; k++ )
+		{
+			Dcc_reg.send_pkt(	dcc_bits2,"Send extra trigger packet.");
+		}
 
 		if ( Dcc_reg.get_gen_fb( Args.get_decoder_type() ) )
 		{
