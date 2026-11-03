@@ -20,7 +20,6 @@ const u_short	DCC_CLK_HOLD	= 0;		// Hold present clock value.
 const u_short	DCC_CLK_ERR		= 1;		// Clock has an error.
 const u_short	DCC_CLK_MIN		= 40;		// Minimum valid clock value.
 const u_int		PKT_SIZE		= 5;		// Size of basic packets.
-const u_short	PKT_REP_MIN		= 10;		// Min. pkt repeat count.
 
 const BYTE		GEN_INPUT1_MASK		    = 0x0F;	// Valid GEN1 input bits.
 const BYTE		GEN_MOTOR_FEEDBACK_MASK	= 0x03;	// Motor feedback mask bit.

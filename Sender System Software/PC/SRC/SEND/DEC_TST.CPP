@@ -29,7 +29,7 @@ static int      PERCENT100      = PERCENT100_FULL;  // 100 percent value;
 const int		SP_TEST_MIN		= 14;				// Min. test speed.
 													// (Step 7 + light 14 step
                                                     //  mode)
-// Note: PKT_REP_MIN moved to SEND_REG.H to share with rep calulator methods.
+const u_short	PKT_REP_MIN		= 10;				// Min. pkt repeat count.
 const int		BEST_PRE		= PRE_BITS;			// Best preamble bit cnt.
 const int		BEST_IDLE		= 1;				// Best idle packet cnt.
 const int		BAD_BIT_BITS	= BASE_BITS+1; 		// Packet plus stop bit.
