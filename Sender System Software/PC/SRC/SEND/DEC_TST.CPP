@@ -1667,18 +1667,31 @@ Dec_tst::decoder_ames(
 	dcc_bits.put_1s(1).done();
 
 	/*
-	 *	Set decoder to preset and trigger speed, forward, lamp off or
+	 *	Set decoder to trigger speed, forward, lamp off or
 	 *	set accessory decoder to the normal position.
 	 */
 	dcc_bits2.clr_in();
 	dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	put_preset_pkt( dcc_bits2, Args.get_decoder_address(), pre_cnt, true );
-	dcc_bits2.put_idle_pkt( idle_cnt );
-//	dcc_bits2.put_1s(1);
-//	dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-//TODO: add extra trigger packets??
 	put_trigger_pkt( dcc_bits2, Args.get_decoder_address(), pre_cnt, true );
 	dcc_bits2.put_1s(1).done();
+
+	dcc3.clr_in();
+	dcc3.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+	if ( Args.get_decoder_type() == DEC_FUNC )
+	{
+		bits.put_func_grp_pkt( addr, GRP_1, Args.get_func_mask(), pre_cnt );
+	}
+	else
+	{
+		put_preset_pkt( dcc3, Args.get_decoder_address(), pre_cnt, true );
+	}
+	dcc3.put_1s(1);
+//??
+	dcc3.put_idle_pkt( idle_cnt );
+	dcc3.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+	put_trigger_pkt( dcc_bits3, Args.get_decoder_address(), pre_cnt, true );
+	dcc_bits3.put_1s(1).done();
+
 
 	/*
 	 *	Log decoded trigger packet fields so packet payload bytes are
