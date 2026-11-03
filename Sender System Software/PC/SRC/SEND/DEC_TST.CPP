@@ -786,45 +786,32 @@ Dec_tst::decoder_test(
 		/*	Setup the function decoder so the function is on
 		 *	and the motor is set for the correct direction.
 		 */
-		if ( Args.get_kick_start() == true )
-		{
-			/*	Send the kick start sequence.
-			 * This starts the loco, turns on the function,
-			 * and set the correct motor dirction.
-			 */
-			STATPRINT( "Starting Send_reg::kick_start() sequence." );
-			printf(    "Starting Send_reg::kick_start() sequence.\n" );
-			Dcc_reg.kick_start( dcc_bits, Args );
-		}
-		else
-		{
-			/*
-			 *	Send forward or reverse speed 0 packet followd by
-			 *	a function on packet.
-			 */
-			STATPRINT( "Starting loco %s setup for a function decoder.",
-						fwd ? "forward" : "reverse" );
-			printf(    "Starting loco %s setup for a function decoder.\n",
-						fwd ? "forward" : "reverse" );
-			func_msg	=	fwd ?	"Function decoder, Send Fwd Spd 0."
-								:	"Function decoder, Send Rev Spd 0.";
-								
-			DBGPRINT( "Sending %d loco %s speed 0 + function on packets.",
-			           2, fwd ? "Fwd" : "Rev" );
-			for ( i = 0; i < 2; i++ )
-			{
-				dcc_bits.clr_in();
-				dcc_bits.put_cmd_pkt_28( Args.get_decoder_address(),
-										!Args.get_lamp_rear(), 0, BEST_PRE );
-				dcc_bits.done();
-				Dcc_reg.send_pkt( dcc_bits, func_msg );
+		/*
+		 *	Send forward or reverse speed 0 packet followed by
+		 *	a function-on packet.
+		 */
+		STATPRINT( "Starting loco %s setup for a function decoder.",
+					fwd ? "forward" : "reverse" );
+		printf(    "Starting loco %s setup for a function decoder.\n",
+					fwd ? "forward" : "reverse" );
+		func_msg	=	fwd ?	"Function decoder, Send Fwd Spd 0."
+							:	"Function decoder, Send Rev Spd 0.";
 
-				dcc_bits.clr_in();
-				dcc_bits.put_func_grp_pkt( Args.get_decoder_address(), GRP_1,
-										Args.get_func_mask(), BEST_PRE );
-				dcc_bits.done();
-				Dcc_reg.send_pkt( dcc_bits, func_msg );
-			}
+		DBGPRINT( "Sending %d loco %s speed 0 + function on packets.",
+		           2, fwd ? "Fwd" : "Rev" );
+		for ( i = 0; i < 2; i++ )
+		{
+			dcc_bits.clr_in();
+			dcc_bits.put_cmd_pkt_28( Args.get_decoder_address(),
+									!Args.get_lamp_rear(), 0, BEST_PRE );
+			dcc_bits.done();
+			Dcc_reg.send_pkt( dcc_bits, func_msg );
+
+			dcc_bits.clr_in();
+			dcc_bits.put_func_grp_pkt( Args.get_decoder_address(), GRP_1,
+									Args.get_func_mask(), BEST_PRE );
+			dcc_bits.done();
+			Dcc_reg.send_pkt( dcc_bits, func_msg );
 		}
 
 		func_msg	=	fwd ?	"Initialized Function Decoder Forward Speed 0."

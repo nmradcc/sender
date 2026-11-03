@@ -57,7 +57,6 @@ enum
 	ID_CHK_NO_ABORT,
 	ID_CHK_FRAGMENT,
 	ID_CHK_SAME_AMBIG_ADDR,
-	ID_CHK_KICK_START,
 	ID_CHK_MCU_BYPASS_TST,
 	ID_CHK_REDUCE_PASSCNT,
 	ID_CHK_NON_INTERACTIVE,
@@ -232,7 +231,6 @@ static const FlagCtrl g_flagCtrls[] =
 	{ ID_CHK_NO_ABORT,        "NO_ABORT" },
 	{ ID_CHK_FRAGMENT,        "FRAGMENT" },
 	{ ID_CHK_SAME_AMBIG_ADDR, "SAME_AMBIG_ADDR" },
-	{ ID_CHK_KICK_START,      "KICK_START" },
 	{ ID_CHK_MCU_BYPASS_TST,  "MCU_BYPASS_TST" },
 	{ ID_CHK_REDUCE_PASSCNT,  "REDUCE_PASSCNT" },
 	{ ID_CHK_NON_INTERACTIVE, "NON_INTERACTIVE" },
@@ -899,7 +897,6 @@ SaveCfgFile( const char *path )
 	addFlag( "FRAGMENT", IsChecked( ID_CHK_FRAGMENT ) );
 	addFlag( "SAME_AMBIG_ADDR", IsChecked( ID_CHK_SAME_AMBIG_ADDR ) );
 	addField( "ACC_PAIR", GetEditText( ID_EDIT_ACC_PAIR ) );
-	addFlag( "KICK_START", IsChecked( ID_CHK_KICK_START ) );
 	addField( "EXTRA_TRG", GetEditText( ID_EDIT_EXTRA_TRG ) );
 	addFlag( "MCU_BYPASS_TST", IsChecked( ID_CHK_MCU_BYPASS_TST ) );
 	addFlag( "REDUCE_PASSCNT", IsChecked( ID_CHK_REDUCE_PASSCNT ) );
@@ -1573,7 +1570,6 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_NO_ABORT, "NO_ABORT - Do not stop on error", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_FRAGMENT, "FRAGMENT - Test all fragment lengths", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_SAME_AMBIG_ADDR, "SAME_AMBIG_ADDR - Same addr for ambig.", xChk, yChk, chkW, 20 ) ); yChk += rowH;
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_KICK_START, "KICK_START - Kick start motor", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REDUCE_PASSCNT, "REDUCE_PASSCNT - Reduce pass count [5]", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MCU_BYPASS_TST, "MCU_BYPASS_TST - Skip MCU self test", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_NON_INTERACTIVE, "NON_INTERACTIVE - Skip startup prompts", xChk, yChk, chkW, 20 ) ); yChk += rowH;

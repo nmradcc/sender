@@ -90,7 +90,6 @@ Args_obj::Args_obj( void )
     m_lamp_rear			= false;			// Use forward lamp.
     m_func_mask			= DEF_FUNC_MASK;	// Default to all on.
     m_acc_pre				= 1;				// Default accessory out preset.
-    m_kick_start		= false;			// Kick start motor.
 	m_extra_trg			= 0;				// Extra Ames tst trig packets.
 	snprintf( m_mcu_port, sizeof( m_mcu_port ), "%s", "COM3" );			// Default MCU COM port.
 	m_mcu_baud			= 115200;			// Default MCU baud.
@@ -161,7 +160,7 @@ Args_obj::usage(
 		m_cmd_name );			
     fprintf( ofp,
 		"                [-T] [-F fill] [-R reps] [-A] [-f] [-S]\n"
-		"                [-o pair] [-k] [-e trg] [-B] [-Q] [-x] [-J port] [-Y baud]\n\n" );
+		"                [-o pair] [-e trg] [-B] [-Q] [-x] [-J port] [-Y baud]\n\n" );
 
 	if ( m_cfg_path[0] != '\0' )
 	{
@@ -256,10 +255,6 @@ Args_obj::usage(
         "                        "
         "    output {preset, trigger}         <value {%u, %u}>\n",
 		get_acc_pair(), get_acc_pre(), get_acc_trg() );
-	fprintf( ofp,
-		"  -k        KICK_START  "
-		"Kick start motor for function tests  <value %s>\n",
-		m_kick_start   	? "true" : "false" );
 	fprintf( ofp,
 		"  -e <trg>   EXTRA_TRG  "
 		"Extra Ames test trigger packets      <value %u>\n",
@@ -711,10 +706,6 @@ Args_obj::argscan(
 				return ( FAIL );
 			}
 		}
-		else if ( strcmp( argv[i], "-k" ) == 0 )	// Kick start motor flag.
-		{
-			m_kick_start	=	m_kick_start ? false  : true;
-		}
 		else if ( strcmp( argv[i], "-e" ) == 0 )	// Extra trigger packets.
 		{
 			if ( ++i < argc )
@@ -1112,10 +1103,9 @@ Args_obj::cfgscan( void )
 			targv[1]	=	"-o";
 			targc		=	3;
 		}
-		else if ( 	!strcmpi( cmd,	"KICK_START" ) )
+		else if ( 	!strcmpi( cmd,	"KICK_START" ) )	// Obsolete, ignored.
 		{
-			targv[1]	=	"-k";
-			targc		=	2;
+			continue;
 		}
 		else if ( 	!strcmpi( cmd, "EXTRA_TRG" ) )
 		{

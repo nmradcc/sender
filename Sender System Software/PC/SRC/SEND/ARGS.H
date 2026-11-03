@@ -113,10 +113,8 @@ class Args_obj
                 { return ( m_acc_pre ); }
     BYTE		get_acc_trg( void ) const
                 { return ( m_acc_pre - 1 ); }
-    bool	  	get_kick_start( void ) const
-				{ return ( m_kick_start ); }
-	u_int	   	get_extra_trg( void ) const
-				{ return ( m_extra_trg ); }
+    u_int	   	get_extra_trg( void ) const
+                { return ( m_extra_trg ); }
 	const char	*get_mcu_port( void ) const
 				{ return ( m_mcu_port ); }
 	u_int		get_mcu_baud( void ) const
@@ -156,7 +154,6 @@ class Args_obj
     bool					m_lamp_rear;		// Use rear lamp.
     BYTE					m_func_mask;			// Function group bit mask.
     BYTE                    m_acc_pre;			// Acc. out preset (1,3,5,7);
-    bool					m_kick_start;		// Briefly start loco.
 	u_int					m_extra_trg;		    // Extra Ames tst trig packets.	
 	char					m_mcu_port[MAX_MCU_PORT]; // MCU COM port name.
 	u_int					m_mcu_baud;		// MCU serial baud rate.
