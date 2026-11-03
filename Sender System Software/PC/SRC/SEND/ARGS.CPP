@@ -31,15 +31,6 @@ const u_int		DEF_LOG_MASK	= 1;					// Default LOG mask (1=file logging).
 
 const BYTE		DEF_FUNC_MASK	=	0x1f;				// Function Mask.
 
-const Bits_t	DEF_RUN_MASK	=	(~0L) & 0x000FFFFFUL;	// Default run mask; bits 20-31 are reserved and kept clear.
-
-// Default clock mask; bit 17 (out-of-spec negative test) is opt-in, bits 18-31 are reserved.
-const Bits_t	DEF_CLK_MASK	=	(~0L & 0x0001FFFFUL)
-							  & ~0x00000008 		// No min + 2.
-							  & ~0x00000010 		// No min + 1.
-							  & ~0x00000100 		// No max - 2.
-							  & ~0x00000200;		// No max - 1.
-
 /*
  * Global Args_obj instance for the sender application.
  */

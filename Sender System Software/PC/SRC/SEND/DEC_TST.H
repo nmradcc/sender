@@ -116,7 +116,6 @@ class Dec_tst
 	Bits						dcc_bits3;			// Packet scratchpad.
 	Fsoc_bits					fsoc;		   	   	// Fail safe packet.
 	int							trig_cmd_speed;		// Trigger speed command.
-	u_short						pkt_rep_cnt;		// Test packet repeat count.
     char						m_tst_name[128];	// Buffer for tst_name.
 	bool						trig_rev;			// Handle reverse differently.
 	Dec_types					decoder_type;	  	// Decoder type.

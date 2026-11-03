@@ -86,53 +86,6 @@ enum Ramp_state
 	RAMP_END									// End of test.
 };
 
-static BYTE
-build_cmd_28_byte(
-	bool			forward,
-	int			speed )
-{
-	BYTE			cmd = 0;
-
-	if ( speed == SP_E_STOP )
-	{
-		cmd	=	0x01;
-	}
-	else if ( speed == SP_E_STOP_I )
-	{
-		cmd	=	0x11;
-	}
-	else if ( speed == SP_MIN )
-	{
-		cmd	=	0x00;
-	}
-	else if ( speed == SP_STOP_I )
-	{
-		cmd	=	0x10;
-	}
-	else if ( speed < SP_MIN || speed > SP_28_MAX )
-	{
-		cmd	=	0x00;
-	}
-	else
-	{
-		cmd	=	static_cast<BYTE>((speed + 3) >> 1);
-
-		if ( !(speed & 0x01) )
-		{
-			cmd	|=	0x10;
-		}
-	}
-
-	if ( forward )
-	{
-		cmd	|=	0x20;
-	}
-
-	cmd	|=	0x40;
-
-	return ( cmd );
-}
-
 
 /*
  *	Percent below the decoder minimum timings used by the out-of-spec
@@ -172,7 +125,7 @@ const Dec_clk	Dec_tst::dclk_tbl[] = {
 const u_int	Dec_tst::dclk_size		=	sizeof(Dec_tst::dclk_tbl) /
 										sizeof(Dec_clk);
 /*
- *	Array of clock value to use for decoder tests.
+ *	Array of clock value to use for stretched decoder tests.
  */
 const Str0_clk	Dec_tst::str0_tbl[] = {
 	/*	CLK0T_delta			Stretch_type		Message */
@@ -516,10 +469,9 @@ Dec_tst::Dec_tst( void )
 {
 	t_stat.reset();						// Reset test statistics.
 	tst_cnt			= 0L;				// Reset test count.
-	run_mask		= ~0L;				// Run all tests.
-	clk_mask		= ~0L;				// Use all clock values.
+	run_mask		= DEF_RUN_MASK;		// Default test mask.
+	clk_mask		= DEF_CLK_MASK;		// Default clock mask.
 	trig_cmd_speed	= SP_E_STOP;		// Use emeergency stop as trigger.
-	pkt_rep_cnt		= PKT_REP_MIN;		// Default to minimum.
     m_tst_name[0]	= '\0';				// Clear test name buffer.
 	trig_rev        = false;			// Handle reverse differently.
 	decoder_type    = DEC_LOCO;			// Decoder type.
