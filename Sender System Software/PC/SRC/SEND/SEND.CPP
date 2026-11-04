@@ -19,7 +19,6 @@
 #include <conio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <vector>
 #include <memory>
 
 #define CMD_MSG		( printf( "Command mode (h for help, q to quit) >>" ) )
@@ -72,10 +71,7 @@ enum Key_val
 	KEY_CLOCK		= 'c',						// Toggle idle clock.
 	KEY_ZERO		= '0',						// Send 0 stream.
 	KEY_ONE			= '1',						// Send 1 stream.
-	KEY_SCOPE_A		= 'a',						// Scope test A.
-	KEY_SCOPE_B		= 'b',						// Scope test B.
 	KEY_SCOPE_O		= 'o',						// Scope timing test.
-	KEY_WARBLE	 	= 'w',						// Send warble packets.
 	KEY_STRETCHED	= 'S',						// Send stretched 0s.
 	KEY_RESET		= 'r',						// Send resets.
 	KEY_HARD		= 'R',						// Send hard resets.
@@ -98,16 +94,16 @@ enum Key_val
 const char *Key_help	=
 "ESC - Return to command line       h - Print header\n"
 "  1 - Send ones                    0 - Send zeros\n"
-"  c - Toggle idle clock            a - Send scope A pattern\n"
-"  b - Send scope B pattern         o - Send scope timing packet\n"
-"  w - Send warble packets          S - Send stretched 0 pattern\n"
-"  r - Send DCC reset packets       d - Send DCC packets\n"
-"  D - Send stretched DCC packets   s - Change loco speed, acc. output\n"
-"  e - Set speed to E-STOP          f - Change loco direction, acc. on/off\n"
-"  E - Set speed to E_STOP(I)       t - Run self tests repeatedly\n"
+"  c - Toggle idle clock            o - Send scope timing packet\n"
+"  S - Send stretched 0 pattern\n"
+"  r - Send DCC reset packets       R - Send hard resets\n"
+"  d - Send DCC packets             D - Send stretched DCC packets\n"
+"  s - Change loco speed, acc. out  f - Change loco direction, acc. on/off\n"
+"  e - Set speed to E-STOP          E - Set speed to E_STOP(I)\n"
+"  g - I/O status\n"
+"  t - Run self tests               z - Run decoder tests\n"
 "  k - Kickstart loco for funcs\n"
-"  R - Send hard resets             g - I/O status\n"
-"  z - Run decoder tests            q - Quit program\n";
+"  q - Quit program\n";
 
 static Key_val	get_key_cmd();
 static void		parse_key_cmd( Key_val init_key );
@@ -128,8 +124,6 @@ static Rslt_t	hw_send_stretched_byte(
 								u_short clk0h,
 								BYTE val,
 								const char *info );
-static Rslt_t	hw_send_special( BYTE special_id );
-static Rslt_t	hw_send_bits_pkt( Bits &bits, const char *info );
 
 /*
  *	Global copy of Send board registers.
@@ -157,10 +151,7 @@ static Bits	Dcc_bits( 256 );					// Packet scratchpad.
 enum Send_type
 {
 	SEND_NONE,									// Send nothing.
-	SEND_SCOPE_A,								// Send scope test A.
-	SEND_SCOPE_B,								// Send scope test B.
 	SEND_SCOPE_O,								// Send scope timing test.
-	SEND_WARBLE,								// Send warble packet.
 	SEND_STRETCHED,								// Send stretched 0s.
 	SEND_RESET,									// Send resets.
 	SEND_HARD,									// Send hard resets.
@@ -354,43 +345,7 @@ hw_send_stretched_byte(
 	return ( Lhw_if->send_stretched_byte( clk0t, clk0h, val, info ) ? OK : FAIL );
 }
 
-static Rslt_t
-hw_send_special(
-	BYTE		special_id )
-{
-	if ( Lhw_if == nullptr )
-	{
-		return ( FAIL );
-	}
 
-	return ( Lhw_if->send_special( special_id ) ? OK : FAIL );
-}
-
-static Rslt_t
-hw_send_bits_pkt(
-	Bits		&bits,
-	const char	*info )
-{
-	BYTE			pbyte;
-	std::vector<BYTE>	buf;
-	if ( Lhw_if == nullptr )
-	{
-		return ( FAIL );
-	}
-
-	bits.rst_out();
-	while ( bits.get_byte( pbyte ) == OK )
-	{
-		buf.push_back( pbyte );
-	}
-
-	if ( buf.empty() )
-	{
-		return ( FAIL );
-	}
-
-	return ( Lhw_if->send_packet( &buf[0], buf.size(), info ) ? OK : FAIL );
-}
 
  
 /*--------------------------------------------------------------------------*/
@@ -1151,7 +1106,6 @@ Key_val			init_key )					// Initial key value.
 			printf( "Sending 1 second of %s clocks\n",
 				( key_val == KEY_ZERO ) ? "zero" : "one" );
 			hw_set_scope( true );
-			hw_set_scope( false );
 			if ( hw_start_clk( ( key_val == KEY_ZERO ) ? SENDER_FILL_ZEROS
 													   : SENDER_FILL_ONES )
 				== OK )
@@ -1163,24 +1117,7 @@ Key_val			init_key )					// Initial key value.
 			{
 				printf( "Start clock FAILED\n" );
 			}
-			break;
-
-		case KEY_SCOPE_A:					// Send the scope A test.
-			rep_type	=	SEND_SCOPE_A;
-			if ( hw_is_running() != true )
-			{
-				hw_start_clk();
-			}
-			printf( "Sending scope test A (0 then 1)\n" );
-			break;
-
-		case KEY_SCOPE_B:					// Send the scope B test.
-			rep_type	=	SEND_SCOPE_B;
-			if ( hw_is_running() != true )
-			{
-				hw_start_clk();
-			}
-			printf( "Sending scope test B (1 then 0)\n" );
+			hw_set_scope( false );
 			break;
 
 		case KEY_SCOPE_O:					// Send the scope timing test.
@@ -1209,15 +1146,6 @@ Key_val			init_key )					// Initial key value.
 						DECODER_1T_NOM );
 //						70 );
 			hw_start_clk();
-			break;
-
-		case KEY_WARBLE:				  	// Send warble packets.
-			rep_type	=	SEND_WARBLE;
-			if ( hw_is_running() != true )
-			{
-				hw_start_clk();
-			}
-			printf( "Sending warble packets\n" );
 			break;
 
 		case KEY_STRETCHED:					// Send the stretched 0 test.
@@ -1435,14 +1363,13 @@ Key_val			init_key )					// Initial key value.
 		 *	for a significant period of time and print messages to
 		 *	the screen.
 		 */
-		case KEY_SELF_TST:				// Run repeated self tests.
+		case KEY_SELF_TST:				// Run self tests once.
 			rep_type	=	SEND_SELF_TST;
 			if ( hw_is_running() == true )
 			{
 				hw_stop_clk();
 			}
-			printf(
-				"Starting MCU selftest cycles, type '<ESC>' to stop tests\n" );
+			printf( "Starting MCU selftest\n" );
 			break;
 
 		case KEY_DEC_TST:				// Run one or more decoder test cycles.
@@ -1520,25 +1447,6 @@ Key_val			init_key )					// Initial key value.
 					ERRPRINT( my_name, LOG_CRIT,
 						"Unexpected SEND_NONE in repeat loop\n" );
 					exit_send( 1 );
-				case SEND_SCOPE_A:			// Repeat scope A (0-1) test.
-					Dcc_bits.clr_in();
-					Dcc_bits.put_byte( 0x00 ).put_byte( 0xff ).done();
-					hw_set_scope( true );
-					hw_send_bits_pkt( Dcc_bits, "SEND_SCOPE_A." );
-					break;
-
-				case SEND_SCOPE_B:			// Repeat scope B (1-0) test.
-					Dcc_bits.clr_in();
-					Dcc_bits.put_byte( 0xff ).put_byte( 0x00 ).done();
-				 	hw_set_scope( true );
-					hw_send_bits_pkt( Dcc_bits, "SEND_SCOPE_B." );
-					break;
-
-				case SEND_WARBLE:	 		// Repeat the warble packet.
-					hw_set_scope( true );
-					hw_send_special( SHP_SPECIAL_WARBLE );
-					break;
-
 				case SEND_STRETCHED:   		// Repeat stretched 0 test.
 					Dcc_bits.clr_in();
 					Dcc_bits.put_byte( 0xff ).put_byte( 0x02 ).done();
@@ -1555,16 +1463,12 @@ Key_val			init_key )					// Initial key value.
 
 				case SEND_RESET:			// Repeat the reset packet.
 					Dcc_reg.send_bytes( 1, 0x00, "SEND_RESET Send 0." );
-					hw_set_scope( true );
 					Dcc_reg.send_rst();
-					hw_set_scope( false );
 					break;
 
 				case SEND_HARD:			// Repeat the hard reset packet.
 					Dcc_reg.send_bytes( 1, 0x00, "SEND_HARD." );
-					hw_set_scope( true );
 					Dcc_reg.send_hard_rst();	// Send the hard reset.
-					hw_set_scope( false );
 					break;
 
 				case SEND_IDLE:				// Repeat the idle packet.
@@ -1684,8 +1588,9 @@ Key_val			init_key )					// Initial key value.
 					break;
 
 				case SEND_SELF_TST:		  	// Run MCU selftests.
-								do_mcu_self_tests();
-									break;
+					do_mcu_self_tests();
+					c_flag = false;
+					break;
 
 				case SEND_DEC_TST:			// Run decoder tests.
 					tst_rslt	=	OK;
@@ -1782,7 +1687,8 @@ Key_val			init_key )					// Initial key value.
 				 *	Check for new commands or errors for all repeat commands
 				 *	except for the decoder test which handles this by itself.
 				 */
-				if ( rep_type != SEND_DEC_TST )
+				if (	rep_type != SEND_DEC_TST
+					&&	rep_type != SEND_SELF_TST )
 				{
 					if ( kbhit() )
 					{

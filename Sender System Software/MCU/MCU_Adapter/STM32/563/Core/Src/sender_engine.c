@@ -190,7 +190,7 @@ static void dcc_monitor_reset(void)
 
 static void dcc_monitor_note_address(uint8_t address)
 {
-    if (address != 0xFFu && address != 0x00u)
+    if (address != 0xFFu)
     {
         g_last_non_idle_address = address;
         g_non_idle_packet_events += 1u;
@@ -260,7 +260,7 @@ static void dcc_monitor_consume_bit(bool one, uint32_t bit_hp_index)
             {
                 if (g_mon_first_byte_pending)
                 {
-                    if (g_mon_byte_accum != 0xFFu && g_mon_byte_accum != 0x00u)
+                    if (g_mon_byte_accum != 0xFFu)
                     {
                         dcc_schedule_address_event(
                             g_mon_byte_accum,

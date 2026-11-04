@@ -85,17 +85,16 @@ Args_obj::Args_obj( void )
 	m_key_help			=					// Keyboard commands help msg.
 		"ESC - Return to command line       h - Print header\n"
 		"  1 - Send ones                    0 - Send zeros\n"
-		"  c - Toggle idle clock            a - Send scope A pattern\n"
-		"  b - Send scope B pattern         o - Send scope timing packet\n"
-		"  w - Send warble packets          S - Send stretched 0 pattern\n"
-		"  r - Send DCC reset packets       d - Send DCC packets\n"
-		"  D - Send stretched DCC packets   s - Change loco speed, acc. output\n"
-		"  e - Set speed to E-STOP          f - Change loco direction, acc. on/off\n"
-		"  E - Set speed to E_STOP(I)       t - Run self tests repeatedly\n"
+		"  c - Toggle idle clock            o - Send scope timing packet\n"
+		"  S - Send stretched 0 pattern\n"
+		"  r - Send DCC reset packets       R - Send hard resets\n"
+		"  d - Send DCC packets             D - Send stretched DCC packets\n"
+		"  s - Change loco speed, acc. out  f - Change loco direction, acc. on/off\n"
+		"  e - Set speed to E-STOP          E - Set speed to E_STOP(I)\n"
+		"  g - I/O status\n"
+		"  t - Run self tests               z - Run decoder tests\n"
 		"  k - Kickstart loco for funcs\n"
-		"  R - Send hard resets             g - I/O status\n"
-		"  z - Run decoder tests            q - Quit program\n";
-}
+		"  q - Quit program\n";}
 
 
 /*--------------------------------------------------------------------------*/
