@@ -1478,15 +1478,6 @@ Key_val			init_key )					// Initial key value.
 			{
 				printf( "Kickstart only works with function decoders, TYPE = f\n" ); 
 			}
-			/*
-			rep_type	=	SEND_IDLE;
-			if ( Dcc_reg.get_running() != true )
-			{
-				Dcc_reg.start_clk();
-			}
-			printf(
-				"Starting Decoder tests, type '<ESC> q' to stop tests\n" );
-			*/
 			break;
 
 		default:

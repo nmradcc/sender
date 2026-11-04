@@ -410,7 +410,8 @@ static const char *err_msg[] =
 #define ACC_TRG  (Args.get_acc_trg())
 
 /* The FSOC_SKIP directive evals as true if the fscoc sequence
- * should be skipped.
+ * should be skipped. because the decoder type is DEC_FUNC and the trigger is in reverse.
+ * and we loose direct info??
  */
 #define FSOC_SKIP ((decoder_type) == DEC_FUNC && (trig_rev))
  
@@ -443,7 +444,6 @@ Dec_tst::fsoc_send( const char *msg )
 	{
 		DBGPRINT( DBG_DFLT, "Sending fsoc for %s.", msg );
 		Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence." );
-		std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 	}
 }
 
@@ -533,13 +533,12 @@ Dec_tst::decoder_test(
 	Bits_t			t_run_msk;				// Temp run test mask.
 	Bits_t			l_clk_msk = 1L;			// Local clock mask.
 	int				l_clk_run;				// True if tests run for this clk.
-    bool			fwd =					// True for forward loco direction.
-    						!Args.get_lamp_rear();
+    bool			fwd = 	!Args.get_lamp_rear();// True for forward loco direction.
 	const char		*func_msg;				// Function init message.
     int 			ver_rel_tmp = Ver_rel;	// Tmp to hold Ver_rel to get
     										//   around compiler warning.
 
-	PERCENT100	=		Args.get_reduce_passcnt()
+	PERCENT100	=	Args.get_reduce_passcnt()
 					? PERCENT100_REDUCED : PERCENT100_FULL;
 
 	if ( fsoc.get_obj_errs() )
@@ -566,19 +565,27 @@ Dec_tst::decoder_test(
     	STATPRINT(	">> WARNING: Debug only, not for release."   );
         printf(     ">> WARNING: Debug only, not for release.\n" );
 
-        // Add debug specific information here.
-    	STATPRINT(	"   Added packet acceptance test with 0 idles."   );
-        printf(     "   Added packet acceptance test with 0 idles.\n" );
+ //       // Add debug specific information here.
+ //   	STATPRINT(	"   Added packet acceptance test with 0 idles."   );
+ //       printf(     "   Added packet acceptance test with 0 idles.\n" );
     }
-	STATPRINT(  "Beginning booster warm up." );
-	printf(		"Beginning booster warm up.\n" );
 	Dcc_reg.set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
 	if ( !Dcc_reg.get_running() )
 	{
 		Dcc_reg.start_clk();
 	}
 
- 
+	STATPRINT(  "Beginning booster warm up." );
+	printf(		"Beginning booster warm up.\n" );
+	STATPRINT( "sending 2 fail safe operation sequences." );
+	printf(    "sending 2 fail safe operation sequences.\n" );
+	std::this_thread::sleep_for( FSOC_DELAY * std::chrono::seconds( 1 ) );
+	Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence 1." );
+	std::this_thread::sleep_for( FSOC_DELAY * std::chrono::seconds( 1 ) );
+	Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence 2." );
+
+
+ #if 0
 	if ( FSOC_SKIP == true )
 	{
 		STATPRINT( "Skipping initial fsoc sequences." );
@@ -605,6 +612,7 @@ Dec_tst::decoder_test(
 				( FSOC_DELAY * std::chrono::seconds( 1 ) ) );
 		}
 	}
+#endif
 
 	/*
      *	Do special setup for certain decoder types.
@@ -612,7 +620,9 @@ Dec_tst::decoder_test(
     if ( Args.get_decoder_type() == DEC_FUNC )
     {
 		/*	Setup the function decoder so the function is on
-		 *	and the motor is set for the correct direction.
+		 *	and the motor is set for the correct direction
+		 *  Note: The direction will persist after this setup as long
+		 *  as the decoder is not reset. (FSOC)
 		 */
 		/*
 		 *	Send forward or reverse speed 0 packet followed by
@@ -1073,21 +1083,13 @@ Dec_tst::decoder_ramp(
 
 			dcc_bits.clr_in();
 			dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-			for ( i = 0; i < PKT_REP_MIN; i++ )
-			{
 		 		dcc_bits.put_cmd_pkt_28(	Args.get_decoder_address(),
 		 									fw, speed, pre_cnt );
-		 	}
 		 	dcc_bits.put_1s(1).done();
-		 	Dcc_reg.send_pkt( dcc_bits, "Send loco ramp test packet." );
-			if ( Args.get_decoder_type() == DEC_LOCO )
+			for ( i = 0; i < PKT_REP_MIN; i++ )
 			{
-				for ( int g = 0; g < 5; g++ )	// Let the loco decoder speed settle.
-				{
-					Dcc_reg.pkt_gap();
-				}
-			}
-
+			 	Dcc_reg.send_pkt( dcc_bits, "Send loco ramp test packet." );
+		 	}
 
 		 	/*
 		 	 *	Test the input only when the decoder is going reverse
@@ -1098,7 +1100,7 @@ Dec_tst::decoder_ramp(
              *	decoders, and will show 100% failures if no decoder is
              *	connected.
 			 */
-			if ( speed >= SP_TEST_MIN && !fw && !(speed & 0x01) )
+			if ( speed >= SP_TEST_MIN && !(speed & 0x01) )
 			{
 				t_stat.incr_t_cnt();
 				tgen	=	Dcc_reg.get_gen();
@@ -1114,7 +1116,7 @@ Dec_tst::decoder_ramp(
 				
 				if (fw)
 				{
-					if ( (tgen & 0x03) != 0x02 )
+					if ( (tgen & GEN_MOTOR_FEEDBACK_MASK) != GEN_MOTOR_P_BIT )
 					{
 						t_stat.incr_f_cnt();
 						tst_rslt	=	FAIL;
@@ -1125,7 +1127,7 @@ Dec_tst::decoder_ramp(
 				}
 				else
 				{
-					if ( (tgen & 0x03) != 0x01 )
+					if ( (tgen & GEN_MOTOR_FEEDBACK_MASK) != GEN_MOTOR_N_BIT )
 					{
 						t_stat.incr_f_cnt();
 						tst_rslt	=	FAIL;
@@ -1213,7 +1215,7 @@ Dec_tst::func_ramp(
 	 	t_stat.incr_t_cnt();
 	 	tgen	=	Dcc_reg.get_gen();
 
-	 	if ( (tgen & 0x04) != (func == 1 ? 0x04 : 0) )
+	 	if ( (tgen & GEN_LP_MASK) != (func == 1 ? Args.get_lamp_rear() ? GEN_RL_BIT : GEN_FL_BIT : 0) )
 	 	{
 	 		t_stat.incr_f_cnt();
 	 		tst_rslt	=	FAIL;
@@ -1921,7 +1923,7 @@ Dec_tst::decoder_bad_bit(
 	
 	/*  Set up special reset decoder bit array if fsoc is not used.
 	 *  dcc_bits3 will have 0 Bytes if fsoc should be used.
-	 *  A special reseet sequence using dcc_bits3 is sed for:
+	 *  A special reset sequence using dcc_bits3 is used for:
 	 *      Accessory decoders: Use ACC_TRG.
 	 *		Function decoders:  Turn functions off.
 	 */
