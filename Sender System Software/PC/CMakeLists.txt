@@ -18,7 +18,7 @@ set(LIB_DIR ${SRC_DIR}/LIB)
 # PC software version. This is the single definition of the version; it is
 # passed to the compiler below and is required by SRC/SEND/SEND.H.
 # PREFIX is the release level: D-debug, X-experimental, B-beta, R-released.
-set(PC_VERSION_PREFIX B)
+set(PC_VERSION_PREFIX D)
 set(PC_VERSION_MAJOR 7)
 set(PC_VERSION_MINOR 0)
 set(PC_VERSION_PATCH 0)

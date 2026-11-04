@@ -30,8 +30,6 @@ const BYTE	Send_reg::idle_bytes[PKT_SIZE] =
 const BYTE	Send_reg::base_bytes[PKT_SIZE] =
 	{ 0xff, 0xf0, 0x19, 0xd0, 0xef };			// Baseline packet.
 
-const u_long	SAN_CNT			= 0xFFFFFFUL; 	// Sanity timeout value.
-const u_int		SHORT_SAN_CNT 	= 0xFFFF; 		// Short sanity timeout value.
 const u_int		ERR_MAX			= 4;	  		// Max contig. errors to print.
 const int		MAX_PKT_LINE	= 24;			// Max packet bytes per line.
 
@@ -428,7 +426,6 @@ Send_reg::stop_clk( void )
  *	DESCRIPTION
  *
  *		send_bytes() sends 'ibyte' 'icnt' times.  It returns FAIL if the
- *		INTRA line does not go inactive in a reasonable length of time.
  */
 /*--------------------------------------------------------------------------*/
 

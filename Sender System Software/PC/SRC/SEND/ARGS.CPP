@@ -84,8 +84,8 @@ Args_obj::Args_obj( void )
 	m_mcu_baud			= 115200;			// Default MCU baud.
 	m_key_help			=					// Keyboard commands help msg.
 		"ESC - Return to command line       h - Print header\n"
-		"  c - Toggle idle clock            0 - Send zeros\n"
-		"  1 - Send ones                    a - Send scope A pattern\n"
+		"  1 - Send ones                    0 - Send zeros\n"
+		"  c - Toggle idle clock            a - Send scope A pattern\n"
 		"  b - Send scope B pattern         o - Send scope timing packet\n"
 		"  w - Send warble packets          S - Send stretched 0 pattern\n"
 		"  r - Send DCC reset packets       d - Send DCC packets\n"
