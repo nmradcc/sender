@@ -1092,10 +1092,6 @@ Key_val			init_key )					// Initial key value.
 			}
 			break;
 
-		/*
-		 *	The following commands are for board and fixture debugging
-		 *	and use the hardware generated clock.
-		 */
 		case KEY_ZERO:						// Send 1 second of zero clocks.
 		case KEY_ONE:						// Send 1 second of one clocks.
 			rep_type	=	SEND_NONE;
