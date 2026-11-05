@@ -17,10 +17,6 @@
 
 const char		SEPCHARU	  	= '/';					// UNIX character.
 const char		SEPCHARM	  	= '\\';			   		// MSDOS character.
-const u_short	DEF_LOCO_ADDR	= 3;  					// Default LOCO addr.
-const u_short	DEF_FUNC_ADDR	= 3;  					// Default FUNC addr.
-const u_short	DEF_ACC_ADDR  	= 1;  					// Default ACC addr.
-const u_short	DEF_SIG_ADDR  	= 1;  					// Default SIG addr.
 const int		MAX_CFG_LINE  	= 80; 					// Max cfg line.
 const u_int		MAX_FILL_MSEC 	= 20000; 				// Max fill time.
 const u_int		MIN_TEST_REPS	= 1;					// Min test repeats.

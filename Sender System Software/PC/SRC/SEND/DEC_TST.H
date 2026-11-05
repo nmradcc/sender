@@ -81,6 +81,7 @@ class Dec_tst
     /* Set methods */
 
 	void set_decoder_type( Dec_types itype )  { decoder_type = itype; }
+	void set_decoder_address( u_short iaddress ) { decoder_address = iaddress; }
 	void set_run_mask( Bits_t irun_mask )     { run_mask = irun_mask; }
 	void set_clk_mask( Bits_t iclk_mask )     { clk_mask = iclk_mask; }
 	void set_trig_rev( bool itrig_rev = false );
@@ -117,6 +118,7 @@ class Dec_tst
     char						m_tst_name[128];	// Buffer for tst_name.
 	bool						trig_rev;			// Handle reverse differently.
 	Dec_types					decoder_type;	  	// Decoder type.
+	u_short						decoder_address;	// Decoder address.
 
 	/* Method secion */
 	bool	get_test_break();
@@ -140,10 +142,8 @@ class Dec_tst
 	Rslt_t	decoder_str0_ames(	Rslt_t &tst_rslt,
 								u_short iclk0t, u_short iclk0h );
 	void	print_summary( const char *name, bool flagged = false );
-	void	put_preset_pkt( Bits &bits, u_short addr, int pre_cnt,
-							bool sig_ok = false );
-	void	put_trigger_pkt( Bits &bits, u_short addr, int pre_cnt,
-							bool sig_ok = false );
+	void	put_preset_pkt( Bits &bits, u_short addr, int pre_cnt );
+	void	put_trigger_pkt( Bits &bits, u_short addr, int pre_cnt );
 	const char	*err_phrase(
 		bool pre_fail, bool trig_fail, bool rst_fail = false );
 	const char	*min_phrase( u_short t_min, u_short out_of_range );

@@ -425,6 +425,7 @@ main(
 	Ldec_tst.set_clk_mask(     Args.get_clk_mask() );
 	Ldec_tst.set_trig_rev(     Args.get_trig_rev() );
 	Ldec_tst.set_decoder_type( Args.get_decoder_type() );
+	Ldec_tst.set_decoder_address( Args.get_decoder_address() );
 
 	get_log_file( argv[0] );
 

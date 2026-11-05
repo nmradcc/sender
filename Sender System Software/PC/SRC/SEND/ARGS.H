@@ -36,6 +36,10 @@
 
 const int	MAXROOT				= MAXFILE + MAXEXT - 1;	// Max command size.
 const int	MAX_MCU_PORT		= 64;					// Max MCU port name size.
+const u_short	DEF_LOCO_ADDR	= 3;					// Default LOCO address.
+const u_short	DEF_FUNC_ADDR	= 3;  					// Default FUNC addr.
+const u_short	DEF_ACC_ADDR  	= 1;  					// Default ACC addr.
+const u_short	DEF_SIG_ADDR  	= 1;  					// Default SIG addr.
 const u_int	MAX_EXTRA_PREAMBLE	=  8;					// Max extra preamble bits.
 const u_int MAX_EXTRA_TRG       = 5;                    // Max extra trig pkts.
 const u_int LOG_MASK_MAX        = 0x1F;                 // Maximum LOG mask.
