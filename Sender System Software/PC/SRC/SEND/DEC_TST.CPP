@@ -578,89 +578,7 @@ Dec_tst::decoder_test(
 	fsoc_send( "Start up 2");
 	std::this_thread::sleep_for( FSOC_DELAY * std::chrono::seconds( 1 ) );
  
-#if 0
-	printf(    "sending 2 fail safe operation sequences.\n" );
-	std::this_thread::sleep_for( FSOC_DELAY * std::chrono::seconds( 1 ) );
-	Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence 1." );
-	std::this_thread::sleep_for( FSOC_DELAY * std::chrono::seconds( 1 ) );
-	Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence 2." );
-
-
-
-	if ( FSOC_SKIP == true )
-	{
-		STATPRINT( "Skipping initial fsoc sequences." );
-		printf(    "Skipping initial fsoc sequences.\n" );
-	}
-	else
-	{
-		STATPRINT( "sending 2 fail safe operation sequences." );
-		printf(    "sending 2 fail safe operation sequences.\n" );
-		Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence." );
-		std::this_thread::sleep_for( FSOC_DELAY * std::chrono::seconds( 1 ) );
-		if ( Dcc_reg.get_log_pkts() )
-		{
-			DBGLOG( "Delay  %d seconds",
-				( FSOC_DELAY * std::chrono::seconds( 1 ) ) );
-		}
-		
-		Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence again." );
-	
-		std::this_thread::sleep_for( FSOC_DELAY * std::chrono::seconds( 1 ) );
-		if ( Dcc_reg.get_log_pkts() )
-		{
-			DBGLOG( "Delay  %d seconds",
-				( FSOC_DELAY * std::chrono::seconds( 1 ) ) );
-		}
-	}
-
-
-	/*
-     *	Do special setup for certain decoder types.
-     */
-    if ( decoder_type == DEC_FUNC )
-    {
-		/*	Setup the function decoder so the function is on
-		 *	and the motor is set for the correct direction
-		 *  Note: The direction will persist after this setup as long
-		 *  as the decoder is not reset. (FSOC)
-		 */
-		/*
-		 *	Send forward or reverse speed 0 packet followed by
-		 *	a function-on packet.
-		 */
-		STATPRINT( "Starting loco %s setup for a function decoder.",
-					fwd ? "forward" : "reverse" );
-		printf(    "Starting loco %s setup for a function decoder.\n",
-					fwd ? "forward" : "reverse" );
-		func_msg	=	fwd ?	"Function decoder, Send Fwd Spd 0."
-							:	"Function decoder, Send Rev Spd 0.";
-
-		DBGPRINT( "Sending %d loco %s speed 0 + function on packets.",
-		           2, fwd ? "Fwd" : "Rev" );
-		for ( i = 0; i < 2; i++ )
-		{
-			dcc_bits.clr_in();
-			dcc_bits.put_cmd_pkt_28( decoder_address,
-									!Args.get_lamp_rear(), 0, BEST_PRE );
-			dcc_bits.done();
-			Dcc_reg.send_pkt( dcc_bits, func_msg );
-
-			dcc_bits.clr_in();
-			dcc_bits.put_func_grp_pkt( decoder_address, GRP_1,
-									Args.get_func_mask(), BEST_PRE );
-			dcc_bits.done();
-			Dcc_reg.send_pkt( dcc_bits, func_msg );
-		}
-
-		func_msg	=	fwd ?	"Initialized Function Decoder Forward Speed 0."
-							:	"Initialized Function Decoder Reverse Speed 0.";
-		STATPRINT(	func_msg );
-		printf(		"%s\n", func_msg );
-
-    }
-    else
-#endif 
+//TODO: ???
 	if ( decoder_type == DEC_ACC )
     {
     	// Print message detailing accesory out preset and trigger.
@@ -1753,7 +1671,6 @@ Dec_tst::decoder_bad_addr(
 	 *  dcc_bits3 will have 0 Bytes if fsoc should be used.
 	 *  A special reseet sequence using dcc_bits3 is set for:
 	 *      Accessory decoders: Use ACC_TRG.
-	 *		Function decoders:  Turn functions off.
 	 */
 	dcc_bits3.clr_in();
 	if ( decoder_type == DEC_ACC )
@@ -1816,6 +1733,14 @@ Dec_tst::decoder_bad_addr(
 			Dcc_reg.send_pkt( dcc_bits3, rst_msg );
 		}
 
+		if ( Dcc_reg.get_gen_fb( decoder_type ) )
+		{
+			rst_fail	=	true;
+		}
+
+		Dcc_reg.send_pkt( dcc_bits, "Send bad address preset packet." );
+
+
 		if ( decoder_type == DEC_LOCO )
 		{
 			for ( int g = 0; g < 5; g++ )	// Let the loco decoder speed settle.
@@ -1823,13 +1748,6 @@ Dec_tst::decoder_bad_addr(
 				Dcc_reg.pkt_gap();
 			}
 		}
-
-		if ( Dcc_reg.get_gen_fb( decoder_type ) )
-		{
-			rst_fail	=	true;
-		}
-
-		Dcc_reg.send_pkt( dcc_bits, "Send bad address preset packet." );
 
 		if ( !Dcc_reg.get_gen_fb( decoder_type ) )
 		{
@@ -1923,18 +1841,9 @@ Dec_tst::decoder_bad_bit(
 	 *  dcc_bits3 will have 0 Bytes if fsoc should be used.
 	 *  A special reset sequence using dcc_bits3 is used for:
 	 *      Accessory decoders: Use ACC_TRG.
-	 *		Function decoders:  Turn functions off.
 	 */
 	dcc_bits3.clr_in();
-	if ( decoder_type == DEC_FUNC )
-	{
-		dcc_bits3.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-		dcc_bits3.put_func_grp_pkt( decoder_address, GRP_1, 0, pre_cnt );
-		dcc_bits3.put_1s(1).done();
-		
-		rst_msg = "Send bad bit function reset packet.";
-	}
-	else if ( decoder_type == DEC_ACC )
+	if ( decoder_type == DEC_ACC )
 	{
 		dcc_bits3.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 		dcc_bits3.put_acc_pkt( 	decoder_address,
@@ -1945,51 +1854,24 @@ Dec_tst::decoder_bad_bit(
 	}
 
 	/*
-	 *	Preset decoder to reverse with lamp on for LOCO,
+	 *	Preset decoder to forward for LOCO,
 	 *  presete function on for FUNC decoder, or
 	 *  preset accessory decoder to the reverse position.
 	 */
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	if ( decoder_type == DEC_LOCO )
-	{
-		dcc_bits.put_cmd_pkt_28(	decoder_address,
-									false, SP_TEST_MIN, pre_cnt );
-	}
-	else if ( decoder_type == DEC_FUNC )
-	{
-		dcc_bits.put_func_grp_pkt( decoder_address, GRP_1,
-									Args.get_func_mask(), pre_cnt );
-	}
-	else // Accessory decoder.
-	{
-		dcc_bits.put_acc_pkt(		decoder_address,
-									true, ACC_PRE, pre_cnt );
-	}
+	put_preset_pkt( dcc_bits, decoder_address, pre_cnt );
 	dcc_bits.put_1s(1).done();
 
 	/*
-	 *	Set up test packet.
+	 *	Set up trigger packet.
 	 */
 	dcc_bits2.clr_in();
 	dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	if ( decoder_type == DEC_LOCO )
-	{
-		dcc_bits2.put_cmd_pkt_28(	decoder_address,
-									true, trig_cmd_speed, pre_cnt );
-	}
-	else if ( decoder_type == DEC_FUNC )
-	{
-		dcc_bits2.put_func_grp_pkt( decoder_address, GRP_1, 0, pre_cnt );
-	}
-	else // Accessory decoder.
-	{
-		dcc_bits2.put_acc_pkt(		decoder_address,
-									true, ACC_TRG, pre_cnt );
-	}
+	put_trigger_pkt( dcc_bits2, decoder_address, pre_cnt );
 	dcc_bits2.put_1s(1).done();
 
-    /*	Loop through and flip each bit.  Note: skip the first PRE_SKIP_BITS
+	/*	Loop through and flip each bit.  Note: skip the first PRE_SKIP_BITS
      *	Because the decoder may or may not accept packets with this length
      *	of preamble.
      */
@@ -2005,7 +1887,7 @@ Dec_tst::decoder_bad_bit(
 				"  %-18s Preamble %2d,    good pkt, Fails %4lu\r",
 				tst_name, pre_cnt,
 				t_stat.get_f_cnt() );
-			dcc_bits2.clr_flip();
+				dcc_bits2.clr_flip();
 		}
 		else
 		{
@@ -2030,14 +1912,21 @@ Dec_tst::decoder_bad_bit(
 			Dcc_reg.send_pkt( dcc_bits3, rst_msg );
 		}
 
-		std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
-
 		if ( Dcc_reg.get_gen_fb( decoder_type ) )
 		{
 			rst_fail	=	true;
 		}
 
 		Dcc_reg.send_pkt( dcc_bits, "Send bad bit preset packet." );
+
+
+		if ( decoder_type == DEC_LOCO )
+		{
+			for ( int g = 0; g < 5; g++ )	// Let the loco decoder speed settle.
+			{
+				Dcc_reg.pkt_gap();
+			}
+		}
 
 		if ( !Dcc_reg.get_gen_fb( decoder_type ) )
 		{
