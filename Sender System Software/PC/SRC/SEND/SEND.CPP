@@ -53,9 +53,8 @@ const u_int	QUESTIONS_SIZE		=	sizeof( Questions ) /
 static u_short Scope_time_tbl[] =
 {
 	100,										// 100 usec. clock period.
-	10000,										// 10000 usec. clock period.
 	1000,										// 1000 usec. clock period.
-	10											// 10 usec clock period.
+	10000										// 10000 usec. clock period.
 };
 
 const u_int SCOPE_TIME_TBL_SIZE = sizeof( Scope_time_tbl ) / sizeof( u_short );
@@ -1140,8 +1139,7 @@ Key_val			init_key )					// Initial key value.
 			hw_set_clk(	Scope_time_tbl[ o_time_index ],
 						Scope_time_tbl[ o_time_index ] / 2,
 						DECODER_1T_NOM );
-//						70 );
-			hw_start_clk();
+			hw_start_clk(SENDER_FILL_ZEROS);
 			break;
 
 		case KEY_STRETCHED:					// Send the stretched 0 test.
