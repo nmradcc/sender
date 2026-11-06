@@ -3123,15 +3123,6 @@ Dec_tst::decoder_ambig1(
 		}
     }
 
-	/*
-	 *	Preset loco decoder to reverse with lamp on or
-	 *  preset accessory decoder to the reverse position.
-	 */
-	dcc_bits.clr_in();
-	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	put_preset_pkt( dcc_bits, decoder_address, pre_cnt );
-	dcc_bits.put_1s(1).done();
-
     for ( test_cycle = 0; test_cycle < ambig1_tbl_size; test_cycle++ )
     {
 		for (	ambig1_bit	=	BEST_PRE + 1;
@@ -3220,7 +3211,14 @@ Dec_tst::decoder_ambig1(
 
 				fsoc_send( "decoder_ambig1() loop" );
 
+				dcc_bits.clr_in();
+				dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+				put_preset_pkt( dcc_bits, decoder_address, pre_cnt );
+				dcc_bits.put_1s(1).done();
+
        			Dcc_reg.send_pkt( dcc_bits,"Send ambig 1 packet preset." );
+
+				settle_loco_speed();
 
 				if ( !Dcc_reg.get_gen_fb( decoder_type ) )
         		{
@@ -3238,7 +3236,7 @@ Dec_tst::decoder_ambig1(
 					pre_bytes * BITS_IN_BYTE, ambig1_0t, ambig1_0h, 0xFFFF,
 					0, 0, "Send trigger packet with 1 ambiguous bit." );
 
-				std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+//				std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
         		if ( Dcc_reg.get_gen_fb( decoder_type ) )
         		{
