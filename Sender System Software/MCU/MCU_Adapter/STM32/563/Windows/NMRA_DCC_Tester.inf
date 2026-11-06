@@ -1,0 +1,30 @@
+[Version]
+Signature="$Windows NT$"
+Class=Ports
+ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}
+Provider=%Manufacturer%
+DriverVer=11/06/2026,1.0.0.0
+
+[Manufacturer]
+%Manufacturer%=DeviceModels,NTamd64
+
+[DeviceModels.NTamd64]
+%DeviceDescription%=UsbSerial_Install,USB\VID_0483&PID_5710
+
+[UsbSerial_Install]
+Include=usbser.inf
+Needs=UsbSer_Install
+
+[UsbSerial_Install.Services]
+Include=usbser.inf
+Needs=UsbSer_Install.Services
+
+[UsbSerial_Install.HW]
+AddReg=UsbSerial_Install.HW.AddReg
+
+[UsbSerial_Install.HW.AddReg]
+HKR,,FriendlyName,,%DeviceDescription%
+
+[Strings]
+Manufacturer="NMRA DCC Tester"
+DeviceDescription="NMRA DCC Tester USB Serial Port"

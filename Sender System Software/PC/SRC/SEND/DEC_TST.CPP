@@ -461,14 +461,12 @@ Dec_tst::settle_loco_speed( void )
 void
 Dec_tst::fsoc_send( const char *msg )
 {
-	DBGPRINT( DBG_DFLT, "Sending fsoc for %s.", msg );
-	Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence." );
+	Dcc_reg.send_pkt( fsoc, "Send fsoc reset sequence." );
 	dcc_bits.clr_in();
 	dcc_bits.put_cmd_pkt_28( decoder_address,
 							!Args.get_lamp_rear(), 0, BEST_PRE );
 	dcc_bits.done();
-	DBGPRINT( DBG_DFLT, "Send Spd 0 %s.", Args.get_lamp_rear() ? "Rev" : "Fwd" );
-	Dcc_reg.send_pkt( dcc_bits, "Send Spd 0" );
+	Dcc_reg.send_pkt( dcc_bits, "Send fsoc Spd 0" );
 	settle_loco_speed();
 }
 
@@ -2372,13 +2370,7 @@ Dec_tst::quick_ames(
 		dcc_bits.done();
 		Dcc_reg.send_pkt( dcc_bits, "Send preset function packet." );
 
-		if ( decoder_type == DEC_LOCO )
-		{
-			for ( int g = 0; g < SETTLE_DELAY; g++ )	// Let the loco decoder speed settle.
-			{
-				Dcc_reg.pkt_gap();
-			}
-		}
+		settle_loco_speed();
 
 		if (!Dcc_reg.get_gen_fb( decoder_type ))
 		{
@@ -2510,15 +2502,6 @@ Dec_tst::decoder_truncate(
 
 	CLR_LINE;
 
-	/*
-	 *	Preset loco decoder to reverse with lamp on or
-	 *  preset accessory decoder to the reverse position.
-	 */
-	dcc_bits.clr_in();
-	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	put_preset_pkt( dcc_bits, decoder_address, BEST_PRE );
-	dcc_bits.put_1s(1).done();
-
 	for ( test_pre = BEST_PRE; test_pre <= BEST_PRE + 4; test_pre++ )
 	{
 		bit_num	=	BASE_BITS + test_pre - BEST_PRE;
@@ -2572,7 +2555,14 @@ Dec_tst::decoder_truncate(
 
 				fsoc_send( "decoder_truncate() loop" );
 
+				dcc_bits.clr_in();
+				dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+				put_preset_pkt( dcc_bits, decoder_address, BEST_PRE );
+				dcc_bits.put_1s(1).done();
+
 				Dcc_reg.send_pkt( dcc_bits, "Send truncate test preset." );
+
+				settle_loco_speed();
 
 				if ( !Dcc_reg.get_gen_fb( decoder_type ) )
 				{
@@ -2695,15 +2685,6 @@ Dec_tst::decoder_prior(
 
 	CLR_LINE;
 
-	/*
-	 *	Preset loco decoder to reverse with lamp on or
-	 *  preset accessory decoder to the reverse position.
-	 */
-	dcc_bits.clr_in();
-	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	put_preset_pkt( dcc_bits, decoder_address, BEST_PRE );
-	dcc_bits.put_1s(1).done();
-
 	for ( chk_msk = 0; chk_msk <= 0xff; chk_msk = (chk_msk << 1) | 0x01 )
 	{
 	  for ( one_cnt = 0; one_cnt <= 1; one_cnt++ )
@@ -2780,8 +2761,14 @@ Dec_tst::decoder_prior(
 
 				fsoc_send( "decoder_prior() loop" );
 
-				Dcc_reg.send_pkt( dcc_bits,
-					"Send prior packet preset." );
+				dcc_bits.clr_in();
+				dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+				put_preset_pkt( dcc_bits, decoder_address, BEST_PRE );
+				dcc_bits.put_1s(1).done();
+
+				Dcc_reg.send_pkt( dcc_bits,	"Send prior packet preset." );
+
+				settle_loco_speed();
 
 				if ( !Dcc_reg.get_gen_fb( decoder_type ) )
 				{
@@ -2917,15 +2904,6 @@ Dec_tst::decoder_6_byte(
 
 	CLR_LINE;
 
-	/*
-	 *	Preset loco decoder to reverse with lamp on or
-	 *  preset accessory decoder to the reverse position.
-	 */
-	dcc_bits.clr_in();
-	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	put_preset_pkt( dcc_bits, decoder_address, BEST_PRE );
-	dcc_bits.put_1s(1).done();
-
 	for ( cmd_id = 0; cmd_id <= 2; cmd_id++ )
 	{
 
@@ -2995,8 +2973,14 @@ Dec_tst::decoder_6_byte(
 
 				fsoc_send( "decoder_6_byte() loop" );
 
-				Dcc_reg.send_pkt( dcc_bits,
-					"Send 6 byte prior packet preset." );
+				dcc_bits.clr_in();
+				dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+				put_preset_pkt( dcc_bits, decoder_address, BEST_PRE );
+				dcc_bits.put_1s(1).done();
+
+				settle_loco_speed();
+
+				Dcc_reg.send_pkt( dcc_bits,	"Send 6 byte prior packet preset." );
 
 				if ( !Dcc_reg.get_gen_fb( decoder_type ) )
 				{
@@ -3005,8 +2989,6 @@ Dec_tst::decoder_6_byte(
 
 				Dcc_reg.send_pkt( dcc_bits2,			// Trigger.
 					"Send 6 byte prior packet trigger." );
-
-				std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
 				if ( Dcc_reg.get_gen_fb( decoder_type ) )
 				{
