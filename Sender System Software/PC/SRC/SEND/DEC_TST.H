@@ -92,6 +92,7 @@ class Dec_tst
   
 	/* Method section */
 	void fsoc_send( const char *msg );
+	void settle_loco_speed( void );
 
 	/* Data section */
 	static const Dec_clk		dclk_tbl[];	   		// Decoder test clk array.

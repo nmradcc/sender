@@ -37,6 +37,8 @@ const int		PRE_SKIP_BITS	= 2;				// Indetermintate preamble
 													// bits from S9.1.
 const u_int		FSOC_DELAY		= 2;				// Seconds to delay after
 													// initial fsoc sequences.
+
+const int		SETTLE_DELAY	= 10;				// Delay for loco decoder to settle. (Fill ms * SETTLE_DELAY)
 /*
  *	AMBIG1_BITS is the number of 0s to add before before a packet
  *	so that the ambigous bits start at the beginning of the next BYTE.
@@ -409,6 +411,17 @@ static const char *err_msg[] =
 #define ACC_PRE  (Args.get_acc_pre())
 #define ACC_TRG  (Args.get_acc_trg())
 
+void 
+Dec_tst::settle_loco_speed( void )
+{
+	if (decoder_type == DEC_LOCO )
+	{
+		for ( int g = 0; g < SETTLE_DELAY; g++ )	// Let the loco decoder speed settle.
+		{
+			Dcc_reg.pkt_gap();
+		}
+	}
+}
 
 /*--------------------------------------------------------------------------*/
 /*
@@ -438,6 +451,7 @@ Dec_tst::fsoc_send( const char *msg )
 	dcc_bits.done();
 	DBGPRINT( DBG_DFLT, "Send Spd 0 %s.", Args.get_lamp_rear() ? "Rev" : "Fwd" );
 	Dcc_reg.send_pkt( dcc_bits, "Send Spd 0" );
+	settle_loco_speed();
 }
 
 
@@ -1644,7 +1658,7 @@ Dec_tst::decoder_bad_addr(
 	bool			trig_fail;	  				// Trigger failed.
 	bool			rst_fail;					// Reset failed.
 	u_int			pre_cnt;					// Preamble count for test.
-	const char      *rst_msg;						// Reset message.
+	const char      *rst_msg;					// Reset message.
 
 	pre_cnt	=	BEST_PRE + Args.get_extra_preamble();
 
@@ -1672,6 +1686,7 @@ Dec_tst::decoder_bad_addr(
 	 *  A special reseet sequence using dcc_bits3 is set for:
 	 *      Accessory decoders: Use ACC_TRG.
 	 */
+	rst_msg = "Send bad address FSOC.";
 	dcc_bits3.clr_in();
 	if ( decoder_type == DEC_ACC )
 	{
@@ -1683,16 +1698,6 @@ Dec_tst::decoder_bad_addr(
 		rst_msg = "Send bad address accessory reset packet.";
 	}
 	
-	/*
-	 *	Preset decoder to forward for LOCO,
-	 *  presete function on for FUNC decoder, or
-	 *  preset accessory decoder to the reverse position.
-	 */
-	dcc_bits.clr_in();
-	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	put_preset_pkt( dcc_bits, decoder_address, pre_cnt );
-	dcc_bits.put_1s(1).done();
-
 	for ( addr = addr_min; addr <= addr_max + 1; addr++ )
 	{
 		pre_fail	=	false;
@@ -1716,17 +1721,12 @@ Dec_tst::decoder_bad_addr(
 			"  %-18s Preamble %2d, Address %5u, Fails %4lu\r",
 			tst_name, pre_cnt, send_addr, t_stat.get_f_cnt() );
 
-		dcc_bits2.clr_in();
-		dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-		put_trigger_pkt( dcc_bits2, send_addr, pre_cnt );
-		dcc_bits2.put_1s(1).done();
-
 		/*	Reset the decoder using the appropriate sequence by decoder type.
 		 *	fsoc is used to reset the decoder unless dcc_bits3 has s special reset packet.
 		 */
 		if ( dcc_bits3.get_byte_size() == 0 )	// Send Fail Safe Rst cmd.
 		{
-			Dcc_reg.send_pkt( fsoc, "Send fail safe start up sequence." );
+			fsoc_send(rst_msg);
 		}
 		else									// Send special reset packets.
 		{
@@ -1738,21 +1738,29 @@ Dec_tst::decoder_bad_addr(
 			rst_fail	=	true;
 		}
 
+		/*
+		*	Preset decoder to forward for LOCO,
+		*  presete function on for FUNC decoder, or
+		*  preset accessory decoder to the reverse position.
+		*/
+		dcc_bits.clr_in();
+		dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+		put_preset_pkt( dcc_bits, decoder_address, pre_cnt );
+		dcc_bits.put_1s(1).done();
+
 		Dcc_reg.send_pkt( dcc_bits, "Send bad address preset packet." );
 
-
-		if ( decoder_type == DEC_LOCO )
-		{
-			for ( int g = 0; g < 5; g++ )	// Let the loco decoder speed settle.
-			{
-				Dcc_reg.pkt_gap();
-			}
-		}
+		settle_loco_speed();
 
 		if ( !Dcc_reg.get_gen_fb( decoder_type ) )
 		{
 			pre_fail	=	true;
 		}
+
+		dcc_bits2.clr_in();
+		dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+		put_trigger_pkt( dcc_bits2, send_addr, pre_cnt );
+		dcc_bits2.put_1s(1).done();
 
 		Dcc_reg.send_pkt( dcc_bits2, "Send bad address trigger packet." );
 
@@ -1842,6 +1850,7 @@ Dec_tst::decoder_bad_bit(
 	 *  A special reset sequence using dcc_bits3 is used for:
 	 *      Accessory decoders: Use ACC_TRG.
 	 */
+	rst_msg = "Send bad bit FSOC.";
 	dcc_bits3.clr_in();
 	if ( decoder_type == DEC_ACC )
 	{
@@ -1854,18 +1863,8 @@ Dec_tst::decoder_bad_bit(
 	}
 
 	/*
-	 *	Preset decoder to forward for LOCO,
-	 *  presete function on for FUNC decoder, or
-	 *  preset accessory decoder to the reverse position.
-	 */
-	dcc_bits.clr_in();
-	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	put_preset_pkt( dcc_bits, decoder_address, pre_cnt );
-	dcc_bits.put_1s(1).done();
-
-	/*
-	 *	Set up trigger packet.
-	 */
+	*	Set up trigger packet.
+	*/
 	dcc_bits2.clr_in();
 	dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 	put_trigger_pkt( dcc_bits2, decoder_address, pre_cnt );
@@ -1905,7 +1904,7 @@ Dec_tst::decoder_bad_bit(
 		 */
 		if ( dcc_bits3.get_byte_size() == 0 )	// Send fsoc sequence.
 		{
-			Dcc_reg.send_pkt( fsoc, "Reset decoder using fsoc sequence." );
+			fsoc_send(rst_msg);
 		}
 		else									// Send special reset packets.
 		{
@@ -1917,16 +1916,19 @@ Dec_tst::decoder_bad_bit(
 			rst_fail	=	true;
 		}
 
+		/*
+		*	Preset decoder to forward for LOCO,
+		*  presete function on for FUNC decoder, or
+		*  preset accessory decoder to the reverse position.
+		*/
+		dcc_bits.clr_in();
+		dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+		put_preset_pkt( dcc_bits, decoder_address, pre_cnt );
+		dcc_bits.put_1s(1).done();
+
 		Dcc_reg.send_pkt( dcc_bits, "Send bad bit preset packet." );
 
-
-		if ( decoder_type == DEC_LOCO )
-		{
-			for ( int g = 0; g < 5; g++ )	// Let the loco decoder speed settle.
-			{
-				Dcc_reg.pkt_gap();
-			}
-		}
+		settle_loco_speed();
 
 		if ( !Dcc_reg.get_gen_fb( decoder_type ) )
 		{
@@ -2354,7 +2356,7 @@ Dec_tst::quick_ames(
 
 		if ( decoder_type == DEC_LOCO )
 		{
-			for ( int g = 0; g < 5; g++ )	// Let the loco decoder speed settle.
+			for ( int g = 0; g < SETTLE_DELAY; g++ )	// Let the loco decoder speed settle.
 			{
 				Dcc_reg.pkt_gap();
 			}
