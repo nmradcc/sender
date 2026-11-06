@@ -411,6 +411,24 @@ static const char *err_msg[] =
 #define ACC_PRE  (Args.get_acc_pre())
 #define ACC_TRG  (Args.get_acc_trg())
 
+
+/*--------------------------------------------------------------------------*/
+/*
+ *	NAME
+ *
+ *		settle_loco_speed()			-	 Conditionally let the locomotive speed settle..
+ *
+ *	RETURN VALUE
+ *
+ *		None.
+ *
+ *	DESCRIPTION
+ *
+ *		settle_loco_speed() waits for the locomotive speed to settle if the decoder
+ *		type is DEC_LOCO.
+ */
+/*--------------------------------------------------------------------------*/
+
 void 
 Dec_tst::settle_loco_speed( void )
 {
