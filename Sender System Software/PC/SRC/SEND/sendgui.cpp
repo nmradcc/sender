@@ -1166,7 +1166,7 @@ LaunchSendExe( HWND hwnd )
 	std::string sendExe = std::string( exeDir ) + "send.exe";
 	if ( GetFileAttributes( sendExe.c_str() ) == INVALID_FILE_ATTRIBUTES )
 	{
-		MessageBox( hwnd, "Could not find send.exe next to sendgui.exe.",
+		MessageBox( hwnd, "Could not find send.exe next to dcctest.exe.",
 			"sendgui", MB_ICONERROR );
 		return;
 	}
@@ -2152,7 +2152,7 @@ WinMain( HINSTANCE hInstance, HINSTANCE, LPSTR lpCmdLine, int nCmdShow )
 
 	char windowTitle[128];
 	snprintf( windowTitle, sizeof( windowTitle ),
-		"Send Config Editor (sendgui) %c.%u.%u.%u.%u",
+		"Send Config Editor (dcctest) %c.%u.%u.%u.%u",
 		Ver_rel, Ver_maj, Ver_min, Ver_pat, Ver_bld );
 
 	g_hMain = CreateWindowEx( 0, wc.lpszClassName, windowTitle,
