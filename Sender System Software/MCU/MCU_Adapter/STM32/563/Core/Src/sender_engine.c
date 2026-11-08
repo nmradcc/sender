@@ -909,17 +909,21 @@ uint8_t sender_engine_set_gen_out(sender_engine_t *eng, uint8_t value)
 }
 
 /*
- * Pack the input states in bits 0..3.
- * The raw GPIO is active-low, so a LOW == active means the bit should be 1.
+ * Pack IN0-IN3 in bits 0..3 and IO1-IO4 in bits 4..7.
+ * The raw GPIO is active-high, so a HIGH == active means the bit should be 1.
  */
 static uint8_t dcc_read_gen_pins(void)
 {
     uint8_t status = 0u;
 
-    status |= (HAL_GPIO_ReadPin(IN0_GPIO_Port, IN0_Pin) == GPIO_PIN_RESET) ? 0x01u : 0u;
-    status |= (HAL_GPIO_ReadPin(IN1_GPIO_Port, IN1_Pin) == GPIO_PIN_RESET) ? 0x02u : 0u;
-    status |= (HAL_GPIO_ReadPin(IN2_GPIO_Port, IN2_Pin) == GPIO_PIN_RESET) ? 0x04u : 0u;
-    status |= (HAL_GPIO_ReadPin(IN3_GPIO_Port, IN3_Pin) == GPIO_PIN_RESET) ? 0x08u : 0u;
+    status |= (HAL_GPIO_ReadPin(IN0_GPIO_Port, IN0_Pin) == GPIO_PIN_SET) ? 0x01u : 0u;
+    status |= (HAL_GPIO_ReadPin(IN1_GPIO_Port, IN1_Pin) == GPIO_PIN_SET) ? 0x02u : 0u;
+    status |= (HAL_GPIO_ReadPin(IN2_GPIO_Port, IN2_Pin) == GPIO_PIN_SET) ? 0x04u : 0u;
+    status |= (HAL_GPIO_ReadPin(IN3_GPIO_Port, IN3_Pin) == GPIO_PIN_SET) ? 0x08u : 0u;
+    status |= (HAL_GPIO_ReadPin(IO1_GPIO_Port, IO1_Pin) == GPIO_PIN_SET) ? 0x10u : 0u;
+    status |= (HAL_GPIO_ReadPin(IO2_GPIO_Port, IO2_Pin) == GPIO_PIN_SET) ? 0x20u : 0u;
+    status |= (HAL_GPIO_ReadPin(IO3_GPIO_Port, IO3_Pin) == GPIO_PIN_SET) ? 0x40u : 0u;
+    status |= (HAL_GPIO_ReadPin(IO4_GPIO_Port, IO4_Pin) == GPIO_PIN_SET) ? 0x80u : 0u;
     return status;
 }
 

@@ -94,7 +94,7 @@ Send_reg::get_gen( void ) const
 			{
 				DBGLOG( "Send_reg::get_gen() GEN1 %02X GEN2 %02X", gen1, gen2 );
 			}
-			return ( gen1 & 0x0F );
+			return ( gen1 & GEN_INPUT1_MASK );
 		}
 	}
 

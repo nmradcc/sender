@@ -1075,12 +1075,12 @@ Key_val			init_key )					// Initial key value.
 
 				if ( Lhw_if != nullptr && Lhw_if->get_status( io_st ) )
 				{
-					printf( "\nI/O inputs  GEN (bits 3..0): " );
-					for ( BYTE mask = 0x08; mask != 0; mask >>= 1 )
+					printf( "\nI/O inputs (IO4..IO1, IN3..IN0): " );
+					for ( BYTE mask = 0x80; mask != 0; mask >>= 1 )
 					{
 						putchar( ( io_st.gen1 & mask ) ? '1' : '0' );
 					}
-					printf( " (0x%02X)\n", io_st.gen1 & 0x0F );
+					printf( " (0x%02X)\n", io_st.gen1 );
 					printf( "I/O outputs DCC output %s, queue depth %u\n",
 						io_st.running ? "running" : "stopped",
 						(unsigned)io_st.queue_depth );

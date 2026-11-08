@@ -82,7 +82,7 @@ typedef struct sender_status_payload
     bool running;
     uint32_t err_flags;
     uint16_t queue_depth;
-    uint8_t gen1;
+    uint8_t gen1; /* IN0-IN3 in bits 0-3; IO1-IO4 in bits 4-7. */
     uint8_t gen2;
     uint32_t non_idle_event_count;
     uint8_t last_non_idle_address;
