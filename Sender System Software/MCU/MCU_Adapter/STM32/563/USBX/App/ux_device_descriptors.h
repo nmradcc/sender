@@ -264,7 +264,7 @@ uint16_t USBD_Get_Configuration_Number(uint8_t class_type, uint8_t interface_typ
 #define USBD_PID                                      22288
 #define USBD_LANGID_STRING                            1033
 #define USBD_MANUFACTURER_STRING                      "STMicroelectronics"
-#define USBD_PRODUCT_STRING                           "NMRA DCC Tester ComPort"
+#define USBD_PRODUCT_STRING                           "STM32 Virtual ComPort"
 #define USBD_SERIAL_NUMBER                            "CDC_ACM001"
 
 #define USB_DESC_TYPE_INTERFACE                       0x04U
