@@ -33,6 +33,7 @@ enum Shp_cmd
 
     SHP_CMD_SET_GEN_OUT = 0x20,
     SHP_CMD_GET_GEN_IN = 0x21,
+    SHP_CMD_SET_OUT_EN = 0x22,
 
     SHP_CMD_GET_STATUS = 0x30,
     SHP_CMD_GET_STATS = 0x31,

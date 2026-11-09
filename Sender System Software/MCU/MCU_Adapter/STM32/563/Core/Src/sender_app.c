@@ -57,7 +57,8 @@ static void sender_app_handle_request(const sender_request_t* req,
         req->cmd != SHP_CMD_SEND_STRETCHED_BYTE &&
         req->cmd != SHP_CMD_SEND_SPECIAL &&
         req->cmd != SHP_CMD_SET_GEN_OUT &&
-        req->cmd != SHP_CMD_GET_GEN_IN)
+        req->cmd != SHP_CMD_GET_GEN_IN &&
+        req->cmd != SHP_CMD_SET_OUT_EN)
     {
         g_packet_stage_len = 0u;
         g_packet_stage_mode = PACKET_STAGE_NONE;
@@ -314,6 +315,16 @@ static void sender_app_handle_request(const sender_request_t* req,
                 break;
             }
             rsp->status = sender_engine_set_gen_out(&g_engine, req->payload[0]);
+            break;
+
+        case SHP_CMD_SET_OUT_EN:
+            if (req->payload_len != 1)
+            {
+                rsp->status = SHP_STATUS_BAD_LENGTH;
+                break;
+            }
+            HAL_GPIO_WritePin(OUT_EN_GPIO_Port, OUT_EN_Pin,
+                              req->payload[0] ? GPIO_PIN_SET : GPIO_PIN_RESET);
             break;
 
         case SHP_CMD_GET_GEN_IN:

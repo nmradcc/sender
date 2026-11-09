@@ -75,6 +75,7 @@ class Sender_hw_if
     virtual bool send_special(uint8_t special_id) = 0;
 
     virtual bool set_gen_out(uint8_t value) = 0;
+    virtual bool set_output_enable(bool enabled) = 0;
     virtual bool get_gen_in(uint8_t& gen1, uint8_t& gen2) = 0;
 
     virtual bool get_status(Sender_hw_status& status) = 0;

@@ -17,6 +17,7 @@ static const char *shp_cmd_name(uint8_t cmd)
     case SHP_CMD_COMMIT_RAW_STRETCHED_BYTE: return "COMMIT_RAW_STRETCHED_BYTE";
     case SHP_CMD_COMMIT_RAW_TIMED_BITS: return "COMMIT_RAW_TIMED_BITS";
     case SHP_CMD_SET_SCOPE: return "SET_SCOPE";
+    case SHP_CMD_SET_OUT_EN: return "SET_OUT_EN";
     case SHP_CMD_GET_STATUS: return "GET_STATUS";
     case SHP_CMD_RESET_DEVICE: return "RESET_DEVICE";
     default: return "UNKNOWN";
@@ -504,6 +505,15 @@ bool Sender_hw_mcu_usb::set_gen_out(uint8_t value)
     std::vector<uint8_t> out;
     uint8_t status = SHP_STATUS_INTERNAL_ERROR;
     return send_command_wait_response(SHP_CMD_SET_GEN_OUT, &value, 1, out,
+                                      status);
+}
+
+bool Sender_hw_mcu_usb::set_output_enable(bool enabled)
+{
+    const uint8_t value = enabled ? 1u : 0u;
+    std::vector<uint8_t> out;
+    uint8_t status = SHP_STATUS_INTERNAL_ERROR;
+    return send_command_wait_response(SHP_CMD_SET_OUT_EN, &value, 1, out,
                                       status);
 }
 

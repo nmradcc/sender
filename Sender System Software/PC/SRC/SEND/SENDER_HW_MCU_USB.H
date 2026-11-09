@@ -45,6 +45,7 @@ class Sender_hw_mcu_usb : public Sender_hw_if
     virtual bool send_special(uint8_t special_id);
 
     virtual bool set_gen_out(uint8_t value);
+    virtual bool set_output_enable(bool enabled);
     virtual bool get_gen_in(uint8_t& gen1, uint8_t& gen2);
 
     virtual bool get_status(Sender_hw_status& status);

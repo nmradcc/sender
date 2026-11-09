@@ -133,7 +133,7 @@ int main(void)
   DWT->CYCCNT = 0u;
   DWT->CTRL  |= DWT_CTRL_CYCCNTENA_Msk;
 
-  HAL_GPIO_WritePin(IOIN_DE_GPIO_Port, IOIN_DE_Pin, GPIO_PIN_RESET);  /* enable 485 IN0-3 driver */
+  HAL_GPIO_WritePin(OUT_EN_GPIO_Port, OUT_EN_Pin, GPIO_PIN_RESET); /* Disable output initially */
 
   /* USER CODE END 2 */
 
@@ -489,10 +489,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOE, SCOPE_Pin|AUXOUT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(IOIN_DE_GPIO_Port, IOIN_DE_Pin, GPIO_PIN_SET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(BR_ENABLE_GPIO_Port, BR_ENABLE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOG, OUT_EN_Pin|BR_ENABLE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : IN2_Pin IN0_Pin IO1_Pin IN1_Pin
                            IO2_Pin IN3_Pin */
@@ -521,12 +518,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(IO4_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : IOIN_DE_Pin */
-  GPIO_InitStruct.Pin = IOIN_DE_Pin;
+  /*Configure GPIO pin : OUT_EN_Pin */
+  GPIO_InitStruct.Pin = OUT_EN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(IOIN_DE_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(OUT_EN_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : BR_ENABLE_Pin */
   GPIO_InitStruct.Pin = BR_ENABLE_Pin;

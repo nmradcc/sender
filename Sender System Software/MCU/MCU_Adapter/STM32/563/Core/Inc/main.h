@@ -87,8 +87,8 @@ uint32_t freq_meas_hz(uint32_t gate_ms);
 #define REF4MHZ_GPIO_Port GPIOD
 #define IO4_Pin GPIO_PIN_14
 #define IO4_GPIO_Port GPIOD
-#define IOIN_DE_Pin GPIO_PIN_5
-#define IOIN_DE_GPIO_Port GPIOG
+#define OUT_EN_Pin GPIO_PIN_15
+#define OUT_EN_GPIO_Port GPIOG
 #define BR_ENABLE_Pin GPIO_PIN_6
 #define BR_ENABLE_GPIO_Port GPIOG
 #define DCC_IN_Pin GPIO_PIN_3
