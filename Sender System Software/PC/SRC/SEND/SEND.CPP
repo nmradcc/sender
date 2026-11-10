@@ -71,6 +71,7 @@ enum Key_val
 	KEY_ZERO		= '0',						// Send 0 stream.
 	KEY_ONE			= '1',						// Send 1 stream.
 	KEY_SCOPE_O		= 'o',						// Scope timing test.
+	KEY_OUT_EN		= 'O',						// Toggle external booster output.
 	KEY_STRETCHED	= 'S',						// Send stretched 0s.
 	KEY_RESET		= 'r',						// Send resets.
 	KEY_HARD		= 'R',						// Send hard resets.
@@ -99,7 +100,7 @@ const char *Key_help	=
 "  d - Send DCC packets             D - Send stretched DCC packets\n"
 "  s - Change loco speed, acc. out  f - Change loco direction, acc. on/off\n"
 "  e - Set speed to E-STOP          E - Set speed to E_STOP(I)\n"
-"  g - I/O status\n"
+"  g - I/O status                   O - Toggle external booster output\n"
 "  t - Run self tests               z - Run decoder tests\n"
 "  k - Kickstart loco for funcs\n"
 "  q - Quit program\n";
@@ -392,6 +393,11 @@ main(
 	if ( init_hw_backend() == true )
 	{
 		use_hw_backend = true;
+		if ( !Lhw_if->set_output_enable( Args.get_external_booster() ) )
+		{
+			fprintf( stderr, "ERROR: Failed to set external booster output\n" );
+			exit_send( 1 );
+		}
 	}
 	else
 	{
@@ -399,6 +405,11 @@ main(
 		fprintf( stderr,
 			"ERROR: MCU backend init failed on <%s> at %u baud\n",
 			Args.get_mcu_port(), Args.get_mcu_baud() );
+		if ( Args.get_external_booster() )
+		{
+			fprintf( stderr, "ERROR: Cannot enable external booster without MCU\n" );
+			exit_send( 1 );
+		}
 	}
 
 	/*
@@ -977,6 +988,9 @@ Key_val			init_key )					// Initial key value.
 	int			speed;						// Speed.
 	bool		ramp;						// Ramp up if true.
 	bool		gen_after_pending = false;	// Print GEN after next SEND_DCC pkt.
+	bool		output_enabled = Args.get_external_booster();
+	bool		output_state_known = Lhw_if != nullptr;
+	bool		requested_output_enabled = output_enabled;
 	Rslt_t		ret_decoder;		  		// decoder_test() return value.
 	Rslt_t		tst_rslt;					// Decoder test result.
 	int			sp_max;						// Maximum speed or output id.
@@ -1066,6 +1080,35 @@ Key_val			init_key )					// Initial key value.
 				hw_set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
 				printf( "Start clock %s\n",
 					( hw_start_clk() == OK ) ? "OK" : "FAILED" );
+			}
+			break;
+
+		case KEY_OUT_EN:
+			if ( Lhw_if == nullptr )
+			{
+				printf( "External booster output unavailable: no MCU connection\n" );
+			}
+			else
+			{
+				if ( output_state_known )
+				{
+					requested_output_enabled = !output_enabled;
+				}
+				if ( Lhw_if->set_output_enable( requested_output_enabled ) )
+				{
+					output_enabled = requested_output_enabled;
+					output_state_known = true;
+					printf( "External booster output %s\n",
+						output_enabled ? "enabled" : "disabled" );
+					STATPRINT( "External booster output %s",
+						output_enabled ? "enabled" : "disabled" );
+				}
+				else
+				{
+					output_state_known = false;
+					printf( "Failed to set external booster output; state unknown. "
+						"Press O to retry.\n" );
+				}
 			}
 			break;
 

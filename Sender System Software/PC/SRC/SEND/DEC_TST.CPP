@@ -467,7 +467,7 @@ Dec_tst::fsoc_send( const char *msg )
 							!Args.get_lamp_rear(), 0, BEST_PRE );
 	dcc_bits.done();
 	Dcc_reg.send_pkt( dcc_bits, "Send fsoc Spd 0" );
-	settle_loco_speed();
+//	settle_loco_speed();
 }
 
 
@@ -598,6 +598,11 @@ Dec_tst::decoder_test(
 	{
 		Dcc_reg.start_clk();
 	}
+
+	STATPRINT(	"External DCC booster startup selection %s.",
+				Args.get_external_booster() ? "enabled" : "disabled" );
+	printf(		"External DCC booster startup selection %s.\n",
+				Args.get_external_booster() ? "enabled" : "disabled" );
 
 	STATPRINT(  "Beginning booster warm up." );
 	printf(		"Beginning booster warm up.\n" );
@@ -1766,7 +1771,7 @@ Dec_tst::decoder_bad_addr(
 
 		Dcc_reg.send_pkt( dcc_bits, "Send bad address preset packet." );
 
-		settle_loco_speed();
+		//settle_loco_speed();
 
 		if ( !Dcc_reg.get_gen_fb( decoder_type ) )
 		{
@@ -1944,7 +1949,7 @@ Dec_tst::decoder_bad_bit(
 
 		Dcc_reg.send_pkt( dcc_bits, "Send bad bit preset packet." );
 
-		settle_loco_speed();
+		//settle_loco_speed();
 
 		if ( !Dcc_reg.get_gen_fb( decoder_type ) )
 		{
@@ -2370,7 +2375,7 @@ Dec_tst::quick_ames(
 		dcc_bits.done();
 		Dcc_reg.send_pkt( dcc_bits, "Send preset function packet." );
 
-		settle_loco_speed();
+		//settle_loco_speed();
 
 		if (!Dcc_reg.get_gen_fb( decoder_type ))
 		{
@@ -2562,7 +2567,7 @@ Dec_tst::decoder_truncate(
 
 				Dcc_reg.send_pkt( dcc_bits, "Send truncate test preset." );
 
-				settle_loco_speed();
+//				settle_loco_speed();
 
 				if ( !Dcc_reg.get_gen_fb( decoder_type ) )
 				{
@@ -2768,7 +2773,7 @@ Dec_tst::decoder_prior(
 
 				Dcc_reg.send_pkt( dcc_bits,	"Send prior packet preset." );
 
-				settle_loco_speed();
+//				settle_loco_speed();
 
 				if ( !Dcc_reg.get_gen_fb( decoder_type ) )
 				{
@@ -2978,7 +2983,7 @@ Dec_tst::decoder_6_byte(
 				put_preset_pkt( dcc_bits, decoder_address, BEST_PRE );
 				dcc_bits.put_1s(1).done();
 
-				settle_loco_speed();
+//				settle_loco_speed();
 
 				Dcc_reg.send_pkt( dcc_bits,	"Send 6 byte prior packet preset." );
 
@@ -3218,7 +3223,7 @@ Dec_tst::decoder_ambig1(
 
        			Dcc_reg.send_pkt( dcc_bits,"Send ambig 1 packet preset." );
 
-				settle_loco_speed();
+//				settle_loco_speed();
 
 				if ( !Dcc_reg.get_gen_fb( decoder_type ) )
         		{

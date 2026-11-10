@@ -59,6 +59,7 @@ enum
 	ID_CHK_MCU_BYPASS_TST,
 	ID_CHK_REDUCE_PASSCNT,
 	ID_CHK_NON_INTERACTIVE,
+	ID_CHK_EXTERNAL_BOOSTER,
 
 	ID_BTN_LOAD,
 	ID_BTN_SAVE,
@@ -232,6 +233,7 @@ static const FlagCtrl g_flagCtrls[] =
 	{ ID_CHK_MCU_BYPASS_TST,  "MCU_BYPASS_TST" },
 	{ ID_CHK_REDUCE_PASSCNT,  "REDUCE_PASSCNT" },
 	{ ID_CHK_NON_INTERACTIVE, "NON_INTERACTIVE" },
+	{ ID_CHK_EXTERNAL_BOOSTER, "EXTERNAL_BOOSTER" },
 };
 
 /*---------------------------------------------------------------------------
@@ -898,6 +900,7 @@ SaveCfgFile( const char *path )
 	addFlag( "MCU_BYPASS_TST", IsChecked( ID_CHK_MCU_BYPASS_TST ) );
 	addFlag( "REDUCE_PASSCNT", IsChecked( ID_CHK_REDUCE_PASSCNT ) );
 	addFlag( "NON_INTERACTIVE", IsChecked( ID_CHK_NON_INTERACTIVE ) );
+	addFlag( "EXTERNAL_BOOSTER", IsChecked( ID_CHK_EXTERNAL_BOOSTER ) );
 	addField( "MCU_PORT", GetEditText( ID_EDIT_MCU_PORT ) );
 	addField( "MCU_BAUD", GetEditText( ID_EDIT_MCU_BAUD ) );
 
@@ -1452,13 +1455,13 @@ CreateControls( HWND hwnd )
 	tie.mask = TCIF_TEXT;
 	tie.pszText = (char *)"General";
 	TabCtrl_InsertItem( tab, 0, &tie );
-	tie.pszText = (char *)"Test Mask Bits";
+	tie.pszText = (char *)"Tests";
 	TabCtrl_InsertItem( tab, 1, &tie );
-	tie.pszText = (char *)"Clock Mask Bits";
+	tie.pszText = (char *)"Clocks";
 	TabCtrl_InsertItem( tab, 2, &tie );
-	tie.pszText = (char *)"Function Mask Bits";
+	tie.pszText = (char *)"Functions";
 	TabCtrl_InsertItem( tab, 3, &tie );
-	tie.pszText = (char *)"Log Mask Bits";
+	tie.pszText = (char *)"Log";
 	TabCtrl_InsertItem( tab, 4, &tie );
 
 	const int pageTop = 50;	// Below the tab strip.
@@ -1566,9 +1569,10 @@ CreateControls( HWND hwnd )
 
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_FRAGMENT, "FRAGMENT - Test all fragment lengths", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_SAME_AMBIG_ADDR, "SAME_AMBIG_ADDR - Same addr for ambig.", xChk, yChk, chkW, 20 ) ); yChk += rowH;
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REDUCE_PASSCNT, "REDUCE_PASSCNT - Reduce pass count [5]", xChk, yChk, chkW, 20 ) ); yChk += rowH;
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MCU_BYPASS_TST, "MCU_BYPASS_TST - Skip MCU self test", xChk, yChk, chkW, 20 ) ); yChk += rowH;
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_NON_INTERACTIVE, "NON_INTERACTIVE - Skip startup prompts", xChk, yChk, chkW, 20 ) ); yChk += rowH;
+	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REDUCE_PASSCNT, "Reduce pass count [5]", xChk, yChk, chkW, 20 ) ); yChk += rowH;
+	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MCU_BYPASS_TST, "Skip MCU self test", xChk, yChk, chkW, 20 ) ); yChk += rowH;
+	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_NON_INTERACTIVE, "Skip startup prompts", xChk, yChk, chkW, 20 ) ); yChk += rowH;
+	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_EXTERNAL_BOOSTER, "Enable external booster", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 
 	/* Lowest content bottom seen so far, used to place the shared button bar
 	 * below every page instead of just the General page. */

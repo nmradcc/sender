@@ -323,8 +323,8 @@ static void sender_app_handle_request(const sender_request_t* req,
                 rsp->status = SHP_STATUS_BAD_LENGTH;
                 break;
             }
-            HAL_GPIO_WritePin(OUT_EN_GPIO_Port, OUT_EN_Pin,
-                              req->payload[0] ? GPIO_PIN_SET : GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(OUT_DE_GPIO_Port, OUT_DE_Pin,
+                              req->payload[0] ? GPIO_PIN_RESET : GPIO_PIN_SET);
             break;
 
         case SHP_CMD_GET_GEN_IN:

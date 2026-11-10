@@ -69,6 +69,7 @@ Args_obj::Args_obj( void )
 	m_mcu_bypass_tst	= false;			// Run MCU self tests.
 	m_reduce_passcnt	= false;			// Full pass count.
 	m_non_interactive	= false;			// Ask the startup questions.
+	m_external_booster	= false;			// External booster disabled.
 	m_ambig_addr_same  	= false;			// Use different address.
     m_aspect_preset		= 0;				// Sig decoder aspect preset.
     m_aspect_trigger		= 8;				// Sig decoder aspect trigger.
@@ -87,7 +88,7 @@ Args_obj::Args_obj( void )
 		"  d - Send DCC packets             D - Send stretched DCC packets\n"
 		"  s - Change loco speed, acc. out  f - Change loco direction, acc. on/off\n"
 		"  e - Set speed to E-STOP          E - Set speed to E_STOP(I)\n"
-		"  g - I/O status\n"
+		"  g - I/O status                   O - Toggle external booster output\n"
 		"  t - Run self tests               z - Run decoder tests\n"
 		"  k - Kickstart loco for funcs\n"
 		"  q - Quit program\n";}
@@ -144,7 +145,7 @@ Args_obj::usage(
 		m_cmd_name );			
     fprintf( ofp,
 		"                [-T] [-F fill] [-R reps] [-f] [-S]\n"
-		"                [-o pair] [-e trg] [-B] [-Q] [-x] [-J port] [-Y baud]\n\n" );
+		"                [-o pair] [-e trg] [-B] [-Q] [-x] [-b] [-J port] [-Y baud]\n\n" );
 
 	if ( m_cfg_path[0] != '\0' )
 	{
@@ -168,7 +169,7 @@ Args_obj::usage(
 		"  -a <addr>  ADDRESS    Decoder address                      <value ???>\n" );
 	}
 	fprintf( ofp,
-		"  -d L|F|A|S|l|f|a|s TYPE       "
+		"  -d L|F|A|S|l|f|a|s TYPE "
 		"Dec. type(L-LOC,F-FUNC,A-ACC,S-SIG)  <value %c>\n",
 		m_decoder_type );
 	fprintf( ofp,
@@ -249,6 +250,10 @@ Args_obj::usage(
 		"  -x    NON_INTERACTIVE "
 		"Skip all startup prompts             <value %s>\n",
 		m_non_interactive	? "true" : "false" );
+	fprintf( ofp,
+		"  -b    EXTERNAL_BOOSTER "
+		"Enable external booster             <value %s>\n",
+		m_external_booster ? "true" : "false" );
 	fprintf( ofp,
 		"  -J <port>  MCU_PORT   "
 		"MCU serial port name                 <value %s>\n",
@@ -377,6 +382,10 @@ Args_obj::argscan(
 		else if ( strcmp( argv[i], "-m" ) == 0 )	// Manual mode.
 		{
 			m_manual_flag	=	m_manual_flag ? false : true;
+		}
+		else if ( strcmp( argv[i], "-b" ) == 0 )	// Enable external booster.
+		{
+			m_external_booster = true;
 		}
 		else if ( strcmp( argv[i], "-a" ) == 0 )	// Decoder address.
 		{
@@ -1045,6 +1054,11 @@ Args_obj::cfgscan( void )
 		{
 			targv[1]	= 	"-x";
 			targc		= 	2;
+		}
+		else if (	!strcmpi( cmd, "EXTERNAL_BOOSTER" ) )
+		{
+			targv[1]	=	"-b";
+			targc		=	2;
 		}
 		else if ( 	!strcmpi( cmd,	"NO_ABORT" ) )	// Obsolete, ignored.
 		{
