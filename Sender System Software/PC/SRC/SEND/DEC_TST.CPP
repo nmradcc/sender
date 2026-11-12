@@ -1577,6 +1577,8 @@ Dec_tst::decoder_str0_ames(
 			( STRETCH_BITS + PRE_BITS ) / BITS_IN_BYTE, iclk0t, iclk0h,
 			"Send trigger packet with single stretched 0." );
 
+		Dcc_reg.pkt_gap();
+
 		if ( Dcc_reg.get_gen_fb( decoder_type ) )
 		{
 			trig_fail	=	true;
@@ -3162,7 +3164,6 @@ Dec_tst::decoder_ambig1(
 				dcc_bits.done();
 
        			Dcc_reg.send_pkt( dcc_bits,"Send ambig 1 packet preset." );
-
 
 				if ( !Dcc_reg.get_gen_fb( decoder_type ) )
         		{
