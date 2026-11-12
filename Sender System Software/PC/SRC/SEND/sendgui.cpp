@@ -1633,7 +1633,7 @@ CreateControls( HWND hwnd )
 					xLabel, pageTop + 32 + i * bitRowH, bitColW - 10, 20 ) );
 			}
 
-			int by = pageTop + 32 + LOGBIT_COUNT * bitRowH + 10;
+			int by = pageTop + 32 + ((CLOCKBIT_COUNT + 1) / 2) * bitRowH + 10;
 			g_page4Ctrls.push_back(
 				MakeButton( hwnd, ID_BTN_LOGBITS_ALL, "Select All", xLabel, by, 110, 26 ) );
 			g_page4Ctrls.push_back(
