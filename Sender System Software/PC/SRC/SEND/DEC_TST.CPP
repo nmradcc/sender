@@ -3181,6 +3181,8 @@ Dec_tst::decoder_ambig1(
 					pre_bytes * BITS_IN_BYTE, ambig1_0t, ambig1_0h, 0xFFFF,
 					0, 0, "Send trigger packet with 1 ambiguous bit." );
 
+				Dcc_reg.pkt_gap();
+
         		if ( Dcc_reg.get_gen_fb( decoder_type ) )
         		{
         			trig_fail	=	true;
@@ -3297,15 +3299,6 @@ Dec_tst::decoder_ambig2(
 		}
     }
 
-	/*
-	 *	Preset loco decoder to forward with lamp on or
-	 *  preset accessory decoder to the reverse position.
-	 */
-	dcc_bits.clr_in();
-	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	put_preset_pkt( dcc_bits, decoder_address, pre_cnt );
-	dcc_bits.done();
-
     /*
      *	Set up a normal preset packet aligned so it ends at a BYTE boundary.
      */
@@ -3371,6 +3364,15 @@ Dec_tst::decoder_ambig2(
 
 				fsoc_send( "decoder_ambig2() inner test loop" );
 
+				/*
+				*	Preset loco decoder to forward with lamp on or
+				*  preset accessory decoder to the reverse position.
+				*/
+				dcc_bits.clr_in();
+				dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+				put_preset_pkt( dcc_bits, decoder_address, pre_cnt );
+				dcc_bits.done();
+
        			Dcc_reg.send_pkt( dcc_bits,"Send ambig 2 packet preset." );
 
 				if ( !Dcc_reg.get_gen_fb( decoder_type ) )
@@ -3381,22 +3383,18 @@ Dec_tst::decoder_ambig2(
         		//	Send preset just before feedback bits.
         		Dcc_reg.send_pkt(	dcc_bits2,"Send preset just before ambig 2 bits." );
 
-				/*
-             	 * Send a scope trigger at start of trigger packet
-             	 * This test requires an early scope trigger.
-             	 */
-            	Dcc_reg.set_scope( true );
-
 				ambig_bytes.clear();
 				dcc_bits3.rst_out();
 				while ( dcc_bits3.get_byte( pbyte ) == OK )
 				{
 					ambig_bytes.push_back( pbyte );
 				}
-//TODO:
+
 				Dcc_reg.send_raw_bytes_timed( &ambig_bytes[0], ambig_bytes.size(),
 					0, ambig2_0t1, ambig2_0h1, 1, ambig2_0t2, ambig2_0h2,
 					"Send trigger packet with 2 ambiguous bits." );
+
+				Dcc_reg.pkt_gap();
 
         		if ( Dcc_reg.get_gen_fb( decoder_type ) )
         		{
