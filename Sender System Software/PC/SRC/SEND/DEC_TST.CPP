@@ -1417,7 +1417,7 @@ Dec_tst::decoder_ames(
 		fsoc_send( "decoder_ames()" );
 		
 		/*
-		*	Preset loco decoder to forward  with lamp on or
+		*	Preset loco decoder to forward with lamp on or
 		*  preset accessory decoder to the reverse position.
 		*/
 		dcc_bits.clr_in();
@@ -1534,7 +1534,7 @@ Dec_tst::decoder_str0_ames(
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 	put_preset_pkt( dcc_bits, decoder_address, BEST_PRE );
-	dcc_bits.put_1s(1).done();
+	dcc_bits.done();
 
 	/*
 	 *	Set decoder to trigger speed, forward, lamp off or
@@ -1543,7 +1543,7 @@ Dec_tst::decoder_str0_ames(
 	dcc_bits2.clr_in();
 	dcc_bits2.put_0s( STRETCH_BITS );	// Align first 0 on bit boundary.
 	put_trigger_pkt( dcc_bits2, decoder_address, BEST_PRE );
-	dcc_bits2.put_1s(1).done();
+	dcc_bits2.done();
 
 	for ( i = 0; i < PERCENT100; i++ )
 	{
@@ -2531,7 +2531,7 @@ Dec_tst::decoder_truncate(
 					pre_fail	=	true;
 				}
 
-				Dcc_reg.send_pkt( dcc_bits2,		// Attempt emergency stop.
+				Dcc_reg.send_pkt( dcc_bits2,		// Trigger.
 					"Send truncate trigger packet." );
 			
 				if ( Dcc_reg.get_gen_fb( decoder_type ) )
@@ -2702,7 +2702,7 @@ Dec_tst::decoder_prior(
 			 *	set accessory decoder to the normal position.
 			 */
 			 put_trigger_pkt( dcc_bits2, decoder_address, pre_bits );
-			 dcc_bits2.put_1s(1).done();
+			 dcc_bits2.done();
 
 			 snprintf( m_tst_name, sizeof( m_tst_name ), "<%02x %02x %02x>%1s %1s<pre %2d>",
 				t_addr, t_cmd, t_chk_byte,
@@ -2724,7 +2724,7 @@ Dec_tst::decoder_prior(
 				dcc_bits.clr_in();
 				dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 				put_preset_pkt( dcc_bits, decoder_address, BEST_PRE );
-				dcc_bits.put_1s(1).done();
+				dcc_bits.done();
 
 				Dcc_reg.send_pkt( dcc_bits,	"Send prior packet preset." );
 
@@ -3146,7 +3146,7 @@ Dec_tst::decoder_ambig1(
      	 	 *	Set up a normal trigger packet.
      	 	 */
     		put_trigger_pkt( dcc_bits2, decoder_address, pre_cnt );
-    		dcc_bits2.put_1s(1).done();
+    		dcc_bits2.done();
 
             // Force the selected ambiguous bit to 0
             // Subtract 1 from ambig1_bit to adjust to 0 based array index.
@@ -3167,7 +3167,7 @@ Dec_tst::decoder_ambig1(
 				dcc_bits.clr_in();
 				dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 				put_preset_pkt( dcc_bits, decoder_address, pre_cnt );
-				dcc_bits.put_1s(1).done();
+				dcc_bits.done();
 
        			Dcc_reg.send_pkt( dcc_bits,"Send ambig 1 packet preset." );
 
@@ -3187,8 +3187,6 @@ Dec_tst::decoder_ambig1(
 				Dcc_reg.send_raw_bytes_timed( &ambig_bytes[0], ambig_bytes.size(),
 					pre_bytes * BITS_IN_BYTE, ambig1_0t, ambig1_0h, 0xFFFF,
 					0, 0, "Send trigger packet with 1 ambiguous bit." );
-
-//				std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
         		if ( Dcc_reg.get_gen_fb( decoder_type ) )
         		{
@@ -3307,13 +3305,13 @@ Dec_tst::decoder_ambig2(
     }
 
 	/*
-	 *	Preset loco decoder to reverse with lamp on or
+	 *	Preset loco decoder to forward with lamp on or
 	 *  preset accessory decoder to the reverse position.
 	 */
 	dcc_bits.clr_in();
 	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 	put_preset_pkt( dcc_bits, decoder_address, pre_cnt );
-	dcc_bits.put_1s(1).done();
+	dcc_bits.done();
 
     /*
      *	Set up a normal preset packet aligned so it ends at a BYTE boundary.
@@ -3321,7 +3319,6 @@ Dec_tst::decoder_ambig2(
 	dcc_bits2.clr_in();
 	dcc_bits2.put_0s( AMBIG1_BITS );	// Align preset to end on BYTE boundary.
 	put_preset_pkt( dcc_bits2, t_addr, BEST_PRE );
-    dcc_bits2.put_1s( 1 );				// Put the packet end bit.
     dcc_bits2.done();
 
     /*
@@ -3330,7 +3327,7 @@ Dec_tst::decoder_ambig2(
 	dcc_bits3.clr_in();
     dcc_bits3.put_0s( 2 );				// Put 2 zeroes used for feedback bits.
 	put_trigger_pkt( dcc_bits3, decoder_address, pre_cnt );
-	dcc_bits3.put_1s(1).done();
+	dcc_bits3.done();
 
 	/*
 	 *	Run test series for each ambig2_dclk_tbl[] entry.
@@ -3407,8 +3404,6 @@ Dec_tst::decoder_ambig2(
 				Dcc_reg.send_raw_bytes_timed( &ambig_bytes[0], ambig_bytes.size(),
 					0, ambig2_0t1, ambig2_0h1, 1, ambig2_0t2, ambig2_0h2,
 					"Send trigger packet with 2 ambiguous bits." );
-
-				std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
         		if ( Dcc_reg.get_gen_fb( decoder_type ) )
         		{
