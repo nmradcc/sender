@@ -398,6 +398,11 @@ main(
 			fprintf( stderr, "ERROR: Failed to set external booster output\n" );
 			exit_send( 1 );
 		}
+		if ( !Lhw_if->set_scope( false ) )
+		{
+			fprintf( stderr, "ERROR: Failed to turn scope output off\n" );
+			exit_send( 1 );
+		}
 	}
 	else
 	{
@@ -1173,10 +1178,6 @@ Key_val			init_key )					// Initial key value.
 				}
 			}
 
-//			if ( hw_is_running() != true )
-//			{
-//				hw_start_clk();
-//			}
 			printf( "Sending scope timing test with period %5d\n",
 					Scope_time_tbl[ o_time_index ] );
 			hw_stop_clk();
@@ -1497,6 +1498,7 @@ Key_val			init_key )					// Initial key value.
 												DECODER_0H_NOM * 2,
 												pbyte,
 												"SEND_STRETCHED 0 bit." );
+					hw_set_scope( false );
 					break;
 
 				case SEND_RESET:			// Repeat the reset packet.
