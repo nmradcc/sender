@@ -226,10 +226,6 @@ static const FlagCtrl g_flagCtrls[] =
 {
 	{ ID_CHK_MANUAL,          "MANUAL" },
 	{ ID_CHK_LAMP,            "LAMP" },
-	{ ID_CHK_REPEAT,          "REPEAT" },
-	{ ID_CHK_TRIG_REV,        "TRIG_REV" },
-	{ ID_CHK_FRAGMENT,        "FRAGMENT" },
-	{ ID_CHK_SAME_AMBIG_ADDR, "SAME_AMBIG_ADDR" },
 	{ ID_CHK_MCU_BYPASS_TST,  "MCU_BYPASS_TST" },
 	{ ID_CHK_REDUCE_PASSCNT,  "REDUCE_PASSCNT" },
 	{ ID_CHK_NON_INTERACTIVE, "NON_INTERACTIVE" },
@@ -614,13 +610,8 @@ LoadDefaults( void )
 {
 	SetEditUInt( ID_EDIT_ADDRESS, 3, false );
 	SendDlgItemMessage( g_hMain, ID_COMBO_TYPE, CB_SETCURSEL, 0, 0 ); // LOCO
-	SetEditUInt( ID_EDIT_PRESET, 0, false );
-	SetEditUInt( ID_EDIT_TRIGGER, 8, false );
 	SetEditUInt( ID_EDIT_EXTRA_PRE, 0, false );
 	SetEditUInt( ID_EDIT_FILL_MSEC, 100, false );
-	SetEditUInt( ID_EDIT_TEST_REPS, 2, false );
-	SetEditUInt( ID_EDIT_ACC_PAIR, 1, false );
-	SetEditUInt( ID_EDIT_EXTRA_TRG, 0, false );
 	SetEditText( ID_EDIT_MCU_PORT, "COM3" );
 	SetEditUInt( ID_EDIT_MCU_BAUD, 115200, false );
 	SetMaskUInt( ID_EDIT_TESTS, ID_EDIT_TESTS_GENERAL, DEF_TESTS_MASK );
@@ -746,14 +737,6 @@ LoadCfgFile( const char *path )
 			}
 			SendDlgItemMessage( g_hMain, ID_COMBO_TYPE, CB_SETCURSEL, sel, 0 );
 		}
-		else if ( _stricmp( key.c_str(), "PRESET" ) == 0 )
-		{
-			SetEditText( ID_EDIT_PRESET, val.c_str() );
-		}
-		else if ( _stricmp( key.c_str(), "TRIGGER" ) == 0 )
-		{
-			SetEditText( ID_EDIT_TRIGGER, val.c_str() );
-		}
 		else if ( _stricmp( key.c_str(), "TESTS" ) == 0 )
 		{
 			SetMaskText( ID_EDIT_TESTS, ID_EDIT_TESTS_GENERAL, val.c_str() );
@@ -778,18 +761,6 @@ LoadCfgFile( const char *path )
 		else if ( _stricmp( key.c_str(), "FILL_MSEC" ) == 0 )
 		{
 			SetEditText( ID_EDIT_FILL_MSEC, val.c_str() );
-		}
-		else if ( _stricmp( key.c_str(), "TEST_REPS" ) == 0 )
-		{
-			SetEditText( ID_EDIT_TEST_REPS, val.c_str() );
-		}
-		else if ( _stricmp( key.c_str(), "ACC_PAIR" ) == 0 )
-		{
-			SetEditText( ID_EDIT_ACC_PAIR, val.c_str() );
-		}
-		else if ( _stricmp( key.c_str(), "EXTRA_TRG" ) == 0 )
-		{
-			SetEditText( ID_EDIT_EXTRA_TRG, val.c_str() );
 		}
 		else if ( _stricmp( key.c_str(), "MCU_PORT" ) == 0 )
 		{
@@ -882,21 +853,12 @@ SaveCfgFile( const char *path )
 	addField( "ADDRESS", GetEditText( ID_EDIT_ADDRESS ) );
 	addField( "TYPE", typeChar );
 	addFlag( "LAMP", IsChecked( ID_CHK_LAMP ) );
-	addField( "PRESET", GetEditText( ID_EDIT_PRESET ) );
-	addField( "TRIGGER", GetEditText( ID_EDIT_TRIGGER ) );
-	addFlag( "REPEAT", IsChecked( ID_CHK_REPEAT ) );
 	addMaskField( "TESTS", GetEditText( ID_EDIT_TESTS ) );
 	addMaskField( "CLOCKS", GetEditText( ID_EDIT_CLOCKS ) );
 	addMaskField( "FUNCS", GetEditText( ID_EDIT_FUNCS ) );
 	addMaskField( "LOG", GetEditText( ID_EDIT_LOG ) );
 	addField( "EXTRA_PRE", GetEditText( ID_EDIT_EXTRA_PRE ) );
-	addFlag( "TRIG_REV", IsChecked( ID_CHK_TRIG_REV ) );
 	addField( "FILL_MSEC", GetEditText( ID_EDIT_FILL_MSEC ) );
-	addField( "TEST_REPS", GetEditText( ID_EDIT_TEST_REPS ) );
-	addFlag( "FRAGMENT", IsChecked( ID_CHK_FRAGMENT ) );
-	addFlag( "SAME_AMBIG_ADDR", IsChecked( ID_CHK_SAME_AMBIG_ADDR ) );
-	addField( "ACC_PAIR", GetEditText( ID_EDIT_ACC_PAIR ) );
-	addField( "EXTRA_TRG", GetEditText( ID_EDIT_EXTRA_TRG ) );
 	addFlag( "MCU_BYPASS_TST", IsChecked( ID_CHK_MCU_BYPASS_TST ) );
 	addFlag( "REDUCE_PASSCNT", IsChecked( ID_CHK_REDUCE_PASSCNT ) );
 	addFlag( "NON_INTERACTIVE", IsChecked( ID_CHK_NON_INTERACTIVE ) );
@@ -1479,19 +1441,11 @@ CreateControls( HWND hwnd )
 	HWND combo = CreateWindowEx( WS_EX_CLIENTEDGE, "COMBOBOX", "",
 		WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST,
 		xEdit, y - 2, editW, 200, hwnd, (HMENU)(INT_PTR)ID_COMBO_TYPE, nullptr, nullptr );
-	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"LOCO (L)" );
-	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"FUNC (F)" );
-	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"ACC (A)" );
-	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"SIG (S)" );
+	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"[L] Locomotive" );
+	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"[F] Function" );
+	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"[A] Accessory" );
+	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"[S] Signal" );
 	g_page0Ctrls.push_back( combo );
-	y += rowH;
-
-	g_page0Ctrls.push_back( MakeStatic( hwnd, "Sig Preset:", xLabel, y, labelW, 18 ) );
-	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_PRESET, xEdit, y - 2, editW, 22 ) );
-	y += rowH;
-
-	g_page0Ctrls.push_back( MakeStatic( hwnd, "Sig Trigger:", xLabel, y, labelW, 18 ) );
-	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_TRIGGER, xEdit, y - 2, editW, 22 ) );
 	y += rowH;
 
 	g_page0Ctrls.push_back( MakeStatic( hwnd, "Extra Preamble:", xLabel, y, labelW, 18 ) );
@@ -1500,18 +1454,6 @@ CreateControls( HWND hwnd )
 
 	g_page0Ctrls.push_back( MakeStatic( hwnd, "Fill (msec):", xLabel, y, labelW, 18 ) );
 	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_FILL_MSEC, xEdit, y - 2, editW, 22 ) );
-	y += rowH;
-
-	g_page0Ctrls.push_back( MakeStatic( hwnd, "Test Repeats:", xLabel, y, labelW, 18 ) );
-	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_TEST_REPS, xEdit, y - 2, editW, 22 ) );
-	y += rowH;
-
-	g_page0Ctrls.push_back( MakeStatic( hwnd, "Acc. Pair (1-4):", xLabel, y, labelW, 18 ) );
-	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_ACC_PAIR, xEdit, y - 2, editW, 22 ) );
-	y += rowH;
-
-	g_page0Ctrls.push_back( MakeStatic( hwnd, "Extra Trig Pkts:", xLabel, y, labelW, 18 ) );
-	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_EXTRA_TRG, xEdit, y - 2, editW, 22 ) );
 	y += rowH;
 
 	g_page0Ctrls.push_back( MakeStatic( hwnd, "MCU Port:", xLabel, y, labelW, 18 ) );
@@ -1564,11 +1506,6 @@ CreateControls( HWND hwnd )
 	const int chkW = 340;
 
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MANUAL, "MANUAL - Don't run tests automatically", xChk, yChk, chkW, 20 ) ); yChk += rowH;
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REPEAT, "REPEAT - Continuously repeat tests", xChk, yChk, chkW, 20 ) ); yChk += rowH;
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_TRIG_REV, "TRIG_REV - Use reverse as trigger cmd", xChk, yChk, chkW, 20 ) ); yChk += rowH;
-
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_FRAGMENT, "FRAGMENT - Test all fragment lengths", xChk, yChk, chkW, 20 ) ); yChk += rowH;
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_SAME_AMBIG_ADDR, "SAME_AMBIG_ADDR - Same addr for ambig.", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REDUCE_PASSCNT, "Reduce pass count [5]", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MCU_BYPASS_TST, "Skip MCU self test", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_NON_INTERACTIVE, "Skip startup prompts", xChk, yChk, chkW, 20 ) ); yChk += rowH;
