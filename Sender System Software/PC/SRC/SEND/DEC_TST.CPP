@@ -1528,16 +1528,7 @@ Dec_tst::decoder_str0_ames(
 	CLR_LINE;
 
 	/*
-	 *	Preset loco decoder to reverse with lamp on or
-	 *  preset accessory decoder to the reverse position.
-	 */
-	dcc_bits.clr_in();
-	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-	put_preset_pkt( dcc_bits, decoder_address, BEST_PRE );
-	dcc_bits.done();
-
-	/*
-	 *	Set decoder to trigger speed, forward, lamp off or
+	 *	Set decoder to trigger speed, reverse, lamp off or
 	 *	set accessory decoder to the normal position.
 	 */
 	dcc_bits2.clr_in();
@@ -1557,6 +1548,15 @@ Dec_tst::decoder_str0_ames(
 
 		fsoc_send( "decoder_str0_ames() loop" );
 
+		/*
+		*	Preset loco decoder to forward with lamp on or
+		*  preset accessory decoder to the reverse position.
+		*/
+		dcc_bits.clr_in();
+		dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+		put_preset_pkt( dcc_bits, decoder_address, BEST_PRE );
+		dcc_bits.done();
+
 		Dcc_reg.send_pkt( dcc_bits, "Send stretched test preset packet." );
 
 		if ( !Dcc_reg.get_gen_fb( decoder_type ) )
@@ -1573,17 +1573,9 @@ Dec_tst::decoder_str0_ames(
 			trigger_bytes.push_back( pbyte );
 		}
 
-		/*
-		 * Send a scope trigger at start of trigger packet.
-		 */
-		Dcc_reg.set_scope( true );
-
-//TODO:
 		Dcc_reg.send_raw_bytes_stretched( &trigger_bytes[0], trigger_bytes.size(),
 			( STRETCH_BITS + PRE_BITS ) / BITS_IN_BYTE, iclk0t, iclk0h,
 			"Send trigger packet with single stretched 0." );
-
-		std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
 		if ( Dcc_reg.get_gen_fb( decoder_type ) )
 		{
