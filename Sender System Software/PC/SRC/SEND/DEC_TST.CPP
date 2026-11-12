@@ -2504,11 +2504,6 @@ Dec_tst::decoder_truncate(
 			dcc_bits2.put_1s( test_pre ).put_0s( 1 ).put_byte( t_addr );
 			dcc_bits2.put_0s( 1 ).put_byte( t_cmd ).put_0s( 1 ).put_check();
 			dcc_bits2.truncate( bit_size + 1 );	// Add one to leave leading 0.
-
-			/*
-			*	Next, set decoder to trigger speed, forward, lamp off or
-			*	set accessory decoder to the normal position.
-			*/
 			put_trigger_pkt( dcc_bits2, decoder_address, test_pre );
 			dcc_bits2.done();
 
@@ -2531,7 +2526,6 @@ Dec_tst::decoder_truncate(
 
 				Dcc_reg.send_pkt( dcc_bits, "Send truncate test preset." );
 
-
 				if ( !Dcc_reg.get_gen_fb( decoder_type ) )
 				{
 					pre_fail	=	true;
@@ -2540,8 +2534,6 @@ Dec_tst::decoder_truncate(
 				Dcc_reg.send_pkt( dcc_bits2,		// Attempt emergency stop.
 					"Send truncate trigger packet." );
 			
-				std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
-
 				if ( Dcc_reg.get_gen_fb( decoder_type ) )
 				{
 					trig_fail	=	true;
@@ -2706,7 +2698,7 @@ Dec_tst::decoder_prior(
 			dcc_bits2.put_1s( one_cnt );
 			dcc_bits2.put_0s( zero_cnt );
 			/*
-			 *	Next, set decoder to trigger speed, forward, lamp off or
+			 *	Next, set decoder to trigger speed, reverse, lamp off or
 			 *	set accessory decoder to the normal position.
 			 */
 			 put_trigger_pkt( dcc_bits2, decoder_address, pre_bits );
@@ -2736,7 +2728,6 @@ Dec_tst::decoder_prior(
 
 				Dcc_reg.send_pkt( dcc_bits,	"Send prior packet preset." );
 
-
 				if ( !Dcc_reg.get_gen_fb( decoder_type ) )
 				{
 					pre_fail	=	true;
@@ -2744,8 +2735,6 @@ Dec_tst::decoder_prior(
 
 				Dcc_reg.send_pkt( dcc_bits2,			// Trigger.
 					"Send prior packet trigger." );
-
-				std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
 				if ( Dcc_reg.get_gen_fb( decoder_type ) )
 				{
@@ -2914,13 +2903,12 @@ Dec_tst::decoder_6_byte(
 			dcc_bits2.put_check();
 			dcc_bits2.put_1s( one_cnt );
 			dcc_bits2.put_0s( zero_cnt );
-
 			/*
-			 *	Next, set decoder to trigger speed, forward, lamp off or
+			 *	Next, set decoder to trigger speed, reverse, lamp off or
 			 *	set accessory decoder to the normal position.
 			 */
 			 put_trigger_pkt( dcc_bits2, decoder_address, pre_bits );
-			 dcc_bits2.put_1s(1).done();
+			 dcc_bits2.done();
 
 			 snprintf( m_tst_name, sizeof( m_tst_name ),
 				"<%02x %02x %02x %02x %02x %02x>%1s %1s<pre %2d>",
@@ -2943,7 +2931,7 @@ Dec_tst::decoder_6_byte(
 				dcc_bits.clr_in();
 				dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
 				put_preset_pkt( dcc_bits, decoder_address, BEST_PRE );
-				dcc_bits.put_1s(1).done();
+				dcc_bits.done();
 
 				Dcc_reg.send_pkt( dcc_bits,	"Send 6 byte prior packet preset." );
 
