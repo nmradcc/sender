@@ -1506,7 +1506,7 @@ Key_val			init_key )					// Initial key value.
 					Dcc_reg.send_rst();
 					break;
 
-				case SEND_HARD:			// Repeat the hard reset packet.
+				case SEND_HARD:			    // Repeat the hard reset packet.
 					Dcc_reg.send_bytes( 1, 0x00, "SEND_HARD." );
 					Dcc_reg.send_hard_rst();	// Send the hard reset.
 					break;
