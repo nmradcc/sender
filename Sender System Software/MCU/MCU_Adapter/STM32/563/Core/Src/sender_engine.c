@@ -368,6 +368,10 @@ static bool dcc_push_bits(const sender_engine_t *eng, uint32_t count, bool one)
 
 static void dcc_hw_start(void)
 {
+    /* OC toggle state survives a stop; reset it so the first match goes high. */
+    MODIFY_REG(TIM5->CCMR1, TIM_CCMR1_OC1M, TIM_OCMODE_FORCED_INACTIVE);
+    MODIFY_REG(TIM5->CCMR1, TIM_CCMR1_OC1M, TIM_OCMODE_TOGGLE);
+
     /* Ensure BR_ENABLE is high before starting DCC output */
     HAL_GPIO_WritePin(BR_ENABLE_GPIO_Port, BR_ENABLE_Pin, GPIO_PIN_SET);
 
