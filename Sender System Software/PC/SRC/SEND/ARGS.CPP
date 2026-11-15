@@ -58,8 +58,8 @@ Args_obj::Args_obj( void )
 	m_decoder_type		= DEC_LOCO;	 		// Decoder type.
 	m_fragment_flag  		= false;			// Send all fragment sizes.
 	m_rep_flag			= false;	  		// Repeat decoder tests.
-	m_run_mask			= DEF_RUN_MASK;		// Tests to run.
-	m_clk_mask			= DEF_CLK_MASK;	  	// Clocks to try.
+	m_run_mask			= DEF_TESTS_MASK;		// Tests to run.
+	m_clk_mask			= DEF_CLOCKS_MASK;	  	// Clocks to try.
 	m_manual_flag			= false;			// Run tests manually.
 	m_extra_preamble		= 0;				// Extra margin test preambles.
 	m_trig_rev			= false;			// Use E_STOP as trigger command.
@@ -244,7 +244,7 @@ Args_obj::usage(
 		m_mcu_bypass_tst	? "true" : "false" );
 	fprintf( ofp,
 		"  -Q    REDUCE_PASSCNT  "
-		"Reduce pass count (5 instead of 100) <value %s>\n",
+		"Reduce pass count (10 instead of 100) <value %s>\n",
 		m_reduce_passcnt	? "true" : "false" );
 	fprintf( ofp,
 		"  -x    NON_INTERACTIVE "

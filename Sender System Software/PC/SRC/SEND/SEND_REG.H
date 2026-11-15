@@ -96,7 +96,7 @@ class Send_reg
 	void	pkt_gap( void ) const
 	{
 		std::this_thread::sleep_for(
-			std::chrono::milliseconds( m_pkt_gap_msec ) );
+			std::chrono::milliseconds( m_idle_gap_time_ms ) );
 	}
 
 	/* Board initialization and reset routines */
@@ -185,8 +185,11 @@ class Send_reg
 	bool				m_log_pkts;				// true to log pkts.
 	bool				m_log_data;				// true to log packet data.
 	bool				m_log_io;				// true to log IO data.
-	Sender_hw_if		*m_hw_if;			// Optional MCU backend interface.
-	u_int				m_pkt_gap_msec;		// Host delay between pkts (msec).
+	Sender_hw_if		*m_hw_if;			    // Optional MCU backend interface.
+	u_int				m_pkt_gap_msec;		    // Host delay between pkts (msec)
+	u_int				m_idle_gap_factor=3;		// Factor to calculate idle gap time.
+	u_int				m_idle_pkt_time_ms;		// Typical idle packet time in ms.
+	u_int				m_idle_gap_time_ms;		// Typical idle gap time in ms.	
 
 	/* Method section */
 	void	print_pkt_log( const BYTE *ibytes, u_int isize );

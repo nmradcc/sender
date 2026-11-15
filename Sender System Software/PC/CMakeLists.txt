@@ -105,9 +105,9 @@ add_executable(migrateINI
 )
 
 if (WIN32)
-  add_executable(dcctest WIN32
+  add_executable(NMRAdcctest WIN32
     ${SEND_DIR}/sendgui.cpp
   )
-  target_include_directories(dcctest PRIVATE ${INC_DIR})
-  target_link_libraries(dcctest PRIVATE comdlg32 comctl32)
+  target_include_directories(NMRAdcctest PRIVATE ${INC_DIR})
+  target_link_libraries(NMRAdcctest PRIVATE comdlg32 comctl32)
 endif()

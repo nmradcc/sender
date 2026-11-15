@@ -22,14 +22,14 @@
 *	average pass rate is 95%.  100 tests gives a miss rate of .59%.
 */
 const int       PERCENT100_FULL    = 100;           // Normal pass count.
-const int       PERCENT100_REDUCED = 5;             // Reduced pass count.
+const int       PERCENT100_REDUCED = 10;             // Reduced pass count.
 static int      PERCENT100      = PERCENT100_FULL;  // 100 percent value;
                                                     //   set from the LOG mask.
 
 const int		SP_TEST_MIN		= 14;				// Min. test speed.
 													// (Step 7 + light 14 step
                                                     //  mode)
-const u_short	PKT_REP_MIN		= 10;				// Min. pkt repeat count.
+//const u_short	PKT_REP_MIN		= 10;				// Min. pkt repeat count.
 const int		BEST_PRE		= PRE_BITS;			// Best preamble bit cnt.
 const int		BEST_IDLE		= 1;				// Best idle packet cnt.
 const int		BAD_BIT_BITS	= BASE_BITS+1; 		// Packet plus stop bit.
@@ -37,8 +37,6 @@ const int		PRE_SKIP_BITS	= 2;				// Indetermintate preamble
 													// bits from S9.1.
 const u_int		FSOC_DELAY		= 2;				// Seconds to delay after
 													// initial fsoc sequences.
-
-const int		SETTLE_DELAY	= 10;				// Delay for loco decoder to settle. (Fill ms * SETTLE_DELAY)
 /*
  *	AMBIG1_BITS is the number of 0s to add before before a packet
  *	so that the ambigous bits start at the beginning of the next BYTE.
@@ -462,8 +460,8 @@ Dec_tst::Dec_tst( void )
 {
 	t_stat.reset();						// Reset test statistics.
 	tst_cnt			= 0L;				// Reset test count.
-	run_mask		= DEF_RUN_MASK;		// Default test mask.
-	clk_mask		= DEF_CLK_MASK;		// Default clock mask.
+	run_mask		= DEF_TESTS_MASK;		// Default test mask.
+	clk_mask		= DEF_CLOCKS_MASK;		// Default clock mask.
 	trig_cmd_speed	= SP_E_STOP;		// Use emeergency stop as trigger.
     m_tst_name[0]	= '\0';				// Clear test name buffer.
 	trig_rev        = false;			// Handle reverse differently.
@@ -1013,10 +1011,10 @@ Dec_tst::decoder_ramp(
 		 	dcc_bits.put_cmd_pkt_28( decoder_address, 
 									 fw, speed, pre_cnt );
 		 	dcc_bits.done();
-			for ( i = 0; i < PKT_REP_MIN; i++ )
-			{
+//			for ( i = 0; i < PKT_REP_MIN; i++ )
+//			{
 			 	Dcc_reg.send_pkt( dcc_bits, "Send loco ramp test packet." );
-		 	}
+//		 	}
 
 		 	/*
 		 	 *	Test the input only when the decoder is going reverse

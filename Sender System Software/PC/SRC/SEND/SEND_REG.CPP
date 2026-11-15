@@ -253,10 +253,20 @@ Send_reg::set_clk(
 		return ( FAIL );
 	}
 
+	// now calculate the typical time in ms for a single idle packet.
+	// a typical idle packet consists of 11 zero bits and 32 one bits.
+	// which is ~5.9ms at nominal timing.
+	// The idle gap time is calculated by adding the configured packet
+	// gap time (Fill ms) to the single idle packet time.
+
+	m_idle_pkt_time_ms = ((11 * clk0t) + (32 * clk1t) + 999) / 1000;
+
+	m_idle_gap_time_ms = m_idle_pkt_time_ms + m_pkt_gap_msec;
+
 	if ( m_log_pkts )
 	{
-		DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu.",
-			my_name, clk0t, clk0h, clk1t );
+		DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu pktgap %u.",
+			my_name, clk0t, clk0h, clk1t, m_idle_gap_time_ms );
 	}
 
 	if ( !m_hw_if->set_timing( clk0t, clk0h, clk1t ) )

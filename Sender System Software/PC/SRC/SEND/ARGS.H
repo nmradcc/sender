@@ -40,7 +40,7 @@ const u_short	DEF_LOCO_ADDR	= 3;					// Default LOCO address.
 const u_short	DEF_FUNC_ADDR	= 3;  					// Default FUNC addr.
 const u_short	DEF_ACC_ADDR  	= 1;  					// Default ACC addr.
 const u_short	DEF_SIG_ADDR  	= 1;  					// Default SIG addr.
-const u_int	MAX_EXTRA_PREAMBLE	=  8;					// Max extra preamble bits.
+const u_int	MAX_EXTRA_PREAMBLE	= 8;					// Max extra preamble bits.
 const u_int MAX_EXTRA_TRG       = 5;                    // Max extra trig pkts.
 const u_int LOG_MASK_MAX        = 0x1F;                 // Maximum LOG mask.
 const u_int LOG_FILE_BIT        = 0x01;                 // Write the log file.
@@ -48,9 +48,9 @@ const u_int LOG_COMMAND_BIT     = 0x02;                 // Log command activity.
 const u_int LOG_PACKET_BIT      = 0x04;                 // Log packet data.
 const u_int LOG_IO_BIT          = 0x08;                 // Log IO data.
 const u_int LOG_NO_ABORT_BIT    = 0x10;                 // Don't abort on errors.
-const Bits_t	DEF_RUN_MASK	=	(~0L) & 0x000FFFFFUL;	// Default run mask; bits 20-31 are reserved and kept clear.
+const Bits_t	DEF_TESTS_MASK	=	(~0L & 0x000FFFFFUL);	// Default test mask; bits 20-31 are reserved and kept clear.
 // Default clock mask; bit 17 (out-of-spec negative test) is opt-in, bits 18-31 are reserved.
-const Bits_t	DEF_CLK_MASK	=	(~0L & 0x0001FFFFUL)
+const Bits_t	DEF_CLOCKS_MASK	=	(~0L & 0x00001CE7UL)
 							  & ~0x00000008 		// No min + 2.
 							  & ~0x00000010 		// No min + 1.
 							  & ~0x00000100 		// No max - 2.

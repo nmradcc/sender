@@ -13,6 +13,7 @@
 #include <commdlg.h>
 #include <commctrl.h>
 #include "send.h"
+#include "args.h"
 #include <string>
 #include <vector>
 #include <utility>
@@ -569,10 +570,6 @@ SyncLogFromBits( void )
 	}
 	SetMaskUInt( ID_EDIT_LOG, ID_EDIT_LOG_GENERAL, mask );
 }
-
-/* Default masks: TESTS valid bits are 0-19 (20-31 reserved), CLOCKS valid bits are 0-17 (18-31 reserved); bit 17 is an opt-in out-of-spec negative test, excluded from the default. */
-static const unsigned long DEF_TESTS_MASK = 0x000FFFFFUL;
-static const unsigned long DEF_CLOCKS_MASK = 0xFFFFFFFFUL & ~0x8 & ~0x10 & ~0x100 & ~0x200 & 0x0001FFFFUL;
 
 static void
 ResetTestsMaskDefault( void )
@@ -1506,7 +1503,7 @@ CreateControls( HWND hwnd )
 	const int chkW = 340;
 
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MANUAL, "MANUAL - Don't run tests automatically", xChk, yChk, chkW, 20 ) ); yChk += rowH;
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REDUCE_PASSCNT, "Reduce pass count [5]", xChk, yChk, chkW, 20 ) ); yChk += rowH;
+	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REDUCE_PASSCNT, "Reduce pass count [10]", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MCU_BYPASS_TST, "Skip MCU self test", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_NON_INTERACTIVE, "Skip startup prompts", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_EXTERNAL_BOOSTER, "Enable external booster", xChk, yChk, chkW, 20 ) ); yChk += rowH;
