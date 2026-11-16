@@ -39,7 +39,6 @@ enum
 	ID_EDIT_ACC_PAIR,
 	ID_EDIT_EXTRA_TRG,
 	ID_EDIT_MCU_PORT,
-	ID_EDIT_MCU_BAUD,
 	ID_EDIT_TESTS,
 	ID_EDIT_CLOCKS,
 	ID_EDIT_FUNCS,
@@ -608,7 +607,6 @@ LoadDefaults( void )
 	SendDlgItemMessage( g_hMain, ID_COMBO_TYPE, CB_SETCURSEL, 0, 0 ); // LOCO
 	SetEditUInt( ID_EDIT_FILL_MSEC, 100, false );
 	SetEditText( ID_EDIT_MCU_PORT, "COM3" );
-	SetEditUInt( ID_EDIT_MCU_BAUD, 115200, false );
 	SetMaskUInt( ID_EDIT_TESTS, ID_EDIT_TESTS_GENERAL, DEF_TESTS_MASK );
 	SetMaskUInt( ID_EDIT_CLOCKS, ID_EDIT_CLOCKS_GENERAL, DEF_CLOCKS_MASK );
 	SetMaskUInt( ID_EDIT_FUNCS, ID_EDIT_FUNCS_GENERAL, 0x1F );
@@ -762,10 +760,6 @@ LoadCfgFile( const char *path )
 		{
 			SetEditText( ID_EDIT_MCU_PORT, val.c_str() );
 		}
-		else if ( _stricmp( key.c_str(), "MCU_BAUD" ) == 0 )
-		{
-			SetEditText( ID_EDIT_MCU_BAUD, val.c_str() );
-		}
 		/* Unknown keys are silently ignored so newer cfg files still load. */
 	}
 
@@ -859,7 +853,6 @@ SaveCfgFile( const char *path )
 	addFlag( "NON_INTERACTIVE", IsChecked( ID_CHK_NON_INTERACTIVE ) );
 	addFlag( "EXTERNAL_BOOSTER", IsChecked( ID_CHK_EXTERNAL_BOOSTER ) );
 	addField( "MCU_PORT", GetEditText( ID_EDIT_MCU_PORT ) );
-	addField( "MCU_BAUD", GetEditText( ID_EDIT_MCU_BAUD ) );
 
 	std::vector<std::string> output;
 
@@ -1467,21 +1460,7 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( portCombo );
 	y += rowH;
 
-	g_page0Ctrls.push_back( MakeStatic( hwnd, "MCU Baud:", xLabel, y, labelW, 18 ) );
-	HWND baudCombo = CreateWindowEx( WS_EX_CLIENTEDGE, "COMBOBOX", "",
-		WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWN | CBS_AUTOHSCROLL,
-		xEdit, y - 2, editW, 200, hwnd, (HMENU)(INT_PTR)ID_EDIT_MCU_BAUD, nullptr, nullptr );
-	static const char *commonBauds[] =
-	{
-		"9600", "19200", "38400", "57600", "115200",
-		"230400", "460800", "921600", "1000000", "2000000", "3000000"
-	};
-	for ( size_t i = 0; i < _countof( commonBauds ); i++ )
-	{
-		SendMessage( baudCombo, CB_ADDSTRING, 0, (LPARAM)commonBauds[i] );
-	}
-	g_page0Ctrls.push_back( baudCombo );
-	y += rowH + 6;
+	y += rowH;
 
 	g_page0Ctrls.push_back( MakeStatic( hwnd, "Tests Mask:", xLabel, y, labelW, 18 ) );
 	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_TESTS_GENERAL, xEdit, y - 2, editW, 22 ) );

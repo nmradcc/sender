@@ -262,7 +262,7 @@ Send_reg::set_clk(
 
 	m_idle_gap_time_ms = m_idle_pkt_time_ms + m_pkt_gap_msec;
 
-	if ( m_log_pkts )
+	if ( m_log_pkt )
 	{
 		DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu pktgap %u.",
 			my_name, clk0t, clk0h, clk1t, m_idle_gap_time_ms );
@@ -317,7 +317,7 @@ Send_reg::start_clk( void )
 	{
 		if ( m_no_hw_sim )
 		{
-			if ( m_log_pkts )
+			if ( m_log_pkt )
 			{
 				DBGLOG( "%s() Clock started.", my_name );
 			}
@@ -331,7 +331,7 @@ Send_reg::start_clk( void )
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts )
+	if ( m_log_pkt )
 	{
 		DBGLOG( "%s() Clock started.", my_name );
 	}
@@ -387,7 +387,7 @@ Send_reg::stop_clk( void )
 	{
 		if ( m_no_hw_sim )
 		{
-			if ( m_log_pkts )
+			if ( m_log_pkt )
 			{
 				DBGLOG( "%s() Clock stopped.", my_name );
 			}
@@ -401,7 +401,7 @@ Send_reg::stop_clk( void )
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts )
+	if ( m_log_pkt )
 	{
 		DBGLOG( "%s() Clock stopped.", my_name );
 	}
@@ -457,10 +457,10 @@ Send_reg::send_bytes(
 	{
 		if ( m_no_hw_sim )
 		{
-			if ( m_log_pkts )
+			if ( m_log_pkt )
 			{
 				DBGLOG( "%s() %s.", my_name, info ? info : "" );
-				if ( m_log_data )
+				if ( m_log_pktdata )
 				{
 					DBGPKT( "%02x %4d %s", ibyte, icnt, icnt > 1 ? "times" : "time" );
 				}
@@ -476,10 +476,10 @@ Send_reg::send_bytes(
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts )
+	if ( m_log_pkt )
 	{
 		DBGLOG( "%s() %s.", my_name, info ? info : "" );
-		if ( m_log_data )
+		if ( m_log_pktdata )
 		{
 			DBGPKT( "%02x %4d %s", ibyte, icnt, icnt > 1 ? "times" : "time" );
 		}
@@ -580,11 +580,11 @@ Send_reg::send_stretched_byte(
 
 	if ( m_no_hw_sim && m_hw_if == nullptr )
 	{
-		if ( m_log_pkts )
+		if ( m_log_pkt )
 		{
 			DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
 					 my_name, iclk0t, iclk0h, info ? info : "" );
-			if ( m_log_data )
+			if ( m_log_pktdata )
 			{
 				DBGPKT( "%02x", ibyte );
 			}
@@ -596,11 +596,11 @@ Send_reg::send_stretched_byte(
 
 	if ( m_hw_if != nullptr )
 	{
-		if ( m_log_pkts )
+		if ( m_log_pkt )
 		{
 			DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
 				my_name, iclk0t, iclk0h, info ? info : "" );
-			if ( m_log_data )
+			if ( m_log_pktdata )
 			{
 				DBGPKT( "%02x", ibyte );
 			}
@@ -658,7 +658,7 @@ Send_reg::send_raw_bytes_stretched(
 
 	if ( m_no_hw_sim && m_hw_if == nullptr )
 	{
-		if ( m_log_pkts )
+		if ( m_log_pkt )
 		{
 			DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
 				my_name, iclk0t, iclk0h, info ? info : "" );
@@ -674,7 +674,7 @@ Send_reg::send_raw_bytes_stretched(
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts )
+	if ( m_log_pkt )
 	{
 		DBGLOG( "%s() Clk 0T %hu, 0H %hu %s.",
 			my_name, iclk0t, iclk0h, info ? info : "" );
@@ -758,7 +758,7 @@ Send_reg::send_raw_bytes_timed(
 
 	if ( m_no_hw_sim && m_hw_if == nullptr )
 	{
-		if ( m_log_pkts )
+		if ( m_log_pkt )
 		{
 			DBGLOG( "%s() %s.", my_name, info ? info : "" );
 			print_pkt_log( ibytes, isize );
@@ -773,7 +773,7 @@ Send_reg::send_raw_bytes_timed(
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts )
+	if ( m_log_pkt )
 	{
 		DBGLOG( "%s() %s.", my_name, info ? info : "" );
 		print_pkt_log( ibytes, isize );
@@ -881,7 +881,7 @@ Send_reg::send_pkt(
 	{
 		if ( m_no_hw_sim )
 		{
-			if ( m_log_pkts )
+			if ( m_log_pkt )
 			{
 				DBGLOG( "%s %s.", my_name, info ? info : "" );
 				print_pkt_log( ibytes, isize );
@@ -901,7 +901,7 @@ Send_reg::send_pkt(
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts )
+	if ( m_log_pkt )
 	{
 		DBGLOG( "%s %s.", my_name, info ? info : "" );
 		print_pkt_log( ibytes, isize );
@@ -1008,7 +1008,7 @@ Send_reg::send_pkt(
 	{
 		if ( m_no_hw_sim )
 		{
-			if ( m_log_pkts )
+			if ( m_log_pkt )
 			{
 				DBGLOG( "%s %s.", my_name, info ? info : "" );
 				print_pkt_log( pkt_bytes, pkt_size );
@@ -1028,7 +1028,7 @@ Send_reg::send_pkt(
 		return ( FAIL );
 	}
 
-	if ( m_log_pkts )
+	if ( m_log_pkt )
 	{
 		DBGLOG( "%s %s.", my_name, info ? info : "" );
 		print_pkt_log( pkt_bytes, pkt_size );
@@ -1212,7 +1212,7 @@ Send_reg::kick_start(
 		return ( FAIL );
 	}
 
-	if ( !m_log_pkts )
+	if ( !m_log_pkt )
 	{
 		if (   clk0t != DECODER_0T_NOM
 			|| clk0h != DECODER_0H_NOM
@@ -1322,7 +1322,7 @@ Send_reg::print_pkt_log(
 {
 	const char		*my_name 	= "Send_reg::print_pkt_log()";
 
-	if ( !m_log_data )
+	if ( !m_log_pktdata )
 	{
 		return;
 	}

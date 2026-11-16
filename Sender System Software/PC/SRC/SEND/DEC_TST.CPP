@@ -624,7 +624,7 @@ Dec_tst::decoder_test(
 			clk_idx < dclk_size;
 			clk_idx++, l_clk_msk <<= 1 )
 	{
-		if ( Dcc_reg.get_log_pkts() )
+		if ( Dcc_reg.get_log_pkt() )
 		{
 			DBGLOG( "Clock mask check: index %d, bit 0x%08lx, mask 0x%08lx, "
 				"clock <%s>, selected %s",
@@ -1000,7 +1000,7 @@ Dec_tst::decoder_ramp(
 
 			printf( "%s\r", ramp_msg );
 
-			if ( Dcc_reg.get_log_pkts() )
+			if ( Dcc_reg.get_log_pkt() )
 			{
 				DBGLOG( "%s() %s", my_name, ramp_msg );
 			}
@@ -1029,7 +1029,7 @@ Dec_tst::decoder_ramp(
 				t_stat.incr_t_cnt();
 				tgen	=	Dcc_reg.get_gen();
 
-				if ( Dcc_reg.get_log_pkts() )
+				if ( Dcc_reg.get_log_pkt() )
 				{
 					snprintf( ramp_msg, sizeof( ramp_msg ),
 							"  %-18s At speed gen1 %02X",
@@ -2352,7 +2352,7 @@ Dec_tst::quick_ames(
 			++f_cnt;
 		}
 
-		if ( Dcc_reg.get_log_pkts() )
+		if ( Dcc_reg.get_log_pkt() )
 		{
 			if ( swap_0_1 )
 			{

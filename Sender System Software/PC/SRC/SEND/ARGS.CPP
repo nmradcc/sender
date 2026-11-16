@@ -323,7 +323,7 @@ Args_obj::get_args(
 
 	if ( m_simulation_mode )
 	{
-		m_log_mask |= LOG_FILE_BIT | LOG_COMMAND_BIT | LOG_PACKET_BIT | LOG_IO_BIT;
+		m_log_mask |= LOG_FILE_BIT | LOG_PACKET_COMMAND_BIT | LOG_PACKET_DATA_BIT | LOG_IO_BIT;
 	}
 
 	/*

@@ -110,6 +110,7 @@ static void		parse_key_cmd( Key_val init_key );
 static Rslt_t	do_mcu_self_tests( void );
 static void		get_log_file( const char *cmd_name );
 static void		exit_send( int status );
+static void		exit_after_mcu_failure();
 static bool		init_hw_backend();
 static void		close_hw_backend();
 static void		reset_mcu_before_abort();
@@ -374,7 +375,7 @@ main(
 {
 	const char	*my_name = "main";
 	Key_val		init_key = KEY_DEC_TST;		// Initial key value.
-	bool		use_hw_backend;
+	bool		use_hw_backend = false;
 
 	Deflog.set_abort_handler( reset_mcu_before_abort );
 
@@ -415,25 +416,18 @@ main(
 	}
 	else
 	{
-		use_hw_backend = false;
 		fprintf( stderr,
 			"ERROR: MCU backend init failed on <%s> at %u baud\n",
 			Args.get_mcu_port(), Args.get_mcu_baud() );
-		if ( Args.get_external_booster() )
-		{
-			fprintf( stderr, "ERROR: Cannot enable external booster without MCU\n" );
-			exit_send( 1 );
-		}
+		exit_after_mcu_failure();
 	}
 
 	/*
-	 *	Tell Dcc_reg whether to log packets or send them to
-	 *	hardware.  Simulating without an MCU backend is always
-	 *	allowed; LOG only controls how much detail is recorded.
+	 *	Configure logging and the hardware interface for Dcc_reg.
 	 */
 	Dcc_reg.set_no_hw_sim( true );
-	Dcc_reg.set_log_pkts( ( Args.get_log_mask() & LOG_COMMAND_BIT ) != 0 );
-	Dcc_reg.set_log_data( ( Args.get_log_mask() & LOG_PACKET_BIT ) != 0 );
+	Dcc_reg.set_log_pkt( ( Args.get_log_mask() & LOG_PACKET_COMMAND_BIT ) != 0 );
+	Dcc_reg.set_log_pktdata( ( Args.get_log_mask() & LOG_PACKET_DATA_BIT ) != 0 );
 	Dcc_reg.set_log_io( ( Args.get_log_mask() & LOG_IO_BIT ) != 0 );
 	Dcc_reg.set_hw_if( use_hw_backend ? Lhw_if : nullptr );
 	Dcc_reg.set_pkt_gap_msec( Args.get_fill_msec() );
@@ -464,18 +458,27 @@ main(
 	printf(		"Starting decoder tests, address %u, type %c\n",
 		Args.get_decoder_address(), Args.get_decoder_type() );
 
-	if ( Args.get_mcu_bypass_tst() == true )
+	if ( Args.get_simulation_mode() )
+	{
+		STATPRINT( "No MCU backend. Skipping MCU self tests." );
+		printf(    "No MCU backend. Skipping MCU self tests.\n" );
+	}
+	else if ( Args.get_mcu_bypass_tst() == true )
 	{
 		STATPRINT( "MCU self tests bypassed" );
 		printf(    "MCU self tests bypassed\n" );
 	}
-	else if ( use_hw_backend == true )
+	else
 	{
 		STATPRINT( "Beginning MCU self tests" );
 		printf(    "Beginning MCU self tests\n" );
 
-		if ( do_mcu_self_tests() == OK )
+		Deflog.set_no_abort_flag( true );
+		Rslt_t self_test_result = do_mcu_self_tests();
+		if ( self_test_result == OK )
 		{
+			Deflog.set_no_abort_flag(
+				( Args.get_log_mask() & LOG_NO_ABORT_BIT ) != 0 );
 			STATPRINT( "MCU self tests passed" );
 			printf(    "MCU self tests passed\n" );
 		}
@@ -483,13 +486,8 @@ main(
 		{
 			printf(	                "%s: MCU self tests failed\n", my_name );
 			ERRPRINT( my_name, LOG_ERR, "MCU self tests failed" );
-			init_key	=	KEY_NULL;			// Don't start tests on fail.
+			exit_after_mcu_failure();
 		}
-	}
-	else
-	{
-		STATPRINT( "No MCU backend. Skipping MCU self tests." );
-		printf(    "No MCU backend. Skipping MCU self tests.\n" );
 	}
 
 	parse_key_cmd( init_key );
@@ -504,6 +502,19 @@ main(
 
 	exit_send( 0 );
 	return ( 0 );
+}
+
+static void
+exit_after_mcu_failure( void )
+{
+	if ( hw_is_running() && hw_stop_clk() != OK )
+	{
+		ERRPRINT( "exit_after_mcu_failure", LOG_WARNING, "Failed to stop MCU clock" );
+	}
+	printf( "Press any key to exit.\n" );
+	fflush( stdout );
+	getch();
+	exit_send( 1 );
 }
 
  
@@ -800,13 +811,12 @@ get_log_file(
 /*--------------------------------------------------------------------------*/
 
 /*
- *	SELF_CHECK logs PASS/FAIL for each individual test to the stat log
- *	and prints to stdout.  Failures are additionally logged at LOG_ERR.
+ *	SELF_CHECK prints each result and returns on the first failure.
  */
 #define SELF_CHECK( name_, expr_ ) \
 	do { \
 		bool _ok = (expr_); \
-		if ( Dcc_reg.get_log_pkts() ) \
+		if ( Dcc_reg.get_log_pkt() ) \
 		{ \
 			DBGLOG( "  %-40s %s", (name_), _ok ? "PASS" : "FAIL" ); \
 		} \
@@ -814,7 +824,7 @@ get_log_file(
 		if ( !_ok ) \
 		{ \
 			ERRPRINT( my_name, LOG_ERR, "FAILED: %s", (name_) ); \
-			++failures; \
+			return ( FAIL ); \
 		} \
 	} while ( 0 )
 
@@ -822,7 +832,6 @@ static Rslt_t
 do_mcu_self_tests( void )
 {
 	const char	*my_name = "do_mcu_self_tests";
-	int			 failures = 0;
 	uint32_t	 mcu_version;
 
 	STATPRINT( "MCU self test" );
@@ -935,17 +944,8 @@ do_mcu_self_tests( void )
 
 	printf( "----------------------------------------\n" );
 
-	if ( failures == 0 )
-	{
-		printf(    "MCU selftests: ALL TESTS PASSED\n" );
-		return ( OK );
-	}
-
-	ERRPRINT( my_name, LOG_ERR,
-		"MCU selftests FAILED: %d failure(s)", failures );
-	STATPRINT( "MCU selftests: %d TEST(S) FAILED", failures );
-	printf(    "MCU selftests: %d TEST(S) FAILED\n", failures );
-	return ( FAIL );
+	printf( "MCU selftests: ALL TESTS PASSED\n" );
+	return ( OK );
 }
 
  
@@ -1713,7 +1713,7 @@ Key_val			init_key )					// Initial key value.
 						}
 						else
 						{
-							if ( Dcc_reg.get_log_pkts() )
+							if ( Dcc_reg.get_log_pkt() )
 							{
 								DBGLOG( "%s: Decoder tests completed; stopping clock and restoring nominal timing.", my_name );
 							}

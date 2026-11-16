@@ -59,8 +59,8 @@ class Send_reg
 	:	running( false ), scope( SCOPE_IDLE ),
 		clk0t( DCC_CLK_ERR ), clk0h( DCC_CLK_ERR ), clk1t( DCC_CLK_ERR ),
 		err_cnt( 0 ),
-		m_swap_0_1( false ), m_no_hw_sim( false ), m_log_pkts( false ),
-		m_log_data( false ), m_log_io( false ), m_hw_if( nullptr ),
+		m_swap_0_1( false ), m_no_hw_sim( false ), m_log_pkt( false ),
+		m_log_pktdata( false ), m_log_io( false ), m_hw_if( nullptr ),
 		m_pkt_gap_msec( 100 )
 	{
 		rst_stats();
@@ -76,8 +76,8 @@ class Send_reg
 	u_short	get_clk1t( void ) const { return ( clk1t ); }
 	bool	get_swap_0_1( void ) const { return ( m_swap_0_1 ); }
 	bool	get_no_hw_sim( void ) const { return ( m_no_hw_sim ); }
-	bool	get_log_pkts( void ) const { return ( m_log_pkts ); }
-	bool	get_log_data( void ) const { return ( m_log_data ); }
+	bool	get_log_pkt( void ) const { return ( m_log_pkt ); }
+	bool	get_log_pktdata( void ) const { return ( m_log_pktdata ); }
 
 	BYTE	get_gen( void ) const;
 	bool	get_gen_fb( Dec_types idec_type ) const;
@@ -85,8 +85,8 @@ class Send_reg
 	/* Simple set methods */
 	void	set_swap_0_1( bool iswap ) { m_swap_0_1 =  iswap; }
 	void	set_no_hw_sim( bool ino_hw_sim ) { m_no_hw_sim = ino_hw_sim; }
-	void	set_log_pkts( bool ilog_pkts ) { m_log_pkts =  ilog_pkts; }
-	void	set_log_data( bool ilog_data ) { m_log_data = ilog_data; }
+	void	set_log_pkt( bool ilog_pkt ) { m_log_pkt =  ilog_pkt; }
+	void	set_log_pktdata( bool ilog_pktdata ) { m_log_pktdata = ilog_pktdata; }
 	void	set_log_io( bool ilog_io ) { m_log_io = ilog_io; }
 	void	set_hw_if( Sender_hw_if *ihw_if ) { m_hw_if = ihw_if; }
 	void	set_pkt_gap_msec( u_int imsec ) { m_pkt_gap_msec = imsec; }
@@ -182,8 +182,8 @@ class Send_reg
 	u_int				err_cnt;				// Count of contiguous errors.
 	bool				m_swap_0_1;				// Swap 0 & 1 if true.
 	bool				m_no_hw_sim;			// true to simulate with no MCU.
-	bool				m_log_pkts;				// true to log pkts.
-	bool				m_log_data;				// true to log packet data.
+	bool				m_log_pkt;				// true to log command activity.
+	bool				m_log_pktdata;			// true to log packet data.
 	bool				m_log_io;				// true to log IO data.
 	Sender_hw_if		*m_hw_if;			    // Optional MCU backend interface.
 	u_int				m_pkt_gap_msec;		    // Host delay between pkts (msec)
