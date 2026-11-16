@@ -110,4 +110,10 @@ if (WIN32)
   )
   target_include_directories(NMRAdcctest PRIVATE ${INC_DIR})
   target_link_libraries(NMRAdcctest PRIVATE comdlg32 comctl32)
+
+  add_executable(dcctestdebuggui WIN32
+    ${SEND_DIR}/dcctestdebuggui.cpp
+  )
+  target_include_directories(dcctestdebuggui PRIVATE ${INC_DIR})
+  target_link_libraries(dcctestdebuggui PRIVATE comdlg32 comctl32)
 endif()
