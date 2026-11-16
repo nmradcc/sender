@@ -53,6 +53,7 @@ enum
 	ID_CHK_MANUAL,
 	ID_CHK_LAMP,
 	ID_CHK_LAMP_FRONT,
+	ID_CHK_LAMP_GENERAL,
 	ID_CHK_REPEAT,
 	ID_CHK_TRIG_REV,
 	ID_CHK_FRAGMENT,
@@ -227,6 +228,10 @@ static const FlagCtrl g_flagCtrls[] =
 {
 	{ ID_CHK_MANUAL,          "MANUAL" },
 	{ ID_CHK_LAMP,            "LAMP" },
+	{ ID_CHK_REPEAT,          "REPEAT" },
+	{ ID_CHK_TRIG_REV,        "TRIG_REV" },
+	{ ID_CHK_FRAGMENT,        "FRAGMENT" },
+	{ ID_CHK_SAME_AMBIG_ADDR, "SAME_AMBIG_ADDR" },
 	{ ID_CHK_MCU_BYPASS_TST,  "MCU_BYPASS_TST" },
 	{ ID_CHK_REDUCE_PASSCNT,  "REDUCE_PASSCNT" },
 	{ ID_CHK_NON_INTERACTIVE, "NON_INTERACTIVE" },
@@ -514,6 +519,7 @@ UpdateLampCtrls( void )
 	bool enable = IsChecked( ID_CHK_FUNCBIT_BASE + 4 );
 
 	SetChecked( ID_CHK_LAMP_FRONT, !IsChecked( ID_CHK_LAMP ) );
+	SetChecked( ID_CHK_LAMP_GENERAL, IsChecked( ID_CHK_LAMP ) );
 	EnableWindow( GetDlgItem( g_hMain, ID_CHK_LAMP_FRONT ), enable );
 	EnableWindow( GetDlgItem( g_hMain, ID_CHK_LAMP ), enable );
 }
@@ -607,8 +613,13 @@ LoadDefaults( void )
 {
 	SetEditUInt( ID_EDIT_ADDRESS, 3, false );
 	SendDlgItemMessage( g_hMain, ID_COMBO_TYPE, CB_SETCURSEL, 0, 0 ); // LOCO
+	SetEditUInt( ID_EDIT_PRESET, 0, false );
+	SetEditUInt( ID_EDIT_TRIGGER, 8, false );
 	SetEditUInt( ID_EDIT_EXTRA_PRE, 0, false );
 	SetEditUInt( ID_EDIT_FILL_MSEC, 100, false );
+	SetEditUInt( ID_EDIT_TEST_REPS, 2, false );
+	SetEditUInt( ID_EDIT_ACC_PAIR, 1, false );
+	SetEditUInt( ID_EDIT_EXTRA_TRG, 0, false );
 	SetEditText( ID_EDIT_MCU_PORT, "COM3" );
 	SetEditUInt( ID_EDIT_MCU_BAUD, 115200, false );
 	SetMaskUInt( ID_EDIT_TESTS, ID_EDIT_TESTS_GENERAL, DEF_TESTS_MASK );
@@ -751,6 +762,14 @@ LoadCfgFile( const char *path )
 			unsigned long mask = val.empty() ? 0x01 : strtoul( val.c_str(), nullptr, 0 );
 			SetMaskUInt( ID_EDIT_LOG, ID_EDIT_LOG_GENERAL, mask );
 		}
+		else if ( _stricmp( key.c_str(), "PRESET" ) == 0 )
+		{
+			SetEditText( ID_EDIT_PRESET, val.c_str() );
+		}
+		else if ( _stricmp( key.c_str(), "TRIGGER" ) == 0 )
+		{
+			SetEditText( ID_EDIT_TRIGGER, val.c_str() );
+		}
 		else if ( _stricmp( key.c_str(), "EXTRA_PRE" ) == 0 )
 		{
 			SetEditText( ID_EDIT_EXTRA_PRE, val.c_str() );
@@ -758,6 +777,18 @@ LoadCfgFile( const char *path )
 		else if ( _stricmp( key.c_str(), "FILL_MSEC" ) == 0 )
 		{
 			SetEditText( ID_EDIT_FILL_MSEC, val.c_str() );
+		}
+		else if ( _stricmp( key.c_str(), "TEST_REPS" ) == 0 )
+		{
+			SetEditText( ID_EDIT_TEST_REPS, val.c_str() );
+		}
+		else if ( _stricmp( key.c_str(), "ACC_PAIR" ) == 0 )
+		{
+			SetEditText( ID_EDIT_ACC_PAIR, val.c_str() );
+		}
+		else if ( _stricmp( key.c_str(), "EXTRA_TRG" ) == 0 )
+		{
+			SetEditText( ID_EDIT_EXTRA_TRG, val.c_str() );
 		}
 		else if ( _stricmp( key.c_str(), "MCU_PORT" ) == 0 )
 		{
@@ -849,13 +880,22 @@ SaveCfgFile( const char *path )
 
 	addField( "ADDRESS", GetEditText( ID_EDIT_ADDRESS ) );
 	addField( "TYPE", typeChar );
+	addField( "PRESET", GetEditText( ID_EDIT_PRESET ) );
+	addField( "TRIGGER", GetEditText( ID_EDIT_TRIGGER ) );
 	addFlag( "LAMP", IsChecked( ID_CHK_LAMP ) );
+	addFlag( "REPEAT", IsChecked( ID_CHK_REPEAT ) );
+	addFlag( "TRIG_REV", IsChecked( ID_CHK_TRIG_REV ) );
 	addMaskField( "TESTS", GetEditText( ID_EDIT_TESTS ) );
 	addMaskField( "CLOCKS", GetEditText( ID_EDIT_CLOCKS ) );
 	addMaskField( "FUNCS", GetEditText( ID_EDIT_FUNCS ) );
 	addMaskField( "LOG", GetEditText( ID_EDIT_LOG ) );
 	addField( "EXTRA_PRE", GetEditText( ID_EDIT_EXTRA_PRE ) );
 	addField( "FILL_MSEC", GetEditText( ID_EDIT_FILL_MSEC ) );
+	addField( "TEST_REPS", GetEditText( ID_EDIT_TEST_REPS ) );
+	addFlag( "FRAGMENT", IsChecked( ID_CHK_FRAGMENT ) );
+	addFlag( "SAME_AMBIG_ADDR", IsChecked( ID_CHK_SAME_AMBIG_ADDR ) );
+	addField( "ACC_PAIR", GetEditText( ID_EDIT_ACC_PAIR ) );
+	addField( "EXTRA_TRG", GetEditText( ID_EDIT_EXTRA_TRG ) );
 	addFlag( "MCU_BYPASS_TST", IsChecked( ID_CHK_MCU_BYPASS_TST ) );
 	addFlag( "REDUCE_PASSCNT", IsChecked( ID_CHK_REDUCE_PASSCNT ) );
 	addFlag( "NON_INTERACTIVE", IsChecked( ID_CHK_NON_INTERACTIVE ) );
@@ -1445,12 +1485,32 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( combo );
 	y += rowH;
 
+	g_page0Ctrls.push_back( MakeStatic( hwnd, "Sig Preset:", xLabel, y, labelW, 18 ) );
+	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_PRESET, xEdit, y - 2, editW, 22 ) );
+	y += rowH;
+
+	g_page0Ctrls.push_back( MakeStatic( hwnd, "Sig Trigger:", xLabel, y, labelW, 18 ) );
+	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_TRIGGER, xEdit, y - 2, editW, 22 ) );
+	y += rowH;
+
 	g_page0Ctrls.push_back( MakeStatic( hwnd, "Extra Preamble:", xLabel, y, labelW, 18 ) );
 	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_EXTRA_PRE, xEdit, y - 2, editW, 22 ) );
 	y += rowH;
 
 	g_page0Ctrls.push_back( MakeStatic( hwnd, "Fill (msec):", xLabel, y, labelW, 18 ) );
 	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_FILL_MSEC, xEdit, y - 2, editW, 22 ) );
+	y += rowH;
+
+	g_page0Ctrls.push_back( MakeStatic( hwnd, "Test Repeats:", xLabel, y, labelW, 18 ) );
+	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_TEST_REPS, xEdit, y - 2, editW, 22 ) );
+	y += rowH;
+
+	g_page0Ctrls.push_back( MakeStatic( hwnd, "Acc. Pair (1-4):", xLabel, y, labelW, 18 ) );
+	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_ACC_PAIR, xEdit, y - 2, editW, 22 ) );
+	y += rowH;
+
+	g_page0Ctrls.push_back( MakeStatic( hwnd, "Extra Trig Pkts:", xLabel, y, labelW, 18 ) );
+	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_EXTRA_TRG, xEdit, y - 2, editW, 22 ) );
 	y += rowH;
 
 	g_page0Ctrls.push_back( MakeStatic( hwnd, "MCU Port:", xLabel, y, labelW, 18 ) );
@@ -1503,6 +1563,11 @@ CreateControls( HWND hwnd )
 	const int chkW = 340;
 
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MANUAL, "Manual diagnostic mode", xChk, yChk, chkW, 20 ) ); yChk += rowH;
+	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_LAMP_GENERAL, "LAMP - Use rear lamp for func tests", xChk, yChk, chkW, 20 ) ); yChk += rowH;
+	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REPEAT, "REPEAT - Continuously repeat tests", xChk, yChk, chkW, 20 ) ); yChk += rowH;
+	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_TRIG_REV, "TRIG_REV - Use reverse as trigger cmd", xChk, yChk, chkW, 20 ) ); yChk += rowH;
+	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_FRAGMENT, "FRAGMENT - Test all fragment lengths", xChk, yChk, chkW, 20 ) ); yChk += rowH;
+	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_SAME_AMBIG_ADDR, "SAME_AMBIG_ADDR - Same addr for ambig.", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REDUCE_PASSCNT, "Reduce pass count [10]", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MCU_BYPASS_TST, "Skip MCU self test", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_NON_INTERACTIVE, "Skip startup prompts", xChk, yChk, chkW, 20 ) ); yChk += rowH;
@@ -1955,6 +2020,12 @@ WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 				&& HIWORD( wParam ) == BN_CLICKED )
 			{
 				SyncFuncsFromBits();
+			}
+			else if ( LOWORD( wParam ) == ID_CHK_LAMP_GENERAL
+				&& HIWORD( wParam ) == BN_CLICKED )
+			{
+				SetChecked( ID_CHK_LAMP, IsChecked( ID_CHK_LAMP_GENERAL ) );
+				UpdateLampCtrls();
 			}
 			else if ( LOWORD( wParam ) == ID_CHK_LAMP_FRONT
 				&& HIWORD( wParam ) == BN_CLICKED )
