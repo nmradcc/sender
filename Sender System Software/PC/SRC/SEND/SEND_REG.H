@@ -12,7 +12,6 @@
 
 #include <zlog.h>
 #include <chrono>
-#include <thread>
 #include <dcc.h>
 #include "send.h"
 
@@ -92,11 +91,12 @@ class Send_reg
 	void	set_hw_if( Sender_hw_if *ihw_if ) { m_hw_if = ihw_if; }
 	void	set_pkt_gap_msec( u_int imsec ) { m_pkt_gap_msec = imsec; }
 
+	void	delay( std::chrono::milliseconds duration ) const;
+
 	// Sleep for the host side inter-packet delay (the Fill time).
 	void	pkt_gap( void ) const
 	{
-		std::this_thread::sleep_for(
-			std::chrono::milliseconds( m_idle_gap_time_ms ) );
+		delay( std::chrono::milliseconds( m_idle_gap_time_ms ) );
 	}
 
 	/* Board initialization and reset routines */

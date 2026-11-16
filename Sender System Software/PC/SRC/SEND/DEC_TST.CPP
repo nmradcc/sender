@@ -13,7 +13,6 @@
 #include <conio.h>
 #include <string.h>
 #include <chrono>
-#include <thread>
 #include <vector>
 
 /*
@@ -577,9 +576,9 @@ Dec_tst::decoder_test(
 	STATPRINT( "sending 2 fail safe operation sequences." );
 
 	fsoc_send( "Start up 1");
-	std::this_thread::sleep_for( FSOC_DELAY * std::chrono::seconds( 1 ) );
+	Dcc_reg.delay( FSOC_DELAY * std::chrono::seconds( 1 ) );
 	fsoc_send( "Start up 2");
-	std::this_thread::sleep_for( FSOC_DELAY * std::chrono::seconds( 1 ) );
+	Dcc_reg.delay( FSOC_DELAY * std::chrono::seconds( 1 ) );
  
 //TODO: ???
 	if ( decoder_type == DEC_ACC )

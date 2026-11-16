@@ -59,6 +59,7 @@ enum
 	ID_CHK_FRAGMENT,
 	ID_CHK_SAME_AMBIG_ADDR,
 	ID_CHK_MCU_BYPASS_TST,
+	ID_CHK_SIMULATION,
 	ID_CHK_REDUCE_PASSCNT,
 	ID_CHK_NON_INTERACTIVE,
 	ID_CHK_EXTERNAL_BOOSTER,
@@ -232,7 +233,6 @@ static const FlagCtrl g_flagCtrls[] =
 	{ ID_CHK_TRIG_REV,        "TRIG_REV" },
 	{ ID_CHK_FRAGMENT,        "FRAGMENT" },
 	{ ID_CHK_SAME_AMBIG_ADDR, "SAME_AMBIG_ADDR" },
-	{ ID_CHK_MCU_BYPASS_TST,  "MCU_BYPASS_TST" },
 	{ ID_CHK_REDUCE_PASSCNT,  "REDUCE_PASSCNT" },
 	{ ID_CHK_NON_INTERACTIVE, "NON_INTERACTIVE" },
 	{ ID_CHK_EXTERNAL_BOOSTER, "EXTERNAL_BOOSTER" },
@@ -631,6 +631,8 @@ LoadDefaults( void )
 	{
 		SetChecked( g_flagCtrls[i].ctrlId, false );
 	}
+	SetChecked( ID_CHK_MCU_BYPASS_TST, false );
+	SetChecked( ID_CHK_SIMULATION, false );
 
 	SyncBitsFromTests();
 	SyncBitsFromClocks();
@@ -674,7 +676,11 @@ LoadCfgFile( const char *path )
 	}
 	fclose( fp );
 
+	bool bypassMcuTest = IsChecked( ID_CHK_MCU_BYPASS_TST );
+	bool simulation = IsChecked( ID_CHK_SIMULATION );
 	LoadDefaults();
+	SetChecked( ID_CHK_MCU_BYPASS_TST, bypassMcuTest );
+	SetChecked( ID_CHK_SIMULATION, simulation );
 	bool logPkts = false;
 
 	for ( size_t li = 0; li < g_origLines.size(); li++ )
@@ -896,7 +902,6 @@ SaveCfgFile( const char *path )
 	addFlag( "SAME_AMBIG_ADDR", IsChecked( ID_CHK_SAME_AMBIG_ADDR ) );
 	addField( "ACC_PAIR", GetEditText( ID_EDIT_ACC_PAIR ) );
 	addField( "EXTRA_TRG", GetEditText( ID_EDIT_EXTRA_TRG ) );
-	addFlag( "MCU_BYPASS_TST", IsChecked( ID_CHK_MCU_BYPASS_TST ) );
 	addFlag( "REDUCE_PASSCNT", IsChecked( ID_CHK_REDUCE_PASSCNT ) );
 	addFlag( "NON_INTERACTIVE", IsChecked( ID_CHK_NON_INTERACTIVE ) );
 	addFlag( "EXTERNAL_BOOSTER", IsChecked( ID_CHK_EXTERNAL_BOOSTER ) );
@@ -952,6 +957,14 @@ SaveCfgFile( const char *path )
 			}
 		}
 	}
+
+	output.erase( std::remove_if( output.begin(), output.end(),
+		[]( const std::string &line )
+		{
+			std::string key;
+			return ExtractLineKey( line, key ) &&
+				_stricmp( key.c_str(), "MCU_BYPASS_TST" ) == 0;
+		} ), output.end() );
 
 	FILE *fp = fopen( path, "w" );
 	if ( fp == nullptr )
@@ -1175,8 +1188,10 @@ LaunchSendExe( HWND hwnd )
 
 	SetEnvironmentVariable( "SEND_CFG", g_cfgPath );
 
-	char cmdLine[MAX_PATH + 16];
-	snprintf( cmdLine, sizeof( cmdLine ), "\"%s\"", sendExe.c_str() );
+	char cmdLine[MAX_PATH + 32];
+	snprintf( cmdLine, sizeof( cmdLine ), "\"%s\"%s%s", sendExe.c_str(),
+		IsChecked( ID_CHK_MCU_BYPASS_TST ) ? " -B" : "",
+		IsChecked( ID_CHK_SIMULATION ) ? " --simulate" : "" );
 
 	STARTUPINFO si;
 	PROCESS_INFORMATION pi;
@@ -1569,9 +1584,11 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_FRAGMENT, "FRAGMENT - Test all fragment lengths", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_SAME_AMBIG_ADDR, "SAME_AMBIG_ADDR - Same addr for ambig.", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REDUCE_PASSCNT, "Reduce pass count [10]", xChk, yChk, chkW, 20 ) ); yChk += rowH;
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MCU_BYPASS_TST, "Skip MCU self test", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_NON_INTERACTIVE, "Skip startup prompts", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_EXTERNAL_BOOSTER, "Enable external booster", xChk, yChk, chkW, 20 ) ); yChk += rowH;
+	yChk += rowH;
+	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MCU_BYPASS_TST, "Skip MCU self test (not saved)", xChk, yChk, chkW, 20 ) ); yChk += rowH;
+	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_SIMULATION, "Simulation mode [not saved]", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 
 	/* Lowest content bottom seen so far, used to place the shared button bar
 	 * below every page instead of just the General page. */

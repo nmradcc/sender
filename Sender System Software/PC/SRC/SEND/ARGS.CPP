@@ -66,6 +66,7 @@ Args_obj::Args_obj( void )
 	m_fill_msec			= 100;				// Use 100 ms fill time.
 	m_test_repeats		= 2;				// Times to repeat misc. tests.
 	m_log_mask			= DEF_LOG_MASK;		// Logging enabled.
+	m_simulation_mode	= false;			// Use hardware when available.
 	m_mcu_bypass_tst	= false;			// Run MCU self tests.
 	m_reduce_passcnt	= false;			// Full pass count.
 	m_non_interactive	= false;			// Ask the startup questions.
@@ -145,7 +146,7 @@ Args_obj::usage(
 		m_cmd_name );			
     fprintf( ofp,
 		"                [-T] [-F fill] [-R reps] [-f] [-S]\n"
-		"                [-o pair] [-e trg] [-B] [-Q] [-x] [-b] [-J port] [-Y baud]\n\n" );
+		"                [-o pair] [-e trg] [-B] [-Q] [-x] [-b] [-J port] [-Y baud] [--simulate]\n\n" );
 
 	if ( m_cfg_path[0] != '\0' )
 	{
@@ -239,9 +240,12 @@ Args_obj::usage(
 		"Extra Ames test trigger packets      <value %u>\n",
 		m_extra_trg );
 	fprintf( ofp,
-		"  -B    MCU_BYPASS_TST  "
+		"  -B    (command only)  "
 		"Skip MCU startup self tests          <value %s>\n",
 		m_mcu_bypass_tst	? "true" : "false" );
+	fprintf( ofp,
+		"  --simulate            Run without MCU; enable log bits 0-3 <value %s>\n",
+		m_simulation_mode ? "true" : "false" );
 	fprintf( ofp,
 		"  -Q    REDUCE_PASSCNT  "
 		"Reduce pass count (10 instead of 100) <value %s>\n",
@@ -315,6 +319,11 @@ Args_obj::get_args(
 	if ( argscan( argc, argv ) != OK )
 	{
 		return ( FAIL );
+	}
+
+	if ( m_simulation_mode )
+	{
+		m_log_mask |= LOG_FILE_BIT | LOG_COMMAND_BIT | LOG_PACKET_BIT | LOG_IO_BIT;
 	}
 
 	/*
@@ -645,6 +654,10 @@ Args_obj::argscan(
 			{
 				m_log_mask = 1;
 			}
+		}
+		else if ( strcmp( argv[i], "--simulate" ) == 0 )
+		{
+			m_simulation_mode = true;
 		}
 		else if ( strcmp( argv[i], "-B" ) == 0 )	// Bypass MCU self tests.
 		{
@@ -1042,8 +1055,8 @@ Args_obj::cfgscan( void )
 		}
 		else if ( 	!strcmpi( cmd, 	"MCU_BYPASS_TST" ) )
 		{
-			targv[1]	= 	"-B";
-			targc		= 	2;
+			fprintf( stderr, "WARNING: MCU_BYPASS_TST in the cfg file is ignored; use -B on the command line.\n" );
+			continue;
 		}
 		else if ( 	!strcmpi( cmd, 	"REDUCE_PASSCNT" ) )
 		{

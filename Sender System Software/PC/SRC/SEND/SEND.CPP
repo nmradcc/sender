@@ -390,7 +390,16 @@ main(
 	Deflog.set_no_abort_flag(
 		( Args.get_log_mask() & LOG_NO_ABORT_BIT ) != 0 );
 
-	if ( init_hw_backend() == true )
+	if ( Args.get_simulation_mode() )
+	{
+		use_hw_backend = false;
+		printf( "Simulation mode: MCU backend disabled; decoder feedback is unavailable.\n" );
+		if ( Args.get_external_booster() )
+		{
+			printf( "External booster setting ignored in simulation mode.\n" );
+		}
+	}
+	else if ( init_hw_backend() == true )
 	{
 		use_hw_backend = true;
 		if ( !Lhw_if->set_output_enable( Args.get_external_booster() ) )
@@ -444,6 +453,11 @@ main(
 	Ldec_tst.set_decoder_address( Args.get_decoder_address() );
 
 	get_log_file( argv[0] );
+
+	if ( Args.get_simulation_mode() )
+	{
+		STATPRINT( "Simulation mode: MCU backend disabled; decoder feedback is unavailable." );
+	}
 
 	STATPRINT(	"Starting decoder tests, address %u, type %c",
 		Args.get_decoder_address(), Args.get_decoder_type() );
@@ -1154,7 +1168,7 @@ Key_val			init_key )					// Initial key value.
 													   : SENDER_FILL_ONES )
 				== OK )
 			{
-				std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+				Dcc_reg.delay( std::chrono::seconds( 1 ) );
 				hw_stop_clk();
 			}
 			else

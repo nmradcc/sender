@@ -77,6 +77,18 @@ if (BUILD_TEST_TOOLS)
   target_link_libraries(zlog_test PRIVATE nmra_lib)
   add_test(NAME zlog_test COMMAND zlog_test)
 
+  if (WIN32)
+    add_executable(args_test
+      ${SEND_DIR}/ARGS_TEST.CPP
+      ${SEND_DIR}/ARGS.CPP
+      ${SEND_DIR}/SEND_REG.CPP
+    )
+    target_include_directories(args_test PRIVATE ${INC_DIR} ${SEND_DIR})
+    target_link_libraries(args_test PRIVATE nmra_lib)
+    add_test(NAME args_test COMMAND args_test)
+    set_tests_properties(args_test PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  endif()
+
   set_tests_properties(bit_test zlog_test PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   )

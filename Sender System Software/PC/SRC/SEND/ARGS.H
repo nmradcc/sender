@@ -99,6 +99,8 @@ class Args_obj
 				{ return ( m_test_repeats ); }
 	u_int		get_log_mask( void ) const
 				{ return ( m_log_mask ); }
+	bool			get_simulation_mode( void ) const
+				{ return ( m_simulation_mode ); }
 	bool	  		get_mcu_bypass_tst( void ) const
 				{ return ( m_mcu_bypass_tst ); }
 	bool	  		get_reduce_passcnt( void ) const
@@ -153,6 +155,7 @@ class Args_obj
 	u_int					m_fill_msec;			// Fill time (msec).
 	u_int					m_test_repeats;		// Number of times to do tests.
 	u_int					m_log_mask;			// LOG mode: 0..3.
+	bool					m_simulation_mode;	// Run without an MCU backend.
 	bool				    m_mcu_bypass_tst;	// If true, skip MCU self tests.
 	bool				    m_reduce_passcnt;	// If true, use reduced pass count.
 	bool				    m_non_interactive;	// If true, skip all prompts.

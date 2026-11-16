@@ -209,9 +209,8 @@ static std::string	g_mcuTestOutput;
 static const UINT_PTR MCU_TEST_TIMER_ID = 1;
 static std::vector<std::string>	g_origLines;	// Raw lines of the last loaded/saved cfg file, preserved across saves.
 static bool	g_iniSource = false;	// True when the last loaded file was an .ini; restricts Save As to .ini.
-// Retain non-GUI settings when saving or migrating a configuration.
+// Retain the non-GUI setting when saving or migrating a configuration.
 static std::string g_extraPre = "0";
-static bool g_mcuBypassTest = false;
 static std::vector<HWND>	g_page0Ctrls;	// Controls shown on the "General" tab.
 static std::vector<HWND>	g_page1Ctrls;	// Controls shown on the "Test Mask Bits" tab.
 static std::vector<HWND>	g_page2Ctrls;	// Controls shown on the "Clock Mask Bits" tab.
@@ -665,7 +664,6 @@ LoadCfgFile( const char *path )
 	LoadDefaults();
 	bool logPkts = false;
 	g_extraPre = "0";
-	g_mcuBypassTest = false;
 
 	for ( size_t li = 0; li < g_origLines.size(); li++ )
 	{
@@ -700,11 +698,6 @@ LoadCfgFile( const char *path )
 				&& _stricmp( val.c_str(), "false" ) != 0
 				&& _stricmp( val.c_str(), "off" ) != 0
 				&& _stricmp( val.c_str(), "no" ) != 0 );
-			continue;
-		}
-		if ( _stricmp( key.c_str(), "MCU_BYPASS_TST" ) == 0 )
-		{
-			g_mcuBypassTest = true;
 			continue;
 		}
 		for ( size_t i = 0; i < _countof( g_flagCtrls ); i++ )
@@ -862,7 +855,6 @@ SaveCfgFile( const char *path )
 	addMaskField( "LOG", GetEditText( ID_EDIT_LOG ) );
 	addField( "EXTRA_PRE", g_extraPre );
 	addField( "FILL_MSEC", GetEditText( ID_EDIT_FILL_MSEC ) );
-	addFlag( "MCU_BYPASS_TST", g_mcuBypassTest );
 	addFlag( "REDUCE_PASSCNT", IsChecked( ID_CHK_REDUCE_PASSCNT ) );
 	addFlag( "NON_INTERACTIVE", IsChecked( ID_CHK_NON_INTERACTIVE ) );
 	addFlag( "EXTERNAL_BOOSTER", IsChecked( ID_CHK_EXTERNAL_BOOSTER ) );
@@ -918,6 +910,14 @@ SaveCfgFile( const char *path )
 			}
 		}
 	}
+
+	output.erase( std::remove_if( output.begin(), output.end(),
+		[]( const std::string &line )
+		{
+			std::string key;
+			return ExtractLineKey( line, key ) &&
+				_stricmp( key.c_str(), "MCU_BYPASS_TST" ) == 0;
+		} ), output.end() );
 
 	FILE *fp = fopen( path, "w" );
 	if ( fp == nullptr )

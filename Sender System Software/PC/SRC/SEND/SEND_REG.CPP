@@ -33,6 +33,15 @@ const BYTE	Send_reg::base_bytes[PKT_SIZE] =
 const u_int		ERR_MAX			= 4;	  		// Max contig. errors to print.
 const int		MAX_PKT_LINE	= 24;			// Max packet bytes per line.
 
+void
+Send_reg::delay( std::chrono::milliseconds duration ) const
+{
+	if ( !Args.get_simulation_mode() )
+	{
+		std::this_thread::sleep_for( duration );
+	}
+}
+
 BYTE
 Send_reg::get_gen( void ) const
 {
@@ -57,7 +66,7 @@ Send_reg::get_gen( void ) const
 			int					waited_ms		= 0;
 			bool				saw_queued		= false;
 
-			std::this_thread::sleep_for(
+			delay(
 				std::chrono::milliseconds( LAST_HP_MS ) );
 
 			while ( m_hw_if->get_status( hw_status ) )
@@ -69,13 +78,13 @@ Send_reg::get_gen( void ) const
 					{
 						break;
 					}
-					std::this_thread::sleep_for(
+					delay(
 						std::chrono::milliseconds( 1 ) );
 				}
 				else if ( saw_queued )
 				{
 					saw_queued = false;
-					std::this_thread::sleep_for(
+					delay(
 						std::chrono::milliseconds( LAST_HP_MS ) );
 				}
 				else
@@ -188,18 +197,8 @@ Send_reg::set_clk(
 		clr_err_cnt();
 	}
 
-	if ( m_hw_if == nullptr )
+	if ( m_hw_if == nullptr && !m_no_hw_sim )
 	{
-		if ( m_no_hw_sim )
-		{
-			if ( m_log_pkts )
-			{
-				DBGLOG( "%s() Clk 0T %hu, 0H %hu, 1T %hu.",
-					my_name, iclk0t, iclk0h, iclk1t );
-			}
-			return ( OK );
-		}
-
 		ERRPRINT( my_name, LOG_ERR,
 			"MCU hardware interface not initialized" );
 		clk0t = clk0h = clk1t = DCC_CLK_ERR;
@@ -269,7 +268,7 @@ Send_reg::set_clk(
 			my_name, clk0t, clk0h, clk1t, m_idle_gap_time_ms );
 	}
 
-	if ( !m_hw_if->set_timing( clk0t, clk0h, clk1t ) )
+	if ( m_hw_if != nullptr && !m_hw_if->set_timing( clk0t, clk0h, clk1t ) )
 	{
 		ERRPRINT( my_name, LOG_ERR,
 			"set_timing() FAILED" );
@@ -1283,7 +1282,8 @@ Send_reg::kick_start(
 				return ( false );
 			}
 		}
-		while ( std::chrono::steady_clock::now() < end_time );
+		while ( !iargs.get_simulation_mode() &&
+				std::chrono::steady_clock::now() < end_time );
 
 		return ( true );
 	};
