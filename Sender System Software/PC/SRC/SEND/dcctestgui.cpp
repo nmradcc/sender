@@ -1,6 +1,6 @@
 /*****************************************************************************
  *
- * sendgui.cpp - Native Win32 GUI editor for the SEND.CFG configuration file
+ * dcctestgui.cpp - Native Win32 GUI editor for the SEND.CFG configuration file
  *               used by the "send" DCC conformance test program.
  *
  * Lets the user view/modify the test masks (TESTS, CLOCKS, FUNCS) and the
@@ -34,7 +34,6 @@ enum
 	ID_COMBO_TYPE,
 	ID_EDIT_PRESET,
 	ID_EDIT_TRIGGER,
-	ID_EDIT_EXTRA_PRE,
 	ID_EDIT_FILL_MSEC,
 	ID_EDIT_TEST_REPS,
 	ID_EDIT_ACC_PAIR,
@@ -57,7 +56,6 @@ enum
 	ID_CHK_TRIG_REV,
 	ID_CHK_FRAGMENT,
 	ID_CHK_SAME_AMBIG_ADDR,
-	ID_CHK_MCU_BYPASS_TST,
 	ID_CHK_REDUCE_PASSCNT,
 	ID_CHK_NON_INTERACTIVE,
 	ID_CHK_EXTERNAL_BOOSTER,
@@ -211,6 +209,9 @@ static std::string	g_mcuTestOutput;
 static const UINT_PTR MCU_TEST_TIMER_ID = 1;
 static std::vector<std::string>	g_origLines;	// Raw lines of the last loaded/saved cfg file, preserved across saves.
 static bool	g_iniSource = false;	// True when the last loaded file was an .ini; restricts Save As to .ini.
+// Retain non-GUI settings when saving or migrating a configuration.
+static std::string g_extraPre = "0";
+static bool g_mcuBypassTest = false;
 static std::vector<HWND>	g_page0Ctrls;	// Controls shown on the "General" tab.
 static std::vector<HWND>	g_page1Ctrls;	// Controls shown on the "Test Mask Bits" tab.
 static std::vector<HWND>	g_page2Ctrls;	// Controls shown on the "Clock Mask Bits" tab.
@@ -227,7 +228,6 @@ static const FlagCtrl g_flagCtrls[] =
 {
 	{ ID_CHK_MANUAL,          "MANUAL" },
 	{ ID_CHK_LAMP,            "LAMP" },
-	{ ID_CHK_MCU_BYPASS_TST,  "MCU_BYPASS_TST" },
 	{ ID_CHK_REDUCE_PASSCNT,  "REDUCE_PASSCNT" },
 	{ ID_CHK_NON_INTERACTIVE, "NON_INTERACTIVE" },
 	{ ID_CHK_EXTERNAL_BOOSTER, "EXTERNAL_BOOSTER" },
@@ -607,7 +607,6 @@ LoadDefaults( void )
 {
 	SetEditUInt( ID_EDIT_ADDRESS, 3, false );
 	SendDlgItemMessage( g_hMain, ID_COMBO_TYPE, CB_SETCURSEL, 0, 0 ); // LOCO
-	SetEditUInt( ID_EDIT_EXTRA_PRE, 0, false );
 	SetEditUInt( ID_EDIT_FILL_MSEC, 100, false );
 	SetEditText( ID_EDIT_MCU_PORT, "COM3" );
 	SetEditUInt( ID_EDIT_MCU_BAUD, 115200, false );
@@ -665,6 +664,8 @@ LoadCfgFile( const char *path )
 
 	LoadDefaults();
 	bool logPkts = false;
+	g_extraPre = "0";
+	g_mcuBypassTest = false;
 
 	for ( size_t li = 0; li < g_origLines.size(); li++ )
 	{
@@ -699,6 +700,11 @@ LoadCfgFile( const char *path )
 				&& _stricmp( val.c_str(), "false" ) != 0
 				&& _stricmp( val.c_str(), "off" ) != 0
 				&& _stricmp( val.c_str(), "no" ) != 0 );
+			continue;
+		}
+		if ( _stricmp( key.c_str(), "MCU_BYPASS_TST" ) == 0 )
+		{
+			g_mcuBypassTest = true;
 			continue;
 		}
 		for ( size_t i = 0; i < _countof( g_flagCtrls ); i++ )
@@ -753,7 +759,7 @@ LoadCfgFile( const char *path )
 		}
 		else if ( _stricmp( key.c_str(), "EXTRA_PRE" ) == 0 )
 		{
-			SetEditText( ID_EDIT_EXTRA_PRE, val.c_str() );
+			g_extraPre = val;
 		}
 		else if ( _stricmp( key.c_str(), "FILL_MSEC" ) == 0 )
 		{
@@ -854,9 +860,9 @@ SaveCfgFile( const char *path )
 	addMaskField( "CLOCKS", GetEditText( ID_EDIT_CLOCKS ) );
 	addMaskField( "FUNCS", GetEditText( ID_EDIT_FUNCS ) );
 	addMaskField( "LOG", GetEditText( ID_EDIT_LOG ) );
-	addField( "EXTRA_PRE", GetEditText( ID_EDIT_EXTRA_PRE ) );
+	addField( "EXTRA_PRE", g_extraPre );
 	addField( "FILL_MSEC", GetEditText( ID_EDIT_FILL_MSEC ) );
-	addFlag( "MCU_BYPASS_TST", IsChecked( ID_CHK_MCU_BYPASS_TST ) );
+	addFlag( "MCU_BYPASS_TST", g_mcuBypassTest );
 	addFlag( "REDUCE_PASSCNT", IsChecked( ID_CHK_REDUCE_PASSCNT ) );
 	addFlag( "NON_INTERACTIVE", IsChecked( ID_CHK_NON_INTERACTIVE ) );
 	addFlag( "EXTERNAL_BOOSTER", IsChecked( ID_CHK_EXTERNAL_BOOSTER ) );
@@ -1445,10 +1451,6 @@ CreateControls( HWND hwnd )
 	g_page0Ctrls.push_back( combo );
 	y += rowH;
 
-	g_page0Ctrls.push_back( MakeStatic( hwnd, "Extra Preamble:", xLabel, y, labelW, 18 ) );
-	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_EXTRA_PRE, xEdit, y - 2, editW, 22 ) );
-	y += rowH;
-
 	g_page0Ctrls.push_back( MakeStatic( hwnd, "Fill (msec):", xLabel, y, labelW, 18 ) );
 	g_page0Ctrls.push_back( MakeEdit( hwnd, ID_EDIT_FILL_MSEC, xEdit, y - 2, editW, 22 ) );
 	y += rowH;
@@ -1502,9 +1504,8 @@ CreateControls( HWND hwnd )
 	int yChk = pageTop;
 	const int chkW = 340;
 
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MANUAL, "MANUAL - Don't run tests automatically", xChk, yChk, chkW, 20 ) ); yChk += rowH;
+	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MANUAL, "Manual diagnostic mode", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_REDUCE_PASSCNT, "Reduce pass count [10]", xChk, yChk, chkW, 20 ) ); yChk += rowH;
-	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_MCU_BYPASS_TST, "Skip MCU self test", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_NON_INTERACTIVE, "Skip startup prompts", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 	g_page0Ctrls.push_back( MakeCheck( hwnd, ID_CHK_EXTERNAL_BOOSTER, "Enable external booster", xChk, yChk, chkW, 20 ) ); yChk += rowH;
 
