@@ -15,6 +15,28 @@
 #include <chrono>
 #include <vector>
 
+static bool
+send_preset_until_feedback( Bits &bits, Dec_types decoder_type, const char *info )
+{
+	const auto deadline = std::chrono::steady_clock::now()
+		+ std::chrono::seconds( 1 );
+	do
+	{
+		if ( Dcc_reg.send_pkt( bits, info ) != OK )
+		{
+			return false;
+		}
+		if ( Dcc_reg.get_gen_fb( decoder_type ) )
+		{
+			return true;
+		}
+	}
+	while ( !Args.get_simulation_mode() &&
+		std::chrono::steady_clock::now() < deadline );
+
+	return false;
+}
+
 /*
 *	Note: Test is repeated 100 times to make sure there is less
 *	Than a 1% chance of not seeing at least 1 failure assuming the
@@ -1431,12 +1453,8 @@ Dec_tst::decoder_ames(
 		put_trigger_pkt( dcc_bits2, decoder_address, pre_cnt );
 		dcc_bits2.done();
 
-		Dcc_reg.send_pkt(	dcc_bits,"Send packet acceptance preset packet.");
-	
-		if ( !Dcc_reg.get_gen_fb( decoder_type ) )
-		{
-			pre_fail	=	true;
-		}
+		pre_fail = !send_preset_until_feedback( dcc_bits, decoder_type,
+			"Send packet acceptance preset packet." );
 
 		Dcc_reg.send_pkt(	dcc_bits2,"Send packet acceptance trigger packet.");
 
@@ -1554,12 +1572,8 @@ Dec_tst::decoder_str0_ames(
 		put_preset_pkt( dcc_bits, decoder_address, BEST_PRE );
 		dcc_bits.done();
 
-		Dcc_reg.send_pkt( dcc_bits, "Send stretched test preset packet." );
-
-		if ( !Dcc_reg.get_gen_fb( decoder_type ) )
-		{
-			pre_fail	=	true;
-		}
+		pre_fail = !send_preset_until_feedback( dcc_bits, decoder_type,
+			"Send stretched test preset packet." );
         /*
          * Send BYTES immediately before single stretched 0.
          */
@@ -1730,12 +1744,8 @@ Dec_tst::decoder_bad_addr(
 		put_preset_pkt( dcc_bits, decoder_address, pre_cnt );
 		dcc_bits.done();
 
-		Dcc_reg.send_pkt( dcc_bits, "Send bad address preset packet." );
-
-		if ( !Dcc_reg.get_gen_fb( decoder_type ) )
-		{
-			pre_fail	=	true;
-		}
+		pre_fail = !send_preset_until_feedback( dcc_bits, decoder_type,
+			"Send bad address preset packet." );
 
 		dcc_bits2.clr_in();
 		dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
@@ -1906,12 +1916,8 @@ Dec_tst::decoder_bad_bit(
 		put_preset_pkt( dcc_bits, decoder_address, pre_cnt );
 		dcc_bits.done();
 
-		Dcc_reg.send_pkt( dcc_bits, "Send bad bit preset packet." );
-
-		if ( !Dcc_reg.get_gen_fb( decoder_type ) )
-		{
-			pre_fail	=	true;
-		}
+		pre_fail = !send_preset_until_feedback( dcc_bits, decoder_type,
+			"Send bad bit preset packet." );
 
 		Dcc_reg.send_pkt( dcc_bits2, "Send bad bit trigger packet." );
 
@@ -2330,12 +2336,9 @@ Dec_tst::quick_ames(
 		dcc_bits.clr_in();
 		put_preset_pkt( dcc_bits, decoder_address, margin_pre );
 		dcc_bits.done();
-		Dcc_reg.send_pkt( dcc_bits, "Send preset function packet." );
 
-		if (!Dcc_reg.get_gen_fb( decoder_type ))
-		{
-			pre_fail	=	true;
-		}
+		pre_fail = !send_preset_until_feedback( dcc_bits, decoder_type,
+			"Send preset function packet." );
 
 		dcc_bits.clr_in();
 		put_trigger_pkt( dcc_bits, decoder_address, margin_pre );
@@ -2515,12 +2518,8 @@ Dec_tst::decoder_truncate(
 				put_preset_pkt( dcc_bits, decoder_address, BEST_PRE );
 				dcc_bits.done();
 
-				Dcc_reg.send_pkt( dcc_bits, "Send truncate test preset." );
-
-				if ( !Dcc_reg.get_gen_fb( decoder_type ) )
-				{
-					pre_fail	=	true;
-				}
+				pre_fail = !send_preset_until_feedback( dcc_bits, decoder_type,
+					"Send truncate test preset." );
 
 				Dcc_reg.send_pkt( dcc_bits2,		// Trigger.
 					"Send truncate trigger packet." );
@@ -2717,12 +2716,8 @@ Dec_tst::decoder_prior(
 				put_preset_pkt( dcc_bits, decoder_address, BEST_PRE );
 				dcc_bits.done();
 
-				Dcc_reg.send_pkt( dcc_bits,	"Send prior packet preset." );
-
-				if ( !Dcc_reg.get_gen_fb( decoder_type ) )
-				{
-					pre_fail	=	true;
-				}
+				pre_fail = !send_preset_until_feedback( dcc_bits, decoder_type,
+					"Send prior packet preset." );
 
 				Dcc_reg.send_pkt( dcc_bits2,			// Trigger.
 					"Send prior packet trigger." );
@@ -2924,12 +2919,8 @@ Dec_tst::decoder_6_byte(
 				put_preset_pkt( dcc_bits, decoder_address, BEST_PRE );
 				dcc_bits.done();
 
-				Dcc_reg.send_pkt( dcc_bits,	"Send 6 byte prior packet preset." );
-
-				if ( !Dcc_reg.get_gen_fb( decoder_type ) )
-				{
-					pre_fail	=	true;
-				}
+				pre_fail = !send_preset_until_feedback( dcc_bits, decoder_type,
+					"Send 6 byte prior packet preset." );
 
 				Dcc_reg.send_pkt( dcc_bits2,			// Trigger.
 					"Send 6 byte prior packet trigger." );
@@ -3160,12 +3151,8 @@ Dec_tst::decoder_ambig1(
 				put_preset_pkt( dcc_bits, decoder_address, pre_cnt );
 				dcc_bits.done();
 
-       			Dcc_reg.send_pkt( dcc_bits,"Send ambig 1 packet preset." );
-
-				if ( !Dcc_reg.get_gen_fb( decoder_type ) )
-        		{
-        			pre_fail	=	true;
-        		}
+				pre_fail = !send_preset_until_feedback( dcc_bits, decoder_type,
+					"Send ambig 1 packet preset." );
 
 				ambig_bytes.clear();
 				dcc_bits2.rst_out();
@@ -3370,12 +3357,8 @@ Dec_tst::decoder_ambig2(
 				put_preset_pkt( dcc_bits, decoder_address, pre_cnt );
 				dcc_bits.done();
 
-       			Dcc_reg.send_pkt( dcc_bits,"Send ambig 2 packet preset." );
-
-				if ( !Dcc_reg.get_gen_fb( decoder_type ) )
-        		{
-        			pre_fail	=	true;
-        		}
+				pre_fail = !send_preset_until_feedback( dcc_bits, decoder_type,
+					"Send ambig 2 packet preset." );
 
         		//	Send preset just before feedback bits.
         		Dcc_reg.send_pkt(	dcc_bits2,"Send preset just before ambig 2 bits." );
