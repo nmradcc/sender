@@ -1662,7 +1662,6 @@ Dec_tst::decoder_bad_addr(
 	u_short			send_addr;					// Address to send.
 	bool			pre_fail;					// Preset failed.
 	bool			trig_fail;	  				// Trigger failed.
-	bool			rst_fail;					// Reset failed.
 	u_int			pre_cnt;					// Preamble count for test.
 	const char      *rst_msg;					// Reset message.
 
@@ -1708,7 +1707,6 @@ Dec_tst::decoder_bad_addr(
 	{
 		pre_fail	=	false;
 		trig_fail	=	false;
-		rst_fail	=	false;
 
 		if ( addr == addr_max + 1 )
 		{
@@ -1739,11 +1737,6 @@ Dec_tst::decoder_bad_addr(
 			Dcc_reg.send_pkt( dcc_bits3, rst_msg );
 		}
 
-//		if ( Dcc_reg.get_gen_fb( decoder_type ) )
-//		{
-//			rst_fail	=	true;
-//		}
-
 		/*
 		*  Preset decoder to forward for LOCO,
 		*  presete function on for FUNC decoder, or
@@ -1757,28 +1750,31 @@ Dec_tst::decoder_bad_addr(
 		pre_fail = !send_preset_until_feedback( dcc_bits, decoder_type,
 			"Send bad address preset packet." );
 
-		dcc_bits2.clr_in();
-		dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
-		put_trigger_pkt( dcc_bits2, send_addr, pre_cnt );
-		dcc_bits2.done();
-
-		Dcc_reg.send_pkt( dcc_bits2, "Send bad address trigger packet." );
-
-		if ( !Dcc_reg.get_gen_fb( decoder_type ) != ( send_addr ==
-								decoder_address ? true : false) )
+		if ( !pre_fail )
 		{
-			trig_fail	=	true;
+			dcc_bits2.clr_in();
+			dcc_bits2.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+			put_trigger_pkt( dcc_bits2, send_addr, pre_cnt );
+			dcc_bits2.done();
+
+			Dcc_reg.send_pkt( dcc_bits2, "Send bad address trigger packet." );
+
+			if ( !Dcc_reg.get_gen_fb( decoder_type ) != ( send_addr ==
+									decoder_address ? true : false) )
+			{
+				trig_fail	=	true;
+			}
 		}
 
 		t_stat.incr_t_cnt();
 
-		if ( pre_fail || trig_fail || rst_fail )
+		if ( pre_fail || trig_fail )
 		{
 			t_stat.incr_f_cnt();
 			tst_rslt	=	FAIL;
 			ERRPRINT( my_name, LOG_WARNING,
 			"%-10s FAILED: %s addr %5u",
-			err_phrase( pre_fail, trig_fail, rst_fail ),
+			err_phrase( pre_fail, trig_fail ),
 			send_addr ==  decoder_address ? "Good" : " Bad",
 			send_addr );
 		}
@@ -1825,7 +1821,6 @@ Dec_tst::decoder_bad_bit(
 	Rslt_t			retval = OK;			// Return value.
 	bool			pre_fail;	  			// Preset failed.
 	bool			trig_fail;	  			// Trigger failed.
-	bool			rst_fail;				// Reset failed.
 	u_int			pre_cnt;				// Preamble count for test.
     int				first_bit;				// First bit position to test.
     int				last_bit;				// Last bit position to test.
@@ -1878,7 +1873,6 @@ Dec_tst::decoder_bad_bit(
 	{
 		pre_fail	=	false;
 		trig_fail	=	false;
-		rst_fail	=	false;
 
 		if ( i == last_bit )
 		{
@@ -1911,11 +1905,6 @@ Dec_tst::decoder_bad_bit(
 			Dcc_reg.send_pkt( dcc_bits3, rst_msg );
 		}
 
-		if ( Dcc_reg.get_gen_fb( decoder_type ) )
-		{
-			rst_fail	=	true;
-		}
-
 		/*
 		*	Preset decoder to forward for LOCO,
 		*  presete function on for FUNC decoder, or
@@ -1929,16 +1918,19 @@ Dec_tst::decoder_bad_bit(
 		pre_fail = !send_preset_until_feedback( dcc_bits, decoder_type,
 			"Send bad bit preset packet." );
 
-		Dcc_reg.send_pkt( dcc_bits2, "Send bad bit trigger packet." );
-
-		if ( !Dcc_reg.get_gen_fb( decoder_type ) != (i == last_bit ? true : false) )
+		if (!pre_fail)
 		{
-			trig_fail	=	true;
+			Dcc_reg.send_pkt( dcc_bits2, "Send bad bit trigger packet." );
+
+			if ( !Dcc_reg.get_gen_fb( decoder_type ) != (i == last_bit ? true : false) )
+			{
+				trig_fail	=	true;
+			}
 		}
 
 		t_stat.incr_t_cnt();
 
-		if ( pre_fail || trig_fail || rst_fail )
+		if ( pre_fail || trig_fail )
 		{
 			t_stat.incr_f_cnt();
 			tst_rslt	=	FAIL;
@@ -1946,13 +1938,13 @@ Dec_tst::decoder_bad_bit(
 			{
 				ERRPRINT( my_name, LOG_WARNING,
 					"%-10s FAILED: good pkt",
-					err_phrase( pre_fail, trig_fail, rst_fail ) );
+					err_phrase( pre_fail, trig_fail ) );
 			}
 			else
 			{
 				ERRPRINT( my_name, LOG_WARNING,
 					"%-10s FAILED: bit %2d",
-					err_phrase( pre_fail, trig_fail, rst_fail ), i + 1 );
+					err_phrase( pre_fail, trig_fail ), i + 1 );
 			}
 		}
 
