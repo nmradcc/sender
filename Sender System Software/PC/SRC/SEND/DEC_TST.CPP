@@ -682,6 +682,7 @@ Dec_tst::decoder_test(
 
 			Dcc_reg.set_clk( tclk0t, tclk0h, tclk1t );
 
+			t_stat.reset();						// Reset statistics for new clock
 			fsoc_send( "each clock value" );
 		}
 		else
