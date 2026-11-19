@@ -586,7 +586,51 @@ Bits::put_0s(
 Bits &
 Bits::put_fsoc( void )
 {
-	put_reset_pkt( 20 ).put_idle_pkt( 10 );
+	put_reset_pkt( 20 ).put_idle_pkt( 10 );	// Fail safe sequence with shifting pattern packets
+#if 0
+	// Based on the original "Send fail safe start up sequence" pattern
+	
+	// Series 1: Shifting pattern (ff f0 -> ff e0 -> ff c0 -> ff 80 -> ff 00)
+	put_byte( 0xff ).put_byte( 0xf0 ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x01 );
+	put_byte( 0xff ).put_byte( 0xe0 ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x03 );
+	put_byte( 0xff ).put_byte( 0xc0 ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x07 );
+	put_byte( 0xff ).put_byte( 0x80 ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x0f );
+	put_byte( 0xff ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x00 );
+	
+	// Series 2: Inverse shift patterns
+	put_byte( 0x1f ).put_byte( 0xfe ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x00 );
+	put_byte( 0x3f ).put_byte( 0xfc ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x00 );
+	put_byte( 0x7f ).put_byte( 0xf8 ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x00 );
+	put_byte( 0xff ).put_byte( 0xf0 ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x01 );
+	put_byte( 0xff ).put_byte( 0xe0 ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x03 );
+	
+	// Series 3: Continue pattern
+	put_byte( 0xff ).put_byte( 0xc0 ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x07 );
+	put_byte( 0xff ).put_byte( 0x80 ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x0f );
+	put_byte( 0xff ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x1f );
+	put_byte( 0xfe ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x00 );
+	put_byte( 0x3f ).put_byte( 0xfc ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x00 );
+	
+	// Series 4: Complex pattern
+	put_byte( 0x7f ).put_byte( 0xf8 ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x00 );
+	put_byte( 0xff ).put_byte( 0xf0 ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x01 );
+	put_byte( 0xff ).put_byte( 0xe0 ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x03 );
+	put_byte( 0xff ).put_byte( 0xc0 ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x07 );
+	put_byte( 0xff ).put_byte( 0x80 ).put_byte( 0x00 ).put_byte( 0x00 ).put_byte( 0x0f );
+	
+	// Series 5: Final patterns
+	put_byte( 0xff ).put_byte( 0x7f ).put_byte( 0x80 );
+	put_byte( 0x1f ).put_byte( 0xff ).put_byte( 0xfe ).put_byte( 0xff ).put_byte( 0x00 );
+	put_byte( 0x3f ).put_byte( 0xff ).put_byte( 0xfd ).put_byte( 0xfe ).put_byte( 0x00 );
+	put_byte( 0x7f ).put_byte( 0xff ).put_byte( 0xfb ).put_byte( 0xfc ).put_byte( 0x00 );
+	put_byte( 0xff ).put_byte( 0xff ).put_byte( 0xf7 ).put_byte( 0xf8 );
+	put_byte( 0x01 ).put_byte( 0xff ).put_byte( 0xff ).put_byte( 0xef ).put_byte( 0xf0 );
+	put_byte( 0x03 ).put_byte( 0xff ).put_byte( 0xff ).put_byte( 0xdf ).put_byte( 0xe0 );
+	put_byte( 0x07 ).put_byte( 0xff ).put_byte( 0xff ).put_byte( 0xbf ).put_byte( 0xc0 );
+	put_byte( 0x0f ).put_byte( 0xff ).put_byte( 0xff ).put_byte( 0x7f ).put_byte( 0x80 );
+	put_byte( 0x1f ).put_byte( 0xff ).put_byte( 0xfe ).put_byte( 0xff );
+	put_byte( 0x00 ).put_byte( 0x3f ).put_byte( 0xe0 );
+#endif
 	return ( *this );
 }
 

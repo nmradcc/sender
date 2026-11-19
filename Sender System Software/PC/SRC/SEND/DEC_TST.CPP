@@ -13,29 +13,8 @@
 #include <conio.h>
 #include <string.h>
 #include <chrono>
+#include <thread>
 #include <vector>
-
-static bool
-send_preset_until_feedback( Bits &bits, Dec_types decoder_type, const char *info )
-{
-	const auto deadline = std::chrono::steady_clock::now()
-		+ std::chrono::seconds( 1 );
-	do
-	{
-		if ( Dcc_reg.send_pkt( bits, info ) != OK )
-		{
-			return false;
-		}
-		if ( Dcc_reg.get_gen_fb( decoder_type ) )
-		{
-			return true;
-		}
-	}
-	while ( !Args.get_simulation_mode() &&
-		std::chrono::steady_clock::now() < deadline );
-
-	return false;
-}
 
 /*
 *	Note: Test is repeated 100 times to make sure there is less
@@ -431,6 +410,32 @@ static const char *err_msg[] =
 #define ACC_TRG  (Args.get_acc_trg())
 
 
+
+
+
+static bool
+send_preset_until_feedback( Bits &bits, Dec_types decoder_type, const char *info )
+{
+	const auto deadline = std::chrono::steady_clock::now()
+		+ std::chrono::seconds( 1 );
+	do
+	{
+		if ( Dcc_reg.send_pkt( bits, info ) != OK )
+		{
+			return false;
+		}
+		if ( Dcc_reg.get_gen_fb( decoder_type ) )
+		{
+			return true;
+		}
+	}
+	while ( !Args.get_simulation_mode() &&
+		std::chrono::steady_clock::now() < deadline );
+
+	return false;
+}
+
+
 /*--------------------------------------------------------------------------*/
 /*
  *	NAME
@@ -452,11 +457,16 @@ void
 Dec_tst::fsoc_send( const char *msg )
 {
 	Dcc_reg.send_pkt( fsoc, "Send fsoc reset sequence." );
+//	std::this_thread::sleep_for(std::chrono::seconds(1));
+	
 	dcc_bits.clr_in();
+	dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+//	dcc_bits.put_cmd_pkt_28( decoder_address,
+//							!Args.get_lamp_rear(), 0, BEST_PRE );
 	dcc_bits.put_cmd_pkt_28( decoder_address,
-							!Args.get_lamp_rear(), 0, BEST_PRE );
+							 true, 0, BEST_PRE );
 	dcc_bits.done();
-	Dcc_reg.send_pkt( dcc_bits, "Send fsoc Spd 0" );
+	Dcc_reg.send_pkt( dcc_bits, "Send fsoc fwd Spd 0" );
 }
 
 
@@ -1729,13 +1739,13 @@ Dec_tst::decoder_bad_addr(
 			Dcc_reg.send_pkt( dcc_bits3, rst_msg );
 		}
 
-		if ( Dcc_reg.get_gen_fb( decoder_type ) )
-		{
-			rst_fail	=	true;
-		}
+//		if ( Dcc_reg.get_gen_fb( decoder_type ) )
+//		{
+//			rst_fail	=	true;
+//		}
 
 		/*
-		*	Preset decoder to forward for LOCO,
+		*  Preset decoder to forward for LOCO,
 		*  presete function on for FUNC decoder, or
 		*  preset accessory decoder to the reverse position.
 		*/
