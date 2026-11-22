@@ -119,8 +119,8 @@ static const char *g_testBitLabels[TESTBIT_COUNT] =
 	"6 prior byte test",
 	"1 ambiguous bit test",
 	"2 ambiguous bits test",
-	"Reserved bit 20",
-	"Reserved bit 21",
+	"1 ambiguous bit test (same address)",
+	"2 ambiguous bits test (same address)",
 	"Reserved bit 22",
 	"Reserved bit 23",
 	"Reserved bit 24",
@@ -1127,7 +1127,7 @@ LaunchSendExe( HWND hwnd )
 	std::string sendExe = std::string( exeDir ) + "send.exe";
 	if ( GetFileAttributes( sendExe.c_str() ) == INVALID_FILE_ATTRIBUTES )
 	{
-		MessageBox( hwnd, "Could not find send.exe next to dcctest.exe.",
+		MessageBox( hwnd, "Could not find send.exe next to NMRAdcctest.exe.",
 			"sendgui", MB_ICONERROR );
 		return;
 	}
@@ -1439,8 +1439,6 @@ CreateControls( HWND hwnd )
 		xEdit, y - 2, editW, 200, hwnd, (HMENU)(INT_PTR)ID_COMBO_TYPE, nullptr, nullptr );
 	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"[L] Locomotive" );
 	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"[F] Function" );
-	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"[A] Accessory" );
-	SendMessage( combo, CB_ADDSTRING, 0, (LPARAM)"[S] Signal" );
 	g_page0Ctrls.push_back( combo );
 	y += rowH;
 
@@ -2070,7 +2068,7 @@ WinMain( HINSTANCE hInstance, HINSTANCE, LPSTR lpCmdLine, int nCmdShow )
 
 	char windowTitle[128];
 	snprintf( windowTitle, sizeof( windowTitle ),
-		"Send Config Editor (dcctest) %c.%u.%u.%u.%u",
+		"Send Config Editor (NMRAdcctest) %c.%u.%u.%u.%u",
 		Ver_rel, Ver_maj, Ver_min, Ver_pat, Ver_bld );
 
 	g_hMain = CreateWindowEx( 0, wc.lpszClassName, windowTitle,

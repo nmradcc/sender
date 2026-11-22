@@ -48,7 +48,7 @@ const u_int LOG_PACKET_COMMAND_BIT = 0x02;              // Log command activity.
 const u_int LOG_PACKET_DATA_BIT    = 0x04;              // Log packet data.
 const u_int LOG_IO_BIT          = 0x08;                 // Log IO data.
 const u_int LOG_NO_ABORT_BIT    = 0x10;                 // Don't abort on errors.
-const Bits_t	DEF_TESTS_MASK	=	(~0L & 0x000FFFFFUL);	// Default test mask; bits 20-31 are reserved and kept clear.
+const Bits_t	DEF_TESTS_MASK	=	(~0L & 0x003FFFFFUL);	// Default test mask; bits 22-31 are reserved and kept clear.
 // Default clock mask; bit 17 (out-of-spec negative test) is opt-in, bits 18-31 are reserved.
 const Bits_t	DEF_CLOCKS_MASK	=	(~0L & 0x00001CE7UL)
 							  & ~0x00000008 		// No min + 2.

@@ -840,11 +840,11 @@ Dec_tst::decoder_test(
  
 	l_run_msk <<=  1;
 	/*
-	 *	Do 1 ambiguous bit test.
+	 *	Do 1 ambiguous bit test (same address).
 	 */
 	if ( l_run_msk & run_mask )
 	{
-		if ( decoder_ambig1( tst_rslt ) != OK )
+		if ( decoder_ambig1_same_addr( tst_rslt ) != OK )
 		{
 			return ( FAIL );
 		}
@@ -852,11 +852,11 @@ Dec_tst::decoder_test(
 
 	l_run_msk <<=  1;
 	/*
-	 *	Do 2 ambiguous bits test.
+	 *	Do 2 ambiguous bits test (same address).
 	 */
 	if ( l_run_msk & run_mask )
 	{
-		if ( decoder_ambig2( tst_rslt ) != OK )
+		if ( decoder_ambig2_same_addr( tst_rslt ) != OK )
 		{
 			return ( FAIL );
 		}
@@ -3350,6 +3350,414 @@ Dec_tst::decoder_ambig2(
             		i+1, t_stat.get_f_cnt() );
 
 				fsoc_send( "decoder_ambig2() inner test loop" );
+
+				/*
+				*	Preset loco decoder to forward with lamp on or
+				*  preset accessory decoder to the reverse position.
+				*/
+				dcc_bits.clr_in();
+				dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+				put_preset_pkt( dcc_bits, decoder_address, pre_cnt );
+				dcc_bits.done();
+
+				pre_fail = !send_preset_until_feedback( dcc_bits, decoder_type,
+					"Send ambig 2 packet preset." );
+
+        		//	Send preset just before feedback bits.
+        		Dcc_reg.send_pkt(	dcc_bits2,"Send preset just before ambig 2 bits." );
+
+				ambig_bytes.clear();
+				dcc_bits3.rst_out();
+				while ( dcc_bits3.get_byte( pbyte ) == OK )
+				{
+					ambig_bytes.push_back( pbyte );
+				}
+
+				Dcc_reg.send_raw_bytes_timed( &ambig_bytes[0], ambig_bytes.size(),
+					0, ambig2_0t1, ambig2_0h1, 1, ambig2_0t2, ambig2_0h2,
+					"Send trigger packet with 2 ambiguous bits." );
+
+				Dcc_reg.pkt_gap();
+
+        		if ( Dcc_reg.get_gen_fb( decoder_type ) )
+        		{
+        			trig_fail	=	true;
+        		}
+
+        		t_stat.incr_t_cnt();
+
+        		if ( pre_fail || trig_fail )
+        		{
+        			t_stat.incr_f_cnt();
+            		tst_rslt	=	FAIL;
+            		ERRPRINT( my_name, LOG_WARNING,
+            			"%-10s FAILED: cycle %3d",
+                		err_phrase( pre_fail, trig_fail ), i+1 );
+        		}
+
+        		if ( get_test_break() )
+    			{
+         			retval	=	FAIL;
+            		break;
+        		}
+			}
+
+    		CLR_LINE;
+    		print_summary( m_tst_name );
+
+    		if ( retval == FAIL )
+    		{
+    			break;
+    		}
+    	}
+
+    	if ( retval == FAIL )
+    	{
+    		break;
+    	}
+
+    	print_test_rslt( tst_rslt );
+    }
+
+	return ( retval );
+}
+
+
+/*--------------------------------------------------------------------------*/
+/*
+ *	NAME
+ *
+ *		decoder_ambig1_same_addr()		  	-	 Run 1 ambiguous bit test (same address).
+ *
+ *	RETURN VALUE
+ *
+ *		OK		-	Normal return.
+ *		FAIL	-	Test interrupted.
+ *
+ *	DESCRIPTION
+ *
+ *		decoder_ambig1_same_addr() runs the single ambiguous bit test with
+ *		the prior address set to the same as the trigger address.
+ *		It returns FAIL if the user types the test break key sequence.
+ */
+/*--------------------------------------------------------------------------*/
+
+Rslt_t
+Dec_tst::decoder_ambig1_same_addr(
+	Rslt_t			&tst_rslt )				// Decoder test result.
+{
+	const char		*my_name = "Ambig 1 (same)";
+	int				i;			  			// Index variable.
+	Rslt_t			retval = OK;			// Return value.
+	bool			pre_fail;	  			// Preset failed.
+	bool			trig_fail;	  			// Trigger failed.
+    int				ambig1_bit;				// Ambiguous bit number.
+    int				fill_bits;				// Number of fill bits.
+    int				pre_bytes;				// Bytes prior to ambiguous byte.
+	BYTE			pbyte;					// Present byte to send.
+	std::vector<BYTE>	ambig_bytes;			// Atomic ambiguous trigger stream.
+	u_int			test_repeats;			// Number of times to repeat test.
+    u_short	 		ambig1_0t;				// Ambiguous bit 0T time.
+    u_short			ambig1_0h;				// Ambiguous bit 0H time.
+    int				test_cycle;				// Ambiguous test cycle.
+	u_int			pre_cnt;				// Preamble count for test.
+	u_short			t_addr;					// Prior address.
+
+	pre_cnt		=	BEST_PRE + Args.get_extra_preamble();
+
+	STATPRINT(	"Ambig 1 (same) test clock\n- Clock 0T %4u, 0H %4u, 1T %4u",
+		DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
+	printf(		"Ambig 1 (same) test clock\n- Clock 0T %4u, 0H %4u, 1T %4u\n",
+		DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
+    TO_STAT(	"         0 Times < 0T   0H>\n" );
+    printf(		"         0 Times < 0T   0H>\n" );
+
+	Dcc_reg.set_clk( DECODER_0T_NOM, DECODER_0H_NOM, DECODER_1T_NOM );
+
+	fsoc_send( "decoder_ambig1_same_addr() initialization" );
+
+	test_repeats	=	Args.get_test_repeats();
+
+	Dcc_reg.clr_err_cnt();					// Restart error counter.
+
+	CLR_LINE;
+
+    /*	Set the prior address to be the same as the trigger address.
+     */
+    t_addr	=	decoder_address;
+
+    for ( test_cycle = 0; test_cycle < ambig1_tbl_size; test_cycle++ )
+    {
+		for (	ambig1_bit	=	BEST_PRE + 1;
+    			ambig1_bit	<=	BASE_BITS + 2;
+            	ambig1_bit	=	ambig1_bit < (BASE_BITS + 1 - BITS_IN_BYTE -1)
+                				? ambig1_bit + BITS_IN_BYTE + 1
+                            	: ambig1_bit + 1 )
+    	{
+
+    		t_stat.reset();	// Reset statistics
+
+        	/*
+         	 *	Set up ambiguous bit times.
+         	*/
+        	ambig1_0t	=	ambig1_tbl[ test_cycle ].ambig1_0t;
+        	ambig1_0h	=	ambig1_tbl[ test_cycle]. ambig1_0h;
+
+    		/*
+     		 *	Set up a preset packet aligned with test ambiguous 0 bit
+        	 *	just after BYTE boundary.
+     		 */
+        	fill_bits	=	BITS_IN_BYTE - ((ambig1_bit - 1) % BITS_IN_BYTE);
+        	if ( fill_bits == BITS_IN_BYTE )
+        	{
+        		fill_bits = 0;
+        	}
+
+        	pre_bytes	=	(ambig1_bit - 1 + fill_bits) / BITS_IN_BYTE;
+
+        	snprintf( m_tst_name, sizeof( m_tst_name ),
+        		"Ambig 1 bit %2d <%3d, %3d> PAddr %5u:",
+        	    ambig1_bit, ambig1_0t, ambig1_0h, t_addr );
+
+			dcc_bits2.clr_in();
+
+        	if ( fill_bits > 0 )
+        	{
+        		// Align pre_bytes to end on BYTE boundary.
+				dcc_bits2.put_0s( fill_bits );
+        	}
+
+			put_preset_pkt( dcc_bits2, t_addr, BEST_PRE );
+
+			if ( ambig1_bit == (BASE_BITS + 1) )		// Packet end bit.
+        	{
+        		/*
+				 *	Add a zero immediately after the checksum byte if we
+           		 *	are pointed at the stop bit.  This zero will be replaced
+				 *	with an ambiguous bit.  Follow this bit with 9 1 bits
+                 *	so the decoder will not think this packet is a 4 or
+                 *	longer Byte packet.
+         		 */
+        		dcc_bits2.put_0s( 1 );
+                dcc_bits2.put_1s( 9 );
+        	}
+        	else if ( ambig1_bit == (BASE_BITS + 2) )
+        	{
+        		/*
+         		 *	Add a normal stop bit followed by a 0 bit if we
+            	 *	are pointed at the bit after the stop bit.  This
+            	 *	zero will be replaced with an ambiguous bit.
+         		 */
+        		dcc_bits2.put_1s( 1 );
+            	dcc_bits2.put_0s( 1 );
+        	}
+
+    		/*
+     	 	 *	Set up a normal trigger packet.
+     	 	 */
+    		put_trigger_pkt( dcc_bits2, decoder_address, pre_cnt );
+    		dcc_bits2.done();
+
+            // Force the selected ambiguous bit to 0
+            // Subtract 1 from ambig1_bit to adjust to 0 based array index.
+            dcc_bits2.clr_bit( (fill_bits + ambig1_bit) - 1 );
+
+			for ( i = 0; i < test_repeats; i++ )
+			{
+    			pre_fail	=	false;
+        		trig_fail	=	false;
+
+        		printf(
+        			"  %-18s Pre %2d, Cycle %3d, Fails %4lu\r",
+            		m_tst_name, pre_cnt,
+            		i+1, t_stat.get_f_cnt() );
+
+				fsoc_send( "decoder_ambig1_same_addr() loop" );
+
+				dcc_bits.clr_in();
+				dcc_bits.put_0s(1);	// Make sure a 0 is ahead of the preamble.
+				put_preset_pkt( dcc_bits, decoder_address, pre_cnt );
+				dcc_bits.done();
+
+				pre_fail = !send_preset_until_feedback( dcc_bits, decoder_type,
+					"Send ambig 1 packet preset." );
+
+				ambig_bytes.clear();
+				dcc_bits2.rst_out();
+				while ( dcc_bits2.get_byte( pbyte ) == OK )
+				{
+					ambig_bytes.push_back( pbyte );
+				}
+
+				Dcc_reg.send_raw_bytes_timed( &ambig_bytes[0], ambig_bytes.size(),
+					pre_bytes * BITS_IN_BYTE, ambig1_0t, ambig1_0h, 0xFFFF,
+					0, 0, "Send trigger packet with 1 ambiguous bit." );
+
+				Dcc_reg.pkt_gap();
+
+        		if ( Dcc_reg.get_gen_fb( decoder_type ) )
+        		{
+        			trig_fail	=	true;
+        		}
+
+        		t_stat.incr_t_cnt();
+
+        		if ( pre_fail || trig_fail )
+        		{
+        			t_stat.incr_f_cnt();
+            		tst_rslt	=	FAIL;
+            		ERRPRINT( my_name, LOG_WARNING,
+            			"%-10s FAILED: cycle %3d",
+             		   	err_phrase( pre_fail, trig_fail ), i+1 );
+            	}
+
+        		if ( get_test_break() )
+    			{
+         			retval	=	FAIL;
+            		break;
+        		}
+			}
+
+    		CLR_LINE;
+    		print_summary( m_tst_name );
+
+    		if ( retval == FAIL )
+    		{
+    			break;
+    		}
+    	}
+        
+    	if ( retval == FAIL )
+    	{
+    		break;
+    	}
+    }
+
+    print_test_rslt( tst_rslt );
+
+	return ( retval );
+}
+
+
+/*--------------------------------------------------------------------------*/
+/*
+ *	NAME
+ *
+ *		decoder_ambig2_same_addr()		  	-	 Run ambiguous 2 test (same address).
+ *
+ *	RETURN VALUE
+ *
+ *		OK		-	Normal return.
+ *		FAIL	-	Test interrupted.
+ *
+ *	DESCRIPTION
+ *
+ *		decoder_ambig2_same_addr() runs the ambiguous 2 test with the prior
+ *		address set to the same as the trigger address. It returns FAIL
+ *		if the user types the test break key sequence.
+ */
+/*--------------------------------------------------------------------------*/
+
+Rslt_t
+Dec_tst::decoder_ambig2_same_addr(
+	Rslt_t			&tst_rslt )				// Decoder test result.
+{
+	const char		*my_name = "Ambig 2 (same)";
+	int				clk_idx;				// Clock test index value.
+	u_short			tclk0t;					// Temp tclk0t.
+	u_short			tclk0h;				 	// Temp tclk0h.
+	u_short			tclk1t;				 	// Temp tclk1t.
+	int				i;			  			// Index variable.
+	Rslt_t			retval = OK;			// Return value.
+	bool			pre_fail;	  			// Preset failed.
+	bool			trig_fail;	  			// Trigger failed.
+	BYTE			pbyte;					// Present byte to send.
+	std::vector<BYTE>	ambig_bytes;			// Atomic ambiguous trigger stream.
+	u_int			pre_cnt;				// Preamble count for test.
+	u_short			t_addr;					// Prior address.
+    int				test_cycle;				// Ambiguous 2 test cycle.
+	u_int			test_repeats;			// Number of times to repeat test.
+    u_short	 		ambig2_0t1;				// Ambiguous bit 0T1 time.
+    u_short			ambig2_0h1;				// Ambiguous bit 0H1 time.
+    u_short	 		ambig2_0t2;				// Ambiguous bit 0T2 time.
+    u_short			ambig2_0h2;				// Ambiguous bit 0H2 time.
+
+	pre_cnt		=	BEST_PRE + Args.get_extra_preamble();
+
+	test_repeats	=	Args.get_test_repeats();
+
+	Dcc_reg.clr_err_cnt();					// Restart error counter.
+
+	CLR_LINE;
+
+    /*	Set the prior address to be the same as the trigger address.
+     */
+    t_addr	=	decoder_address;
+
+    /*
+     *	Set up a normal preset packet aligned so it ends at a BYTE boundary.
+     */
+	dcc_bits2.clr_in();
+	dcc_bits2.put_0s( AMBIG1_BITS );	// Align preset to end on BYTE boundary.
+	put_preset_pkt( dcc_bits2, t_addr, BEST_PRE );
+    dcc_bits2.done();
+
+    /*
+     *	Set up a trigger packet with 2 ambiguous 0s at the front of it.
+     */
+	dcc_bits3.clr_in();
+    dcc_bits3.put_0s( 2 );				// Put 2 zeroes used for feedback bits.
+	put_trigger_pkt( dcc_bits3, decoder_address, pre_cnt );
+	dcc_bits3.done();
+
+	/*
+	 *	Run test series for each ambig2_dclk_tbl[] entry.
+	 */
+	for (	clk_idx = 0; clk_idx < ambig2_dclk_size; clk_idx++ )
+	{
+    	tclk0t		=	ambig2_dclk_tbl[clk_idx].clk0t;
+        tclk0h		=	ambig2_dclk_tbl[clk_idx].clk0h;
+        tclk1t		=	ambig2_dclk_tbl[clk_idx].clk1t;
+
+        STATPRINT(	"Ambig2 (same) clock <%s>\n- Clock 0T %4u, 0H %4u, 1T %4u",
+        	ambig2_dclk_tbl[clk_idx].msg, tclk0t, tclk0h, tclk1t );
+        printf(		"Ambig2 (same) clock <%s>\n- Clock 0T %4u, 0H %4u, 1T %4u\n",
+			ambig2_dclk_tbl[clk_idx].msg, tclk0t, tclk0h, tclk1t );
+
+    	TO_STAT(	"  0 Times <0T1  0H1  0T2  0H2>\n" );
+    	printf(		"  0 Times <0T1  0H1  0T2  0H2>\n" );
+
+		Dcc_reg.set_clk( tclk0t, tclk0h, tclk1t );
+
+		fsoc_send( "decoder_ambig2_same_addr() outer clock loop" );
+
+    	for ( test_cycle = 0; test_cycle < ambig2_tbl_size; test_cycle++ )
+    	{
+    		t_stat.reset();	// Reset statistics
+
+        	/*
+         	 *	Set up ambiguous bit times.
+         	 */
+         	ambig2_0t1	=	ambig2_tbl[ test_cycle ].ambig2_0t1;
+         	ambig2_0h1	=	ambig2_tbl[ test_cycle]. ambig2_0h1;
+         	ambig2_0t2	=	ambig2_tbl[ test_cycle ].ambig2_0t2;
+         	ambig2_0h2	=	ambig2_tbl[ test_cycle]. ambig2_0h2;
+
+         	snprintf( m_tst_name, sizeof( m_tst_name ),
+         		"Ambig 2 <%3d, %3d, %3d, %3d> PAddr %5u:",
+         		ambig2_0t1, ambig2_0h1, ambig2_0t2, ambig2_0h2, t_addr );
+
+			for ( i = 0; i < test_repeats; i++ )
+			{
+    			pre_fail	=	false;
+        		trig_fail	=	false;
+
+        		printf(
+        			"  %-18s Pre %2d, Cycle %3d, Fails %4lu\r",
+            		m_tst_name, pre_cnt,
+            		i+1, t_stat.get_f_cnt() );
+
+				fsoc_send( "decoder_ambig2_same_addr() inner test loop" );
 
 				/*
 				*	Preset loco decoder to forward with lamp on or

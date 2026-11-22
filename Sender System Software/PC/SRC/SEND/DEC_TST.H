@@ -139,6 +139,8 @@ class Dec_tst
 	Rslt_t	decoder_6_byte( Rslt_t &tst_rslt );
     Rslt_t	decoder_ambig1( Rslt_t &tst_rslt );
     Rslt_t	decoder_ambig2( Rslt_t &tst_rslt );
+	Rslt_t	decoder_ambig1_same_addr( Rslt_t &tst_rslt );
+	Rslt_t	decoder_ambig2_same_addr( Rslt_t &tst_rslt );
 	Rslt_t	decoder_str0_ames(	Rslt_t &tst_rslt,
 								u_short iclk0t, u_short iclk0h );
 	void	print_summary( const char *name, bool flagged = false );

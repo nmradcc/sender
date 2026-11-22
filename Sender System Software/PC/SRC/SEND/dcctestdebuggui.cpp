@@ -100,8 +100,8 @@ enum
 /* Number of individual TESTS mask bit checkboxes. */
 static const int TESTBIT_COUNT = 32;
 
-/* Short description of what each TESTS mask bit selects. Valid bits are 0-19;
- * bits 20-31 are reserved and must stay clear. */
+/* Short description of what each TESTS mask bit selects. Valid bits are 0-21;
+ * bits 22-31 are reserved and must stay clear. */
 static const char *g_testBitLabels[TESTBIT_COUNT] =
 {
 	"1T margin test",
@@ -124,8 +124,8 @@ static const char *g_testBitLabels[TESTBIT_COUNT] =
 	"6 prior byte test",
 	"1 ambiguous bit test",
 	"2 ambiguous bits test",
-	"Reserved bit 20",
-	"Reserved bit 21",
+	"1 ambiguous bit test (same address)",
+	"2 ambiguous bits test (same address)",
 	"Reserved bit 22",
 	"Reserved bit 23",
 	"Reserved bit 24",
