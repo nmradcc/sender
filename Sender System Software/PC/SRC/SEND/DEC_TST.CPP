@@ -418,6 +418,7 @@ send_preset_until_feedback( Bits &bits, Dec_types decoder_type, const char *info
 {
 	const auto deadline = std::chrono::steady_clock::now()
 		+ std::chrono::seconds( 1 );
+
 	do
 	{
 		if ( Dcc_reg.send_pkt( bits, info ) != OK )
@@ -428,9 +429,12 @@ send_preset_until_feedback( Bits &bits, Dec_types decoder_type, const char *info
 		{
 			return true;
 		}
+		if ( Args.get_simulation_mode() )
+		{
+			return true;
+		}
 	}
-	while ( !Args.get_simulation_mode() &&
-		std::chrono::steady_clock::now() < deadline );
+	while ( std::chrono::steady_clock::now() < deadline );
 
 	return false;
 }
@@ -838,6 +842,30 @@ Dec_tst::decoder_test(
 		}
 	}
  
+	l_run_msk <<=  1;
+	/*
+	 *	Do 1 ambiguous bit test.
+	 */
+	if ( l_run_msk & run_mask )
+	{
+		if ( decoder_ambig1( tst_rslt ) != OK )
+		{
+			return ( FAIL );
+		}
+	}
+
+	l_run_msk <<=  1;
+	/*
+	 *	Do 2 ambiguous bits test.
+	 */
+	if ( l_run_msk & run_mask )
+	{
+		if ( decoder_ambig2( tst_rslt ) != OK )
+		{
+			return ( FAIL );
+		}
+	}
+
 	l_run_msk <<=  1;
 	/*
 	 *	Do 1 ambiguous bit test (same address).
